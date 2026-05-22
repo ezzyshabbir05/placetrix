@@ -1,0 +1,754 @@
+[
+  {
+    "title": "Max Subarray Sum (Kadane's)",
+    "description": "Given an integer array `nums`, find the contiguous subarray (containing at least one number) which has the largest sum and return its sum.\n\n### Example\n- **Input:** `nums = [-2,1,-3,4,-1,2,1,-5,4]`\n- **Output:** `6`\n- **Explanation:** `[4,-1,2,1]` has the largest sum = `6`.",
+    "difficulty": "Easy",
+    "tags": [
+      "Array",
+      "Dynamic Programming"
+    ],
+    "time_limit": 2,
+    "memory_limit": 256,
+    "boilerplates": {
+      "54": "#include <vector>\nusing namespace std;\n\nclass Solution {\npublic:\n    int maxSubarraySum(vector<int>& nums) {\n        // Write your code here\n        return 0;\n    }\n};\n",
+      "62": "class Solution {\n    public int maxSubarraySum(int[] nums) {\n        // Write your code here\n        return 0;\n    }\n}\n",
+      "63": "class Solution {\n    maxSubarraySum(nums) {\n        // Write your code here\n    }\n}\nmodule.exports = Solution;\n",
+      "71": "from typing import List\n\nclass Solution:\n    def maxSubarraySum(self, nums: List[int]) -> int:\n        # Write your code here\n        pass\n"
+    },
+    "driver_codes": {
+      "54": "// === Driver Code (hidden from student) ===\n#include <iostream>\n#include <sstream>\nint main() {\n    string line;\n    getline(cin, line);\n    // Parse JSON array from stdin\n    vector<int> nums;\n    stringstream ss(line.substr(1, line.size()-2));\n    string token;\n    while(getline(ss, token, ',')) nums.push_back(stoi(token));\n    Solution sol;\n    cout << sol.maxSubarraySum(nums) << endl;\n    return 0;\n}\n",
+      "62": "// === Driver Code (hidden from student) ===\nimport java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String line = sc.nextLine().trim();\n        line = line.substring(1, line.length()-1);\n        String[] parts = line.isEmpty() ? new String[0] : line.split(\",\");\n        int[] nums = new int[parts.length];\n        for(int i=0;i<parts.length;i++) nums[i]=Integer.parseInt(parts[i].trim());\n        Solution sol = new Solution();\n        System.out.println(sol.maxSubarraySum(nums));\n    }\n}\n",
+      "63": "// === Driver Code (hidden from student) ===\nconst fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst nums = JSON.parse(input[0] || '[]');\nconst sol = new Solution();\nconst result = sol.maxSubarraySum(nums);\nconsole.log(JSON.stringify(result));\n",
+      "71": "# === Driver Code (hidden from student) ===\nimport sys, json\nif __name__ == \"__main__\":\n    input_data = sys.stdin.read().strip().splitlines()\n    nums = json.loads(input_data[0]) if input_data else []\n    sol = Solution()\n    result = sol.maxSubarraySum(nums)\n    print(json.dumps(result))\n"
+    },
+    "test_cases": [
+      {
+        "input": "[-2,1,-3,4,-1,2,1,-5,4]\n",
+        "expected_output": "6",
+        "is_sample": true
+      },
+      {
+        "input": "[5,4,-1,7,8]\n",
+        "expected_output": "23",
+        "is_sample": true
+      },
+      {
+        "input": "[-1]\n",
+        "expected_output": "-1",
+        "is_sample": false
+      },
+      {
+        "input": "[-2,-1]\n",
+        "expected_output": "-1",
+        "is_sample": false
+      },
+      {
+        "input": "[1]\n",
+        "expected_output": "1",
+        "is_sample": false
+      },
+      {
+        "input": "[1,2,3,4,5]\n",
+        "expected_output": "15",
+        "is_sample": false
+      },
+      {
+        "input": "[-2,-3,-1,-5]\n",
+        "expected_output": "-1",
+        "is_sample": false
+      },
+      {
+        "input": "[8,-19,5,-4,20]\n",
+        "expected_output": "21",
+        "is_sample": false
+      },
+      {
+        "input": "[10,-3,2,1,-5,8,-2,4]\n",
+        "expected_output": "18",
+        "is_sample": false
+      },
+      {
+        "input": "[-5,8,-2,5,-6,7]\n",
+        "expected_output": "12",
+        "is_sample": false
+      }
+    ]
+  },
+  {
+    "title": "Find Duplicate Number",
+    "description": "Given an array of integers `nums` containing `n + 1` integers where each integer is in the range `[1, n]` inclusive.\n\nThere is only one repeated number in `nums`, return this repeated number.\n\n### Example\n- **Input:** `nums = [1,3,4,2,2]`\n- **Output:** `2`",
+    "difficulty": "Easy",
+    "tags": [
+      "Array",
+      "Binary Search",
+      "Two Pointers"
+    ],
+    "time_limit": 2,
+    "memory_limit": 256,
+    "boilerplates": {
+      "54": "#include <vector>\nusing namespace std;\n\nclass Solution {\npublic:\n    int findDuplicateNumber(vector<int>& nums) {\n        // Write your code here\n        return 0;\n    }\n};\n",
+      "62": "class Solution {\n    public int findDuplicateNumber(int[] nums) {\n        // Write your code here\n        return 0;\n    }\n}\n",
+      "63": "class Solution {\n    findDuplicateNumber(nums) {\n        // Write your code here\n    }\n}\nmodule.exports = Solution;\n",
+      "71": "from typing import List\n\nclass Solution:\n    def findDuplicateNumber(self, nums: List[int]) -> int:\n        # Write your code here\n        pass\n"
+    },
+    "driver_codes": {
+      "54": "// === Driver Code (hidden from student) ===\n#include <iostream>\n#include <sstream>\nint main() {\n    string line;\n    getline(cin, line);\n    // Parse JSON array from stdin\n    vector<int> nums;\n    stringstream ss(line.substr(1, line.size()-2));\n    string token;\n    while(getline(ss, token, ',')) nums.push_back(stoi(token));\n    Solution sol;\n    cout << sol.findDuplicateNumber(nums) << endl;\n    return 0;\n}\n",
+      "62": "// === Driver Code (hidden from student) ===\nimport java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String line = sc.nextLine().trim();\n        line = line.substring(1, line.length()-1);\n        String[] parts = line.isEmpty() ? new String[0] : line.split(\",\");\n        int[] nums = new int[parts.length];\n        for(int i=0;i<parts.length;i++) nums[i]=Integer.parseInt(parts[i].trim());\n        Solution sol = new Solution();\n        System.out.println(sol.findDuplicateNumber(nums));\n    }\n}\n",
+      "63": "// === Driver Code (hidden from student) ===\nconst fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst nums = JSON.parse(input[0] || '[]');\nconst sol = new Solution();\nconst result = sol.findDuplicateNumber(nums);\nconsole.log(JSON.stringify(result));\n",
+      "71": "# === Driver Code (hidden from student) ===\nimport sys, json\nif __name__ == \"__main__\":\n    input_data = sys.stdin.read().strip().splitlines()\n    nums = json.loads(input_data[0]) if input_data else []\n    sol = Solution()\n    result = sol.findDuplicateNumber(nums)\n    print(json.dumps(result))\n"
+    },
+    "test_cases": [
+      {
+        "input": "[1,3,4,2,2]\n",
+        "expected_output": "2",
+        "is_sample": true
+      },
+      {
+        "input": "[3,1,3,4,2]\n",
+        "expected_output": "3",
+        "is_sample": true
+      },
+      {
+        "input": "[1,1]\n",
+        "expected_output": "1",
+        "is_sample": false
+      },
+      {
+        "input": "[1,1,2]\n",
+        "expected_output": "1",
+        "is_sample": false
+      },
+      {
+        "input": "[2,2,2,2,2]\n",
+        "expected_output": "2",
+        "is_sample": false
+      },
+      {
+        "input": "[4,3,2,1,4]\n",
+        "expected_output": "4",
+        "is_sample": false
+      },
+      {
+        "input": "[2,1,3,2]\n",
+        "expected_output": "2",
+        "is_sample": false
+      },
+      {
+        "input": "[1,3,4,2,1]\n",
+        "expected_output": "1",
+        "is_sample": false
+      },
+      {
+        "input": "[2,5,9,6,9,3,8,9,7,1]\n",
+        "expected_output": "9",
+        "is_sample": false
+      },
+      {
+        "input": "[1,4,4,2,3]\n",
+        "expected_output": "4",
+        "is_sample": false
+      }
+    ]
+  },
+  {
+    "title": "Peak Index in a Mountain Array",
+    "description": "An array `nums` is a mountain array if it increases to a peak element and then decreases.\n\nGiven a mountain array `nums`, return the index `i` such that `nums[0] < nums[1] < ... < nums[i - 1] < nums[i] > nums[i + 1] > ... > nums[nums.length - 1]`.\n\n### Example\n- **Input:** `nums = [0,2,1,0]`\n- **Output:** `1`",
+    "difficulty": "Easy",
+    "tags": [
+      "Array",
+      "Binary Search"
+    ],
+    "time_limit": 2,
+    "memory_limit": 256,
+    "boilerplates": {
+      "54": "#include <vector>\nusing namespace std;\n\nclass Solution {\npublic:\n    int peakIndexInAMountainArray(vector<int>& nums) {\n        // Write your code here\n        return 0;\n    }\n};\n",
+      "62": "class Solution {\n    public int peakIndexInAMountainArray(int[] nums) {\n        // Write your code here\n        return 0;\n    }\n}\n",
+      "63": "class Solution {\n    peakIndexInAMountainArray(nums) {\n        // Write your code here\n    }\n}\nmodule.exports = Solution;\n",
+      "71": "from typing import List\n\nclass Solution:\n    def peakIndexInAMountainArray(self, nums: List[int]) -> int:\n        # Write your code here\n        pass\n"
+    },
+    "driver_codes": {
+      "54": "// === Driver Code (hidden from student) ===\n#include <iostream>\n#include <sstream>\nint main() {\n    string line;\n    getline(cin, line);\n    // Parse JSON array from stdin\n    vector<int> nums;\n    stringstream ss(line.substr(1, line.size()-2));\n    string token;\n    while(getline(ss, token, ',')) nums.push_back(stoi(token));\n    Solution sol;\n    cout << sol.peakIndexInAMountainArray(nums) << endl;\n    return 0;\n}\n",
+      "62": "// === Driver Code (hidden from student) ===\nimport java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String line = sc.nextLine().trim();\n        line = line.substring(1, line.length()-1);\n        String[] parts = line.isEmpty() ? new String[0] : line.split(\",\");\n        int[] nums = new int[parts.length];\n        for(int i=0;i<parts.length;i++) nums[i]=Integer.parseInt(parts[i].trim());\n        Solution sol = new Solution();\n        System.out.println(sol.peakIndexInAMountainArray(nums));\n    }\n}\n",
+      "63": "// === Driver Code (hidden from student) ===\nconst fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst nums = JSON.parse(input[0] || '[]');\nconst sol = new Solution();\nconst result = sol.peakIndexInAMountainArray(nums);\nconsole.log(JSON.stringify(result));\n",
+      "71": "# === Driver Code (hidden from student) ===\nimport sys, json\nif __name__ == \"__main__\":\n    input_data = sys.stdin.read().strip().splitlines()\n    nums = json.loads(input_data[0]) if input_data else []\n    sol = Solution()\n    result = sol.peakIndexInAMountainArray(nums)\n    print(json.dumps(result))\n"
+    },
+    "test_cases": [
+      {
+        "input": "[0,2,1,0]\n",
+        "expected_output": "1",
+        "is_sample": true
+      },
+      {
+        "input": "[0,10,5,2]\n",
+        "expected_output": "1",
+        "is_sample": true
+      },
+      {
+        "input": "[3,4,5,1]\n",
+        "expected_output": "2",
+        "is_sample": false
+      },
+      {
+        "input": "[0,1,0]\n",
+        "expected_output": "1",
+        "is_sample": false
+      },
+      {
+        "input": "[0,2,3,4,5,2,1,0]\n",
+        "expected_output": "4",
+        "is_sample": false
+      },
+      {
+        "input": "[1,3,5,4,2]\n",
+        "expected_output": "2",
+        "is_sample": false
+      },
+      {
+        "input": "[10,20,30,40,50,45,43,42,41,40]\n",
+        "expected_output": "4",
+        "is_sample": false
+      },
+      {
+        "input": "[1,2,3,4,5,6,7,8,9,5]\n",
+        "expected_output": "8",
+        "is_sample": false
+      },
+      {
+        "input": "[24,69,100,99,79,78,67,36,26,19]\n",
+        "expected_output": "2",
+        "is_sample": false
+      },
+      {
+        "input": "[3,5,3,2,0]\n",
+        "expected_output": "1",
+        "is_sample": false
+      }
+    ]
+  },
+  {
+    "title": "Sum of All Odd Elements",
+    "description": "Given an array of integers `nums`, compute and return the sum of all elements that have an odd value.\n\n### Example\n- **Input:** `nums = [1,2,3,4,5]`\n- **Output:** `9`\n- **Explanation:** Odd numbers are `1`, `3`, and `5`. Their sum is `1 + 3 + 5 = 9`.",
+    "difficulty": "Easy",
+    "tags": [
+      "Array",
+      "Basic Maths"
+    ],
+    "time_limit": 1,
+    "memory_limit": 128,
+    "boilerplates": {
+      "54": "#include <vector>\nusing namespace std;\n\nclass Solution {\npublic:\n    int sumOfAllOddElements(vector<int>& nums) {\n        // Write your code here\n        return 0;\n    }\n};\n",
+      "62": "class Solution {\n    public int sumOfAllOddElements(int[] nums) {\n        // Write your code here\n        return 0;\n    }\n}\n",
+      "63": "class Solution {\n    sumOfAllOddElements(nums) {\n        // Write your code here\n    }\n}\nmodule.exports = Solution;\n",
+      "71": "from typing import List\n\nclass Solution:\n    def sumOfAllOddElements(self, nums: List[int]) -> int:\n        # Write your code here\n        pass\n"
+    },
+    "driver_codes": {
+      "54": "// === Driver Code (hidden from student) ===\n#include <iostream>\n#include <sstream>\nint main() {\n    string line;\n    getline(cin, line);\n    // Parse JSON array from stdin\n    vector<int> nums;\n    stringstream ss(line.substr(1, line.size()-2));\n    string token;\n    while(getline(ss, token, ',')) nums.push_back(stoi(token));\n    Solution sol;\n    cout << sol.sumOfAllOddElements(nums) << endl;\n    return 0;\n}\n",
+      "62": "// === Driver Code (hidden from student) ===\nimport java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String line = sc.nextLine().trim();\n        line = line.substring(1, line.length()-1);\n        String[] parts = line.isEmpty() ? new String[0] : line.split(\",\");\n        int[] nums = new int[parts.length];\n        for(int i=0;i<parts.length;i++) nums[i]=Integer.parseInt(parts[i].trim());\n        Solution sol = new Solution();\n        System.out.println(sol.sumOfAllOddElements(nums));\n    }\n}\n",
+      "63": "// === Driver Code (hidden from student) ===\nconst fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst nums = JSON.parse(input[0] || '[]');\nconst sol = new Solution();\nconst result = sol.sumOfAllOddElements(nums);\nconsole.log(JSON.stringify(result));\n",
+      "71": "# === Driver Code (hidden from student) ===\nimport sys, json\nif __name__ == \"__main__\":\n    input_data = sys.stdin.read().strip().splitlines()\n    nums = json.loads(input_data[0]) if input_data else []\n    sol = Solution()\n    result = sol.sumOfAllOddElements(nums)\n    print(json.dumps(result))\n"
+    },
+    "test_cases": [
+      {
+        "input": "[1,2,3,4,5]\n",
+        "expected_output": "9",
+        "is_sample": true
+      },
+      {
+        "input": "[2,4,6]\n",
+        "expected_output": "0",
+        "is_sample": true
+      },
+      {
+        "input": "[7,9,11]\n",
+        "expected_output": "27",
+        "is_sample": false
+      },
+      {
+        "input": "[-1,-2,-3,-4]\n",
+        "expected_output": "-4",
+        "is_sample": false
+      },
+      {
+        "input": "[1]\n",
+        "expected_output": "1",
+        "is_sample": false
+      },
+      {
+        "input": "[0]\n",
+        "expected_output": "0",
+        "is_sample": false
+      },
+      {
+        "input": "[1,3,5,7,9,11,13,15,17,19]\n",
+        "expected_output": "100",
+        "is_sample": false
+      },
+      {
+        "input": "[2,4,6,8,10,12,14,16,18,20]\n",
+        "expected_output": "0",
+        "is_sample": false
+      },
+      {
+        "input": "[9,8,7,6,5,4,3,2,1,0]\n",
+        "expected_output": "25",
+        "is_sample": false
+      },
+      {
+        "input": "[-3,3,-5,5]\n",
+        "expected_output": "0",
+        "is_sample": false
+      }
+    ]
+  },
+  {
+    "title": "Majority Element",
+    "description": "Given an array `nums` of size `n`, return the majority element.\n\nThe majority element is the element that appears more than `⌊n / 2⌋` times. You may assume that the majority element always exists in the array.\n\n### Example\n- **Input:** `nums = [3,2,3]`\n- **Output:** `3`",
+    "difficulty": "Easy",
+    "tags": [
+      "Array",
+      "Hash Table",
+      "Sorting"
+    ],
+    "time_limit": 2,
+    "memory_limit": 256,
+    "boilerplates": {
+      "54": "#include <vector>\nusing namespace std;\n\nclass Solution {\npublic:\n    int majorityElement(vector<int>& nums) {\n        // Write your code here\n        return 0;\n    }\n};\n",
+      "62": "class Solution {\n    public int majorityElement(int[] nums) {\n        // Write your code here\n        return 0;\n    }\n}\n",
+      "63": "class Solution {\n    majorityElement(nums) {\n        // Write your code here\n    }\n}\nmodule.exports = Solution;\n",
+      "71": "from typing import List\n\nclass Solution:\n    def majorityElement(self, nums: List[int]) -> int:\n        # Write your code here\n        pass\n"
+    },
+    "driver_codes": {
+      "54": "// === Driver Code (hidden from student) ===\n#include <iostream>\n#include <sstream>\nint main() {\n    string line;\n    getline(cin, line);\n    // Parse JSON array from stdin\n    vector<int> nums;\n    stringstream ss(line.substr(1, line.size()-2));\n    string token;\n    while(getline(ss, token, ',')) nums.push_back(stoi(token));\n    Solution sol;\n    cout << sol.majorityElement(nums) << endl;\n    return 0;\n}\n",
+      "62": "// === Driver Code (hidden from student) ===\nimport java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String line = sc.nextLine().trim();\n        line = line.substring(1, line.length()-1);\n        String[] parts = line.isEmpty() ? new String[0] : line.split(\",\");\n        int[] nums = new int[parts.length];\n        for(int i=0;i<parts.length;i++) nums[i]=Integer.parseInt(parts[i].trim());\n        Solution sol = new Solution();\n        System.out.println(sol.majorityElement(nums));\n    }\n}\n",
+      "63": "// === Driver Code (hidden from student) ===\nconst fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst nums = JSON.parse(input[0] || '[]');\nconst sol = new Solution();\nconst result = sol.majorityElement(nums);\nconsole.log(JSON.stringify(result));\n",
+      "71": "# === Driver Code (hidden from student) ===\nimport sys, json\nif __name__ == \"__main__\":\n    input_data = sys.stdin.read().strip().splitlines()\n    nums = json.loads(input_data[0]) if input_data else []\n    sol = Solution()\n    result = sol.majorityElement(nums)\n    print(json.dumps(result))\n"
+    },
+    "test_cases": [
+      {
+        "input": "[3,2,3]\n",
+        "expected_output": "3",
+        "is_sample": true
+      },
+      {
+        "input": "[2,2,1,1,1,2,2]\n",
+        "expected_output": "2",
+        "is_sample": true
+      },
+      {
+        "input": "[1]\n",
+        "expected_output": "1",
+        "is_sample": false
+      },
+      {
+        "input": "[1,1,1,2,2]\n",
+        "expected_output": "1",
+        "is_sample": false
+      },
+      {
+        "input": "[8,8,7,7,7,8,8,8,8]\n",
+        "expected_output": "8",
+        "is_sample": false
+      },
+      {
+        "input": "[6,5,5,5,5,6,5,5,6]\n",
+        "expected_output": "5",
+        "is_sample": false
+      },
+      {
+        "input": "[2,2,2]\n",
+        "expected_output": "2",
+        "is_sample": false
+      },
+      {
+        "input": "[9,9,9,9,9,1,2,3,4]\n",
+        "expected_output": "9",
+        "is_sample": false
+      },
+      {
+        "input": "[3,3,4]\n",
+        "expected_output": "3",
+        "is_sample": false
+      },
+      {
+        "input": "[10,10,10,10,10,10]\n",
+        "expected_output": "10",
+        "is_sample": false
+      }
+    ]
+  },
+  {
+    "title": "Single Number",
+    "description": "Given a non-empty array of integers `nums`, every element appears twice except for one. Find that single one.\n\n### Example\n- **Input:** `nums = [4,1,2,1,2]`\n- **Output:** `4`",
+    "difficulty": "Easy",
+    "tags": [
+      "Array",
+      "Bit Manipulation"
+    ],
+    "time_limit": 1.5,
+    "memory_limit": 128,
+    "boilerplates": {
+      "54": "#include <vector>\nusing namespace std;\n\nclass Solution {\npublic:\n    int singleNumber(vector<int>& nums) {\n        // Write your code here\n        return 0;\n    }\n};\n",
+      "62": "class Solution {\n    public int singleNumber(int[] nums) {\n        // Write your code here\n        return 0;\n    }\n}\n",
+      "63": "class Solution {\n    singleNumber(nums) {\n        // Write your code here\n    }\n}\nmodule.exports = Solution;\n",
+      "71": "from typing import List\n\nclass Solution:\n    def singleNumber(self, nums: List[int]) -> int:\n        # Write your code here\n        pass\n"
+    },
+    "driver_codes": {
+      "54": "// === Driver Code (hidden from student) ===\n#include <iostream>\n#include <sstream>\nint main() {\n    string line;\n    getline(cin, line);\n    // Parse JSON array from stdin\n    vector<int> nums;\n    stringstream ss(line.substr(1, line.size()-2));\n    string token;\n    while(getline(ss, token, ',')) nums.push_back(stoi(token));\n    Solution sol;\n    cout << sol.singleNumber(nums) << endl;\n    return 0;\n}\n",
+      "62": "// === Driver Code (hidden from student) ===\nimport java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String line = sc.nextLine().trim();\n        line = line.substring(1, line.length()-1);\n        String[] parts = line.isEmpty() ? new String[0] : line.split(\",\");\n        int[] nums = new int[parts.length];\n        for(int i=0;i<parts.length;i++) nums[i]=Integer.parseInt(parts[i].trim());\n        Solution sol = new Solution();\n        System.out.println(sol.singleNumber(nums));\n    }\n}\n",
+      "63": "// === Driver Code (hidden from student) ===\nconst fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst nums = JSON.parse(input[0] || '[]');\nconst sol = new Solution();\nconst result = sol.singleNumber(nums);\nconsole.log(JSON.stringify(result));\n",
+      "71": "# === Driver Code (hidden from student) ===\nimport sys, json\nif __name__ == \"__main__\":\n    input_data = sys.stdin.read().strip().splitlines()\n    nums = json.loads(input_data[0]) if input_data else []\n    sol = Solution()\n    result = sol.singleNumber(nums)\n    print(json.dumps(result))\n"
+    },
+    "test_cases": [
+      {
+        "input": "[4,1,2,1,2]\n",
+        "expected_output": "4",
+        "is_sample": true
+      },
+      {
+        "input": "[2,2,1]\n",
+        "expected_output": "1",
+        "is_sample": true
+      },
+      {
+        "input": "[1]\n",
+        "expected_output": "1",
+        "is_sample": false
+      },
+      {
+        "input": "[-1,-1,-2]\n",
+        "expected_output": "-2",
+        "is_sample": false
+      },
+      {
+        "input": "[7,3,5,3,5,7,9]\n",
+        "expected_output": "9",
+        "is_sample": false
+      },
+      {
+        "input": "[10,20,30,20,10]\n",
+        "expected_output": "30",
+        "is_sample": false
+      },
+      {
+        "input": "[9,9,8,8,7,7,6,6,5]\n",
+        "expected_output": "5",
+        "is_sample": false
+      },
+      {
+        "input": "[0]\n",
+        "expected_output": "0",
+        "is_sample": false
+      },
+      {
+        "input": "[1,2,3,4,5,4,3,2,1]\n",
+        "expected_output": "5",
+        "is_sample": false
+      },
+      {
+        "input": "[100,100,500]\n",
+        "expected_output": "500",
+        "is_sample": false
+      }
+    ]
+  },
+  {
+    "title": "Min Cost Climbing Stairs",
+    "description": "Given an integer array `cost` where `cost[i]` is the cost of `i`-th step on a staircase. Once you pay the cost, you can either climb one or two steps.\n\nYou can either start from the step with index `0`, or the step with index `1`.\n\nReturn the minimum cost to reach the top of the floor.\n\n### Example\n- **Input:** `nums = [10,15,20]`\n- **Output:** `15`\n- **Explanation:** You will start at index `1`, pay `15` and climb to the top.",
+    "difficulty": "Medium",
+    "tags": [
+      "Array",
+      "Dynamic Programming"
+    ],
+    "time_limit": 2,
+    "memory_limit": 256,
+    "boilerplates": {
+      "54": "#include <vector>\nusing namespace std;\n\nclass Solution {\npublic:\n    int minCostClimbingStairs(vector<int>& nums) {\n        // Write your code here\n        return 0;\n    }\n};\n",
+      "62": "class Solution {\n    public int minCostClimbingStairs(int[] nums) {\n        // Write your code here\n        return 0;\n    }\n}\n",
+      "63": "class Solution {\n    minCostClimbingStairs(nums) {\n        // Write your code here\n    }\n}\nmodule.exports = Solution;\n",
+      "71": "from typing import List\n\nclass Solution:\n    def minCostClimbingStairs(self, nums: List[int]) -> int:\n        # Write your code here\n        pass\n"
+    },
+    "driver_codes": {
+      "54": "// === Driver Code (hidden from student) ===\n#include <iostream>\n#include <sstream>\nint main() {\n    string line;\n    getline(cin, line);\n    // Parse JSON array from stdin\n    vector<int> nums;\n    stringstream ss(line.substr(1, line.size()-2));\n    string token;\n    while(getline(ss, token, ',')) nums.push_back(stoi(token));\n    Solution sol;\n    cout << sol.minCostClimbingStairs(nums) << endl;\n    return 0;\n}\n",
+      "62": "// === Driver Code (hidden from student) ===\nimport java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String line = sc.nextLine().trim();\n        line = line.substring(1, line.length()-1);\n        String[] parts = line.isEmpty() ? new String[0] : line.split(\",\");\n        int[] nums = new int[parts.length];\n        for(int i=0;i<parts.length;i++) nums[i]=Integer.parseInt(parts[i].trim());\n        Solution sol = new Solution();\n        System.out.println(sol.minCostClimbingStairs(nums));\n    }\n}\n",
+      "63": "// === Driver Code (hidden from student) ===\nconst fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst nums = JSON.parse(input[0] || '[]');\nconst sol = new Solution();\nconst result = sol.minCostClimbingStairs(nums);\nconsole.log(JSON.stringify(result));\n",
+      "71": "# === Driver Code (hidden from student) ===\nimport sys, json\nif __name__ == \"__main__\":\n    input_data = sys.stdin.read().strip().splitlines()\n    nums = json.loads(input_data[0]) if input_data else []\n    sol = Solution()\n    result = sol.minCostClimbingStairs(nums)\n    print(json.dumps(result))\n"
+    },
+    "test_cases": [
+      {
+        "input": "[10,15,20]\n",
+        "expected_output": "15",
+        "is_sample": true
+      },
+      {
+        "input": "[1,100,1,1,1,100,1,1,100,1]\n",
+        "expected_output": "6",
+        "is_sample": true
+      },
+      {
+        "input": "[0,0,0,0]\n",
+        "expected_output": "0",
+        "is_sample": false
+      },
+      {
+        "input": "[1,2]\n",
+        "expected_output": "1",
+        "is_sample": false
+      },
+      {
+        "input": "[2,1]\n",
+        "expected_output": "1",
+        "is_sample": false
+      },
+      {
+        "input": "[10,15]\n",
+        "expected_output": "10",
+        "is_sample": false
+      },
+      {
+        "input": "[5,10,15,20,25]\n",
+        "expected_output": "30",
+        "is_sample": false
+      },
+      {
+        "input": "[1,2,3,4,5,6,7,8,9,10]\n",
+        "expected_output": "25",
+        "is_sample": false
+      },
+      {
+        "input": "[20,25,30,5,10,15,20,25,30,35]\n",
+        "expected_output": "85",
+        "is_sample": false
+      },
+      {
+        "input": "[0,1,2,0,1,2,0,1,2,0]\n",
+        "expected_output": "4",
+        "is_sample": false
+      }
+    ]
+  },
+  {
+    "title": "House Robber",
+    "description": "You are a professional robber planning to rob houses along a street. Each house has a certain amount of money stashed, the only constraint stopping you from robbing each of them is that adjacent houses have security systems connected and it will automatically contact the police if two adjacent houses were broken into on the same night.\n\nGiven an integer array `nums` representing the amount of money of each house, return the maximum amount of money you can rob tonight without alerting the police.\n\n### Example\n- **Input:** `nums = [1,2,3,1]`\n- **Output:** `4`\n- **Explanation:** Rob house 1 (money = 1) and then rob house 3 (money = 3). Total amount = 1 + 3 = 4.",
+    "difficulty": "Medium",
+    "tags": [
+      "Array",
+      "Dynamic Programming"
+    ],
+    "time_limit": 2,
+    "memory_limit": 256,
+    "boilerplates": {
+      "54": "#include <vector>\nusing namespace std;\n\nclass Solution {\npublic:\n    int houseRobber(vector<int>& nums) {\n        // Write your code here\n        return 0;\n    }\n};\n",
+      "62": "class Solution {\n    public int houseRobber(int[] nums) {\n        // Write your code here\n        return 0;\n    }\n}\n",
+      "63": "class Solution {\n    houseRobber(nums) {\n        // Write your code here\n    }\n}\nmodule.exports = Solution;\n",
+      "71": "from typing import List\n\nclass Solution:\n    def houseRobber(self, nums: List[int]) -> int:\n        # Write your code here\n        pass\n"
+    },
+    "driver_codes": {
+      "54": "// === Driver Code (hidden from student) ===\n#include <iostream>\n#include <sstream>\nint main() {\n    string line;\n    getline(cin, line);\n    // Parse JSON array from stdin\n    vector<int> nums;\n    stringstream ss(line.substr(1, line.size()-2));\n    string token;\n    while(getline(ss, token, ',')) nums.push_back(stoi(token));\n    Solution sol;\n    cout << sol.houseRobber(nums) << endl;\n    return 0;\n}\n",
+      "62": "// === Driver Code (hidden from student) ===\nimport java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String line = sc.nextLine().trim();\n        line = line.substring(1, line.length()-1);\n        String[] parts = line.isEmpty() ? new String[0] : line.split(\",\");\n        int[] nums = new int[parts.length];\n        for(int i=0;i<parts.length;i++) nums[i]=Integer.parseInt(parts[i].trim());\n        Solution sol = new Solution();\n        System.out.println(sol.houseRobber(nums));\n    }\n}\n",
+      "63": "// === Driver Code (hidden from student) ===\nconst fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst nums = JSON.parse(input[0] || '[]');\nconst sol = new Solution();\nconst result = sol.houseRobber(nums);\nconsole.log(JSON.stringify(result));\n",
+      "71": "# === Driver Code (hidden from student) ===\nimport sys, json\nif __name__ == \"__main__\":\n    input_data = sys.stdin.read().strip().splitlines()\n    nums = json.loads(input_data[0]) if input_data else []\n    sol = Solution()\n    result = sol.houseRobber(nums)\n    print(json.dumps(result))\n"
+    },
+    "test_cases": [
+      {
+        "input": "[1,2,3,1]\n",
+        "expected_output": "4",
+        "is_sample": true
+      },
+      {
+        "input": "[2,7,9,3,1]\n",
+        "expected_output": "12",
+        "is_sample": true
+      },
+      {
+        "input": "[0]\n",
+        "expected_output": "0",
+        "is_sample": false
+      },
+      {
+        "input": "[5,1]\n",
+        "expected_output": "5",
+        "is_sample": false
+      },
+      {
+        "input": "[1,5]\n",
+        "expected_output": "5",
+        "is_sample": false
+      },
+      {
+        "input": "[2,1,1,2]\n",
+        "expected_output": "4",
+        "is_sample": false
+      },
+      {
+        "input": "[100,1,1,100]\n",
+        "expected_output": "200",
+        "is_sample": false
+      },
+      {
+        "input": "[4,1,2,7,5,3,1]\n",
+        "expected_output": "14",
+        "is_sample": false
+      },
+      {
+        "input": "[9,1,1,9,1,1,9]\n",
+        "expected_output": "27",
+        "is_sample": false
+      },
+      {
+        "input": "[1,3,1,3,1,3,1,3,1,3]\n",
+        "expected_output": "15",
+        "is_sample": false
+      }
+    ]
+  },
+  {
+    "title": "Maximum Product Subarray",
+    "description": "Given an integer array `nums`, find a contiguous non-empty subarray within the array that has the largest product, and return the product.\n\n### Example\n- **Input:** `nums = [2,3,-2,4]`\n- **Output:** `6`\n- **Explanation:** `[2,3]` has the largest product = `6`.",
+    "difficulty": "Medium",
+    "tags": [
+      "Array",
+      "Dynamic Programming"
+    ],
+    "time_limit": 2,
+    "memory_limit": 256,
+    "boilerplates": {
+      "54": "#include <vector>\nusing namespace std;\n\nclass Solution {\npublic:\n    int maximumProductSubarray(vector<int>& nums) {\n        // Write your code here\n        return 0;\n    }\n};\n",
+      "62": "class Solution {\n    public int maximumProductSubarray(int[] nums) {\n        // Write your code here\n        return 0;\n    }\n}\n",
+      "63": "class Solution {\n    maximumProductSubarray(nums) {\n        // Write your code here\n    }\n}\nmodule.exports = Solution;\n",
+      "71": "from typing import List\n\nclass Solution:\n    def maximumProductSubarray(self, nums: List[int]) -> int:\n        # Write your code here\n        pass\n"
+    },
+    "driver_codes": {
+      "54": "// === Driver Code (hidden from student) ===\n#include <iostream>\n#include <sstream>\nint main() {\n    string line;\n    getline(cin, line);\n    // Parse JSON array from stdin\n    vector<int> nums;\n    stringstream ss(line.substr(1, line.size()-2));\n    string token;\n    while(getline(ss, token, ',')) nums.push_back(stoi(token));\n    Solution sol;\n    cout << sol.maximumProductSubarray(nums) << endl;\n    return 0;\n}\n",
+      "62": "// === Driver Code (hidden from student) ===\nimport java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String line = sc.nextLine().trim();\n        line = line.substring(1, line.length()-1);\n        String[] parts = line.isEmpty() ? new String[0] : line.split(\",\");\n        int[] nums = new int[parts.length];\n        for(int i=0;i<parts.length;i++) nums[i]=Integer.parseInt(parts[i].trim());\n        Solution sol = new Solution();\n        System.out.println(sol.maximumProductSubarray(nums));\n    }\n}\n",
+      "63": "// === Driver Code (hidden from student) ===\nconst fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst nums = JSON.parse(input[0] || '[]');\nconst sol = new Solution();\nconst result = sol.maximumProductSubarray(nums);\nconsole.log(JSON.stringify(result));\n",
+      "71": "# === Driver Code (hidden from student) ===\nimport sys, json\nif __name__ == \"__main__\":\n    input_data = sys.stdin.read().strip().splitlines()\n    nums = json.loads(input_data[0]) if input_data else []\n    sol = Solution()\n    result = sol.maximumProductSubarray(nums)\n    print(json.dumps(result))\n"
+    },
+    "test_cases": [
+      {
+        "input": "[2,3,-2,4]\n",
+        "expected_output": "6",
+        "is_sample": true
+      },
+      {
+        "input": "[-2,0,-1]\n",
+        "expected_output": "0",
+        "is_sample": true
+      },
+      {
+        "input": "[-3,-1,-1]\n",
+        "expected_output": "3",
+        "is_sample": false
+      },
+      {
+        "input": "[-2]\n",
+        "expected_output": "-2",
+        "is_sample": false
+      },
+      {
+        "input": "[0,2]\n",
+        "expected_output": "2",
+        "is_sample": false
+      },
+      {
+        "input": "[-2,3,-4]\n",
+        "expected_output": "24",
+        "is_sample": false
+      },
+      {
+        "input": "[-1,-2,-3,-4]\n",
+        "expected_output": "24",
+        "is_sample": false
+      },
+      {
+        "input": "[5,6,-1,0,3,4]\n",
+        "expected_output": "30",
+        "is_sample": false
+      },
+      {
+        "input": "[2,3,0,5,4,-1,3]\n",
+        "expected_output": "20",
+        "is_sample": false
+      },
+      {
+        "input": "[0]\n",
+        "expected_output": "0",
+        "is_sample": false
+      }
+    ]
+  },
+  {
+    "title": "First Missing Positive",
+    "description": "Given an unsorted integer array `nums`, return the smallest missing positive integer.\n\nYou must implement an algorithm that runs in `O(n)` time and uses constant extra space.\n\n### Example\n- **Input:** `nums = [3,4,-1,1]`\n- **Output:** `2`",
+    "difficulty": "Hard",
+    "tags": [
+      "Array",
+      "Hash Table"
+    ],
+    "time_limit": 3,
+    "memory_limit": 512,
+    "boilerplates": {
+      "54": "#include <vector>\nusing namespace std;\n\nclass Solution {\npublic:\n    int firstMissingPositive(vector<int>& nums) {\n        // Write your code here\n        return 0;\n    }\n};\n",
+      "62": "class Solution {\n    public int firstMissingPositive(int[] nums) {\n        // Write your code here\n        return 0;\n    }\n}\n",
+      "63": "class Solution {\n    firstMissingPositive(nums) {\n        // Write your code here\n    }\n}\nmodule.exports = Solution;\n",
+      "71": "from typing import List\n\nclass Solution:\n    def firstMissingPositive(self, nums: List[int]) -> int:\n        # Write your code here\n        pass\n"
+    },
+    "driver_codes": {
+      "54": "// === Driver Code (hidden from student) ===\n#include <iostream>\n#include <sstream>\nint main() {\n    string line;\n    getline(cin, line);\n    // Parse JSON array from stdin\n    vector<int> nums;\n    stringstream ss(line.substr(1, line.size()-2));\n    string token;\n    while(getline(ss, token, ',')) nums.push_back(stoi(token));\n    Solution sol;\n    cout << sol.firstMissingPositive(nums) << endl;\n    return 0;\n}\n",
+      "62": "// === Driver Code (hidden from student) ===\nimport java.util.*;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String line = sc.nextLine().trim();\n        line = line.substring(1, line.length()-1);\n        String[] parts = line.isEmpty() ? new String[0] : line.split(\",\");\n        int[] nums = new int[parts.length];\n        for(int i=0;i<parts.length;i++) nums[i]=Integer.parseInt(parts[i].trim());\n        Solution sol = new Solution();\n        System.out.println(sol.firstMissingPositive(nums));\n    }\n}\n",
+      "63": "// === Driver Code (hidden from student) ===\nconst fs = require('fs');\nconst input = fs.readFileSync(0, 'utf-8').trim().split('\\n');\nconst nums = JSON.parse(input[0] || '[]');\nconst sol = new Solution();\nconst result = sol.firstMissingPositive(nums);\nconsole.log(JSON.stringify(result));\n",
+      "71": "# === Driver Code (hidden from student) ===\nimport sys, json\nif __name__ == \"__main__\":\n    input_data = sys.stdin.read().strip().splitlines()\n    nums = json.loads(input_data[0]) if input_data else []\n    sol = Solution()\n    result = sol.firstMissingPositive(nums)\n    print(json.dumps(result))\n"
+    },
+    "test_cases": [
+      {
+        "input": "[3,4,-1,1]\n",
+        "expected_output": "2",
+        "is_sample": true
+      },
+      {
+        "input": "[1,2,0]\n",
+        "expected_output": "3",
+        "is_sample": true
+      },
+      {
+        "input": "[7,8,9,11,12]\n",
+        "expected_output": "1",
+        "is_sample": false
+      },
+      {
+        "input": "[1]\n",
+        "expected_output": "2",
+        "is_sample": false
+      },
+      {
+        "input": "[2]\n",
+        "expected_output": "1",
+        "is_sample": false
+      },
+      {
+        "input": "[0]\n",
+        "expected_output": "1",
+        "is_sample": false
+      },
+      {
+        "input": "[-5,-6,0,1,2,5]\n",
+        "expected_output": "3",
+        "is_sample": false
+      },
+      {
+        "input": "[1,2,3,4,5]\n",
+        "expected_output": "6",
+        "is_sample": false
+      },
+      {
+        "input": "[1,2,3,5,6]\n",
+        "expected_output": "4",
+        "is_sample": false
+      },
+      {
+        "input": "[2,3,4,5,6,7,8,9,1]\n",
+        "expected_output": "10",
+        "is_sample": false
+      }
+    ]
+  }
+]

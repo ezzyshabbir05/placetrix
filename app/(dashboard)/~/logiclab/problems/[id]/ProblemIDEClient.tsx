@@ -17,8 +17,133 @@ import {
   IconAlertTriangle,
   IconInfoCircle,
   IconHistory,
+  IconRefresh,
+  IconCode,
+  IconX,
 } from "@tabler/icons-react"
 import { toast } from "sonner"
+import { createClient } from "@/lib/supabase/client"
+
+// Robust memory usage display formatter
+const formatMemory = (memKbOrMb: number | string | undefined | null, isAlreadyMb = false) => {
+  if (memKbOrMb === undefined || memKbOrMb === null) return "—"
+  const val = typeof memKbOrMb === "string" ? parseFloat(memKbOrMb) : memKbOrMb
+  if (isNaN(val) || val <= 0) return "< 0.1 MB"
+  
+  if (isAlreadyMb) {
+    if (val < 0.1) return "< 0.1 MB"
+    return `${val.toFixed(1)} MB`
+  } else {
+    // KB input
+    const mb = val / 1024
+    if (mb < 0.1) {
+      return `${val.toFixed(0)} KB`
+    }
+    return `${mb.toFixed(1)} MB`
+  }
+}
+
+// Inline Markdown Parser
+function parseInline(text: string) {
+  const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g)
+  return parts.map((part, idx) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={idx} className="font-bold text-white">{part.slice(2, -2)}</strong>
+    }
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return <code key={idx} className="bg-zinc-900 border border-zinc-800 px-1 py-0.5 rounded text-xs font-mono text-emerald-400">{part.slice(1, -1)}</code>
+    }
+    return part
+  })
+}
+
+// Robust Custom Markdown Renderer with Operator Replacements
+function MarkdownDescription({ content }: { content: string }) {
+  if (!content) return null
+
+  let formatted = content
+    .replace(/<=/g, " ≤ ")
+    .replace(/>=/g, " ≥ ")
+    .replace(/!=/g, " ≠ ")
+    .replace(/->/g, " → ")
+    .replace(/==/g, " ＝ ")
+
+  const blocks = formatted.split(/(```[\s\S]*?```)/g)
+
+  return (
+    <div className="text-zinc-300 leading-relaxed text-sm space-y-4 font-sans">
+      {blocks.map((block, idx) => {
+        if (block.startsWith("```")) {
+          const match = block.match(/```(\w*)\n([\s\S]*?)```/)
+          const lang = match ? match[1] : ""
+          const codeText = match ? match[2] : block.slice(3, -3)
+          return (
+            <div key={idx} className="bg-zinc-950 border border-zinc-800 rounded-lg overflow-hidden my-3 font-mono text-xs">
+              {lang && (
+                <div className="bg-zinc-900/60 px-3 py-1 border-b border-zinc-800 text-[10px] text-zinc-500 uppercase tracking-widest font-bold">
+                  {lang}
+                </div>
+              )}
+              <pre className="p-3 overflow-x-auto text-zinc-300 whitespace-pre scrollbar-thin">{codeText.trim()}</pre>
+            </div>
+          )
+        }
+
+        const lines = block.split("\n")
+        return (
+          <div key={idx} className="space-y-2">
+            {lines.map((line, lIdx) => {
+              const trimmed = line.trim()
+              if (!trimmed) return <div key={lIdx} className="h-1.5" />
+
+              if (trimmed.startsWith("### ")) {
+                return <h3 key={lIdx} className="text-sm font-bold text-white uppercase tracking-wider mt-4 mb-2">{parseInline(trimmed.slice(4))}</h3>
+              }
+              if (trimmed.startsWith("## ")) {
+                return <h2 key={lIdx} className="text-base font-bold text-white uppercase tracking-wider mt-5 mb-2 border-b border-zinc-800/80 pb-1">{parseInline(trimmed.slice(3))}</h2>
+              }
+              if (trimmed.startsWith("# ")) {
+                return <h1 key={lIdx} className="text-lg font-bold text-white uppercase tracking-wider mt-6 mb-3 border-b border-zinc-800/80 pb-1">{parseInline(trimmed.slice(2))}</h1>
+              }
+
+              if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+                return (
+                  <ul key={lIdx} className="list-disc pl-5 space-y-1 text-zinc-400">
+                    <li>{parseInline(trimmed.slice(2))}</li>
+                  </ul>
+                )
+              }
+
+              const numMatch = trimmed.match(/^(\d+)\.\s(.*)/)
+              if (numMatch) {
+                return (
+                  <ol key={lIdx} className="list-decimal pl-5 space-y-1 text-zinc-400">
+                    <li value={parseInt(numMatch[1])}>{parseInline(numMatch[2])}</li>
+                  </ol>
+                )
+              }
+
+              if (trimmed.startsWith("> ")) {
+                return (
+                  <blockquote key={lIdx} className="border-l-2 border-emerald-500 bg-zinc-900/40 px-3 py-2 rounded-r text-zinc-400 text-xs italic my-2">
+                    {parseInline(trimmed.slice(2))}
+                  </blockquote>
+                )
+              }
+
+              if (trimmed === "---" || trimmed === "***") {
+                return <hr key={lIdx} className="border-zinc-800 my-4" />
+              }
+
+              return <p key={lIdx} className="text-zinc-300 leading-relaxed">{parseInline(line)}</p>
+            })}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 
 const LANGUAGES = [
   { id: 71, name: "Python 3", value: "python", extension: "py" },
@@ -98,6 +223,34 @@ export function ProblemIDEClient({
   const [submissions, setSubmissions] = useState(initialSubmissions)
   const [runResult, setRunResult] = useState<any>(null)
   const [submitResult, setSubmitResult] = useState<any>(null)
+
+  // Historical Code Viewer state
+  const [viewingSubmission, setViewingSubmission] = useState<Submission | null>(null)
+  const [viewingCode, setViewingCode] = useState<string>("")
+  const [loadingCode, setLoadingCode] = useState<boolean>(false)
+
+  const handleViewPastSubmission = async (sub: Submission) => {
+    setViewingSubmission(sub)
+    setLoadingCode(true)
+    setViewingCode("")
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("coding_submissions" as any)
+        .select("code, language_id")
+        .eq("id", sub.id)
+        .single() as any
+      if (error || !data) {
+        throw new Error(error?.message || "Submission code not found.")
+      }
+      setViewingCode(data.code)
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to load submission code.")
+      setViewingSubmission(null)
+    } finally {
+      setLoadingCode(false)
+    }
+  }
 
   const handleLangChange = (langVal: string) => {
     const lang = LANGUAGES.find((l) => l.value === langVal)
@@ -249,6 +402,19 @@ export function ProblemIDEClient({
           </select>
 
           <button
+            onClick={() => {
+              const boilerplate = parsedBoilerplates[String(selectedLang.id)] || `// Write your ${selectedLang.name} solution here\n`
+              setCode(boilerplate)
+              toast.success("Code reset to boilerplate")
+            }}
+            disabled={running || submitting}
+            title="Reset code to boilerplate"
+            className="flex items-center justify-center bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 text-zinc-400 hover:text-rose-400 h-8 w-8 rounded-lg border border-zinc-700 transition-all cursor-pointer"
+          >
+            <IconRefresh className="h-4 w-4" />
+          </button>
+
+          <button
             onClick={handleRunCode}
             disabled={running || submitting}
             className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 text-zinc-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold border border-zinc-700 transition-all cursor-pointer"
@@ -299,9 +465,7 @@ export function ProblemIDEClient({
             {activeTab === "description" ? (
               <div className="space-y-5">
                 {/* Description */}
-                <div className="prose prose-invert prose-sm max-w-none text-zinc-300 leading-relaxed whitespace-pre-wrap">
-                  {problem.description}
-                </div>
+                <MarkdownDescription content={problem.description} />
 
                 {/* Tags */}
                 {problem.tags?.length > 0 && (
@@ -359,7 +523,9 @@ export function ProblemIDEClient({
                   submissions.map((sub) => (
                     <div
                       key={sub.id}
-                      className={`flex items-center justify-between p-3 rounded-lg border ${sub.status === "Accepted" ? "bg-emerald-500/5 border-emerald-500/20" : "bg-zinc-900 border-zinc-800"}`}
+                      onClick={() => handleViewPastSubmission(sub)}
+                      className={`flex items-center justify-between p-3 rounded-lg border ${sub.status === "Accepted" ? "bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10" : "bg-zinc-900 border-zinc-800 hover:bg-zinc-800/60"} transition-all cursor-pointer group`}
+                      title="Click to view submitted code"
                     >
                       <div className="flex items-center gap-3">
                         {sub.status === "Accepted" ? (
@@ -368,8 +534,9 @@ export function ProblemIDEClient({
                           <IconCircleX className="h-4 w-4 text-rose-400 shrink-0" />
                         )}
                         <div>
-                          <p className={`text-xs font-bold ${sub.status === "Accepted" ? "text-emerald-400" : "text-rose-400"}`}>
+                          <p className={`text-xs font-bold ${sub.status === "Accepted" ? "text-emerald-400" : "text-rose-400"} flex items-center gap-1.5`}>
                             {sub.status}
+                            <span className="text-[9px] text-zinc-500 font-normal group-hover:text-emerald-400 transition-colors">(View code →)</span>
                           </p>
                           <p className="text-[10px] text-zinc-600">
                             {sub.passed_count}/{sub.total_count} passed · {LANGUAGES.find((l) => l.id === sub.language_id)?.name || "Unknown"}
@@ -382,7 +549,7 @@ export function ProblemIDEClient({
                             <span className="flex items-center gap-0.5"><IconClock className="h-3 w-3" />{sub.runtime}s</span>
                           )}
                           {sub.memory !== null && (
-                            <span className="flex items-center gap-0.5"><IconCpu className="h-3 w-3" />{sub.memory}MB</span>
+                            <span className="flex items-center gap-0.5"><IconCpu className="h-3 w-3" />{formatMemory(sub.memory, true)}</span>
                           )}
                         </div>
                         <p className="text-[9px] text-zinc-700 mt-0.5">
@@ -485,8 +652,25 @@ export function ProblemIDEClient({
                 )
               ) : (
                 /* Result tab */
-                <div className="space-y-2">
-                  {submitResult ? (
+                <div className="space-y-2 h-full flex flex-col justify-start">
+                  {running || submitting ? (
+                    <div className="flex flex-col items-center justify-center py-6 gap-3 animate-pulse my-auto">
+                      <div className="relative">
+                        <div className="h-10 w-10 border-2 border-emerald-500/20 border-t-emerald-400 rounded-full animate-spin" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <IconTerminal2 className="h-4 w-4 text-emerald-400" />
+                        </div>
+                      </div>
+                      <div className="text-center space-y-1">
+                        <p className="text-xs font-bold text-white uppercase tracking-wider">
+                          {submitting ? "Judging Submission..." : "Compiling & Running..."}
+                        </p>
+                        <p className="text-[10px] text-zinc-500">
+                          Executing solution against the logiclab sandbox...
+                        </p>
+                      </div>
+                    </div>
+                  ) : submitResult ? (
                     <>
                       <div className={`p-2.5 rounded-lg flex items-center justify-between border ${submitResult.status === "Accepted" ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-400" : "bg-rose-500/5 border-rose-500/20 text-rose-400"}`}>
                         <div className="flex items-center gap-2">
@@ -495,25 +679,48 @@ export function ProblemIDEClient({
                           <span className="text-zinc-500 text-[10px]">{submitResult.passed_count}/{submitResult.total_count} passed</span>
                         </div>
                         <div className="flex items-center gap-3 text-zinc-400 text-[10px]">
-                          <span className="flex items-center gap-1"><IconClock className="h-3 w-3" />{submitResult.runtime}s</span>
-                          <span className="flex items-center gap-1"><IconCpu className="h-3 w-3" />{submitResult.memory}MB</span>
+                          <span className="flex items-center gap-1"><IconClock className="h-3 w-3" />{submitResult.runtime ?? "0.0"}s</span>
+                          <span className="flex items-center gap-1"><IconCpu className="h-3 w-3" />{formatMemory(submitResult.memory, true)}</span>
                         </div>
                       </div>
+
+                      {submitResult.status === "Accepted" && (
+                        <div className="p-2.5 bg-zinc-900/40 border border-zinc-800/80 rounded-lg space-y-2 max-h-[120px] overflow-y-auto">
+                          <p className="text-[9px] text-zinc-500 uppercase tracking-widest font-bold">Grading Checklist</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                            {sampleTestCases.map((tc, idx) => (
+                              <div key={tc.id} className="flex items-center gap-1.5 bg-zinc-900/60 border border-zinc-800/50 rounded px-2 py-1">
+                                <IconCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                                <span className="text-[11px] font-medium text-zinc-300">Example {idx + 1} Passed</span>
+                              </div>
+                            ))}
+                            {submitResult.total_count > sampleTestCases.length && (
+                              <div className="flex items-center gap-1.5 bg-zinc-900/60 border border-zinc-800/50 rounded px-2 py-1 sm:col-span-2">
+                                <IconCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0 animate-pulse" />
+                                <span className="text-[11px] font-medium text-zinc-300">
+                                  All {submitResult.total_count - sampleTestCases.length} hidden validator test cases passed!
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       {submitResult.failed_test_case_info && (
                         <div className="p-2.5 bg-zinc-900 border border-zinc-800 rounded-lg space-y-1.5">
                           <p className="text-[9px] text-rose-400 uppercase tracking-widest font-bold flex items-center gap-1"><IconAlertTriangle className="h-3 w-3" /> Failed at Test Case #{submitResult.failed_test_case_info.index}</p>
                           <div className="grid grid-cols-3 gap-2 text-[10px]">
                             <div>
                               <p className="text-zinc-600">Input</p>
-                              <pre className="text-zinc-400 mt-0.5">{submitResult.failed_test_case_info.input}</pre>
+                              <pre className="text-zinc-400 mt-0.5 whitespace-pre-wrap">{submitResult.failed_test_case_info.input}</pre>
                             </div>
                             <div>
                               <p className="text-zinc-600">Expected</p>
-                              <pre className="text-zinc-400 mt-0.5">{submitResult.failed_test_case_info.expected}</pre>
+                              <pre className="text-zinc-400 mt-0.5 whitespace-pre-wrap">{submitResult.failed_test_case_info.expected}</pre>
                             </div>
                             <div>
                               <p className="text-zinc-600">Your Output</p>
-                              <pre className="text-rose-400 mt-0.5">{submitResult.failed_test_case_info.actual}</pre>
+                              <pre className="text-rose-400 mt-0.5 whitespace-pre-wrap">{submitResult.failed_test_case_info.actual}</pre>
                             </div>
                           </div>
                         </div>
@@ -531,7 +738,7 @@ export function ProblemIDEClient({
                         {runResult.status?.id === 3 && (
                           <div className="flex items-center gap-3 text-zinc-400 text-[10px]">
                             <span className="flex items-center gap-1"><IconClock className="h-3 w-3" />{runResult.time}s</span>
-                            <span className="flex items-center gap-1"><IconCpu className="h-3 w-3" />{(parseInt(runResult.memory || "0") / 1024).toFixed(1)}MB</span>
+                            <span className="flex items-center gap-1"><IconCpu className="h-3 w-3" />{formatMemory(runResult.memory, false)}</span>
                           </div>
                         )}
                       </div>
@@ -539,30 +746,30 @@ export function ProblemIDEClient({
                       {runResult.compile_output && (
                         <div>
                           <p className="text-[9px] text-rose-400 uppercase tracking-widest mb-1"><IconAlertTriangle className="h-3 w-3 inline" /> Compile Error</p>
-                          <pre className="p-2 bg-zinc-900 border border-zinc-800 rounded text-rose-400/90 whitespace-pre-wrap text-[11px]">{runResult.compile_output}</pre>
+                          <pre className="p-2 bg-zinc-900 border border-zinc-800 rounded text-rose-400/90 whitespace-pre-wrap text-[11px] font-mono">{runResult.compile_output}</pre>
                         </div>
                       )}
 
                       {runResult.stderr && (
                         <div>
                           <p className="text-[9px] text-rose-400 uppercase tracking-widest mb-1"><IconAlertTriangle className="h-3 w-3 inline" /> Runtime Error</p>
-                          <pre className="p-2 bg-zinc-900 border border-zinc-800 rounded text-rose-400/90 whitespace-pre-wrap text-[11px]">{runResult.stderr}</pre>
+                          <pre className="p-2 bg-zinc-900 border border-zinc-800 rounded text-rose-400/90 whitespace-pre-wrap text-[11px] font-mono">{runResult.stderr}</pre>
                         </div>
                       )}
 
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <p className="text-[9px] text-zinc-600 uppercase tracking-widest mb-0.5">Your Output</p>
-                          <pre className="p-1.5 bg-zinc-900 border border-zinc-800 rounded text-zinc-300 text-[11px] whitespace-pre-wrap">{runResult.stdout || "(empty)"}</pre>
+                          <pre className="p-1.5 bg-zinc-900 border border-zinc-800 rounded text-zinc-300 text-[11px] whitespace-pre-wrap font-mono">{runResult.stdout || "(empty)"}</pre>
                         </div>
                         <div>
                           <p className="text-[9px] text-zinc-600 uppercase tracking-widest mb-0.5">Expected</p>
-                          <pre className="p-1.5 bg-zinc-900 border border-zinc-800 rounded text-zinc-300 text-[11px] whitespace-pre-wrap">{runResult.expected || "(none)"}</pre>
+                          <pre className="p-1.5 bg-zinc-900 border border-zinc-800 rounded text-zinc-300 text-[11px] whitespace-pre-wrap font-mono">{runResult.expected || "(none)"}</pre>
                         </div>
                       </div>
                     </>
                   ) : (
-                    <div className="flex flex-col items-center justify-center h-full gap-1.5 select-none">
+                    <div className="flex flex-col items-center justify-center h-full gap-1.5 select-none my-auto">
                       <IconTerminal2 className="h-6 w-6 text-zinc-800" />
                       <p className="text-[10px] text-zinc-700 uppercase font-bold tracking-widest">Run or Submit to see results</p>
                     </div>
@@ -573,6 +780,98 @@ export function ProblemIDEClient({
           </div>
         </div>
       </div>
+
+      {/* ── Historical Code Viewer Modal ── */}
+      {viewingSubmission && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden w-full max-w-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-4 py-3 bg-zinc-900/80 border-b border-zinc-800 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className={`h-2 w-2 rounded-full ${viewingSubmission.status === "Accepted" ? "bg-emerald-500" : "bg-rose-500"}`} />
+                <div>
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    Submission Code Preview
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${viewingSubmission.status === "Accepted" ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" : "text-rose-400 bg-rose-500/10 border-rose-500/20"}`}>
+                      {viewingSubmission.status}
+                    </span>
+                  </h3>
+                  <p className="text-[10px] text-zinc-500 mt-0.5">
+                    Submitted on {new Date(viewingSubmission.created_at).toLocaleString()} · {LANGUAGES.find(l => l.id === viewingSubmission.language_id)?.name}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setViewingSubmission(null)}
+                className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <IconX className="h-4.5 w-4.5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 min-h-[300px] bg-zinc-950 flex flex-col relative overflow-hidden">
+              {loadingCode ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 bg-zinc-950 z-10">
+                  <div className="h-7 w-7 border-2 border-zinc-700 border-t-emerald-400 rounded-full animate-spin" />
+                  <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Fetching solution from database...</span>
+                </div>
+              ) : (
+                <div className="flex-1 h-full min-h-[350px]">
+                  <Editor
+                    height="100%"
+                    language={LANGUAGES.find((l) => l.id === viewingSubmission.language_id)?.value || "javascript"}
+                    value={viewingCode}
+                    theme="vs-dark"
+                    options={{
+                      readOnly: true,
+                      fontSize: 12.5,
+                      minimap: { enabled: false },
+                      scrollBeyondLastLine: false,
+                      wordWrap: "on",
+                      automaticLayout: true,
+                      padding: { top: 12, bottom: 12 },
+                      lineNumbersMinChars: 3,
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between px-4 py-3 bg-zinc-900/50 border-t border-zinc-800 shrink-0">
+              <div className="text-[10px] text-zinc-500 font-medium">
+                Passed {viewingSubmission.passed_count}/{viewingSubmission.total_count} test cases
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setViewingSubmission(null)}
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:border-zinc-700 transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+                <button
+                  disabled={loadingCode || !viewingCode}
+                  onClick={() => {
+                    if (viewingCode) {
+                      const matchedLang = LANGUAGES.find(l => l.id === viewingSubmission.language_id)
+                      if (matchedLang) {
+                        setSelectedLang(matchedLang)
+                      }
+                      setCode(viewingCode)
+                      setViewingSubmission(null)
+                      toast.success("Submission code successfully restored to workspace!")
+                    }
+                  }}
+                  className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-black px-4 py-1.5 rounded-lg text-xs font-bold shadow-[0_0_12px_rgba(16,185,129,0.2)] transition-all cursor-pointer"
+                >
+                  <IconCode className="h-3.5 w-3.5" /> Restore to Workspace
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

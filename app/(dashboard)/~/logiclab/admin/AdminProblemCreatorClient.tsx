@@ -269,28 +269,56 @@ const CSV_ROBUST_TEMPLATE = `title,description,difficulty,tags,time_limit,memory
 const CSV_SIMPLE_TEMPLATE = `title,description,difficulty,tags,time_limit,memory_limit,sample_input,sample_output
 "Two Sum","Given an array of integers...","Easy","Array;Hash Table",2.0,256,"[2,7,11,15]\\n9","[0,1]"`
 
-export function AdminProblemCreatorClient() {
+export function AdminProblemCreatorClient({
+  initialProblem,
+  isEdit = false,
+}: {
+  initialProblem?: any
+  isEdit?: boolean
+} = {}) {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
   const [activeTab, setActiveTab] = useState<"single" | "bulk">("single")
 
+  // Parse initial values safely
+  let parsedBoilerplates = initialProblem?.boilerplates || {}
+  if (typeof parsedBoilerplates === "string") {
+    try { parsedBoilerplates = JSON.parse(parsedBoilerplates) } catch (e) { console.error(e) }
+  }
+  let parsedDrivers = initialProblem?.driver_codes || {}
+  if (typeof parsedDrivers === "string") {
+    try { parsedDrivers = JSON.parse(parsedDrivers) } catch (e) { console.error(e) }
+  }
+  let parsedTestCases = initialProblem?.test_cases || []
+  if (typeof parsedTestCases === "string") {
+    try { parsedTestCases = JSON.parse(parsedTestCases) } catch (e) { console.error(e) }
+  }
+
   // Problem metadata
-  const [title, setTitle] = useState("")
-  const [description, setDescription] = useState("")
-  const [difficulty, setDifficulty] = useState<"Easy" | "Medium" | "Hard">("Easy")
-  const [tags, setTags] = useState("")
-  const [timeLimit, setTimeLimit] = useState(2.0)
-  const [memoryLimit, setMemoryLimit] = useState(256)
+  const [title, setTitle] = useState(initialProblem?.title || "")
+  const [description, setDescription] = useState(initialProblem?.description || "")
+  const [difficulty, setDifficulty] = useState<"Easy" | "Medium" | "Hard">(initialProblem?.difficulty || "Easy")
+  const [tags, setTags] = useState(Array.isArray(initialProblem?.tags) ? initialProblem.tags.join(", ") : "")
+  const [timeLimit, setTimeLimit] = useState(initialProblem?.time_limit || 2.0)
+  const [memoryLimit, setMemoryLimit] = useState(initialProblem?.memory_limit || 256)
 
   // Code templates
   const [activeLang, setActiveLang] = useState("71")
-  const [boilerplates, setBoilerplates] = useState<Record<string, string>>({ ...DEFAULT_BOILERPLATES })
-  const [driverCodes, setDriverCodes] = useState<Record<string, string>>({ ...DEFAULT_DRIVERS })
+  const [boilerplates, setBoilerplates] = useState<Record<string, string>>({
+    ...DEFAULT_BOILERPLATES,
+    ...parsedBoilerplates,
+  })
+  const [driverCodes, setDriverCodes] = useState<Record<string, string>>({
+    ...DEFAULT_DRIVERS,
+    ...parsedDrivers,
+  })
 
   // Test cases
-  const [testCases, setTestCases] = useState<TestCase[]>([
-    { input: "", expected_output: "", is_sample: true },
-  ])
+  const [testCases, setTestCases] = useState<TestCase[]>(
+    parsedTestCases.length > 0
+      ? parsedTestCases
+      : [{ input: "", expected_output: "", is_sample: true }]
+  )
 
   // Bulk import states
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -398,30 +426,42 @@ export function AdminProblemCreatorClient() {
     setSaving(true)
     try {
       const supabase = createClient() as any
-
-      // 1. Create the problem with test cases stored inside JSONB array
-      const { data: problem, error: problemError } = await supabase
-        .from("coding_problems")
-        .insert({
-          title: title.trim(),
-          description: description.trim(),
-          difficulty,
-          tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
-          time_limit: timeLimit,
-          memory_limit: memoryLimit,
-          boilerplates,
-          driver_codes: driverCodes,
-          test_cases: testCases,
-        })
-        .select("id")
-        .single()
-
-      if (problemError || !problem) {
-        throw new Error(problemError?.message || "Failed to create problem.")
+      const payload = {
+        title: title.trim(),
+        description: description.trim(),
+        difficulty,
+        tags: tags.split(",").map((t: string) => t.trim()).filter(Boolean),
+        time_limit: timeLimit,
+        memory_limit: memoryLimit,
+        boilerplates,
+        driver_codes: driverCodes,
+        test_cases: testCases,
       }
 
-      toast.success("Problem created successfully!")
-      router.push("/~/logiclab")
+      let result;
+      if (isEdit) {
+        const { data, error } = await supabase
+          .from("coding_problems")
+          .update(payload)
+          .eq("id", initialProblem.id)
+          .select("id")
+          .single()
+        result = { data, error }
+      } else {
+        const { data, error } = await supabase
+          .from("coding_problems")
+          .insert(payload)
+          .select("id")
+          .single()
+        result = { data, error }
+      }
+
+      if (result.error || !result.data) {
+        throw new Error(result.error?.message || `Failed to ${isEdit ? "update" : "create"} problem.`)
+      }
+
+      toast.success(`Problem ${isEdit ? "updated" : "created"} successfully!`)
+      router.push("/~/logiclab/admin")
     } catch (err: any) {
       console.error("Save error:", err)
       toast.error(err?.message || "Failed to save problem.")
@@ -464,7 +504,7 @@ export function AdminProblemCreatorClient() {
       }
 
       toast.success(`Successfully imported ${insertedProblems.length} problems!`)
-      router.push("/~/logiclab")
+      router.push("/~/logiclab/admin")
     } catch (err: any) {
       console.error("Bulk Import Error:", err)
       toast.error(err?.message || "Failed during bulk import.")
@@ -479,14 +519,14 @@ export function AdminProblemCreatorClient() {
       <div className="flex items-center justify-between gap-4 shrink-0">
         <div className="flex items-center gap-3">
           <Link
-            href="/~/logiclab"
+            href="/~/logiclab/admin"
             className="h-9 w-9 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center hover:bg-zinc-700 transition-colors"
           >
             <IconArrowLeft className="h-4 w-4 text-zinc-400" />
           </Link>
           <div>
             <h1 className="text-lg font-bold tracking-tight text-white">
-              {activeTab === "single" ? "Create Problem" : "Bulk Import Problems"}
+              {isEdit ? "Edit Problem" : (activeTab === "single" ? "Create Problem" : "Bulk Import Problems")}
             </h1>
             <p className="text-[10px] text-zinc-500 uppercase tracking-widest">LogicLab Admin Panel</p>
           </div>
@@ -499,9 +539,9 @@ export function AdminProblemCreatorClient() {
             className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 disabled:bg-zinc-800 disabled:text-zinc-600 text-black px-5 py-2 rounded-lg text-xs font-bold shadow-[0_0_16px_rgba(16,185,129,0.25)] hover:shadow-[0_0_22px_rgba(16,185,129,0.4)] disabled:shadow-none transition-all cursor-pointer"
           >
             {saving ? (
-              <><div className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin" /> Saving...</>
+              <><div className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin" /> {isEdit ? "Updating..." : "Saving..."}</>
             ) : (
-              <><IconDeviceFloppy className="h-4 w-4" /> Save Problem</>
+              <><IconDeviceFloppy className="h-4 w-4" /> {isEdit ? "Update Problem" : "Save Problem"}</>
             )}
           </button>
         ) : (
@@ -520,28 +560,30 @@ export function AdminProblemCreatorClient() {
       </div>
 
       {/* Tabs bar */}
-      <div className="flex border-b border-zinc-900 shrink-0">
-        <button
-          onClick={() => setActiveTab("single")}
-          className={`px-5 py-2.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
-            activeTab === "single"
-              ? "border-emerald-500 text-emerald-400 font-bold"
-              : "border-transparent text-zinc-500 hover:text-zinc-300"
-          }`}
-        >
-          Single Problem Creator
-        </button>
-        <button
-          onClick={() => setActiveTab("bulk")}
-          className={`px-5 py-2.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
-            activeTab === "bulk"
-              ? "border-emerald-500 text-emerald-400 font-bold"
-              : "border-transparent text-zinc-500 hover:text-zinc-300"
-          }`}
-        >
-          Bulk Import Problems (JSON/CSV)
-        </button>
-      </div>
+      {!isEdit && (
+        <div className="flex border-b border-zinc-900 shrink-0">
+          <button
+            onClick={() => setActiveTab("single")}
+            className={`px-5 py-2.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
+              activeTab === "single"
+                ? "border-emerald-500 text-emerald-400 font-bold"
+                : "border-transparent text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            Single Problem Creator
+          </button>
+          <button
+            onClick={() => setActiveTab("bulk")}
+            className={`px-5 py-2.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
+              activeTab === "bulk"
+                ? "border-emerald-500 text-emerald-400 font-bold"
+                : "border-transparent text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            Bulk Import Problems (JSON/CSV)
+          </button>
+        </div>
+      )}
 
       {/* Workspace */}
       {activeTab === "single" ? (
