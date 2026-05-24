@@ -12,12 +12,12 @@
 import { updateSession } from "@/lib/supabase/proxy";
 import { type NextRequest, NextResponse } from "next/server";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // 1. Skip middleware entirely for prefetches. 
   // Browsers often ignore Set-Cookie on prefetches, so we shouldn't waste 
   // CPU or Supabase Auth hits (invocations) on them.
-  const isPrefetch = request.headers.get("next-router-prefetch") || 
-                     request.headers.get("purpose") === "prefetch";
+  const isPrefetch = request.headers.get("next-router-prefetch") ||
+    request.headers.get("purpose") === "prefetch";
   if (isPrefetch) {
     return NextResponse.next();
   }
@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
 
   if (isMaintenanceMode) {
     const { pathname } = request.nextUrl;
-    
+
     // Don't intercept the maintenance page itself or static assets
     if (
       pathname !== '/maintenance' &&

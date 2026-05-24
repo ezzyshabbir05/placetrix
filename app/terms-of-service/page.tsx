@@ -1,390 +1,812 @@
-// app/terms-of-service/page.tsx
-// NO "use client" — this is a Server Component.
-// Interactive sidebar & mobile TOC are handled by <ToSScrollNav> (client component).
+"use client";
+
+import React from "react";
+import dynamic from "next/dynamic";
+import Image from "next/image";
+import Link from "next/link";
+import { useTheme } from "next-themes";
+import {
+  ArrowRightIcon,
+  GithubIcon,
+  InstagramIcon,
+  LinkedinIcon,
+  MenuIcon,
+  MoonIcon,
+  SunIcon,
+  XIcon,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { FullWidthDivider } from "@/components/ui/landing/full-width-divider";
-import { GridPattern } from "@/components/ui/landing/grid-pattern";
-import { Header } from "@/components/header";
-import { Footer } from "@/components/footer";
-import Link from "next/link";
-import { ScrollToTopButton } from "@/components/scroll-to-top";
+import PlaceTrixLogo from "@/assets/placetrix.svg";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cirka } from "@/app/fonts";
+import type { UserProfile } from "@/lib/supabase/profile";
+import { getUserProfileAction } from "@/lib/supabase/profile";
+import { buildStorageUrl } from "@/lib/storage";
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
+const Galaxy = dynamic(() => import("@/components/Galaxy"), {
+  ssr: false,
+  loading: () => (
+    <div className="absolute inset-0 bg-transparent" aria-hidden="true" />
+  ),
+});
 
-const EFFECTIVE_DATE = "July 18, 2025";
+const CONTENT = "mx-auto w-full max-w-6xl px-4 md:px-6";
+const SECTION_Y = "py-14 md:py-20";
 
-export const sectionsMeta = [
-  { id: "acceptance",    short: "Acceptance"           },
-  { id: "eligibility",   short: "Eligibility"          },
-  { id: "accounts",      short: "Accounts"             },
-  { id: "permitted-use", short: "Permitted Use"        },
-  { id: "prohibited",    short: "Prohibited Conduct"   },
-  { id: "content",       short: "User Content"         },
-  { id: "assessments",   short: "Assessments"          },
-  { id: "ip",            short: "Intellectual Property"},
-  { id: "third-party",   short: "Third-Party Services" },
-  { id: "disclaimers",   short: "Disclaimers"          },
-  { id: "liability",     short: "Liability"            },
-  { id: "termination",   short: "Termination"          },
-  { id: "governing-law", short: "Governing Law"        },
-  { id: "changes",       short: "Changes"              },
-  { id: "contact",       short: "Contact"              },
-];
+const NAV_SHELL =
+  "border border-black/10 bg-white/30 backdrop-blur-xl dark:border-white/10 dark:bg-black/30";
 
-// ─── Section content ──────────────────────────────────────────────────────────
+const NAV_BUTTON =
+  "border-black/10 bg-white/70 text-zinc-900 hover:bg-black/5 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10";
 
-function Acceptance() {
+const AVATAR_SHELL =
+  "size-8 shrink-0 border border-black/10 bg-white/70 dark:border-white/10 dark:bg-white/5";
+
+function useMounted() {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  return mounted;
+}
+
+function useScrolled(threshold = 10) {
+  const [scrolled, setScrolled] = React.useState(false);
+
+  React.useEffect(() => {
+    const onScroll = () => {
+      setScrolled(window.scrollY > threshold);
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [threshold]);
+
+  return scrolled;
+}
+
+function Logo() {
   return (
-    <p>
-      By accessing or using the PlaceTrix platform ("Service"), you agree to be bound by
-      these Terms of Service ("Terms") and our{" "}
-      <Link href="/privacy-policy">Privacy Policy</Link>, incorporated by reference. If
-      you do not agree, you may not use the Service. These Terms constitute a binding
-      agreement between you and PlaceTrix.
-    </p>
+    <div className="flex shrink-0 items-center justify-center">
+      <Image
+        src={PlaceTrixLogo}
+        alt="PlaceTrix"
+        width={24}
+        height={24}
+        className="size-6 dark:invert"
+        priority
+      />
+    </div>
   );
 }
 
-function Eligibility() {
+function ThemeToggle() {
+  const { setTheme, resolvedTheme } = useTheme();
+
+  const handleToggle = React.useCallback(() => {
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
+  }, [resolvedTheme, setTheme]);
+
+  return (
+    <Button
+      aria-label="Toggle theme"
+      onClick={handleToggle}
+      size="icon"
+      variant="outline"
+      className={cn("size-8 text-foreground [&_svg]:size-4.5", NAV_BUTTON)}
+    >
+      <SunIcon className="dark:hidden" />
+      <MoonIcon className="hidden dark:block" />
+      <span className="sr-only">Toggle theme</span>
+    </Button>
+  );
+}
+
+function UserAvatar({
+  user,
+  className,
+}: {
+  user: UserProfile;
+  className?: string;
+}) {
+  const initials = React.useMemo(() => {
+    return user.display_name
+      ? user.display_name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+      : user.email[0].toUpperCase();
+  }, [user.display_name, user.email]);
+
+  const avatarUrl = React.useMemo(() => {
+    return buildStorageUrl("avatars", user.avatar_path);
+  }, [user.avatar_path]);
+
+  return (
+    <Avatar className={cn(AVATAR_SHELL, className)}>
+      <AvatarImage
+        src={avatarUrl ?? undefined}
+        alt={user.display_name || user.email}
+        className="object-cover"
+      />
+      <AvatarFallback className="text-xs font-medium">
+        {initials}
+      </AvatarFallback>
+    </Avatar>
+  );
+}
+
+function AuthButtons({ size }: { size: "sm" | "default" }) {
   return (
     <>
-      <p>
-        The Service is available exclusively to students, faculty, Training & Placement
-        Officers (TPOs), and administrators of educational institutions ("Institutions")
-        that have a valid agreement with PlaceTrix.
-      </p>
-      <p>
-        You must be at least 13 years of age to use the Service. By using it, you confirm
-        that you meet these requirements and that your Institution has authorized your access.
-      </p>
+      <Button size={size} variant="outline" className={NAV_BUTTON} asChild>
+        <Link href="/auth/login">Sign In</Link>
+      </Button>
+      <Button size={size} asChild>
+        <Link href="/auth/sign-up">Get Started</Link>
+      </Button>
     </>
   );
 }
 
-function Accounts() {
+function MobileNav({
+  user,
+  isLoading,
+}: {
+  user: UserProfile | null;
+  isLoading?: boolean;
+}) {
+  const [open, setOpen] = React.useState(false);
+
+  const toggleMenu = React.useCallback(() => {
+    setOpen((prev) => !prev);
+  }, []);
+
+  const closeMenu = React.useCallback(() => {
+    setOpen(false);
+  }, []);
+
+  React.useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeMenu();
+    };
+
+    if (open) {
+      document.addEventListener("keydown", onKeyDown);
+      document.body.style.overflow = "hidden";
+    }
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [open, closeMenu]);
+
   return (
-    <>
-      <p>
-        Accounts are provisioned by your Institution. You are solely responsible for
-        maintaining the confidentiality of your credentials and all activity under your
-        account.
-      </p>
-      <ul>
-        <li>Notify your TPO or Administrator immediately of any unauthorized account use.</li>
-        <li>Do not share or transfer your account credentials to any other person.</li>
-        <li>PlaceTrix is not liable for losses arising from your failure to secure your credentials.</li>
-      </ul>
-    </>
-  );
-}
-
-function PermittedUse() {
-  return (
-    <>
-      <p>You may use the Service only for its intended purposes, including:</p>
-      <ul>
-        <li>Taking mock tests and assessments to prepare for placements.</li>
-        <li>Tracking your academic progress and placement readiness.</li>
-        <li>Applying for placement opportunities facilitated through the platform.</li>
-        <li>Attending and managing placement-related events.</li>
-        <li>Uploading and managing your resume and academic records.</li>
-      </ul>
-    </>
-  );
-}
-
-function Prohibited() {
-  return (
-    <>
-      <p>You agree <strong>not</strong> to:</p>
-      <ul>
-        <li>Use the Service for any unlawful purpose or in violation of applicable regulations.</li>
-        <li>Attempt unauthorized access to any part of the Service or its connected systems.</li>
-        <li>Reverse-engineer, decompile, or disassemble any software associated with the Service.</li>
-        <li>Upload viruses, malware, or any other malicious code.</li>
-        <li>Impersonate any person or entity, or misrepresent your institutional affiliation.</li>
-        <li>Share, publish, or distribute assessment questions, answers, or any proprietary platform content.</li>
-        <li>Interfere with or disrupt the integrity or performance of the Service or its infrastructure.</li>
-        <li>Use automated bots or scripts to access the Service without prior written consent.</li>
-      </ul>
-    </>
-  );
-}
-
-function Content() {
-  return (
-    <>
-      <p>
-        You retain ownership of content you submit (e.g., resumes, profile information).
-        By submitting content, you grant PlaceTrix a limited, non-exclusive, royalty-free
-        license to store, process, and display that content solely to provide the Service.
-      </p>
-      <p>
-        You represent that you have all necessary rights to the content you submit and that
-        it does not infringe any third-party rights or violate any applicable law.
-      </p>
-    </>
-  );
-}
-
-function Assessments() {
-  return (
-    <>
-      <p>By participating in any assessment, you agree to:</p>
-      <ul>
-        <li>Complete all assessments independently without unauthorized assistance.</li>
-        <li>Not share, reproduce, screenshot, or distribute any assessment content in any form.</li>
-        <li>Accept that your results may be shared with your Institution's TPO and Administrators.</li>
-      </ul>
-      <p>
-        Violation of academic integrity may result in immediate suspension or permanent
-        termination of your account, as determined by your Institution and PlaceTrix.
-      </p>
-    </>
-  );
-}
-
-function IntellectualProperty() {
-  return (
-    <p>
-      All content, features, and functionality of the Service — including text, graphics,
-      logos, question banks, UI design, and underlying software — are the exclusive property
-      of PlaceTrix and/or its licensors, protected by applicable intellectual property laws.
-      You may not reproduce, distribute, modify, or commercially exploit any part of the
-      Service without prior written consent from PlaceTrix.
-    </p>
-  );
-}
-
-function ThirdParty() {
-  return (
-    <p>
-      The Service relies on third-party providers including Google Cloud Platform and
-      Firebase, subject to their own terms and privacy policies. PlaceTrix is not
-      responsible for the practices, availability, or content of any third-party service.
-      Links within the platform are provided for convenience only and do not constitute
-      an endorsement.
-    </p>
-  );
-}
-
-function Disclaimers() {
-  return (
-    <>
-      <p>
-        The Service is provided on an "as is" and "as available" basis without warranties
-        of any kind, express or implied. PlaceTrix expressly disclaims all warranties,
-        including merchantability, fitness for a particular purpose, and non-infringement.
-      </p>
-      <p>
-        PlaceTrix does not warrant that the Service will be uninterrupted, error-free, or
-        free of harmful components. Placement outcomes are not guaranteed.
-      </p>
-    </>
-  );
-}
-
-function Liability() {
-  return (
-    <p>
-      To the maximum extent permitted by applicable law, PlaceTrix and its affiliates,
-      officers, employees, agents, and licensors shall not be liable for any indirect,
-      incidental, special, consequential, or punitive damages — including loss of data,
-      profits, or goodwill — arising from your use of or inability to use the Service,
-      even if advised of the possibility of such damages.
-    </p>
-  );
-}
-
-function Termination() {
-  return (
-    <p>
-      PlaceTrix or your Institution may suspend or terminate your access at any time, for
-      any reason, without prior notice or liability. Upon termination, your right to use
-      the Service immediately ceases. Sections on Intellectual Property, Disclaimers,
-      Limitation of Liability, and Governing Law survive termination.
-    </p>
-  );
-}
-
-function GoverningLaw() {
-  return (
-    <p>
-      These Terms are governed by the laws of India, without regard to conflict of law
-      principles. Any dispute shall be subject to the exclusive jurisdiction of the
-      competent courts in Nashik, Maharashtra, India. You agree to first attempt informal
-      resolution by contacting us before initiating formal proceedings.
-    </p>
-  );
-}
-
-function ChangesSection() {
-  return (
-    <p>
-      We reserve the right to modify these Terms at any time. Material changes will update
-      the "Effective Date" above and be notified via the app. Continued use after the
-      effective date constitutes your acceptance. If you do not agree to updated Terms,
-      you must stop using the Service.
-    </p>
-  );
-}
-
-function ContactSection() {
-  return (
-    <>
-      <p>
-        If you have questions about these Terms, first contact your Institution's TPO or
-        Administrator. For matters requiring direct communication with PlaceTrix:
-      </p>
-      <p>
-        <a href="mailto:business@360viewtech.in">
-          business@360viewtech.in
-        </a>
-      </p>
-    </>
-  );
-}
-
-const sectionContent: Record<string, React.ReactNode> = {
-  acceptance:      <Acceptance />,
-  eligibility:     <Eligibility />,
-  accounts:        <Accounts />,
-  "permitted-use": <PermittedUse />,
-  prohibited:      <Prohibited />,
-  content:         <Content />,
-  assessments:     <Assessments />,
-  ip:              <IntellectualProperty />,
-  "third-party":   <ThirdParty />,
-  disclaimers:     <Disclaimers />,
-  liability:       <Liability />,
-  termination:     <Termination />,
-  "governing-law": <GoverningLaw />,
-  changes:         <ChangesSection />,
-  contact:         <ContactSection />,
-};
-
-const sectionTitles: Record<string, string> = {
-  acceptance:      "Acceptance of Terms",
-  eligibility:     "Eligibility",
-  accounts:        "User Accounts",
-  "permitted-use": "Permitted Use",
-  prohibited:      "Prohibited Conduct",
-  content:         "User-Submitted Content",
-  assessments:     "Assessments & Academic Integrity",
-  ip:              "Intellectual Property",
-  "third-party":   "Third-Party Services",
-  disclaimers:     "Disclaimers",
-  liability:       "Limitation of Liability",
-  termination:     "Termination",
-  "governing-law": "Governing Law & Disputes",
-  changes:         "Changes to These Terms",
-  contact:         "Contact Us",
-};
-
-// ─── Section Block ────────────────────────────────────────────────────────────
-
-const proseClasses = cn(
-  "text-sm leading-[1.8] text-muted-foreground",
-  "[&_p]:mb-3 [&_p:last-child]:mb-0",
-  "[&_ul]:mb-3 [&_ul]:space-y-1.5 [&_ul]:pl-4",
-  "[&_li]:relative [&_li]:pl-3",
-  "[&_li]:before:absolute [&_li]:before:left-0 [&_li]:before:top-[0.6em]",
-  "[&_li]:before:size-1 [&_li]:before:rounded-full [&_li]:before:bg-border",
-  "[&_strong]:font-medium [&_strong]:text-foreground/80",
-  "[&_a]:text-foreground [&_a]:underline [&_a]:underline-offset-4",
-  "[&_a]:hover:text-foreground/70 [&_a]:transition-colors"
-);
-
-function SectionBlock({ id, index }: { id: string; index: number }) {
-  return (
-    <article id={id} className="relative scroll-mt-24 py-10 first:pt-0">
-      <div className="mb-6 flex items-center gap-3">
-        <span className="font-mono text-[11px] text-muted-foreground/50 shrink-0">
-          {String(index + 1).padStart(2, "0")}
-        </span>
-        <div className="h-px flex-1 bg-border" />
-      </div>
-      <h2 className="mb-4 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-        {sectionTitles[id]}
-      </h2>
-      <div className={proseClasses}>{sectionContent[id]}</div>
-    </article>
-  );
-}
-
-// ─── Page (Server Component) ──────────────────────────────────────────────────
-
-export default function TermsOfServicePage() {
-  return (
-    <div className="relative flex min-h-screen flex-col supports-[overflow:clip]:overflow-clip">
-      <Header />
-
-      <main
-        className={cn(
-          "relative mx-auto w-full max-w-4xl grow"
-        )}
+    <div className="relative md:hidden">
+      <Button
+        aria-controls="mobile-menu"
+        aria-expanded={open}
+        aria-label="Toggle menu"
+        className={cn(NAV_BUTTON)}
+        onClick={toggleMenu}
+        size="icon"
+        variant="outline"
       >
-        {/* ── Editorial Hero ─────────────────────────────────────── */}
-        <section className="relative overflow-hidden border-b px-4 pb-10 pt-14 sm:px-8 sm:pt-16 md:px-10">
-          <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 opacity-25">
-            <GridPattern className="size-full stroke-border" height={32} width={32} x={0} y={0} />
-          </div>
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_60%_60%_at_50%_0%,theme(--color-foreground/.07),transparent)]"
+        {open ? <XIcon className="size-4.5" /> : <MenuIcon className="size-4.5" />}
+      </Button>
+
+      {open && (
+        <>
+          <button
+            aria-label="Close menu"
+            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]"
+            onClick={closeMenu}
           />
 
-          <div className="fade-in slide-in-from-bottom-6 animate-in fill-mode-backwards delay-100 duration-500 ease-out flex items-center gap-2 mb-5">
-            <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground/60 border rounded-sm px-2 py-0.5">
-              Legal
-            </span>
-            <span className="text-muted-foreground/40 text-xs">·</span>
-            <span className="font-mono text-[10px] text-muted-foreground/60">
-              Effective {EFFECTIVE_DATE}
-            </span>
+          <div className="fixed inset-x-0 top-[calc(env(safe-area-inset-top)+4.25rem)] z-50 px-3">
+            <div className="mx-auto w-full max-w-sm">
+              <div
+                id="mobile-menu"
+                className={cn(
+                  "overflow-hidden rounded-2xl border p-3 shadow-xl",
+                  "border-black/10 bg-white/95 backdrop-blur-xl",
+                  "dark:border-white/10 dark:bg-neutral-950/95",
+                  "animate-in fade-in slide-in-from-top-2 zoom-in-95 duration-200"
+                )}
+              >
+                <div className="mb-3 flex items-center justify-between px-1">
+                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+                    Menu
+                  </span>
+                  <ThemeToggle />
+                </div>
+
+                {isLoading ? (
+                  <div className="mb-3 flex items-center gap-3 rounded-xl border border-black/10 bg-black/[0.03] p-3 dark:border-white/10 dark:bg-white/[0.04]">
+                    <div className="size-10 animate-pulse rounded-full bg-black/10 dark:bg-white/10" />
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="h-4 w-24 animate-pulse rounded bg-black/10 dark:bg-white/10" />
+                      <div className="h-3 w-32 animate-pulse rounded bg-black/10 dark:bg-white/10" />
+                    </div>
+                  </div>
+                ) : user ? (
+                  <Link
+                    href="/dashboard"
+                    onClick={closeMenu}
+                    className="mb-3 flex items-center gap-3 rounded-xl border border-black/10 bg-black/[0.03] p-3 dark:border-white/10 dark:bg-white/[0.04]"
+                  >
+                    <UserAvatar user={user} className="size-10" />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-zinc-900 dark:text-white">
+                        {user.display_name || "Your account"}
+                      </p>
+                      <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
+                        {user.email}
+                      </p>
+                    </div>
+                  </Link>
+                ) : (
+                  <div className="mb-3 grid grid-cols-2 gap-2">
+                    <Button variant="outline" className={cn("w-full", NAV_BUTTON)} asChild>
+                      <Link href="/auth/login" onClick={closeMenu}>
+                        Sign In
+                      </Link>
+                    </Button>
+                    <Button className="w-full" asChild>
+                      <Link href="/auth/sign-up" onClick={closeMenu}>
+                        Get Started
+                      </Link>
+                    </Button>
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <a
+                    href="/#features"
+                    onClick={closeMenu}
+                    className="flex h-11 items-center justify-between rounded-xl px-3 text-sm font-medium text-zinc-800 hover:bg-black/[0.04] dark:text-zinc-100 dark:hover:bg-white/[0.06]"
+                  >
+                    <span>Features</span>
+                    <ArrowRightIcon className="size-4 opacity-60" />
+                  </a>
+
+                  <a
+                    href="/our-team#team"
+                    onClick={closeMenu}
+                    className="flex h-11 items-center justify-between rounded-xl px-3 text-sm font-medium text-zinc-800 hover:bg-black/[0.04] dark:text-zinc-100 dark:hover:bg-white/[0.06]"
+                  >
+                    <span>Our Team</span>
+                    <ArrowRightIcon className="size-4 opacity-60" />
+                  </a>
+
+                  <Link
+                    href="/help-center"
+                    onClick={closeMenu}
+                    className="flex h-11 items-center justify-between rounded-xl px-3 text-sm font-medium text-zinc-800 hover:bg-black/[0.04] dark:text-zinc-100 dark:hover:bg-white/[0.06]"
+                  >
+                    <span>Help Center</span>
+                    <ArrowRightIcon className="size-4 opacity-60" />
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
+        </>
+      )}
+    </div>
+  );
+}
 
-          <h1 className="fade-in slide-in-from-bottom-6 animate-in fill-mode-backwards delay-200 duration-500 ease-out text-4xl font-semibold tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl max-w-2xl">
-            Terms of
-            <br />
-            <span className="text-muted-foreground/40">Service</span>
-          </h1>
+interface HeaderVisualProps {
+  user: UserProfile | null;
+  isLoading?: boolean;
+}
 
-          <p className="fade-in slide-in-from-bottom-6 animate-in fill-mode-backwards delay-300 duration-500 ease-out mt-5 max-w-lg text-sm text-muted-foreground leading-relaxed sm:text-base">
-            The rules and expectations for using PlaceTrix. By accessing the Service,
-            you agree to be bound by these Terms.
-          </p>
+function HeaderVisual({ user, isLoading }: HeaderVisualProps) {
+  const scrolled = useScrolled(10);
 
-          <div className="fade-in slide-in-from-bottom-6 animate-in fill-mode-backwards delay-400 duration-500 ease-out mt-8 flex flex-wrap gap-x-6 gap-y-2 border-t pt-5 text-[11px] font-mono text-muted-foreground/50">
-            <span>Last updated: {EFFECTIVE_DATE}</span>
-            <span className="hidden sm:inline">·</span>
-            <span>{sectionsMeta.length} sections</span>
-            <span className="hidden sm:inline">·</span>
-            <Link
-              href="/privacy-policy"
-              className="text-foreground/60 hover:text-foreground transition-colors underline underline-offset-2"
-            >
-              Privacy Policy →
+  return (
+    <header className="fixed inset-x-0 top-0 z-50 w-full px-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:px-4 md:pt-3">
+      <div
+        className={cn(
+          "mx-auto w-full transition-all duration-300 ease-out",
+          scrolled ? "max-w-5xl" : "max-w-6xl"
+        )}
+      >
+        <div
+          className={cn(
+            "w-full transition-all duration-300 ease-out",
+            scrolled
+              ? cn("rounded-full", NAV_SHELL, "md:rounded-full")
+              : "rounded-full border-none bg-transparent shadow-none backdrop-blur-none md:rounded-none md:border-none md:bg-transparent md:shadow-none md:backdrop-blur-none"
+          )}
+        >
+          <nav
+            className={cn(
+              "flex w-full items-center justify-between px-4 transition-[height,padding] duration-300 ease-out",
+              scrolled ? "h-14 md:h-12" : "h-14 md:h-14"
+            )}
+          >
+            <Link href="/" className="flex items-center gap-2 font-bold tracking-[0.05em]">
+              <Logo />
+              <span className="pl-1 text-lg font-bold tracking-wider text-zinc-950 dark:text-white">
+                PlaceTrix
+              </span>
             </Link>
-          </div>
-        </section>
 
-        {/* ── Body ──────────────────────────────────────────────── */}
-        <div className="px-4 sm:px-8 md:px-10 py-10">
-          <div className="divide-y divide-border/50">
-            {sectionsMeta.map((s, i) => (
-              <SectionBlock key={s.id} id={s.id} index={i} />
+            <div className="hidden items-center gap-2 md:flex">
+              <ThemeToggle />
+              {isLoading ? (
+                <div className="size-8 animate-pulse rounded-full bg-black/10 dark:bg-white/10" />
+              ) : user ? (
+                <UserAvatar user={user} />
+              ) : (
+                <AuthButtons size="sm" />
+              )}
+            </div>
+
+            <MobileNav user={user} isLoading={isLoading} />
+          </nav>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function HeaderShell({
+  initialUser = null,
+}: {
+  initialUser?: UserProfile | null;
+}) {
+  const [user, setUser] = React.useState<UserProfile | null>(initialUser);
+  const [isFetching, setIsFetching] = React.useState(false);
+  const mounted = useMounted();
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    if (initialUser) {
+      setUser(initialUser);
+      return;
+    }
+
+    const hasAuthCookie =
+      typeof document !== "undefined" &&
+      (document.cookie.includes("auth-token") || document.cookie.includes("sb-"));
+
+    if (!hasAuthCookie) return;
+
+    setIsFetching(true);
+    getUserProfileAction()
+      .then((data) => {
+        if (!cancelled && data) setUser(data);
+      })
+      .catch(() => { })
+      .finally(() => {
+        if (!cancelled) setIsFetching(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialUser]);
+
+  const isLoading = !mounted || isFetching;
+
+  return <HeaderVisual user={user} isLoading={isLoading} />;
+}
+
+type TermsContentSection = {
+  id: string;
+  title: string;
+  paragraphs: string[];
+};
+
+const TERMS_SECTIONS: TermsContentSection[] = [
+  {
+    id: "acceptance-of-terms",
+    title: "Acceptance of Terms",
+    paragraphs: [
+      "By accessing or using PlaceTrix, you agree to these Terms and Conditions. If that sounds fair, great. If not, the platform should not be used until you are comfortable with the terms.",
+      "These terms apply to visitors, registered users, students, institutions, and anyone else using PlaceTrix services through the website or related offerings.",
+    ],
+  },
+  {
+    id: "eligibility-and-account",
+    title: "Eligibility & Accounts",
+    paragraphs: [
+      "You are responsible for making sure the information you provide during registration is accurate and up to date. Please do not impersonate someone else, create misleading accounts, or unleash chaos for sport.",
+      "You are also responsible for maintaining the confidentiality of your account credentials and for activity that happens under your account unless caused by our own failure to protect it.",
+    ],
+  },
+  {
+    id: "platform-use",
+    title: "Use of the Platform",
+    paragraphs: [
+      "PlaceTrix is provided to support learning, preparation, assessments, and related academic or placement workflows. You agree to use the platform in a lawful, respectful, and reasonable manner.",
+      "You must not misuse the service by attempting unauthorised access, scraping restricted data, introducing malicious code, reverse engineering protected systems, disrupting other users, or using the platform in ways that break applicable law.",
+      "In short: use the platform like a responsible human, not like a stress test with Wi-Fi.",
+    ],
+  },
+  {
+    id: "content-and-submissions",
+    title: "Content & Submissions",
+    paragraphs: [
+      "If you upload, submit, or share content through PlaceTrix, you remain responsible for that content and must have the necessary rights to provide it.",
+      "You must not submit content that is unlawful, harmful, defamatory, abusive, infringing, misleading, or otherwise inappropriate for an educational platform.",
+      "We may remove or restrict content that violates these terms or creates risk for users, institutions, or the platform.",
+    ],
+  },
+  {
+    id: "intellectual-property",
+    title: "Intellectual Property",
+    paragraphs: [
+      "PlaceTrix, including its branding, design, software, workflows, text, graphics, and platform content, is owned by 360 View Tech or its licensors unless stated otherwise.",
+      "You may not copy, modify, distribute, reproduce, resell, or exploit platform materials except as permitted by law or with prior written permission.",
+      "Translation: you can use the platform, but you do not get to walk off with the furniture.",
+    ],
+  },
+  {
+    id: "availability-and-changes",
+    title: "Availability & Changes",
+    paragraphs: [
+      "We work hard to keep PlaceTrix available, reliable, and useful, but we do not guarantee uninterrupted access at all times. Maintenance, updates, bugs, outages, and internet-related gremlins can happen.",
+      "We may modify, suspend, improve, or discontinue parts of the platform from time to time, with or without notice where appropriate.",
+    ],
+  },
+  {
+    id: "payments-and-plans",
+    title: "Payments & Plans",
+    paragraphs: [
+      "If PlaceTrix offers paid plans, premium features, subscriptions, or institution-based billing, the applicable pricing and billing terms will be presented at the point of purchase or agreement.",
+      "You agree to pay any valid charges associated with the services you select. Unless stated otherwise, fees are non-refundable except where required by law or expressly promised by us.",
+    ],
+  },
+  {
+    id: "privacy",
+    title: "Privacy",
+    paragraphs: [
+      "Your use of PlaceTrix is also subject to our Privacy Policy, which explains how we collect, use, and protect personal information.",
+      "If there is ever a question about data handling, the Privacy Policy and these Terms should be read together like two slightly more organised roommates.",
+    ],
+  },
+  {
+    id: "disclaimers",
+    title: "Disclaimers",
+    paragraphs: [
+      "PlaceTrix is provided on an 'as is' and 'as available' basis to the extent permitted by applicable law. We do not guarantee that the platform will always be error-free, uninterrupted, or perfectly suited to every user's exact expectations.",
+      "We provide learning tools, preparation features, and platform functionality, but we do not guarantee exam outcomes, placement outcomes, grades, admissions, or career results. We help with preparation; we do not control the universe.",
+    ],
+  },
+  {
+    id: "limitation-of-liability",
+    title: "Limitation of Liability",
+    paragraphs: [
+      "To the maximum extent permitted by law, 360 View Tech and its affiliates, team members, partners, and service providers will not be liable for indirect, incidental, special, consequential, or punitive damages arising from your use of, or inability to use, PlaceTrix.",
+      "This includes, where applicable, loss of data, loss of opportunity, loss of revenue, interruption of service, or other commercial or personal impacts not directly caused by wilful misconduct or legal obligations that cannot be excluded.",
+    ],
+  },
+  {
+    id: "termination",
+    title: "Suspension & Termination",
+    paragraphs: [
+      "We may suspend, restrict, or terminate access to PlaceTrix if we reasonably believe a user has violated these terms, created security risks, misused the platform, or acted in a way that harms users or the service.",
+      "You may stop using the platform at any time. Certain provisions, including intellectual property, disclaimers, limitation of liability, and other clauses that logically survive, will continue to apply after termination.",
+    ],
+  },
+  {
+    id: "governing-law",
+    title: "Governing Law",
+    paragraphs: [
+      "These Terms and Conditions are governed by the applicable laws of India, unless a different legal framework is required by a specific agreement or mandatory law.",
+      "Any disputes related to these terms will be subject to the jurisdiction of the appropriate courts, unless otherwise required by law.",
+    ],
+  },
+  {
+    id: "contact-us",
+    title: "Contact Us",
+    paragraphs: [
+      "If you have questions about these Terms and Conditions, account use, platform rules, or anything else that sounds legal enough to deserve a proper answer, contact us at 360viewtech@gmail.com.",
+    ],
+  },
+];
+
+function renderParagraph(paragraph: string) {
+  if (!paragraph.includes("360viewtech@gmail.com")) return paragraph;
+
+  const parts = paragraph.split("360viewtech@gmail.com");
+
+  return (
+    <>
+      {parts[0]}
+      <a
+        href="mailto:360viewtech@gmail.com"
+        className="font-medium text-zinc-900 underline underline-offset-2 dark:text-white"
+      >
+        360viewtech@gmail.com
+      </a>
+      {parts[1]}
+    </>
+  );
+}
+
+function TermsHeroSection() {
+  return (
+    <section
+      className={cn(
+        "scroll-mt-24 bg-white text-zinc-950 dark:bg-black dark:text-white md:scroll-mt-20",
+        "pt-24 md:pt-28"
+      )}
+    >
+      <div className={CONTENT}>
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="mb-2 text-xs font-medium uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+            Terms & Conditions
+          </p>
+          <h1
+            className={cn(
+              cirka.className,
+              "text-balance text-3xl font-semibold tracking-tight md:text-5xl"
+            )}
+          >
+            A few ground rules, minus the dramatic legal fog.
+          </h1>
+          <p className="mt-3 text-sm leading-7 text-stone-600 dark:text-stone-300 md:text-base md:leading-8">
+            These terms explain how PlaceTrix can be used, what we expect from
+            users, and what responsibilities sit with both sides. We kept it as
+            clear as possible because nobody enjoys decoding legal wallpaper.
+          </p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+            <span className="rounded-full border border-black/10 bg-black/[0.03] px-3 py-1.5 text-xs text-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-400">
+              Effective: May 24, 2026
+            </span>
+            <span className="rounded-full border border-black/10 bg-black/[0.03] px-3 py-1.5 text-xs text-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-400">
+              PlaceTrix
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TermsBodySection() {
+  return (
+    <section
+      className={cn(
+        "bg-white text-zinc-950 dark:bg-black dark:text-white",
+        SECTION_Y
+      )}
+    >
+      <div className={CONTENT}>
+        <article className="rounded-3xl border border-black/10 bg-white/95 p-6 backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.03] md:p-8 lg:p-10">
+          <div className="mb-8 flex flex-wrap gap-2">
+            {TERMS_SECTIONS.map((section) => (
+              <a
+                key={section.id}
+                href={`#${section.id}`}
+                className="rounded-full border border-black/10 bg-black/[0.03] px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:bg-black/[0.06] dark:border-white/10 dark:bg-white/[0.05] dark:text-zinc-300 dark:hover:bg-white/[0.09]"
+              >
+                {section.title}
+              </a>
             ))}
+          </div>
+
+          <div className="space-y-10">
+            {TERMS_SECTIONS.map((section, index) => (
+              <React.Fragment key={section.id}>
+                {index !== 0 && (
+                  <div className="h-px w-full bg-black/[0.06] dark:bg-white/[0.07]" />
+                )}
+                <div id={section.id} className="scroll-mt-28">
+                  <h2
+                    className={cn(
+                      cirka.className,
+                      "text-balance text-2xl font-semibold tracking-tight md:text-3xl"
+                    )}
+                  >
+                    {section.title}
+                  </h2>
+                  <div className="mt-4 space-y-3 text-sm leading-7 text-stone-600 dark:text-stone-300 md:text-base md:leading-8">
+                    {section.paragraphs.map((paragraph, i) => (
+                      <p key={`${section.id}-${i}`}>{renderParagraph(paragraph)}</p>
+                    ))}
+                  </div>
+                </div>
+              </React.Fragment>
+            ))}
+          </div>
+        </article>
+      </div>
+    </section>
+  );
+}
+
+function CTASection() {
+  const { resolvedTheme } = useTheme();
+  const mounted = useMounted();
+  const showGalaxy = mounted && resolvedTheme === "dark";
+
+  return (
+    <section className="w-full bg-white pb-14 text-zinc-950 dark:bg-black dark:text-white md:pb-20">
+      <div className={CONTENT}>
+        <div className="relative overflow-hidden rounded-2xl border border-zinc-300/80 px-6 py-12 text-center dark:border-white/10 dark:bg-white/[0.02] md:px-10 md:py-14">
+          {showGalaxy && (
+            <div className="absolute inset-0 z-0 hidden opacity-40 dark:opacity-70 lg:block">
+              <Galaxy
+                density={0.7}
+                glowIntensity={0.2}
+                saturation={0}
+                hueShift={140}
+                mouseInteraction={false}
+                twinkleIntensity={0}
+                rotationSpeed={0.02}
+                autoCenterRepulsion={0}
+                starSpeed={0.2}
+                speed={0.5}
+              />
+            </div>
+          )}
+
+          <div className="pointer-events-none absolute inset-0 z-10 bg-white/70 dark:bg-black/45" />
+
+          <div className="relative z-20 mx-auto max-w-2xl">
+            <p className="mb-2 text-xs font-medium uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+              Need help?
+            </p>
+            <h2
+              className={cn(
+                cirka.className,
+                "text-balance text-3xl font-semibold tracking-tight md:text-5xl"
+              )}
+            >
+              Questions about the rules?
+            </h2>
+            <p className="mx-auto mt-3 text-sm leading-7 text-stone-600 dark:text-stone-300 md:text-base md:leading-8">
+              Reach out for clarification on accounts, platform use, terms, or
+              anything else covered here. We will keep it clear, helpful, and
+              easy to understand.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <Button size="lg" className="rounded-full font-medium" asChild>
+                <a href="mailto:360viewtech@gmail.com">Email Us</a>
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className={cn("rounded-full", NAV_BUTTON)}
+                asChild
+              >
+                <Link href="/help-center">Help Center</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const company = [
+  { title: "Our Team", href: "/our-team" },
+  { title: "Privacy Policy", href: "/privacy-policy" },
+  { title: "Terms of Service", href: "/terms-of-service" },
+];
+
+const resources = [
+  { title: "Pricing", href: "/pricing" },
+  { title: "Help Center", href: "/help-center" }
+];
+
+const socialLinks = [
+  {
+    icon: <LinkedinIcon />,
+    link: "https://www.linkedin.com/company/360-view-tech/",
+  },
+  {
+    icon: <InstagramIcon />,
+    link: "https://www.instagram.com/360viewtech/",
+  },
+  {
+    icon: <GithubIcon />,
+    link: "https://github.com/360viewtech",
+  },
+];
+
+function Footer() {
+  return (
+    <footer className="relative">
+      <div className="mx-auto max-w-6xl">
+        <div className="grid max-w-6xl grid-cols-6 gap-6 p-4">
+          <div className="col-span-6 flex flex-col gap-4 pt-5 md:col-span-4">
+            <Link className="font-bold text-zinc-950 dark:text-white" href="/">
+              PlaceTrix
+            </Link>
+            <p className="max-w-sm text-balance text-sm text-zinc-500 dark:text-zinc-400">
+              Train. Track. Triumph.
+            </p>
+            <div className="flex gap-2">
+              {socialLinks.map((item, index) => (
+                <Button
+                  asChild
+                  key={`social-${item.link}-${index}`}
+                  size="icon-sm"
+                  variant="outline"
+                >
+                  <a href={item.link} target="_blank" rel="noopener noreferrer">
+                    {item.icon}
+                  </a>
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div className="col-span-3 w-full md:col-span-1">
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">Resources</span>
+            <div className="mt-2 flex flex-col gap-2">
+              {resources.map(({ href, title }) => (
+                <a
+                  className="w-max text-sm text-zinc-700 hover:underline dark:text-zinc-300"
+                  href={href}
+                  key={title}
+                >
+                  {title}
+                </a>
+              ))}
+            </div>
+          </div>
+
+          <div className="col-span-3 w-full md:col-span-1">
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">Company</span>
+            <div className="mt-2 flex flex-col gap-2">
+              {company.map(({ href, title }) => (
+                <a
+                  className="w-max text-sm text-zinc-700 hover:underline dark:text-zinc-300"
+                  href={href}
+                  key={title}
+                >
+                  {title}
+                </a>
+              ))}
+            </div>
           </div>
         </div>
 
+        <div className="absolute inset-x-0 h-px w-full bg-border" />
+        <div className="flex flex-col justify-between gap-2 py-4">
+          <p className="text-center text-sm font-light text-zinc-500 dark:text-zinc-400">
+            &copy; {new Date().getFullYear()}, 360 View Tech. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+}
 
-        <Footer />
+export default function TermsAndConditionsPage() {
+  return (
+    <div
+      suppressHydrationWarning
+      className="relative flex min-h-screen flex-col overflow-hidden bg-white text-zinc-950 supports-[overflow:clip]:overflow-clip dark:bg-black dark:text-white"
+    >
+      <HeaderShell />
+      <main className="flex flex-col">
+        <TermsHeroSection />
+        <TermsBodySection />
+        <CTASection />
       </main>
-
-      <ScrollToTopButton />
+      <Footer />
     </div>
   );
 }

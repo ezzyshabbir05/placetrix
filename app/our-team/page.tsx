@@ -428,31 +428,35 @@ type TeamMember = {
 const TEAM: TeamMember[] = [
 	{
 		name: "Shabbir Ezzy",
-		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/Shabbir.png",
+		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/ShabbirE.png",
 		role: "Lead Developer",
-		email: "hello@placetrix.com",
-		linkedin: "https://www.linkedin.com/company/360-view-tech/",
-		github: "https://github.com/360viewtech",
+		email: "ezzyshabbir05@gmail.com",
+		linkedin: "https://www.linkedin.com/in/ezzyshabbir05",
+		github: "https://github.com/ezzyshabbir05",
 	},
 	{
 		name: "Sidra Chaudhari",
 		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/SidraC.png",
 		role: "UI-UX Developer",
-		email: "team@placetrix.com",
-		linkedin: "https://www.linkedin.com/company/360-view-tech/",
+		email: "sidrasc05@gmail.com",
+		linkedin: "https://www.linkedin.com/in/sidra-chaudhari",
+		github: "https://github.com/sidrachaudhari",
 	},
 	{
 		name: "Pushkar Gaikwad",
 		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/Pushkar.png",
 		role: "Software Engineer",
-		email: "support@placetrix.com",
+		email: "pushkargaikwad25@gmail.com",
+		linkedin: "https://www.linkedin.com/in/pushkar2510/",
+		github: "https://github.com/pushkar2510",
 	},
 	{
 		name: "Vishal Raut",
-		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/Vishal.png",
+		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/VishalR.png",
 		role: "LogicLab Developer",
-		email: "product@placetrix.com",
-		linkedin: "https://www.linkedin.com/company/360-view-tech/",
+		email: "vishalraut.contact@gmail.com",
+		linkedin: "https://www.linkedin.com/in/vishalraut2106",
+		github: "https://github.com/vishalraut2106",
 	},
 ];
 
@@ -712,9 +716,8 @@ const company = [
 ];
 
 const resources = [
-	{ title: "Pricing", href: "#" },
+	{ title: "Pricing", href: "/pricing" },
 	{ title: "Help Center", href: "/help-center" },
-	{ title: "FAQs", href: "#" },
 ];
 
 const socialLinks = [

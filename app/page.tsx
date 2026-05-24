@@ -131,11 +131,11 @@ function UserAvatar({
   const initials = React.useMemo(() => {
     return user.display_name
       ? user.display_name
-          .split(" ")
-          .map((n) => n[0])
-          .join("")
-          .toUpperCase()
-          .slice(0, 2)
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
       : user.email[0].toUpperCase();
   }, [user.display_name, user.email]);
 
@@ -411,7 +411,7 @@ function HeaderShell({
       .then((data) => {
         if (!cancelled && data) setUser(data);
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => {
         if (!cancelled) setIsFetching(false);
       });
@@ -619,9 +619,6 @@ function FeatureCard({
       <article className="h-full rounded-3xl bg-white/95 p-6 backdrop-blur-sm transition-all duration-300 dark:bg-white/[0.03] md:p-7">
         <div className="flex h-full flex-col">
           <div className="mb-5 flex items-center justify-between">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-500">
-              Feature
-            </span>
             <div className="h-px w-12 bg-black/10 dark:bg-white/10" />
           </div>
 
@@ -749,13 +746,6 @@ function TestimonialCard({
     >
       <figure className="h-full rounded-3xl bg-white/95 p-6 backdrop-blur-sm transition-all duration-300 dark:bg-white/[0.03] md:p-7">
         <div className="flex h-full flex-col">
-          <div className="mb-5 flex items-center justify-between">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-400 dark:text-zinc-500">
-              Success Story
-            </span>
-            <div className="h-px w-12 bg-black/10 dark:bg-white/10" />
-          </div>
-
           <blockquote className="flex-1">
             <p className="max-w-[48ch] text-[15px] leading-7 font-medium tracking-[-0.01em] text-stone-700 dark:text-stone-300 md:text-base">
               {quote}
@@ -910,15 +900,11 @@ const company = [
 const resources = [
   {
     title: "Pricing",
-    href: "#",
+    href: "/pricing",
   },
   {
     title: "Help Center",
     href: "/help-center",
-  },
-  {
-    title: "FAQs",
-    href: "#",
   },
 ];
 

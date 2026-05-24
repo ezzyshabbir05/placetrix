@@ -97,16 +97,12 @@ const company = [
 const resources = [
   {
     title: "Pricing",
-    href: "#",
+    href: "/pricing",
   },
   {
     title: "Help Center",
     href: "/help-center",
-  },
-  {
-    title: "FAQs",
-    href: "#",
-  },
+  }
 ];
 
 const socialLinks = [
