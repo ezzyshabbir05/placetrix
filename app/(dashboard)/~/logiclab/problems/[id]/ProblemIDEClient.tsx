@@ -225,21 +225,20 @@ export function ProblemIDEClient({
   const { resolvedTheme } = useTheme()
   const monacoTheme = resolvedTheme === "light" ? "vs" : "vs-dark"
 
-  // Safely parse boilerplates if it is returned as a double-serialized string
-  let parsedBoilerplates: any = problem.boilerplates || {}
-  if (typeof parsedBoilerplates === "string") {
-    try {
-      parsedBoilerplates = JSON.parse(parsedBoilerplates)
-    } catch (e) {
-      console.error("Failed to parse problem.boilerplates:", e)
-      parsedBoilerplates = {}
+  const parsedBoilerplates = React.useMemo(() => {
+    let parsed: any = problem.boilerplates || {}
+    if (typeof parsed === "string") {
+      try {
+        parsed = JSON.parse(parsed)
+      } catch (e) {
+        parsed = {}
+      }
     }
-  }
+    return parsed
+  }, [problem.boilerplates])
 
   const [selectedLang, setSelectedLang] = useState(LANGUAGES[0])
-  const [code, setCode] = useState(
-    parsedBoilerplates[String(LANGUAGES[0].id)] || "# Write your solution here\n"
-  )
+  const [code, setCode] = useState("")
   const [activeTab, setActiveTab] = useState<"description" | "submissions" | "submission_result">("description")
   const [activeOutputTab, setActiveOutputTab] = useState<"testcases" | "result">("testcases")
   const [running, setRunning] = useState(false)
@@ -260,6 +259,23 @@ export function ProblemIDEClient({
     setCustomInputs(sampleTestCases.map((tc) => tc.input))
     setActiveTestcaseIndex(0)
   }, [sampleTestCases])
+
+  // Load code from local storage or fallback to boilerplate
+  React.useEffect(() => {
+    const savedCode = localStorage.getItem(`logiclab_problem_${problem.id}_code_${selectedLang.value}`)
+    if (savedCode) {
+      setCode(savedCode)
+    } else {
+      setCode(parsedBoilerplates[String(selectedLang.id)] || `// Write your ${selectedLang.name} solution here\n`)
+    }
+  }, [problem.id, selectedLang.id, selectedLang.name, selectedLang.value, parsedBoilerplates])
+
+  // Save code to local storage
+  React.useEffect(() => {
+    if (code) {
+      localStorage.setItem(`logiclab_problem_${problem.id}_code_${selectedLang.value}`, code)
+    }
+  }, [code, problem.id, selectedLang.value])
 
   // Console resizing state removed (replaced by react-resizable-panels)
 
@@ -386,7 +402,7 @@ export function ProblemIDEClient({
     const lang = LANGUAGES.find((l) => l.value === langVal)
     if (lang) {
       setSelectedLang(lang)
-      setCode(parsedBoilerplates[String(lang.id)] || `// Write your ${lang.name} solution here\n`)
+      // useEffect handles restoring or boilerplating code when selectedLang changes
     }
   }
 

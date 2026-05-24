@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import Editor from "@monaco-editor/react"
 import { useTheme } from "next-themes"
 import {
@@ -84,7 +84,7 @@ export default function PlaygroundPage() {
   const monacoTheme = resolvedTheme === "light" ? "vs" : "vs-dark"
 
   const [selectedLang, setSelectedLang] = useState(LANGUAGES[0])
-  const [code, setCode] = useState(CODE_TEMPLATES.python)
+  const [code, setCode] = useState("") // Will initialize in useEffect or fallback to template
   const [stdin, setStdin] = useState("Hello from PlaceTrix!")
   const [running, setRunning] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -99,12 +99,28 @@ export default function PlaygroundPage() {
     memory?: string
     error?: string
   } | null>(null)
+  
+  // Load initially or when lang changes
+  useEffect(() => {
+    const savedCode = localStorage.getItem(`logiclab_playground_code_${selectedLang.value}`)
+    if (savedCode) {
+      setCode(savedCode)
+    } else {
+      setCode(CODE_TEMPLATES[selectedLang.value])
+    }
+  }, [selectedLang.value])
+
+  // Save to local storage on code change
+  useEffect(() => {
+    if (code) {
+      localStorage.setItem(`logiclab_playground_code_${selectedLang.value}`, code)
+    }
+  }, [code, selectedLang.value])
 
   const handleLangChange = (langVal: string) => {
     const lang = LANGUAGES.find((l) => l.value === langVal)
     if (lang) {
       setSelectedLang(lang)
-      setCode(CODE_TEMPLATES[lang.value])
     }
   }
 
@@ -207,11 +223,20 @@ export default function PlaygroundPage() {
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-0">
         {/* Monaco Editor */}
         <div className="lg:col-span-7 flex flex-col bg-card border border-zinc-200 dark:border-border rounded-xl overflow-hidden min-h-[300px]">
-          <div className="flex items-center gap-2 bg-muted/40 dark:bg-card px-4 py-2.5 border-b border-zinc-200 dark:border-border shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              Editor — {selectedLang.name} (.{selectedLang.extension})
-            </span>
+          <div className="flex items-center justify-between bg-muted/40 dark:bg-card px-4 py-2.5 border-b border-zinc-200 dark:border-border shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                Editor — {selectedLang.name} (.{selectedLang.extension})
+              </span>
+            </div>
+            <button 
+              onClick={() => { navigator.clipboard.writeText(code); toast.success("Code copied!"); }} 
+              className="p-1 hover:bg-muted rounded transition-all cursor-pointer text-muted-foreground/80 hover:text-foreground"
+              title="Copy Code"
+            >
+              <IconCopy className="h-3.5 w-3.5" />
+            </button>
           </div>
           <div className="flex-1 min-h-0 pt-2">
             <Editor
