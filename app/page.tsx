@@ -576,7 +576,7 @@ const features: Feature[] = [
     title: "Precision Practice",
     icon: ClipboardCheck,
     description:
-      "Access thousands of industry-standard mock tests designed to mimic real-world aptitude and technical rounds.",
+      "Access mock tests designed to mimic real-world aptitude and technical rounds.",
   },
   {
     title: "Real-time Drive Updates",
@@ -588,7 +588,7 @@ const features: Feature[] = [
     title: "Career Gateway",
     icon: Briefcase,
     description:
-      "Discover off-campus opportunities and job openings curated specifically for freshers and graduating students.",
+      "Discover opportunities and job openings curated specifically for freshers and graduating students.",
   },
   {
     title: "Progress Insights",
@@ -616,12 +616,8 @@ function FeatureCard({
       fillOpacity={glowEnabled ? 0.08 : 0}
       coneSpread={glowEnabled ? 14 : 0}
     >
-      <article className="h-full rounded-3xl bg-white/95 p-6 backdrop-blur-sm transition-all duration-300 dark:bg-white/[0.03] md:p-7">
+      <article className="h-full rounded-3xl bg-white/95 p-6 backdrop-blur-sm transition-all duration-300 dark:bg-white/[0.03]">
         <div className="flex h-full flex-col">
-          <div className="mb-5 flex items-center justify-between">
-            <div className="h-px w-12 bg-black/10 dark:bg-white/10" />
-          </div>
-
           <div className="flex-1">
             <h3 className="text-[15px] font-semibold tracking-[-0.01em] text-zinc-900 dark:text-white md:text-base">
               {feature.title}
