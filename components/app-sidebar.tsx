@@ -65,7 +65,7 @@ const NAV_MAIN: Record<AccountType, NavItem[]> = {
     { title: "My Applications", url: "/~/applications", icon: IconClipboardList },
     { title: "Tests", url: "/~/tests", icon: IconChartBar },
     { title: "Events", url: "/~/events", icon: IconCalendarEvent },
-    { title: "Logic Lab", url: "/~/logiclab", icon: IconCode, badge: "New" },
+    { title: "Logic Lab", url: "/~/logiclab", icon: IconCode, badge: "Beta" },
     {
       title: "Tools",
       url: "#",
@@ -81,7 +81,7 @@ const NAV_MAIN: Record<AccountType, NavItem[]> = {
     { title: "Students", url: "/~/students", icon: IconSchool },
     { title: "Drives", url: "/~/drives", icon: IconFolder },
     { title: "Tests", url: "/~/tests", icon: IconChartBar },
-    { title: "LogicLab", url: "/~/logiclab", icon: IconCode, badge: "New" },
+    { title: "LogicLab", url: "/~/logiclab", icon: IconCode, badge: "Beta" },
     { title: "Reports", url: "/~/reports", icon: IconReport },
     { title: "Recruiters", url: "/~/recruiters", icon: IconBriefcase },
   ],
@@ -91,7 +91,7 @@ const NAV_MAIN: Record<AccountType, NavItem[]> = {
     { title: "Groups", url: "/~/groups", icon: IconUsersGroup },
     { title: "Drives", url: "/~/drives", icon: IconFolder },
     { title: "Tests", url: "/~/tests", icon: IconChartBar },
-    { title: "LogicLab", url: "/~/logiclab", icon: IconCode, badge: "New" },
+    { title: "LogicLab", url: "/~/logiclab", icon: IconCode, badge: "Beta" },
     { title: "Events", url: "/~/events", icon: IconCalendarEvent },
     { title: "Analytics", url: "/~/analytics", icon: IconFileAnalytics },
     { title: "Reports", url: "/~/reports", icon: IconReport },
@@ -102,7 +102,7 @@ const NAV_MAIN: Record<AccountType, NavItem[]> = {
     { title: "Candidates", url: "/~/candidates", icon: IconTargetArrow },
     { title: "Drives", url: "/~/drives", icon: IconFolder },
     { title: "Tests", url: "/~/tests", icon: IconChartBar },
-    { title: "LogicLab", url: "/~/logiclab", icon: IconCode, badge: "New" },
+    { title: "LogicLab", url: "/~/logiclab", icon: IconCode, badge: "Beta" },
     { title: "Reports", url: "/~/reports", icon: IconReport },
   ],
 }
@@ -383,7 +383,7 @@ export function NavMain({ items }: { items: NavItem[] }) {
                   </Link>
                 </SidebarMenuButton>
                 {item.badge && (
-                  <SidebarMenuBadge className="font-semibold text-[10px]">
+                  <SidebarMenuBadge className="rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary py-0.5">
                     {item.badge}
                   </SidebarMenuBadge>
                 )}

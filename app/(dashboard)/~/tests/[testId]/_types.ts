@@ -71,6 +71,7 @@ export interface CandidateTestDetail
   > {
   status: "draft" | "published" | "archived" | null
   institute_name: string | null
+  institute_logo_url: string | null
   /** Lightweight list — only marks needed for the pre-test totals display */
   questions: Pick<QuestionRow, "marks">[]
 }

@@ -45,7 +45,7 @@ async function fetchCandidateView(
         id, title, description, instructions, time_limit_seconds, 
         available_from, available_until, results_available, status, institute_id,
         shuffle_questions, shuffle_options,
-        institute:institute_profiles(institute_name),
+        institute:institute_profiles(institute_name, logo_path),
         questions (
           id, question_text, marks, explanation, order_index,
           options (id, option_text, is_correct, order_index),
@@ -74,6 +74,11 @@ async function fetchCandidateView(
     notFound()
   }
 
+  const logoPath = (raw.institute as any)?.logo_path ?? null
+  const instituteLogoUrl = logoPath
+    ? supabase.storage.from("avatars").getPublicUrl(logoPath).data.publicUrl
+    : null
+
   const test: CandidateTestDetail = {
     id: raw.id,
     title: raw.title,
@@ -86,6 +91,7 @@ async function fetchCandidateView(
     shuffle_questions: raw.shuffle_questions,
     shuffle_options: raw.shuffle_options,
     institute_name: (raw.institute as any)?.institute_name ?? null,
+    institute_logo_url: instituteLogoUrl,
     status: raw.status as any,
     questions: (raw.questions ?? []).map((q: any) => ({ marks: q.marks })),
   }

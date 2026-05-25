@@ -4,21 +4,34 @@ import React, { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
-  IconCode,
-  IconTerminal2,
-  IconPlus,
-  IconSearch,
-  IconCircleCheck,
-  IconCircleDot,
-  IconChevronRight,
-  IconEdit,
-  IconTrash,
-  IconAlertTriangle,
-  IconX,
-  IconFlame,
-} from "@tabler/icons-react"
+  Code2,
+  Terminal,
+  Plus,
+  Search,
+  CircleCheck,
+  CircleDot,
+  ChevronRight,
+  Pencil,
+  Trash2,
+  AlertTriangle,
+  X,
+  Flame,
+  BookOpen,
+} from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
+import { Input } from "@/components/ui/input"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { cn } from "@/lib/utils"
 
 interface Problem {
   id: string
@@ -49,9 +62,9 @@ interface ProblemsDirectoryProps {
 }
 
 const DIFFICULTY_COLORS: Record<string, string> = {
-  Easy: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 dark:bg-emerald-500/10 border-emerald-500/15 dark:border-emerald-500/20",
-  Medium: "text-amber-600 dark:text-amber-400 bg-amber-500/5 dark:bg-amber-500/10 border-amber-500/15 dark:border-amber-500/20",
-  Hard: "text-rose-600 dark:text-rose-400 bg-rose-500/5 dark:bg-rose-500/10 border-rose-500/15 dark:border-rose-500/20",
+  Easy: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300",
+  Medium: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300",
+  Hard: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300",
 }
 
 export function ProblemsDirectoryClient({
@@ -72,8 +85,6 @@ export function ProblemsDirectoryClient({
   const [deletingProblemId, setDeletingProblemId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-
-
   // Group cells into weeks (each week is an array of 7 cells)
   const weeks = useMemo(() => {
     const result: CalendarCell[][] = []
@@ -87,7 +98,7 @@ export function ProblemsDirectoryClient({
   const visibleMonths = useMemo(() => {
     const list: string[] = []
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    
+
     weeks.forEach((week) => {
       const monthCounts: Record<string, number> = {}
       week.forEach((cell) => {
@@ -98,7 +109,7 @@ export function ProblemsDirectoryClient({
           monthCounts[m] = (monthCounts[m] || 0) + 1
         }
       })
-      
+
       let maxMonth = ""
       let maxCount = 0
       Object.entries(monthCounts).forEach(([m, count]) => {
@@ -107,12 +118,12 @@ export function ProblemsDirectoryClient({
           maxMonth = m
         }
       })
-      
+
       if (!maxMonth) {
         list.push("")
         return
       }
-      
+
       const label = monthNames[parseInt(maxMonth) - 1] || ""
       if (list.length === 0 || list[list.length - 1] !== label) {
         list.push(label)
@@ -218,43 +229,54 @@ export function ProblemsDirectoryClient({
   }
 
   return (
-    <div className="flex flex-col gap-3.5 p-4 md:p-6 min-h-[calc(100svh-56px)] bg-background text-foreground">
-      {/* Admin CTA — only shown to admins, no branding header */}
-      {isAdmin && (
-        <div className="flex justify-end">
-          <Link
-            href="/~/logiclab/admin"
-            className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-background px-4 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer"
-          >
-            <IconPlus className="h-3.5 w-3.5 stroke-[2.5]" />
-            <span>Create Problem</span>
-          </Link>
+    <div className="flex flex-col gap-6 px-4 py-8 md:px-8">
+
+      {/* Page Header */}
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight">LogicLab</h1>
+          <p className="text-sm text-muted-foreground">
+            {counts.solved} of {counts.total} problem{counts.total !== 1 ? "s" : ""} solved
+          </p>
         </div>
-      )}
+
+        {/* Admin CTA */}
+        {isAdmin && (
+          <Button asChild size="sm" className="w-fit gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white">
+            <Link href="/~/logiclab/admin">
+              <Plus className="h-3.5 w-3.5" />
+              Create Problem
+            </Link>
+          </Button>
+        )}
+      </div>
 
       {/* ── Tag Filter Pills — LeetCode style: wrapped, collapsible ── */}
       {allTags.length > 0 && (
-        <div className="bg-card border border-border/80 rounded-xl p-3">
+        <Card className="border-border/70 bg-card p-3">
           <div
-            className={`flex flex-wrap gap-1.5 transition-all duration-300 overflow-hidden ${
-              tagsExpanded ? "" : "max-h-[72px]"
-            }`}
+            className={cn(
+              "flex flex-wrap gap-1.5 transition-all duration-300 overflow-hidden",
+              !tagsExpanded && "max-h-[72px]"
+            )}
           >
             {/* All Topics pill */}
             <button
               onClick={() => setTagFilter("All")}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-bold border transition-all cursor-pointer whitespace-nowrap group hover:scale-[1.02] active:scale-[0.98] duration-150 ${
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-bold border transition-all cursor-pointer whitespace-nowrap hover:scale-[1.02] active:scale-[0.98] duration-150",
                 tagFilter === "All"
-                  ? "bg-emerald-500 border-emerald-500 text-black shadow-lg shadow-emerald-500/10 font-bold"
-                  : "bg-muted/50 dark:bg-muted/30 border-zinc-200 dark:border-zinc-800/80 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 text-muted-foreground hover:text-foreground"
-              }`}
+                  ? "bg-emerald-500 border-emerald-500 text-black shadow-lg shadow-emerald-500/10"
+                  : "bg-muted/50 dark:bg-muted/30 border-border hover:bg-muted hover:text-foreground text-muted-foreground"
+              )}
             >
               All Topics
-              <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold leading-none transition-colors ${
+              <span className={cn(
+                "px-1.5 py-0.5 rounded text-[9px] font-extrabold leading-none transition-colors",
                 tagFilter === "All"
                   ? "bg-black/10 text-black"
-                  : "bg-zinc-200 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 group-hover:bg-zinc-300 dark:group-hover:bg-zinc-700"
-              }`}>
+                  : "bg-muted-foreground/20 text-muted-foreground"
+              )}>
                 {localProblems.length}
               </span>
             </button>
@@ -267,18 +289,20 @@ export function ProblemsDirectoryClient({
                 <button
                   key={tag}
                   onClick={() => setTagFilter(isActive ? "All" : tag)}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap group hover:scale-[1.02] active:scale-[0.98] duration-150 ${
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap hover:scale-[1.02] active:scale-[0.98] duration-150",
                     isActive
                       ? "bg-emerald-500/10 dark:bg-emerald-500/20 border-emerald-500/30 dark:border-emerald-500/50 text-emerald-600 dark:text-emerald-400 font-bold shadow-md shadow-emerald-500/5"
-                      : "bg-muted/50 dark:bg-muted/30 border-zinc-200 dark:border-zinc-800/80 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 text-muted-foreground hover:text-foreground"
-                  }`}
+                      : "bg-muted/50 dark:bg-muted/30 border-border hover:bg-muted hover:text-foreground text-muted-foreground"
+                  )}
                 >
                   {tag}
-                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold leading-none transition-colors ${
+                  <span className={cn(
+                    "px-1.5 py-0.5 rounded text-[9px] font-bold leading-none transition-colors",
                     isActive
                       ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-300"
-                      : "bg-zinc-200 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 group-hover:bg-zinc-300 dark:group-hover:bg-zinc-700"
-                  }`}>
+                      : "bg-muted-foreground/20 text-muted-foreground"
+                  )}>
                     {count}
                   </span>
                 </button>
@@ -291,7 +315,7 @@ export function ProblemsDirectoryClient({
             <div className="flex justify-end mt-2 pt-2 border-t border-border/60">
               <button
                 onClick={() => setTagsExpanded((prev) => !prev)}
-                className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground/70 hover:text-foreground/75 transition-colors cursor-pointer"
+                className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               >
                 {tagsExpanded ? (
                   <>
@@ -311,17 +335,17 @@ export function ProblemsDirectoryClient({
               </button>
             </div>
           )}
-        </div>
+        </Card>
       )}
 
       {/* ── Stats & Activity Grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
         {/* Streak Card */}
-        <div className="lg:col-span-3 bg-card border border-border rounded-xl p-3 flex flex-col justify-between">
+        <Card className="lg:col-span-3 border-border/70 bg-card p-3 flex flex-col justify-between">
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <div className="h-8.5 w-8.5 rounded-lg bg-background border border-input flex items-center justify-center shrink-0">
-                <IconFlame className="h-4.5 w-4.5 text-orange-500" />
+              <div className="h-8 w-8 rounded-lg bg-background border border-input flex items-center justify-center shrink-0">
+                <Flame className="h-4 w-4 text-orange-500" />
               </div>
               <div>
                 <span className="text-[9px] text-muted-foreground/70 uppercase tracking-widest font-bold block leading-none">Coding Streak</span>
@@ -340,14 +364,14 @@ export function ProblemsDirectoryClient({
             <span className="text-muted-foreground/70 font-bold uppercase tracking-wider">Longest Streak</span>
             <span className="text-orange-400 font-extrabold">{streakStats.maxStreak} {streakStats.maxStreak === 1 ? "day" : "days"}</span>
           </div>
-        </div>
+        </Card>
 
         {/* Consistency Grid */}
-        <div className="lg:col-span-5 bg-card border border-border rounded-xl p-3 flex flex-col justify-start gap-2.5">
+        <Card className="lg:col-span-5 border-border/70 bg-card p-3 flex flex-col justify-start gap-2.5">
           <div className="flex items-center justify-between pb-2 border-b border-border/40">
             <div className="flex flex-col gap-0.5">
               <div className="flex items-center gap-1.5">
-                <IconCode className="h-3.5 w-3.5 text-muted-foreground" />
+                <Code2 className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-xs font-bold text-foreground/90 tracking-tight uppercase">Coding Consistency</span>
               </div>
               <span className="text-[8px] text-muted-foreground/70 font-bold uppercase tracking-wider block ml-5 leading-none">Daily Contribution Grid</span>
@@ -387,23 +411,23 @@ export function ProblemsDirectoryClient({
                   <div key={wIdx} className="flex flex-col gap-[3px] shrink-0">
                     {week.map((cell, cIdx) => {
                       const formattedDate = formatDate(cell.date)
-                      
-                      let cellColor = ""
-                      if (cell.status === "solved") {
-                        cellColor = "bg-emerald-500/30 border border-emerald-500/50"
-                      } else if (cell.status === "attempted") {
-                        cellColor = "bg-amber-500/20 border border-amber-500/35"
-                      } else {
-                        cellColor = "bg-muted/40 border border-border/20 hover:border-border/80/40"
-                      }
+
+                      const cellColor = cell.status === "solved"
+                        ? "bg-emerald-500/30 border border-emerald-500/50"
+                        : cell.status === "attempted"
+                          ? "bg-amber-500/20 border border-amber-500/35"
+                          : "bg-muted/40 border border-border/20"
 
                       return (
                         <div key={cIdx} className="relative group">
                           <div
-                            className={`w-[11px] h-[11px] rounded-[2px] transition-all duration-200 hover:scale-125 hover:z-10 cursor-pointer ${cellColor}`}
+                            className={cn(
+                              "w-[11px] h-[11px] rounded-[2px] transition-all duration-200 hover:scale-125 hover:z-10 cursor-pointer",
+                              cellColor
+                            )}
                           />
                           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-50 bg-background border border-border text-[9px] text-foreground/75 px-2 py-0.5 rounded shadow-xl whitespace-nowrap pointer-events-none">
-                            <span className="font-bold text-white">{formattedDate}</span>
+                            <span className="font-bold text-foreground">{formattedDate}</span>
                             <span className="block text-muted-foreground text-[8px] mt-0.5">
                               {cell.count} {cell.count === 1 ? "submission" : "submissions"}
                               {cell.status === "solved" ? " (Solved)" : cell.status === "attempted" ? " (Attempted)" : ""}
@@ -429,10 +453,10 @@ export function ProblemsDirectoryClient({
               <span>More</span>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Difficulty Progress Card */}
-        <div className="lg:col-span-4 bg-card border border-border rounded-xl p-3 flex flex-col justify-between">
+        <Card className="lg:col-span-4 border-border/70 bg-card p-3 flex flex-col justify-between">
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center justify-between">
               <div>
@@ -495,76 +519,82 @@ export function ProblemsDirectoryClient({
             </div>
           </div>
 
-          <Link
-            href="/~/logiclab/playground"
-            className="mt-3 flex items-center justify-center gap-2 bg-background hover:bg-muted text-foreground/75 hover:text-white px-3.5 py-2.5 rounded-lg text-xs font-bold border border-border transition-all w-full text-center shrink-0 cursor-pointer"
-          >
-            <IconTerminal2 className="h-4 w-4 text-emerald-500" />
-            <span>Launch Code Playground</span>
-          </Link>
-        </div>
+          <Button asChild variant="outline" size="sm" className="mt-3 w-full gap-2">
+            <Link href="/~/logiclab/playground">
+              <Terminal className="h-4 w-4 text-emerald-500" />
+              Launch Code Playground
+            </Link>
+          </Button>
+        </Card>
       </div>
 
       {/* ── Problems Table ── */}
-      <div className="flex-1 bg-card border border-border/50 rounded-xl overflow-hidden">
-        {/* ── Search + Filter Toolbar (LeetCode-style, directly above the list) ── */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 px-3 py-2.5 bg-muted/70 border-b border-border">
+      <Card className="border-border/70 overflow-hidden p-0">
+        {/* ── Search + Filter Toolbar ── */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 px-3 py-2.5 bg-muted/40 border-b border-border/60">
           {/* Search */}
           <div className="relative flex-1 min-w-0">
-            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/70" />
-            <input
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
               id="problem-search"
-              type="text"
               placeholder="Search questions..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-1/2 bg-background border border-border hover:border-border focus:border-zinc-600 rounded-lg pl-9 pr-3 py-1.5 text-xs text-foreground/90 placeholder:text-muted-foreground/50 focus:outline-none transition-all font-medium"
+              className="pl-9 pr-9"
             />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-2.5 top-2.5 h-4 w-4 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
 
           {/* Difficulty filter */}
-          <select
-            id="difficulty-filter"
-            value={difficultyFilter}
-            onChange={(e) => setDifficultyFilter(e.target.value)}
-            className="bg-background border border-border hover:border-border focus:outline-none transition-all cursor-pointer rounded-lg px-2.5 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground/90"
-          >
-            <option value="All">Difficulty</option>
-            <option value="Easy">Easy</option>
-            <option value="Medium">Medium</option>
-            <option value="Hard">Hard</option>
-          </select>
+          <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
+            <SelectTrigger id="difficulty-filter" className="h-9 w-full sm:w-[130px] text-xs">
+              <SelectValue placeholder="Difficulty" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All" className="text-xs">All Difficulties</SelectItem>
+              <SelectItem value="Easy" className="text-xs">Easy</SelectItem>
+              <SelectItem value="Medium" className="text-xs">Medium</SelectItem>
+              <SelectItem value="Hard" className="text-xs">Hard</SelectItem>
+            </SelectContent>
+          </Select>
 
           {/* Status filter */}
-          <select
-            id="status-filter"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-background border border-border hover:border-border focus:outline-none transition-all cursor-pointer rounded-lg px-2.5 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground/90"
-          >
-            <option value="All">Status</option>
-            <option value="Solved">Solved</option>
-            <option value="Attempted">Attempted</option>
-            <option value="Unsolved">Unsolved</option>
-          </select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger id="status-filter" className="h-9 w-full sm:w-[130px] text-xs">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All" className="text-xs">All Statuses</SelectItem>
+              <SelectItem value="Solved" className="text-xs">Solved</SelectItem>
+              <SelectItem value="Attempted" className="text-xs">Attempted</SelectItem>
+              <SelectItem value="Unsolved" className="text-xs">Unsolved</SelectItem>
+            </SelectContent>
+          </Select>
 
           {/* Solved count badge */}
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground/70 shrink-0 ml-auto pl-2 border-l border-border">
+          <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground shrink-0 pl-2 border-l border-border/60">
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
             <span>
-              <span className="text-foreground/90 font-bold">{counts.solved}</span>
-              <span className="text-muted-foreground/50">/{counts.total}</span>
-              <span className="text-muted-foreground/50 ml-1">Solved</span>
+              <span className="text-foreground font-bold">{counts.solved}</span>
+              <span className="text-muted-foreground/60">/{counts.total}</span>
+              <span className="text-muted-foreground/60 ml-1">Solved</span>
             </span>
           </div>
         </div>
 
         {/* Column Header */}
-        <div className="grid grid-cols-12 gap-2 px-4 py-2.5 bg-muted/40 border-b border-border/60 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">
+        <div className="grid grid-cols-12 gap-2 px-4 py-2.5 bg-muted/30 border-b border-border/60 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">
           <div className="col-span-1">Status</div>
-          <div className={isAdmin ? "col-span-4" : "col-span-5"}>Title</div>
+          <div className={cn(isAdmin ? "col-span-4" : "col-span-5")}>Title</div>
           <div className="col-span-2">Difficulty</div>
-          <div className={isAdmin ? "col-span-1" : "col-span-2"}>Acceptance</div>
+          <div className={cn(isAdmin ? "col-span-1" : "col-span-2")}>Acceptance</div>
           <div className="col-span-2 text-right">Tags</div>
           {isAdmin && <div className="col-span-2 text-right">Actions</div>}
         </div>
@@ -581,36 +611,37 @@ export function ProblemsDirectoryClient({
                 {/* Status */}
                 <div className="col-span-1">
                   {problem.solved_status === "Accepted" ? (
-                    <IconCircleCheck className="h-4 w-4 text-emerald-400" />
+                    <CircleCheck className="h-4 w-4 text-emerald-400" />
                   ) : problem.solved_status ? (
-                    <IconCircleDot className="h-4 w-4 text-amber-400" />
+                    <CircleDot className="h-4 w-4 text-amber-400" />
                   ) : (
                     <div className="h-4 w-4 rounded-full border border-border" />
                   )}
                 </div>
 
                 {/* Title */}
-                <div className={isAdmin ? "col-span-4 flex items-center gap-2" : "col-span-5 flex items-center gap-2"}>
+                <div className={cn(isAdmin ? "col-span-4" : "col-span-5", "flex items-center gap-2")}>
                   <span className="text-xs text-muted-foreground/70 font-mono w-6 shrink-0">{idx + 1}.</span>
                   <span className="text-sm font-medium text-foreground/90 group-hover:text-foreground transition-colors truncate">
                     {problem.title}
                   </span>
-                  <IconChevronRight className="h-3 w-3 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors ml-auto shrink-0 opacity-0 group-hover:opacity-100" />
+                  <ChevronRight className="h-3 w-3 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors ml-auto shrink-0 opacity-0 group-hover:opacity-100" />
                 </div>
 
                 {/* Difficulty */}
                 <div className="col-span-2">
-                  <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${DIFFICULTY_COLORS[problem.difficulty]}`}>
+                  <Badge
+                    variant="outline"
+                    className={cn("text-[10px] font-bold uppercase tracking-wider px-2 py-0.5", DIFFICULTY_COLORS[problem.difficulty])}
+                  >
                     {problem.difficulty}
-                  </span>
+                  </Badge>
                 </div>
 
                 {/* Acceptance Rate */}
-                <div className={isAdmin ? "col-span-1" : "col-span-2"}>
+                <div className={cn(isAdmin ? "col-span-1" : "col-span-2")}>
                   <span className="text-xs text-muted-foreground">
-                    {problem.acceptance_rate !== null
-                      ? `${problem.acceptance_rate}%`
-                      : "—"}
+                    {problem.acceptance_rate !== null ? `${problem.acceptance_rate}%` : "—"}
                   </span>
                   {problem.total_submissions > 0 && (
                     <span className="text-[10px] text-muted-foreground/50 ml-1">
@@ -629,17 +660,18 @@ export function ProblemsDirectoryClient({
                         setTagFilter(tagFilter === tag ? "All" : tag)
                       }}
                       title={`Filter by ${tag}`}
-                      className={`px-1.5 py-0.5 rounded text-[9px] font-semibold border transition-all cursor-pointer ${
+                      className={cn(
+                        "px-1.5 py-0.5 rounded text-[9px] font-semibold border transition-all cursor-pointer",
                         tagFilter === tag
                           ? "bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500/30 dark:border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
-                          : "bg-muted border-border text-muted-foreground/75 hover:border-border/85 hover:text-foreground"
-                      }`}
+                          : "bg-muted border-border/70 text-muted-foreground/75 hover:border-border hover:text-foreground"
+                      )}
                     >
                       {tag}
                     </button>
                   ))}
                   {(problem.tags || []).length > 2 && (
-                    <span className="px-1.5 py-0.5 bg-muted/50 border border-border rounded text-[9px] text-muted-foreground/50 font-medium">
+                    <span className="px-1.5 py-0.5 bg-muted/50 border border-border/60 rounded text-[9px] text-muted-foreground/50 font-medium">
                       +{(problem.tags || []).length - 2}
                     </span>
                   )}
@@ -650,13 +682,11 @@ export function ProblemsDirectoryClient({
                   <div className="col-span-2 flex items-center justify-end gap-1">
                     <Link
                       href={`/~/logiclab/admin/edit/${problem.id}`}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                      }}
+                      onClick={(e) => e.stopPropagation()}
                       className="p-1.5 hover:bg-muted rounded text-muted-foreground hover:text-emerald-400 transition-all inline-flex items-center justify-center cursor-pointer"
                       title="Edit Problem"
                     >
-                      <IconEdit className="h-3.5 w-3.5" />
+                      <Pencil className="h-3.5 w-3.5" />
                     </Link>
                     <button
                       onClick={(e) => {
@@ -667,7 +697,7 @@ export function ProblemsDirectoryClient({
                       className="p-1.5 hover:bg-muted hover:text-rose-400 rounded text-muted-foreground/70 transition-all inline-flex items-center justify-center cursor-pointer"
                       title="Delete Problem"
                     >
-                      <IconTrash className="h-3.5 w-3.5" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 )}
@@ -676,23 +706,30 @@ export function ProblemsDirectoryClient({
           </div>
         )}
 
+        {/* Empty state */}
         {filtered.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 gap-3 select-none">
-            <IconCode className="h-10 w-10 text-muted-foreground/15 stroke-[1.5]" />
-            <p className="text-xs text-muted-foreground/50 font-semibold uppercase tracking-widest">
-              {problems.length === 0 ? "No problems yet" : "No matching problems"}
-            </p>
-            {isAdmin && problems.length === 0 && (
-              <Link
-                href="/~/logiclab/admin"
-                className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold mt-1"
-              >
-                Create your first problem →
-              </Link>
-            )}
+          <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
+            <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
+              <BookOpen className="h-5 w-5 text-muted-foreground/60" />
+            </div>
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium">
+                {problems.length === 0 ? "No problems yet" : "No matching problems"}
+              </p>
+              {isAdmin && problems.length === 0 ? (
+                <Link
+                  href="/~/logiclab/admin"
+                  className="text-xs text-emerald-500 hover:text-emerald-400 font-semibold"
+                >
+                  Create your first problem →
+                </Link>
+              ) : (
+                <p className="text-xs text-muted-foreground">Try adjusting your search or filters</p>
+              )}
+            </div>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* ── Delete Confirmation Modal ── */}
       {deletingProblemId && (
@@ -700,15 +737,15 @@ export function ProblemsDirectoryClient({
           <div className="bg-background border border-border rounded-xl shadow-2xl overflow-hidden w-full max-w-md flex flex-col animate-in zoom-in-95 duration-200">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3.5 bg-muted/80 border-b border-border">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 text-rose-400">
-                <IconAlertTriangle className="h-4.5 w-4.5" /> Permanent Deletion
+              <h3 className="text-sm font-bold flex items-center gap-2 text-rose-400 uppercase tracking-wider">
+                <AlertTriangle className="h-4 w-4" /> Permanent Deletion
               </h3>
               <button
                 onClick={() => setDeletingProblemId(null)}
                 disabled={isDeleting}
-                className="p-1 hover:bg-muted rounded text-muted-foreground/70 hover:text-white transition-colors cursor-pointer animate-none"
+                className="p-1 hover:bg-muted rounded text-muted-foreground/70 hover:text-foreground transition-colors cursor-pointer"
               >
-                <IconX className="h-4 w-4" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
@@ -724,30 +761,32 @@ export function ProblemsDirectoryClient({
 
             {/* Footer */}
             <div className="flex items-center justify-end gap-2 px-4 py-3 bg-muted/50 border-t border-border">
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setDeletingProblemId(null)}
                 disabled={isDeleting}
-                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-muted-foreground hover:text-white bg-card border border-border hover:bg-muted hover:border-border transition-colors cursor-pointer disabled:opacity-40"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                size="sm"
                 onClick={handleConfirmDelete}
                 disabled={isDeleting}
-                className="flex items-center gap-1.5 bg-rose-500 hover:bg-rose-400 text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow-[0_0_12px_rgba(239,68,68,0.2)] transition-all cursor-pointer disabled:opacity-40"
+                className="gap-1.5 bg-rose-500 hover:bg-rose-400 text-white"
               >
                 {isDeleting ? (
-                  <span className="flex items-center gap-1.5">
+                  <>
                     <span className="h-3 w-3 border border-current border-t-transparent rounded-full animate-spin inline-block" />
-                    <span>Deleting...</span>
-                  </span>
+                    Deleting...
+                  </>
                 ) : (
-                  <span className="flex items-center gap-1.5">
-                    <IconTrash className="h-3.5 w-3.5" />
-                    <span>Delete Problem</span>
-                  </span>
+                  <>
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete Problem
+                  </>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

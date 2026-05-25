@@ -35,6 +35,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { MathText } from "@/components/ui/math-text"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import type {
   CandidateTestDetail,
   CandidateAttemptDetail,
@@ -278,20 +279,36 @@ export function CandidateTestDetailClient({ test, attempt, serverNow }: Props) {
         <div className="mx-auto space-y-6 px-4 py-8 md:px-8">
 
           {/* ── Page Header ──────────────────────────────────────────────── */}
-          <div className="space-y-1">
+          <div className="space-y-3">
             {test.institute_name && (
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                {test.institute_name}
-              </p>
+              <div className="flex items-center gap-2">
+                <Avatar className="h-6 w-6 border shadow-sm bg-muted">
+                  {test.institute_logo_url && (
+                    <AvatarImage
+                      src={test.institute_logo_url}
+                      alt={test.institute_name}
+                      className="object-cover"
+                    />
+                  )}
+                  <AvatarFallback className="text-[10px] font-bold text-muted-foreground">
+                    {test.institute_name[0].toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  {test.institute_name}
+                </p>
+              </div>
             )}
-            <h1 className="text-xl font-semibold leading-tight tracking-tight sm:text-2xl">
-              {test.title}
-            </h1>
-            {test.description && (
-              <p className="max-w-2xl text-sm text-muted-foreground">
-                {test.description}
-              </p>
-            )}
+            <div className="space-y-1">
+              <h1 className="text-xl font-semibold leading-tight tracking-tight sm:text-2xl">
+                {test.title}
+              </h1>
+              {test.description && (
+                <p className="max-w-2xl text-sm text-muted-foreground">
+                  {test.description}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* ── Meta grid ───────────────────────────────────────────────── */}
@@ -411,20 +428,36 @@ export function CandidateTestDetailClient({ test, attempt, serverNow }: Props) {
       <div className="mx-auto space-y-6 px-4 py-8 md:px-8 animate-in fade-in duration-500">
 
         {/* ── Page Header ────────────────────────────────────────────────── */}
-        <div className="space-y-1">
+        <div className="space-y-3">
           {test.institute_name && (
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-              {test.institute_name}
-            </p>
+            <div className="flex items-center gap-2">
+              <Avatar className="h-6 w-6 border shadow-sm bg-muted">
+                {test.institute_logo_url && (
+                  <AvatarImage
+                    src={test.institute_logo_url}
+                    alt={test.institute_name}
+                    className="object-cover"
+                  />
+                )}
+                <AvatarFallback className="text-[10px] font-bold text-muted-foreground">
+                  {test.institute_name[0].toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                {test.institute_name}
+              </p>
+            </div>
           )}
-          <h1 className="text-xl font-semibold leading-tight tracking-tight sm:text-2xl">
-            {test.title}
-          </h1>
-          {test.description && (
-            <p className="max-w-2xl text-sm text-muted-foreground line-clamp-2">
-              {test.description}
-            </p>
-          )}
+          <div className="space-y-1">
+            <h1 className="text-xl font-semibold leading-tight tracking-tight sm:text-2xl">
+              {test.title}
+            </h1>
+            {test.description && (
+              <p className="max-w-2xl text-sm text-muted-foreground line-clamp-2">
+                {test.description}
+              </p>
+            )}
+          </div>
         </div>
 
         <Card className="rounded-xl overflow-hidden border py-0">
