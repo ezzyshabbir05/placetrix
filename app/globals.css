@@ -15,14 +15,14 @@
   --primary-foreground: hsl(223.8136 -172.5242% 100.0000%);
   --secondary: hsl(223.8136 0.0001% 92.1478%);
   --secondary-foreground: hsl(0 0% 0%);
-  --muted: hsl(223.8136 0.0002% 96.0587%);
-  --muted-foreground: hsl(223.8136 0.0000% 32.3067%);
+  --muted: hsl(223.8136 0.0002% 92.0587%);
+  --muted-foreground: hsl(223.8136 0.0000% 27.3067%);
   --accent: hsl(223.8136 0.0001% 92.1478%);
   --accent-foreground: hsl(0 0% 0%);
   --destructive: hsl(358.4334 74.9120% 59.7455%);
   --destructive-foreground: hsl(223.8136 -172.5242% 100.0000%);
-  --border: hsl(223.8136 0.0001% 89.5577%);
-  --input: hsl(223.8136 0.0001% 92.1478%);
+  --border: hsl(223.8136 0.0001% 87.5577%);
+  --input: hsl(223.8136 0.0001% 84.1478%);
   --ring: hsl(0 0% 0%);
   --chart-1: hsl(40.6655 100.2361% 50.9228%);
   --chart-2: hsl(223.7490 85.9924% 55.8092%);
@@ -33,9 +33,9 @@
   --sidebar-foreground: hsl(0 0% 0%);
   --sidebar-primary: hsl(0 0% 0%);
   --sidebar-primary-foreground: hsl(223.8136 -172.5242% 100.0000%);
-  --sidebar-accent: hsl(223.8136 0.0001% 92.1478%);
+  --sidebar-accent: hsl(223.8136 0.0001% 90.1478%);
   --sidebar-accent-foreground: hsl(0 0% 0%);
-  --sidebar-border: hsl(223.8136 0.0001% 92.1478%);
+  --sidebar-border: hsl(223.8136 0.0001% 90.1478%);
   --sidebar-ring: hsl(0 0% 0%);
 
   --font-sans: Outfit, sans-serif;
@@ -323,5 +323,110 @@
     clip-path: inset(0 0 0 0);
     opacity: 0;
     text-shadow: none;
+  }
+}
+
+/* ─── Sidebar nav item staggered entrance ───────────────────────────────────── */
+
+@keyframes nav-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-nav-in {
+  opacity: 0;
+  will-change: transform, opacity;
+  animation: nav-fade-in-up 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: calc(var(--i, 0) * 45ms + 60ms);
+}
+
+/* Disable stagger inside mobile sheet — sheet already has its own slide-in */
+[data-mobile="true"] .animate-nav-in {
+  animation: none;
+  opacity: 1;
+  will-change: auto;
+}
+
+/* Icon scale only on real pointer devices (not touch) */
+@media (hover: hover) and (pointer: fine) {
+
+  .group\/menu-item:hover [data-slot="sidebar-menu-button"] svg,
+  .group\/menu-item:hover [data-slot="collapsible-trigger"] svg:first-child {
+    transform: scale(1.1);
+  }
+}
+
+/* ─── Collapsible smooth slide-down ─────────────────────────────────────────── */
+
+.collapsible-content {
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.collapsible-content[data-state="open"] {
+  grid-template-rows: 1fr;
+}
+
+.collapsible-content>* {
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ─── Beta badge subtle pulse ────────────────────────────────────────────────── */
+
+@keyframes badge-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.65;
+  }
+}
+
+.animate-badge-pulse {
+  animation: badge-pulse 2.4s ease-in-out infinite;
+}
+
+/* Hide badge during sidebar expansion to prevent sliding glitch */
+.group[data-state="expanded"] .animate-badge-pulse {
+  animation: badge-appear 0.6s ease-in-out, badge-pulse 2.4s ease-in-out 0.6s infinite;
+}
+
+@keyframes badge-appear {
+
+  0%,
+  80% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-nav-in {
+    animation: none;
+    opacity: 1;
+  }
+
+  .collapsible-content {
+    transition: none;
+  }
+
+  .animate-badge-pulse {
+    animation: none;
   }
 }

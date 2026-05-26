@@ -73,7 +73,7 @@ function profileFromClaims(
       ?? (meta.name as string)
       ?? email
       ?? "User",
-    avatar_path: (meta.avatar_url as string) ?? null,
+    avatar_path: (meta.avatar_path as string) ?? (meta.avatar_url as string) ?? (meta.picture as string) ?? null,
     username: (meta.username as string) ?? null,
     account_type: (meta.account_type as AccountType) ?? "candidate",
   };
@@ -98,7 +98,7 @@ function profileFromAuthUser(
       ?? (meta.display_name as string)
       ?? user.email
       ?? "User",
-    avatar_path: (meta.avatar_url as string) ?? (meta.avatar_path as string) ?? null,
+    avatar_path: (meta.avatar_path as string) ?? (meta.avatar_url as string) ?? (meta.picture as string) ?? null,
     username: (meta.username as string) ?? null,
     account_type: (meta.account_type as AccountType) ?? "candidate",
   };
@@ -193,7 +193,7 @@ export const getUserProfile = cache(async (): Promise<UserProfile | null> => {
         display_name: meta.display_name as string,
         email: user.email as string,
         account_type: meta.account_type as AccountType,
-        avatar_path: (meta.avatar_url as string) ?? (meta.avatar_path as string) ?? (meta.picture as string) ?? null,
+        avatar_path: (meta.avatar_path as string) ?? (meta.avatar_url as string) ?? (meta.picture as string) ?? null,
         username: (meta.username as string) ?? null,
       };
     }

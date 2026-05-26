@@ -11,7 +11,7 @@ import {
   IconUsers, IconUsersGroup, IconCreditCard, IconCalendarEvent, IconSchool,
   IconBriefcase2, IconFileAnalytics, IconTargetArrow,
   IconSun, IconMoon, IconDeviceLaptop, IconCheck, IconChevronRight, IconTools,
-  IconCode,
+  IconCode, IconBook,
 } from "@tabler/icons-react"
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -65,6 +65,7 @@ const NAV_MAIN: Record<AccountType, NavItem[]> = {
     { title: "My Applications", url: "/~/applications", icon: IconClipboardList },
     { title: "Tests", url: "/~/tests", icon: IconChartBar },
     { title: "Events", url: "/~/events", icon: IconCalendarEvent },
+    { title: "Courses", url: "/~/courses", icon: IconBook, badge: "Coming Soon" },
     { title: "Logic Lab", url: "/~/logiclab", icon: IconCode, badge: "Beta" },
     {
       title: "Tools",
@@ -323,7 +324,7 @@ export function NavMain({ items }: { items: NavItem[] }) {
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
-          {items.map((item) => {
+          {items.map((item, index) => {
             if (item.items && item.items.length > 0) {
               return (
                 <Collapsible
@@ -336,15 +337,18 @@ export function NavMain({ items }: { items: NavItem[] }) {
                   )}
                   className="group/collapsible"
                 >
-                  <SidebarMenuItem>
+                  <SidebarMenuItem
+                    style={{ "--i": index } as React.CSSProperties}
+                    className="animate-nav-in"
+                  >
                     <CollapsibleTrigger asChild>
                       <SidebarMenuButton tooltip={item.title}>
-                        <item.icon />
+                        <item.icon className="transition-transform duration-200" />
                         <span>{item.title}</span>
-                        <IconChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 size-4 shrink-0" />
+                        <IconChevronRight className="ml-auto transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] group-data-[state=open]/collapsible:rotate-90 size-4 shrink-0" />
                       </SidebarMenuButton>
                     </CollapsibleTrigger>
-                    <CollapsibleContent>
+                    <CollapsibleContent className="collapsible-content">
                       <SidebarMenuSub>
                         {item.items.map((subItem) => (
                           <SidebarMenuSubItem key={subItem.title}>
@@ -367,23 +371,25 @@ export function NavMain({ items }: { items: NavItem[] }) {
                 </Collapsible>
               )
             }
+            const isActive = pathname === item.url || pathname.startsWith(item.url + "/")
             return (
-              <SidebarMenuItem key={item.title}>
+              <SidebarMenuItem
+                key={item.title}
+                style={{ "--i": index } as React.CSSProperties}
+                className="animate-nav-in"
+              >
                 <SidebarMenuButton
                   tooltip={item.title}
                   asChild
-                  isActive={
-                    pathname === item.url ||
-                    pathname.startsWith(item.url + "/")
-                  }
+                  isActive={isActive}
                 >
                   <Link href={item.url} onClick={() => setOpenMobile(false)}>
-                    <item.icon />
+                    <item.icon className="transition-transform duration-200" />
                     <span>{item.title}</span>
                   </Link>
                 </SidebarMenuButton>
                 {item.badge && (
-                  <SidebarMenuBadge className="rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary py-0.5">
+                  <SidebarMenuBadge className="rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary py-0.5 animate-badge-pulse">
                     {item.badge}
                   </SidebarMenuBadge>
                 )}
