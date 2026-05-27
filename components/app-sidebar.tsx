@@ -394,7 +394,7 @@ export function NavMain({ items }: { items: NavItem[] }) {
                     <item.icon className="transition-transform duration-200" />
                     <span className="truncate">{item.title}</span>
                     {item.badge && (
-                      <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold leading-none tracking-wide ml-auto ${getBadgeStyles(item.badge)}`}>
+                      <span className={`shrink-0 rounded-full px-2.5 py-1 text-[9px] font-semibold leading-none tracking-wide ml-auto ${getBadgeStyles(item.badge)}`}>
                         {item.badge}
                       </span>
                     )}

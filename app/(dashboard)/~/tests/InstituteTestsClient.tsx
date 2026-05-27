@@ -80,28 +80,28 @@ function StatusBadge({ status }: { status: DerivedInstituteStatus }) {
   switch (status) {
     case "live":
       return (
-        <Badge className="gap-1 border border-emerald-200 bg-emerald-50 text--700 hover:bg-emerald-50 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300 text-[11px] px-2 py-0.5">
+        <Badge className="gap-1 border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300 text-[11px] px-2 py-0.5">
           Live
         </Badge>
       )
 
     case "upcoming":
       return (
-        <Badge variant="secondary" className="gap-1 text-[11px] px-2 py-0.5">
+        <Badge className="gap-1 border border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-50 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-300 text-[11px] px-2 py-0.5">
           <CalendarClock className="h-3 w-3" />
           Upcoming
         </Badge>
       )
     case "past":
       return (
-        <Badge variant="outline" className="gap-1 text-[11px] px-2 py-0.5 text-muted-foreground">
+        <Badge className="gap-1 border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-50 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300 text-[11px] px-2 py-0.5">
           <CheckCircle2 className="h-3 w-3" />
           Ended
         </Badge>
       )
     case "draft":
       return (
-        <Badge variant="outline" className="gap-1 text-[11px] px-2 py-0.5 text-muted-foreground border-dashed">
+        <Badge className="gap-1 border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300 text-[11px] px-2 py-0.5 border-dashed">
           <PenLine className="h-3 w-3" />
           Draft
         </Badge>
@@ -188,7 +188,7 @@ function StatChip({
 }: {
   icon: React.ReactNode
   children: React.ReactNode
-  tone?: "neutral" | "sky" | "emerald" | "amber" | "violet"
+  tone?: "neutral" | "sky" | "emerald" | "amber" | "violet" | "rose"
 }) {
   const tones = {
     neutral: "border-border/60 bg-muted/50 text-muted-foreground",
@@ -199,6 +199,8 @@ function StatChip({
       "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300",
     violet:
       "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300",
+    rose:
+      "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300",
   } as const
 
   return (
@@ -237,7 +239,7 @@ function TestCard({ test }: { test: InstituteTest }) {
           <div className="mt-3 flex flex-wrap gap-2">
             <StatChip
               icon={<Clock className="h-3.5 w-3.5" />}
-              tone={test.time_limit_seconds ? "sky" : "neutral"}
+              tone="neutral"
             >
               {test.time_limit_seconds ? formatDuration(test.time_limit_seconds) : "Untimed"}
             </StatChip>
@@ -250,9 +252,35 @@ function TestCard({ test }: { test: InstituteTest }) {
               {test.attempt_count} {test.attempt_count === 1 ? "attempt" : "attempts"}
             </StatChip>
 
-            <StatChip icon={<CalendarClock className="h-3.5 w-3.5" />} tone="neutral">
-              {test.available_from ? formatDateTime(test.available_from) : "No schedule set"}
-            </StatChip>
+            {test.derived_status === "upcoming" && test.available_from && (
+              <StatChip icon={<CalendarClock className="h-3.5 w-3.5" />} tone="neutral">
+                Starts: {formatDateTime(test.available_from)}
+              </StatChip>
+            )}
+
+            {test.derived_status === "live" && (
+              test.available_until ? (
+                <StatChip icon={<CalendarClock className="h-3.5 w-3.5" />} tone="neutral">
+                  Ends: {formatDateTime(test.available_until)}
+                </StatChip>
+              ) : (
+                <StatChip icon={<CalendarClock className="h-3.5 w-3.5" />} tone="neutral">
+                  No deadline
+                </StatChip>
+              )
+            )}
+
+            {test.derived_status === "past" && test.available_until && (
+              <StatChip icon={<CalendarClock className="h-3.5 w-3.5" />} tone="neutral">
+                Ended: {formatDateTime(test.available_until)}
+              </StatChip>
+            )}
+
+            {test.derived_status === "draft" && (
+              <StatChip icon={<CalendarClock className="h-3.5 w-3.5" />} tone="neutral">
+                No schedule set
+              </StatChip>
+            )}
           </div>
         </div>
 
@@ -444,7 +472,7 @@ export function InstituteTestsClient({
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="relative w-full sm:max-w-xs">
               {isPending ? (
-                <Loader2 className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground animate-spin" />
+                <Loader2 className="absolute left-2.5 top-2.5 h-4 w-4 text-primary animate-spin" />
               ) : (
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               )}
@@ -492,92 +520,101 @@ export function InstituteTestsClient({
             </div>
           </div>
 
-          <div className={cn("space-y-4 transition-opacity duration-200", isPending && "opacity-50 pointer-events-none")}>
-            {tabConfig.map(({ value }) => {
-              if (value !== activeTab) {
-                return <TabsContent key={value} value={value} className="mt-0 outline-none" />
-              }
-
-              return (
-                <TabsContent key={value} value={value} className="mt-0 outline-none space-y-4">
-                  {totalCount === 0 ? (
-                    <EmptyState isFiltered={value !== "all" || searchInput.trim() !== ""} onCreate={handleCreate} />
-                  ) : (
-                    <>
-                      <div className="flex flex-col gap-3 w-full">
-                        {enrichedTests.map((t) => (
-                          <TestCard
-                            key={t.id}
-                            test={{ ...t, derived_status: t.current_derived_status as DerivedInstituteStatus }}
-                          />
-                        ))}
-                      </div>
-
-                      {/* Pagination Footer */}
-                      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-1 px-1">
-                        <div className="text-xs text-muted-foreground">
-                          Showing{" "}
-                          <span className="font-medium">
-                            {totalCount === 0 ? 0 : Math.min(totalCount, (activePage - 1) * initialPageSize + 1)}
-                          </span>
-                          {" "}to{" "}
-                          <span className="font-medium">{Math.min(totalCount, activePage * initialPageSize)}</span>
-                          {" "}of{" "}
-                          <span className="font-medium">{totalCount}</span> tests
+          <div className="relative">
+            {isPending && (
+              <div className="absolute inset-0 z-50 bg-background/40 backdrop-blur-[1px] rounded-lg">
+                <div className="sticky top-[40vh] mx-auto flex w-fit flex-col items-center gap-2 rounded-lg border bg-popover px-4 py-3 shadow-md">
+                  <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                  <span className="text-xs font-medium text-muted-foreground animate-pulse">Loading...</span>
+                </div>
+              </div>
+            )}
+            <div className={cn("space-y-4 transition-opacity duration-200", isPending && "opacity-50 pointer-events-none")}>
+              {tabConfig.map(({ value }) => {
+                if (value !== activeTab) {
+                  return <TabsContent key={value} value={value} className="mt-0 outline-none" />
+                }
+                return (
+                  <TabsContent key={value} value={value} className="mt-0 outline-none space-y-4">
+                    {totalCount === 0 ? (
+                      <EmptyState isFiltered={value !== "all" || searchInput.trim() !== ""} onCreate={handleCreate} />
+                    ) : (
+                      <>
+                        <div className="flex flex-col gap-3 w-full">
+                          {enrichedTests.map((t) => (
+                            <TestCard
+                              key={t.id}
+                              test={{ ...t, derived_status: t.current_derived_status as DerivedInstituteStatus }}
+                            />
+                          ))}
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">Rows per page</span>
-                            <Select
-                              value={initialPageSize.toString()}
-                              onValueChange={(val) => updateParams({ size: val, page: 1 })}
-                            >
-                              <SelectTrigger className="h-8 w-[70px] text-xs">
-                                <SelectValue placeholder={initialPageSize.toString()} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {[5, 10, 20, 50].map((s) => (
-                                  <SelectItem key={s} value={s.toString()} className="text-xs">{s}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                        {/* Pagination Footer */}
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-1 px-1">
+                          <div className="text-xs text-muted-foreground">
+                            Showing{" "}
+                            <span className="font-medium">
+                              {totalCount === 0 ? 0 : Math.min(totalCount, (activePage - 1) * initialPageSize + 1)}
+                            </span>
+                            {" "}to{" "}
+                            <span className="font-medium">{Math.min(totalCount, activePage * initialPageSize)}</span>
+                            {" "}of{" "}
+                            <span className="font-medium">{totalCount}</span> tests
                           </div>
 
-                          <div className="flex items-center gap-1">
-                            <Button variant="outline" size="icon" className="h-8 w-8"
-                              onClick={() => updateParams({ page: 1 })} disabled={activePage === 1}>
-                              <ChevronsLeft className="h-4 w-4" />
-                              <span className="sr-only">First page</span>
-                            </Button>
-                            <Button variant="outline" size="icon" className="h-8 w-8"
-                              onClick={() => updateParams({ page: Math.max(1, activePage - 1) })} disabled={activePage === 1}>
-                              <ChevronLeft className="h-4 w-4" />
-                              <span className="sr-only">Previous page</span>
-                            </Button>
-                            <div className="flex items-center justify-center text-xs font-medium min-w-[80px]">
-                              Page {activePage} of {totalPages}
+                          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">Rows per page</span>
+                              <Select
+                                value={initialPageSize.toString()}
+                                onValueChange={(val) => updateParams({ size: val, page: 1 })}
+                              >
+                                <SelectTrigger className="h-8 w-[70px] text-xs">
+                                  <SelectValue placeholder={initialPageSize.toString()} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {[5, 10, 20, 50].map((s) => (
+                                    <SelectItem key={s} value={s.toString()} className="text-xs">{s}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
-                            <Button variant="outline" size="icon" className="h-8 w-8"
-                              onClick={() => updateParams({ page: Math.min(totalPages, activePage + 1) })}
-                              disabled={activePage === totalPages || totalPages === 0}>
-                              <ChevronRight className="h-4 w-4" />
-                              <span className="sr-only">Next page</span>
-                            </Button>
-                            <Button variant="outline" size="icon" className="h-8 w-8"
-                              onClick={() => updateParams({ page: totalPages })}
-                              disabled={activePage === totalPages || totalPages === 0}>
-                              <ChevronsRight className="h-4 w-4" />
-                              <span className="sr-only">Last page</span>
-                            </Button>
+
+                            <div className="flex items-center gap-1">
+                              <Button variant="outline" size="icon" className="h-8 w-8"
+                                onClick={() => updateParams({ page: 1 })} disabled={activePage === 1}>
+                                <ChevronsLeft className="h-4 w-4" />
+                                <span className="sr-only">First page</span>
+                              </Button>
+                              <Button variant="outline" size="icon" className="h-8 w-8"
+                                onClick={() => updateParams({ page: Math.max(1, activePage - 1) })} disabled={activePage === 1}>
+                                <ChevronLeft className="h-4 w-4" />
+                                <span className="sr-only">Previous page</span>
+                              </Button>
+                              <div className="flex items-center justify-center text-xs font-medium min-w-[80px]">
+                                Page {activePage} of {totalPages}
+                              </div>
+                              <Button variant="outline" size="icon" className="h-8 w-8"
+                                onClick={() => updateParams({ page: Math.min(totalPages, activePage + 1) })}
+                                disabled={activePage === totalPages || totalPages === 0}>
+                                <ChevronRight className="h-4 w-4" />
+                                <span className="sr-only">Next page</span>
+                              </Button>
+                              <Button variant="outline" size="icon" className="h-8 w-8"
+                                onClick={() => updateParams({ page: totalPages })}
+                                disabled={activePage === totalPages || totalPages === 0}>
+                                <ChevronsRight className="h-4 w-4" />
+                                <span className="sr-only">Last page</span>
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </>
-                  )}
-                </TabsContent>
-              )
-            })}
+                      </>
+                    )}
+                  </TabsContent>
+                )
+              })}
+            </div>
           </div>
 
         </div>

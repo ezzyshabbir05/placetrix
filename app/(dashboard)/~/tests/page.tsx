@@ -29,7 +29,7 @@ async function fetchCandidateTests(
 ): Promise<{
   tests: CandidateTest[]
   count: number
-  tabCounts: { live: number; upcoming: number; past: number }
+  tabCounts: { all: number; live: number; upcoming: number; past: number }
 }> {
   const supabase = await createClient()
 
@@ -41,7 +41,7 @@ async function fetchCandidateTests(
     .maybeSingle()
 
   if (!candidateProfile?.institute_id) {
-    return { tests: [], count: 0, tabCounts: { live: 0, upcoming: 0, past: 0 } }
+    return { tests: [], count: 0, tabCounts: { all: 0, live: 0, upcoming: 0, past: 0 } }
   }
 
   // 2. Fetch candidate's attempts to identify submitted vs in-progress tests
@@ -63,6 +63,14 @@ async function fetchCandidateTests(
   }
 
   // 3. Count parallel queries for each tab matching the search term
+  const allCountQuery = searchFilter(
+    supabase
+      .from("tests")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "published")
+      .eq("institute_id", candidateProfile.institute_id)
+  )
+
   const liveCountQuery = searchFilter(
     supabase
       .from("tests")
@@ -101,20 +109,22 @@ async function fetchCandidateTests(
   }
   pastCountQuery = searchFilter(pastCountQuery)
 
-  const [countLiveRes, countUpcomingRes, countPastRes] = await Promise.all([
+  const [countAllRes, countLiveRes, countUpcomingRes, countPastRes] = await Promise.all([
+    allCountQuery,
     liveCountQuery,
     upcomingCountQuery,
     pastCountQuery,
   ])
 
   const tabCounts = {
+    all: countAllRes.count ?? 0,
     live: countLiveRes.count ?? 0,
     upcoming: countUpcomingRes.count ?? 0,
     past: countPastRes.count ?? 0,
   }
 
   // 4. Main Paginated query
-  const activeTab = ["live", "upcoming", "past"].includes(tab) ? tab : "live"
+  const activeTab = ["all", "live", "upcoming", "past"].includes(tab) ? tab : "all"
 
   let query = supabase
     .from("tests")
@@ -158,11 +168,15 @@ async function fetchCandidateTests(
     query = query
       .order("available_from", { ascending: true })
       .order("available_until", { ascending: true, nullsFirst: false })
-  } else {
-    // "past" tab
+  } else if (activeTab === "past") {
     query = query
       .order("available_until", { ascending: false, nullsFirst: false })
       .order("available_from", { ascending: false })
+  } else {
+    // "all" tab
+    query = query
+      .order("available_from", { ascending: false, nullsFirst: false })
+      .order("title", { ascending: true })
   }
 
   const from = (page - 1) * size
@@ -363,7 +377,7 @@ export default async function TestsPage(props: {
         initialPage={page}
         initialPageSize={size}
         initialSearch={search}
-        initialTab={tab || "live"}
+        initialTab={tab || "all"}
         totalCount={count}
         tabCounts={tabCounts}
       />
