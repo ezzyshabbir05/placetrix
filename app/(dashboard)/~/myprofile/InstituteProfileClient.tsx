@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition, useEffect, useRef } from "react"
+import { useState, useTransition, useEffect, useRef, useReducer } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { UserProfile } from "@/lib/supabase/profile"
@@ -61,6 +61,45 @@ interface Props {
   initialData: Record<string, any> | null
 }
 
+interface ProfileState {
+  editingSection: SectionId | null
+  bannerDismissed: boolean
+  username: string
+  usernameStatus: UsernameStatus
+  logoSrc: string | null
+  isUploadingLogo: boolean
+  instituteName: string
+  instituteCode: string
+  establishedYear: string
+  affiliation: string
+  address: string
+  city: string
+  stateVal: string
+  pincode: string
+  country: string
+  instPhone: string
+  instEmail: string
+  websiteUrl: string
+  principalName: string
+  principalEmail: string
+  principalPhone: string
+  courses: string[]
+  socialLinks: string[]
+  errors: Record<string, string>
+}
+
+type ProfileAction =
+  | { type: "SET_FIELD"; field: keyof ProfileState; value: any }
+  | { type: "SET_FIELDS"; fields: Partial<ProfileState> }
+  | { type: "SET_COURSE"; index: number; value: string }
+  | { type: "ADD_COURSE" }
+  | { type: "REMOVE_COURSE"; index: number }
+  | { type: "SET_SOCIAL_LINK"; index: number; value: string }
+  | { type: "ADD_SOCIAL_LINK" }
+  | { type: "REMOVE_SOCIAL_LINK"; index: number }
+  | { type: "RESET_SECTION"; section: SectionId; initialData: Record<string, any> | null; userProfile: UserProfile }
+  | { type: "SET_ERRORS"; errors: Record<string, string> }
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function RequiredMark() {
@@ -109,6 +148,108 @@ function getStorageUrl(
   return data.publicUrl
 }
 
+function createInitialState(
+  userProfile: UserProfile,
+  initialData: Record<string, any> | null,
+  isFirstTime: boolean,
+  supabase: ReturnType<typeof createClient>
+): ProfileState {
+  return {
+    editingSection: isFirstTime ? "basic" : null,
+    bannerDismissed: false,
+    username: userProfile.username ?? "",
+    usernameStatus: "idle",
+    logoSrc: getStorageUrl(supabase, "avatars", initialData?.logo_path ?? null),
+    isUploadingLogo: false,
+    instituteName: initialData?.institute_name ?? "",
+    instituteCode: initialData?.institute_code ?? "",
+    establishedYear: initialData?.established_year ? String(initialData.established_year) : "",
+    affiliation: initialData?.affiliation ?? "",
+    address: initialData?.address ?? "",
+    city: initialData?.city ?? "",
+    stateVal: initialData?.state ?? "",
+    pincode: initialData?.pincode ?? "",
+    country: initialData?.country ?? "India",
+    instPhone: initialData?.phone_number ?? "",
+    instEmail: initialData?.email ?? "",
+    websiteUrl: initialData?.website_url ?? "",
+    principalName: initialData?.principal_name ?? "",
+    principalEmail: initialData?.principal_email ?? "",
+    principalPhone: initialData?.principal_phone ?? "",
+    courses: initialData?.courses?.length ? initialData.courses : [""],
+    socialLinks: initialData?.social_links?.length ? initialData.social_links : [""],
+    errors: {},
+  }
+}
+
+function profileReducer(state: ProfileState, action: ProfileAction): ProfileState {
+  switch (action.type) {
+    case "SET_FIELD":
+      return { ...state, [action.field]: action.value }
+    case "SET_FIELDS":
+      return { ...state, ...action.fields }
+    case "SET_COURSE": {
+      const newCourses = [...state.courses]
+      newCourses[action.index] = action.value
+      return { ...state, courses: newCourses }
+    }
+    case "ADD_COURSE":
+      return { ...state, courses: [...state.courses, ""] }
+    case "REMOVE_COURSE":
+      return {
+        ...state,
+        courses: state.courses.filter((_, i) => i !== action.index),
+      }
+    case "SET_SOCIAL_LINK": {
+      const newLinks = [...state.socialLinks]
+      newLinks[action.index] = action.value
+      return { ...state, socialLinks: newLinks }
+    }
+    case "ADD_SOCIAL_LINK":
+      return { ...state, socialLinks: [...state.socialLinks, ""] }
+    case "REMOVE_SOCIAL_LINK":
+      return {
+        ...state,
+        socialLinks: state.socialLinks.filter((_, i) => i !== action.index),
+      }
+    case "SET_ERRORS":
+      return { ...state, errors: action.errors }
+    case "RESET_SECTION": {
+      const { section, initialData, userProfile } = action
+      const resetFields: Partial<ProfileState> = { errors: {} }
+      if (section === "account") {
+        resetFields.username = userProfile.username ?? ""
+        resetFields.usernameStatus = "idle"
+      } else if (section === "basic") {
+        resetFields.instituteName = initialData?.institute_name ?? ""
+        resetFields.instituteCode = initialData?.institute_code ?? ""
+        resetFields.establishedYear = initialData?.established_year ? String(initialData.established_year) : ""
+        resetFields.affiliation = initialData?.affiliation ?? ""
+        resetFields.address = initialData?.address ?? ""
+        resetFields.city = initialData?.city ?? ""
+        resetFields.stateVal = initialData?.state ?? ""
+        resetFields.pincode = initialData?.pincode ?? ""
+        resetFields.country = initialData?.country ?? "India"
+      } else if (section === "contact") {
+        resetFields.instPhone = initialData?.phone_number ?? ""
+        resetFields.instEmail = initialData?.email ?? ""
+        resetFields.websiteUrl = initialData?.website_url ?? ""
+      } else if (section === "admin") {
+        resetFields.principalName = initialData?.principal_name ?? ""
+        resetFields.principalEmail = initialData?.principal_email ?? ""
+        resetFields.principalPhone = initialData?.principal_phone ?? ""
+      } else if (section === "courses") {
+        resetFields.courses = initialData?.courses?.length ? initialData.courses : [""]
+      } else if (section === "social") {
+        resetFields.socialLinks = initialData?.social_links?.length ? initialData.social_links : [""]
+      }
+      return { ...state, ...resetFields, editingSection: null }
+    }
+    default:
+      return state
+  }
+}
+
 function UsernameStatusIcon({ status }: { status: UsernameStatus }) {
   if (status === "checking") return <Loader2 className="size-4 animate-spin text-muted-foreground" />
   if (status === "available") return <CheckCircle2 className="size-4 text-emerald-500" />
@@ -129,64 +270,45 @@ function usernameStatusMessage(status: UsernameStatus): { text: string; classNam
 
 export function InstituteProfileClient({ userProfile, initialData }: Props) {
   const supabase = createClient()
-  const router = useRouter()
+  const { refresh } = useRouter()
   const [isPending, startTransition] = useTransition()
 
   const isFirstTime = !initialData?.profile_updated
-  const [editingSection, setEditingSection] = useState<SectionId | null>(
-    isFirstTime ? "basic" : null
+  const [state, dispatch] = useReducer(profileReducer, null, () =>
+    createInitialState(userProfile, initialData, isFirstTime, supabase)
   )
-  const [bannerDismissed, setBannerDismissed] = useState(false)
 
-  // ── Username ──────────────────────────────────────────────────────────────
-  const [username, setUsername] = useState(userProfile.username ?? "")
-  const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>("idle")
+  const {
+    editingSection,
+    bannerDismissed,
+    username,
+    usernameStatus,
+    logoSrc,
+    isUploadingLogo,
+    instituteName,
+    instituteCode,
+    establishedYear,
+    affiliation,
+    address,
+    city,
+    stateVal,
+    pincode,
+    country,
+    instPhone,
+    instEmail,
+    websiteUrl,
+    principalName,
+    principalEmail,
+    principalPhone,
+    courses,
+    socialLinks,
+    errors,
+  } = state
+
   const usernameDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const initialUsername = useRef(userProfile.username ?? "")
-
-  // ── Logo ──────────────────────────────────────────────────────────────────
   const storedLogoPath = useRef<string | null>(initialData?.logo_path ?? null)
-  const [logoSrc, setLogoSrc] = useState<string | null>(() =>
-    getStorageUrl(supabase, "avatars", storedLogoPath.current)
-  )
-  const [isUploadingLogo, setIsUploadingLogo] = useState(false)
   const logoInputRef = useRef<HTMLInputElement>(null)
-
-  // ── Basic fields ──────────────────────────────────────────────────────────
-  const [instituteName, setInstituteName] = useState(initialData?.institute_name ?? "")
-  const [instituteCode, setInstituteCode] = useState(initialData?.institute_code ?? "")
-  const [establishedYear, setEstablishedYear] = useState(
-    initialData?.established_year ? String(initialData.established_year) : ""
-  )
-  const [affiliation, setAffiliation] = useState(initialData?.affiliation ?? "")
-  const [address, setAddress] = useState(initialData?.address ?? "")
-  const [city, setCity] = useState(initialData?.city ?? "")
-  const [stateVal, setStateVal] = useState(initialData?.state ?? "")
-  const [pincode, setPincode] = useState(initialData?.pincode ?? "")
-  const [country, setCountry] = useState(initialData?.country ?? "India")
-
-  // ── Contact fields ────────────────────────────────────────────────────────
-  const [instPhone, setInstPhone] = useState(initialData?.phone_number ?? "")
-  const [instEmail, setInstEmail] = useState(initialData?.email ?? "")
-  const [websiteUrl, setWebsiteUrl] = useState(initialData?.website_url ?? "")
-
-  // ── Admin fields ──────────────────────────────────────────────────────────
-  const [principalName, setPrincipalName] = useState(initialData?.principal_name ?? "")
-  const [principalEmail, setPrincipalEmail] = useState(initialData?.principal_email ?? "")
-  const [principalPhone, setPrincipalPhone] = useState(initialData?.principal_phone ?? "")
-
-  // ── Courses ───────────────────────────────────────────────────────────────
-  const [courses, setCourses] = useState<string[]>(
-    initialData?.courses?.length ? initialData.courses : [""]
-  )
-
-  // ── Social links ──────────────────────────────────────────────────────────
-  const [socialLinks, setSocialLinks] = useState<string[]>(
-    initialData?.social_links?.length ? initialData.social_links : [""]
-  )
-
-  // ── Errors ────────────────────────────────────────────────────────────────
-  const [errors, setErrors] = useState<Record<string, string>>({})
 
   // ── Section completeness (from server data) ───────────────────────────────
   const basicComplete = !!(initialData?.institute_name && initialData?.affiliation && initialData?.city)
@@ -199,85 +321,80 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
 
   function handleUsernameChange(value: string) {
     const trimmed = value.trim()
-    setUsername(trimmed)
+    dispatch({ type: "SET_FIELD", field: "username", value: trimmed })
     if (usernameDebounceRef.current) clearTimeout(usernameDebounceRef.current)
-    if (!trimmed) { setUsernameStatus("idle"); return }
-    if (trimmed === initialUsername.current) { setUsernameStatus("unchanged"); return }
-    if (!USERNAME_REGEX.test(trimmed)) { setUsernameStatus("invalid"); return }
-    setUsernameStatus("checking")
+    if (!trimmed) {
+      dispatch({ type: "SET_FIELD", field: "usernameStatus", value: "idle" })
+      return
+    }
+    if (trimmed === initialUsername.current) {
+      dispatch({ type: "SET_FIELD", field: "usernameStatus", value: "unchanged" })
+      return
+    }
+    if (!USERNAME_REGEX.test(trimmed)) {
+      dispatch({ type: "SET_FIELD", field: "usernameStatus", value: "invalid" })
+      return
+    }
+    dispatch({ type: "SET_FIELD", field: "usernameStatus", value: "checking" })
     usernameDebounceRef.current = setTimeout(async () => {
       const { data, error } = await supabase.rpc("check_username_available", {
         p_username: trimmed,
         p_user_id: userProfile.id,
       })
-      if (error) { setUsernameStatus("idle"); return }
-      setUsernameStatus(data === true ? "available" : "taken")
+      if (error) {
+        dispatch({ type: "SET_FIELD", field: "usernameStatus", value: "idle" })
+        return
+      }
+      dispatch({
+        type: "SET_FIELD",
+        field: "usernameStatus",
+        value: data === true ? "available" : "taken",
+      })
     }, 500)
   }
 
   useEffect(() => {
-    return () => { if (usernameDebounceRef.current) clearTimeout(usernameDebounceRef.current) }
+    const timerRef = usernameDebounceRef
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
   }, [])
 
   // ── Section open/close ────────────────────────────────────────────────────
 
   function openSection(section: SectionId) {
     if (editingSection && editingSection !== section) {
-      cancelSection(editingSection)
+      dispatch({ type: "RESET_SECTION", section: editingSection, initialData, userProfile })
     }
-    setErrors({})
-    setEditingSection(section)
+    dispatch({ type: "SET_FIELDS", fields: { errors: {}, editingSection: section } })
   }
 
   function cancelSection(section: SectionId) {
-    setErrors({})
-    if (section === "account") {
-      setUsername(userProfile.username ?? "")
-      setUsernameStatus("idle")
-    } else if (section === "basic") {
-      setInstituteName(initialData?.institute_name ?? "")
-      setInstituteCode(initialData?.institute_code ?? "")
-      setEstablishedYear(initialData?.established_year ? String(initialData.established_year) : "")
-      setAffiliation(initialData?.affiliation ?? "")
-      setAddress(initialData?.address ?? "")
-      setCity(initialData?.city ?? "")
-      setStateVal(initialData?.state ?? "")
-      setPincode(initialData?.pincode ?? "")
-      setCountry(initialData?.country ?? "India")
-    } else if (section === "contact") {
-      setInstPhone(initialData?.phone_number ?? "")
-      setInstEmail(initialData?.email ?? "")
-      setWebsiteUrl(initialData?.website_url ?? "")
-    } else if (section === "admin") {
-      setPrincipalName(initialData?.principal_name ?? "")
-      setPrincipalEmail(initialData?.principal_email ?? "")
-      setPrincipalPhone(initialData?.principal_phone ?? "")
-    } else if (section === "courses") {
-      setCourses(initialData?.courses?.length ? initialData.courses : [""])
-    } else if (section === "social") {
-      setSocialLinks(initialData?.social_links?.length ? initialData.social_links : [""])
-    }
-    setEditingSection(null)
+    dispatch({ type: "RESET_SECTION", section, initialData, userProfile })
   }
 
   // ── Course management ─────────────────────────────────────────────────────
 
-  function addCourse() { setCourses((prev) => [...prev, ""]) }
+  function addCourse() {
+    dispatch({ type: "ADD_COURSE" })
+  }
   function handleCourseChange(index: number, value: string) {
-    setCourses((prev) => { const u = [...prev]; u[index] = value; return u })
+    dispatch({ type: "SET_COURSE", index, value })
   }
   function removeCourse(index: number) {
-    setCourses((prev) => prev.filter((_, i) => i !== index))
+    dispatch({ type: "REMOVE_COURSE", index })
   }
 
   // ── Social link management ────────────────────────────────────────────────
 
-  function addSocialLink() { setSocialLinks((prev) => [...prev, ""]) }
+  function addSocialLink() {
+    dispatch({ type: "ADD_SOCIAL_LINK" })
+  }
   function handleSocialLinkChange(index: number, value: string) {
-    setSocialLinks((prev) => { const u = [...prev]; u[index] = value; return u })
+    dispatch({ type: "SET_SOCIAL_LINK", index, value })
   }
   function removeSocialLink(index: number) {
-    setSocialLinks((prev) => prev.filter((_, i) => i !== index))
+    dispatch({ type: "REMOVE_SOCIAL_LINK", index })
   }
 
   // ── Validation ────────────────────────────────────────────────────────────
@@ -330,7 +447,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
     else if (section === "admin") newErrors = validateAdmin()
 
     if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
+      dispatch({ type: "SET_ERRORS", errors: newErrors })
       toast.error("Please fix the validation errors before saving.")
       return
     }
@@ -343,8 +460,8 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
             const { error } = await supabase.from("profiles").update({ username: trimmedUsername }).eq("id", userProfile.id)
             if (error) {
               if (error.code === "23505") {
-                setErrors({ username: "This username is already taken." })
-                setUsernameStatus("taken")
+                dispatch({ type: "SET_ERRORS", errors: { username: "This username is already taken." } })
+                dispatch({ type: "SET_FIELD", field: "usernameStatus", value: "taken" })
               } else {
                 toast.error("Failed to update username. Please try again.")
               }
@@ -353,7 +470,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
             await supabase.auth.updateUser({ data: { username: trimmedUsername } })
             if (trimmedUsername) {
               initialUsername.current = trimmedUsername
-              setUsernameStatus("unchanged")
+              dispatch({ type: "SET_FIELD", field: "usernameStatus", value: "unchanged" })
             }
           }
           toast.success("Account settings saved!")
@@ -362,7 +479,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
         else if (section === "basic") {
           const payload = {
             profile_id: userProfile.id,
-            institute_name: instituteName.trim() || null,
+            institute_name: instituteName.trim(),
             institute_code: instituteCode.trim() || null,
             established_year: establishedYear ? Number(establishedYear) : null,
             affiliation: affiliation || null,
@@ -437,7 +554,6 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
             }
             throw error
           }
-          // If no row was matched, the update silently no-ops — check by re-fetching
           toast.success("Courses updated!")
         }
 
@@ -457,9 +573,8 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
           toast.success("Social links updated!")
         }
 
-        setErrors({})
-        setEditingSection(null)
-        router.refresh()
+        dispatch({ type: "SET_FIELDS", fields: { errors: {}, editingSection: null } })
+        refresh()
       } catch (err: any) {
         console.error("Save error:", err)
         toast.error(err?.message || "Failed to save. Please try again.")
@@ -481,8 +596,8 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
       return
     }
     const blobUrl = URL.createObjectURL(file)
-    setLogoSrc(blobUrl)
-    setIsUploadingLogo(true)
+    dispatch({ type: "SET_FIELD", field: "logoSrc", value: blobUrl })
+    dispatch({ type: "SET_FIELD", field: "isUploadingLogo", value: true })
     try {
       const oldPath = storedLogoPath.current
       if (oldPath) await supabase.storage.from("avatars").remove([oldPath])
@@ -502,17 +617,21 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
       await supabase.auth.updateUser({ data: { avatar_path: newPath } })
       storedLogoPath.current = newPath
       const newPublicUrl = getStorageUrl(supabase, "avatars", newPath)
-      setLogoSrc(`${newPublicUrl}?v=${timestamp}`)
+      dispatch({ type: "SET_FIELD", field: "logoSrc", value: `${newPublicUrl}?v=${timestamp}` })
       URL.revokeObjectURL(blobUrl)
       toast.success("Logo updated!")
-      router.refresh()
+      refresh()
     } catch (err) {
       console.error(err)
       toast.error("Failed to upload logo. Please try again.")
-      setLogoSrc(getStorageUrl(supabase, "avatars", storedLogoPath.current))
+      dispatch({
+        type: "SET_FIELD",
+        field: "logoSrc",
+        value: getStorageUrl(supabase, "avatars", storedLogoPath.current),
+      })
       URL.revokeObjectURL(blobUrl)
     } finally {
-      setIsUploadingLogo(false)
+      dispatch({ type: "SET_FIELD", field: "isUploadingLogo", value: false })
       if (logoInputRef.current) logoInputRef.current.value = ""
     }
   }
@@ -547,7 +666,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                 variant="ghost"
                 size="icon"
                 className="shrink-0 size-6"
-                onClick={() => setBannerDismissed(true)}
+                onClick={() => dispatch({ type: "SET_FIELD", field: "bannerDismissed", value: true })}
               >
                 <X className="size-3.5" />
               </Button>
@@ -558,7 +677,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
         {/* Account Settings — only shown if username not yet set */}
         {!initialUsername.current ? (
           <Card>
-            <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+            <CardHeader className="flex flex-row items-start justify-between gap-4 gap-y-0">
               <div>
                 <CardTitle>Account Settings</CardTitle>
                 <CardDescription>Your unique username identifies your institution on the platform</CardDescription>
@@ -606,7 +725,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                 <div className="max-w-sm">
                   <p className="text-xs text-muted-foreground mb-1">Username</p>
                   <p className="text-sm font-medium text-muted-foreground italic">Not set yet</p>
-                  <p className="text-xs text-muted-foreground mt-1">Set your username — it cannot be changed once saved</p>
+                  <p className="text-xs text-muted-foreground mt-1">Set your username; it cannot be changed once saved</p>
                 </div>
               )}
             </CardContent>
@@ -658,6 +777,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                   accept="image/jpeg,image/png,image/webp"
                   className="hidden"
                   onChange={handleLogoFileChange}
+                  aria-label="Upload logo"
                 />
                 <Button variant="outline" size="sm" onClick={() => logoInputRef.current?.click()} disabled={isUploadingLogo}>
                   {isUploadingLogo
@@ -677,7 +797,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
 
         {/* Basic Information */}
         <Card>
-          <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+          <CardHeader className="flex flex-row items-start justify-between gap-4 gap-y-0">
             <div>
               <CardTitle>Basic Information</CardTitle>
               <CardDescription>Essential details about your institution</CardDescription>
@@ -702,7 +822,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                     <Input
                       placeholder="Enter college name"
                       value={instituteName}
-                      onChange={(e) => setInstituteName(e.target.value)}
+                      onChange={(e) => dispatch({ type: "SET_FIELD", field: "instituteName", value: e.target.value })}
                     />
                     <FieldError message={errors.instituteName} />
                   </div>
@@ -711,7 +831,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                     <Input
                       placeholder="College code (optional)"
                       value={instituteCode}
-                      onChange={(e) => setInstituteCode(e.target.value)}
+                      onChange={(e) => dispatch({ type: "SET_FIELD", field: "instituteCode", value: e.target.value })}
                     />
                   </div>
                 </div>
@@ -725,12 +845,12 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                       min={1800}
                       max={2026}
                       value={establishedYear}
-                      onChange={(e) => setEstablishedYear(e.target.value)}
+                      onChange={(e) => dispatch({ type: "SET_FIELD", field: "establishedYear", value: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Affiliation<RequiredMark /></Label>
-                    <Combobox items={AFFILIATION_OPTIONS} value={affiliation} onValueChange={(v) => setAffiliation(v || "")}>
+                    <Combobox items={AFFILIATION_OPTIONS} value={affiliation} onValueChange={(v) => dispatch({ type: "SET_FIELD", field: "affiliation", value: v || "" })}>
                       <ComboboxInput placeholder="Select affiliation" />
                       <ComboboxContent>
                         <ComboboxEmpty>No affiliation found.</ComboboxEmpty>
@@ -753,7 +873,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                     placeholder="Complete address"
                     rows={3}
                     value={address}
-                    onChange={(e) => setAddress(e.target.value)}
+                    onChange={(e) => dispatch({ type: "SET_FIELD", field: "address", value: e.target.value })}
                   />
                   <FieldError message={errors.address} />
                 </div>
@@ -761,12 +881,12 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>City<RequiredMark /></Label>
-                    <Input placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} />
+                    <Input placeholder="City" value={city} onChange={(e) => dispatch({ type: "SET_FIELD", field: "city", value: e.target.value })} />
                     <FieldError message={errors.city} />
                   </div>
                   <div className="space-y-2">
                     <Label>State<RequiredMark /></Label>
-                    <Combobox items={STATE_OPTIONS} value={stateVal} onValueChange={(v) => setStateVal(v || "")}>
+                    <Combobox items={STATE_OPTIONS} value={stateVal} onValueChange={(v) => dispatch({ type: "SET_FIELD", field: "stateVal", value: v || "" })}>
                       <ComboboxInput placeholder="Select state" />
                       <ComboboxContent>
                         <ComboboxEmpty>No state found.</ComboboxEmpty>
@@ -785,7 +905,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                       placeholder="6-digit pincode"
                       maxLength={6}
                       value={pincode}
-                      onChange={(e) => setPincode(e.target.value.replace(/\D/g, ""))}
+                      onChange={(e) => dispatch({ type: "SET_FIELD", field: "pincode", value: e.target.value.replace(/\D/g, "") })}
                     />
                     <FieldError message={errors.pincode} />
                   </div>
@@ -793,7 +913,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
 
                 <div className="space-y-2">
                   <Label>Country<RequiredMark /></Label>
-                  <Combobox items={COUNTRY_OPTIONS} value={country} onValueChange={(v) => setCountry(v || "India")}>
+                  <Combobox items={COUNTRY_OPTIONS} value={country} onValueChange={(v) => dispatch({ type: "SET_FIELD", field: "country", value: v || "India" })}>
                     <ComboboxInput placeholder="Select country" />
                     <ComboboxContent>
                       <ComboboxEmpty>No country found.</ComboboxEmpty>
@@ -851,7 +971,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
 
         {/* Contact Information */}
         <Card>
-          <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+          <CardHeader className="flex flex-row items-start justify-between gap-4 gap-y-0">
             <div>
               <CardTitle>Contact Information</CardTitle>
               <CardDescription>Primary contact details for the institution</CardDescription>
@@ -880,7 +1000,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                       placeholder="Institution contact number"
                       type="tel"
                       value={instPhone}
-                      onChange={(e) => setInstPhone(e.target.value)}
+                      onChange={(e) => dispatch({ type: "SET_FIELD", field: "instPhone", value: e.target.value })}
                     />
                     <FieldError message={errors.instPhone} />
                   </div>
@@ -893,7 +1013,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                       placeholder="college@example.com"
                       type="email"
                       value={instEmail}
-                      onChange={(e) => setInstEmail(e.target.value)}
+                      onChange={(e) => dispatch({ type: "SET_FIELD", field: "instEmail", value: e.target.value })}
                     />
                     <FieldError message={errors.instEmail} />
                   </div>
@@ -907,7 +1027,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                     placeholder="https://www.yourcollege.edu"
                     type="url"
                     value={websiteUrl}
-                    onChange={(e) => setWebsiteUrl(e.target.value)}
+                    onChange={(e) => dispatch({ type: "SET_FIELD", field: "websiteUrl", value: e.target.value })}
                   />
                 </div>
               </div>
@@ -935,7 +1055,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
 
         {/* Administrative Contacts */}
         <Card>
-          <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+          <CardHeader className="flex flex-row items-start justify-between gap-4 gap-y-0">
             <div>
               <CardTitle>Administrative Contacts</CardTitle>
               <CardDescription>Key personnel contact information</CardDescription>
@@ -961,7 +1081,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                     <Input
                       placeholder="Principal name"
                       value={principalName}
-                      onChange={(e) => setPrincipalName(e.target.value)}
+                      onChange={(e) => dispatch({ type: "SET_FIELD", field: "principalName", value: e.target.value })}
                     />
                     <FieldError message={errors.principalName} />
                   </div>
@@ -971,7 +1091,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                       placeholder="principal@example.com"
                       type="email"
                       value={principalEmail}
-                      onChange={(e) => setPrincipalEmail(e.target.value)}
+                      onChange={(e) => dispatch({ type: "SET_FIELD", field: "principalEmail", value: e.target.value })}
                     />
                     <FieldError message={errors.principalEmail} />
                   </div>
@@ -981,7 +1101,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                       placeholder="Contact number"
                       type="tel"
                       value={principalPhone}
-                      onChange={(e) => setPrincipalPhone(e.target.value)}
+                      onChange={(e) => dispatch({ type: "SET_FIELD", field: "principalPhone", value: e.target.value })}
                     />
                     <FieldError message={errors.principalPhone} />
                   </div>
@@ -1014,7 +1134,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
 
         {/* Courses Offered */}
         <Card>
-          <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+          <CardHeader className="flex flex-row items-start justify-between gap-4 gap-y-0">
             <div>
               <CardTitle>Courses Offered</CardTitle>
               <CardDescription>Departments / courses available at your institution</CardDescription>
@@ -1081,7 +1201,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
 
         {/* Social Media & Links */}
         <Card>
-          <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+          <CardHeader className="flex flex-row items-start justify-between gap-4 gap-y-0">
             <div>
               <CardTitle>Social Media &amp; Links</CardTitle>
               <CardDescription>Connect your institution's social presence</CardDescription>
