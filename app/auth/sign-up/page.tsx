@@ -22,7 +22,7 @@ import {
   MailIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { GoogleOneTap } from "@/components/auth/google-one-tap";
+import { GoogleOneTap } from "@/components/google-one-tap";
 
 type PageState = "sign-up-form" | "otp-entry";
 

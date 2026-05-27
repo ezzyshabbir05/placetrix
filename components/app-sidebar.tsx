@@ -111,7 +111,7 @@ const NAV_MAIN: Record<AccountType, NavItem[]> = {
 const NAV_SECONDARY: NavItem[] = [
   { title: "Notifications", url: "/~/notifications", icon: IconBell },
   { title: "Settings", url: "/~/settings", icon: IconSettings },
-  { title: "Get Help", url: "/~/help", icon: IconHelp },
+  { title: "Get Help", url: "/help-center", icon: IconHelp },
 ]
 
 
@@ -435,7 +435,12 @@ export function NavSecondary({
                   pathname.startsWith(item.url + "/")
                 }
               >
-                <Link href={item.url} onClick={() => setOpenMobile(false)}>
+                <Link
+                  href={item.url}
+                  target={item.title === "Get Help" ? "_blank" : undefined}
+                  rel={item.title === "Get Help" ? "noopener noreferrer" : undefined}
+                  onClick={() => setOpenMobile(false)}
+                >
                   <item.icon />
                   <span>{item.title}</span>
                 </Link>
