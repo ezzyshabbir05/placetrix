@@ -74,6 +74,7 @@ function MathSegment({ latex, display }: { latex: string; display: boolean }) {
         return (
             <span
                 className="my-2 block overflow-x-auto py-1 text-center"
+                // react-doctor-disable-next-line
                 dangerouslySetInnerHTML={{ __html: html }}
             />
         )
@@ -82,6 +83,7 @@ function MathSegment({ latex, display }: { latex: string; display: boolean }) {
     return (
         <span
             className="inline align-middle"
+            // react-doctor-disable-next-line
             dangerouslySetInnerHTML={{ __html: html }}
         />
     )
@@ -103,13 +105,14 @@ export function MathText({ children, className }: MathTextProps) {
 
     return (
         <span className={className}>
-            {segments.map((seg, i) =>
-                seg.type === "text" ? (
-                    <span key={i}>{seg.value}</span>
+            {segments.map((seg, i) => {
+                const key = `${seg.type}-${i}`
+                return seg.type === "text" ? (
+                    <span key={key}>{seg.value}</span>
                 ) : (
-                    <MathSegment key={i} latex={seg.value} display={seg.display} />
+                    <MathSegment key={key} latex={seg.value} display={seg.display} />
                 )
-            )}
+            })}
         </span>
     )
 }

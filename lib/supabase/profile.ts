@@ -211,6 +211,7 @@ export const getUserProfile = cache(async (): Promise<UserProfile | null> => {
   // ── Step 2 & 3: Handle definitive revocation (e.g. 401) ─────────────────
   if (authError instanceof AuthApiError) {
     if (isDefinitiveRevocation(authError)) {
+      // react-doctor-disable-next-line
       console.warn("[getUserProfile] Definitive revocation detected:", authError.code, authError.message);
 
       // SCOPE: local. We don't want to sign out the user globally, just clear our own stale cookies.

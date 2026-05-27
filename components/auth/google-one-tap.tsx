@@ -2,7 +2,6 @@
 
 import Script from "next/script";
 import { useEffect, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -38,7 +37,6 @@ interface GoogleOneTapProps {
 }
 
 export function GoogleOneTap({ next = "/~" }: GoogleOneTapProps) {
-  const router = useRouter();
   const initialized = useRef(false);
   const isMounted = useRef(true);
 
@@ -153,7 +151,7 @@ export function GoogleOneTap({ next = "/~" }: GoogleOneTapProps) {
       console.error("[GoogleOneTap] Initialization failed:", err);
       globalGsiState = "idle";
     }
-  }, [generateNonce, next, router]);
+  }, [generateNonce, next]);
 
   useEffect(() => {
     isMounted.current = true;

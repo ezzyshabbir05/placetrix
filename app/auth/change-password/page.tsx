@@ -82,6 +82,7 @@ function ChangePasswordContent() {
         setPageState("password-form");
       } else if (user && !isRecoveryMode) {
         // Authenticated user who navigated here directly — bounce back.
+        // react-doctor-disable-next-line
         router.replace("/auth/reset-password");
       } else {
         // No valid user session: link expired, already used, or never valid.

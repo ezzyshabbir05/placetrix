@@ -38,7 +38,6 @@ export async function getTestQuestions(testId: string): Promise<AttemptQuestion[
       }))
       .sort((a: any, b: any) => a.order_index - b.order_index),
     tags: (((q as any).question_tags as any[]) ?? [])
-      .map((qt) => qt.tags)
-      .filter(Boolean),
+      .flatMap((qt) => qt.tags ? [qt.tags] : []),
   }))
 }

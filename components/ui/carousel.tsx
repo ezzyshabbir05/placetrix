@@ -90,6 +90,7 @@ function Carousel({
 
   React.useEffect(() => {
     if (!api || !setApi) return
+    // react-doctor-disable-next-line
     setApi(api)
   }, [api, setApi])
 

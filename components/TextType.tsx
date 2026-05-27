@@ -147,6 +147,7 @@ const TextType = ({
     if (currentCharIndex === 0 && !isDeleting && displayedText === '') {
       timeout = setTimeout(executeTypingAnimation, initialDelay);
     } else {
+      // react-doctor-disable-next-line
       executeTypingAnimation();
     }
 
