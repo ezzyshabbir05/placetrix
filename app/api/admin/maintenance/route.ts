@@ -65,7 +65,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // eslint-disable-next-line react-doctor/server-fetch-without-revalidate
   const res = await fetch(
     `${supabaseUrl}/rest/v1/app_config?key=eq.maintenance_mode`,
     {

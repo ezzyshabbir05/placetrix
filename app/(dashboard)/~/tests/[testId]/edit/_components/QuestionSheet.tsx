@@ -121,7 +121,6 @@ function OptionsBuilder({
           variant="ghost"
           size="sm"
           onClick={() =>
-            // eslint-disable-next-line react-doctor/rendering-hydration-mismatch-time
             onChange([...options, { _key: crypto.randomUUID(), option_text: "", is_correct: false }])
           }
           className="h-8 text-xs text-muted-foreground"

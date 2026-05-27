@@ -33,7 +33,7 @@ export default function LogicLabLoading() {
         <Card className="lg:col-span-3 border bg-card p-3 flex flex-col justify-between h-[150px]">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <Skeleton className="size-8 rounded-lg shrink-0" />
+              <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
               <div className="space-y-1">
                 <Skeleton className="h-2 w-14 rounded" />
                 <Skeleton className="h-4 w-20 rounded" />
@@ -53,7 +53,7 @@ export default function LogicLabLoading() {
           <div className="flex items-center justify-between pb-2 border-b">
             <div className="space-y-1">
               <div className="flex items-center gap-1.5">
-                <Skeleton className="size-3.5 rounded" />
+                <Skeleton className="h-3.5 w-3.5 rounded" />
                 <Skeleton className="h-3 w-28 rounded" />
               </div>
               <Skeleton className="h-2 w-36 rounded" />
@@ -108,7 +108,7 @@ export default function LogicLabLoading() {
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="grid grid-cols-12 gap-2 items-center px-4 py-3 bg-card">
               <div className="col-span-1">
-                <Skeleton className="size-4 rounded-full" />
+                <Skeleton className="h-4 w-4 rounded-full" />
               </div>
               <div className="col-span-5 flex items-center gap-2">
                 <Skeleton className="h-3.5 w-4 rounded" />

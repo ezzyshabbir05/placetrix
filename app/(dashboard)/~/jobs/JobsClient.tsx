@@ -49,7 +49,7 @@ function JobStatusBadge({ isExpired, hasApplied }: { isExpired: boolean; hasAppl
   if (hasApplied) {
     return (
       <Badge className="gap-1 bg-emerald-500 hover:bg-emerald-500 text-white border-0 text-[11px] px-2 py-0.5">
-        <CheckCircle2 className="size-3" />
+        <CheckCircle2 className="h-3 w-3" />
         Applied
       </Badge>
     )
@@ -63,7 +63,7 @@ function JobStatusBadge({ isExpired, hasApplied }: { isExpired: boolean; hasAppl
   }
   return (
     <Badge variant="secondary" className="gap-1 text-[11px] px-2 py-0.5">
-      <CalendarClock className="size-3" />
+      <CalendarClock className="h-3 w-3" />
       Open
     </Badge>
   )
@@ -91,7 +91,7 @@ function JobCard({
           <div className="space-y-1 min-w-0">
             <CardTitle className="text-base leading-snug truncate">{job.title}</CardTitle>
             <CardDescription className="flex items-center text-xs font-medium text-foreground min-w-0">
-              <Building2 className="size-3.5 text-muted-foreground shrink-0 mr-1.5" />
+              <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0 mr-1.5" />
               <span className="truncate">{job.company_name}</span>
             </CardDescription>
           </div>
@@ -102,9 +102,9 @@ function JobCard({
       <CardContent className="flex flex-col flex-1 gap-4">
         {/* Meta */}
         <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
-          <StatPill icon={<Briefcase className="size-3.5" />} label={JOB_TYPE_LABELS[job.job_type]} />
-          <StatPill icon={<MapPin className="size-3.5" />} label={job.location || WORK_MODE_LABELS[job.work_mode]} />
-          {salary && <StatPill icon={<IndianRupee className="size-3.5" />} label={salary} />}
+          <StatPill icon={<Briefcase className="h-3.5 w-3.5" />} label={JOB_TYPE_LABELS[job.job_type]} />
+          <StatPill icon={<MapPin className="h-3.5 w-3.5" />} label={job.location || WORK_MODE_LABELS[job.work_mode]} />
+          {salary && <StatPill icon={<IndianRupee className="h-3.5 w-3.5" />} label={salary} />}
         </div>
 
         {/* Deadline */}
@@ -112,7 +112,7 @@ function JobCard({
           "text-xs flex items-center gap-1.5",
           isExpired ? "text-red-500" : "text-muted-foreground"
         )}>
-          <CalendarClock className="size-3.5 shrink-0" />
+          <CalendarClock className="h-3.5 w-3.5 shrink-0" />
           {isExpired
             ? "Application closed"
             : job.application_deadline
@@ -179,16 +179,16 @@ function JobDetailDialog({
             <div className="space-y-1 mb-6">
               <DialogTitle className="text-2xl">{job.title}</DialogTitle>
               <DialogDescription className="text-base font-medium flex items-center flex-wrap gap-1.5 text-foreground">
-                <Building2 className="size-4 text-muted-foreground shrink-0" />
+                <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
                 <span>{job.company_name}</span>
               </DialogDescription>
             </div>
 
             <div className="flex flex-wrap gap-x-6 gap-y-3 mb-6 p-4 bg-muted/50 rounded-lg">
-              <StatPill icon={<Briefcase className="size-4" />} label={JOB_TYPE_LABELS[job.job_type]} />
-              <StatPill icon={<MapPin className="size-4" />} label={job.location || WORK_MODE_LABELS[job.work_mode]} />
-              {salary && <StatPill icon={<IndianRupee className="size-4" />} label={salary} />}
-              <StatPill icon={<Clock className="size-4" />} label={`Posted ${formatDate(job.created_at)}`} />
+              <StatPill icon={<Briefcase className="h-4 w-4" />} label={JOB_TYPE_LABELS[job.job_type]} />
+              <StatPill icon={<MapPin className="h-4 w-4" />} label={job.location || WORK_MODE_LABELS[job.work_mode]} />
+              {salary && <StatPill icon={<IndianRupee className="h-4 w-4" />} label={salary} />}
+              <StatPill icon={<Clock className="h-4 w-4" />} label={`Posted ${formatDate(job.created_at)}`} />
             </div>
 
             {job.skills.length > 0 && (
@@ -219,7 +219,7 @@ function JobDetailDialog({
           {job.description && (
             <Button variant="secondary" asChild>
               <Link href={`/~/resume-analyzer?job_id=${job.id}`}>
-                <Sparkles className="size-4 mr-1.5" /> Analyze Resume
+                <Sparkles className="h-4 w-4 mr-1.5" /> Analyze Resume
               </Link>
             </Button>
           )}
@@ -230,11 +230,11 @@ function JobDetailDialog({
             disabled={hasApplied || isPending}
           >
             {isPending ? (
-              <CalendarClock className="size-4 animate-spin" /> // Assuming we don't have Loader2 imported, but wait I can import it
+              <CalendarClock className="h-4 w-4 animate-spin" /> // Assuming we don't have Loader2 imported, but wait I can import it
             ) : hasApplied ? (
-              <CheckCircle2 className="size-4" />
+              <CheckCircle2 className="h-4 w-4" />
             ) : (
-              <Send className="size-4" />
+              <Send className="h-4 w-4" />
             )}
             {hasApplied ? "Applied" : "Apply Now"}
           </Button>
@@ -277,7 +277,7 @@ export function JobsClient({ jobs, appliedJobIds }: Props) {
         </div>
 
         <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
             placeholder="Search by role, company, or skill..." 
             className="pl-9 h-10"
@@ -290,8 +290,8 @@ export function JobsClient({ jobs, appliedJobIds }: Props) {
       <div>
         {filteredJobs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
-            <div className="size-12 rounded-xl bg-muted flex items-center justify-center">
-              <Briefcase className="size-5 text-muted-foreground/60" />
+            <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
+              <Briefcase className="h-5 w-5 text-muted-foreground/60" />
             </div>
             <div className="space-y-0.5">
               <p className="text-sm font-medium">No jobs found</p>

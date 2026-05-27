@@ -34,7 +34,6 @@ function Alert({
   )
 }
 
-// eslint-disable-next-line react-doctor/no-multi-comp
 function AlertTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -48,7 +47,6 @@ function AlertTitle({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-// eslint-disable-next-line react-doctor/no-multi-comp
 function AlertDescription({
   className,
   ...props

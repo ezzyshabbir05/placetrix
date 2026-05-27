@@ -18,6 +18,5 @@ export const SidebarHoverContext = React.createContext<SidebarHoverContextValue>
 })
 
 export function useSidebarHoverContext() {
-  // eslint-disable-next-line react-doctor/no-react19-deprecated-apis
   return React.useContext(SidebarHoverContext)
 }

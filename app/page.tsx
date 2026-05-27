@@ -1,4 +1,3 @@
-/* eslint-disable react-doctor/nextjs-missing-metadata */
 "use client";
 
 import React from "react";
@@ -52,9 +51,7 @@ const AVATAR_SHELL =
 
 function useMounted() {
   const [mounted, setMounted] = React.useState(false);
-// eslint-disable-next-line react-doctor/rendering-hydration-no-flicker
 
-  // eslint-disable-next-line react-doctor/no-initialize-state
   React.useEffect(() => {
     setMounted(true);
   }, []);
@@ -206,7 +203,6 @@ function MobileNav({
     return () => {
       document.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = "";
-    // eslint-disable-next-line react-doctor/prefer-use-effect-event
     };
   }, [open, closeMenu]);
 
@@ -226,7 +222,7 @@ function MobileNav({
 
       {open && (
         <>
-          <button type="button"
+          <button
             aria-label="Close menu"
             className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]"
             onClick={closeMenu}
@@ -289,7 +285,6 @@ function MobileNav({
                   </div>
                 )}
 
-                // eslint-disable-next-line react-doctor/nextjs-no-a-element
                 <div className="space-y-1">
                   <a
                     href="/#features"
@@ -299,7 +294,6 @@ function MobileNav({
                     <span>Features</span>
                     <ArrowRightIcon className="size-4 opacity-60" />
                   </a>
-// eslint-disable-next-line react-doctor/nextjs-no-a-element
 
                   <a
                     href="/#testimonials"
@@ -397,7 +391,6 @@ function HeaderShell({
   const [user, setUser] = React.useState<UserProfile | null>(initialUser);
   const [isFetching, setIsFetching] = React.useState(false);
   const mounted = useMounted();
-// eslint-disable-next-line react-doctor/no-cascading-set-state
 
   React.useEffect(() => {
     let cancelled = false;
@@ -411,7 +404,6 @@ function HeaderShell({
       typeof document !== "undefined" && (document.cookie.includes("auth-token") || document.cookie.includes("sb-"));
 
     if (!hasAuthCookie) return;
-// eslint-disable-next-line react-doctor/no-adjust-state-on-prop-change
 
     setIsFetching(true);
     getUserProfileAction()
@@ -435,7 +427,7 @@ function HeaderShell({
 
 function HeroSection() {
   return (
-    <section className="relative isolate min-h-[100svh] w-full overflow-hidden bg-white pb-0 pt-16 text-zinc-950 dark:bg-gray-950 dark:text-white md:-mt-14 md:min-h-[calc(100dvh+3.5rem)] md:pt-28 lg:pt-32">
+    <section className="relative isolate min-h-[100svh] w-full overflow-hidden bg-white pb-0 pt-16 text-zinc-950 dark:bg-black dark:text-white md:-mt-14 md:min-h-[calc(100dvh+3.5rem)] md:pt-28 lg:pt-32">
       <div
         aria-hidden="true"
         className={cn(
@@ -826,7 +818,7 @@ function CTASection() {
   const showGalaxy = mounted && resolvedTheme === "dark";
 
   return (
-    <section className="w-full bg-white pb-16 text-zinc-950 dark:bg-gray-950 dark:text-white md:pb-24">
+    <section className="w-full bg-white pb-16 text-zinc-950 dark:bg-black dark:text-white md:pb-24">
       <div className={CONTENT}>
         <div className="relative overflow-hidden rounded-2xl border border-zinc-300/80 px-8 py-16 text-center dark:border-white/10 dark:bg-white/[0.02] md:px-16 md:py-20">
           {showGalaxy && (
@@ -919,7 +911,6 @@ function Footer() {
     <footer className="relative">
       <div className="mx-auto max-w-6xl">
         <div className="grid max-w-6xl grid-cols-6 gap-6 p-4">
-          // eslint-disable-next-line react-doctor/anchor-is-valid
           <div className="col-span-6 flex flex-col gap-4 pt-5 md:col-span-4">
             <a className="font-bold text-zinc-950 dark:text-white" href="#">
               PlaceTrix
@@ -980,7 +971,6 @@ function Footer() {
 
         <div className="absolute inset-x-0 h-px w-full bg-border" />
         <div className="flex flex-col justify-between gap-2 py-4">
-          // eslint-disable-next-line react-doctor/rendering-hydration-mismatch-time
           <p className="text-center text-sm font-light text-zinc-500 dark:text-zinc-400">
             &copy; {new Date().getFullYear()}, 360 View Tech, All rights reserved
           </p>

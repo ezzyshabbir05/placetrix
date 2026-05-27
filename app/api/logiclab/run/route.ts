@@ -147,7 +147,6 @@ export async function POST(req: NextRequest) {
         const timeoutId = setTimeout(() => controller.abort(), 15000)
 
         try {
-          // eslint-disable-next-line react-doctor/server-fetch-without-revalidate
           const response = await fetch(submissionsUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -233,7 +232,6 @@ export async function POST(req: NextRequest) {
       const timeoutId = setTimeout(() => controller.abort(), 15000)
 
       try {
-        // eslint-disable-next-line react-doctor/server-fetch-without-revalidate
         const response = await fetch(submissionsUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },

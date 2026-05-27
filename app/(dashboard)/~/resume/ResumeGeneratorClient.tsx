@@ -835,8 +835,6 @@ function StepFooter({ isLast, isDone, onContinue, onSkip }: {
 // MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 
-// eslint-disable-next-line react-doctor/no-giant-component, react-doctor/prefer-useReducer
-// eslint-disable-next-line react-doctor/no-giant-component, react-doctor/prefer-useReducer
 export function ResumeGeneratorClient() {
   const [data, setData] = useState<ResumeData>(() => makeEmpty())
   const [config, setConfig] = useState<ResumeConfig>(DEFAULT_CONFIG)

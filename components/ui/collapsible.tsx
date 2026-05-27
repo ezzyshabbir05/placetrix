@@ -8,7 +8,6 @@ function Collapsible({
   return <CollapsiblePrimitive.Root data-slot="collapsible" {...props} />
 }
 
-// eslint-disable-next-line react-doctor/no-multi-comp
 function CollapsibleTrigger({
   ...props
 }: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleTrigger>) {
@@ -20,7 +19,6 @@ function CollapsibleTrigger({
   )
 }
 
-// eslint-disable-next-line react-doctor/no-multi-comp
 function CollapsibleContent({
   ...props
 }: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleContent>) {

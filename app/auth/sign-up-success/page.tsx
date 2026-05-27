@@ -1,4 +1,3 @@
-/* eslint-disable react-doctor/nextjs-missing-metadata */
 // app/auth/sign-up-success/page.tsx
 //
 // Fallback shown when a user signs up but OTP confirmation was somehow
@@ -11,8 +10,8 @@ import { Button } from "@/components/ui/button";
 export default function SignUpSuccessPage() {
   return (
     <div className="mx-auto space-y-4 sm:w-sm text-center">
-      <div className="flex size-14 mx-auto items-center justify-center rounded-full bg-primary/10">
-        <MailIcon className="size-7 text-primary" />
+      <div className="flex h-14 w-14 mx-auto items-center justify-center rounded-full bg-primary/10">
+        <MailIcon className="h-7 w-7 text-primary" />
       </div>
       <div className="space-y-1">
         <h1 className="font-bold text-2xl tracking-wide">Check Your Email</h1>

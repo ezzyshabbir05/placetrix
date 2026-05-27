@@ -310,8 +310,6 @@ function passwordReducer(state: PasswordState, action: PasswordAction): Password
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-// eslint-disable-next-line react-doctor/no-giant-component
-// eslint-disable-next-line react-doctor/no-giant-component
 export function RecruiterSettingsClient({ userProfile, initialData }: Props) {
   const supabase = createClient()
   const [isPwPending, startPwTransition] = useTransition()

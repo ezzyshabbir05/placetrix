@@ -33,7 +33,6 @@ type CarouselContextProps = {
 const CarouselContext = React.createContext<CarouselContextProps | null>(null)
 
 function useCarousel() {
-  // eslint-disable-next-line react-doctor/no-react19-deprecated-apis
   const context = React.useContext(CarouselContext)
 
   if (!context) {
@@ -95,7 +94,6 @@ function Carousel({
     setApi(api)
   }, [api, setApi])
 
-  // eslint-disable-next-line react-doctor/advanced-event-handler-refs
   React.useEffect(() => {
     if (!api) return
     onSelect(api)
@@ -109,7 +107,6 @@ function Carousel({
 
   return (
     <CarouselContext.Provider
-      // eslint-disable-next-line react-doctor/jsx-no-constructed-context-values
       value={{
         carouselRef,
         api: api,
@@ -125,7 +122,6 @@ function Carousel({
       <div
         onKeyDownCapture={handleKeyDown}
         className={cn("relative", className)}
-        // eslint-disable-next-line react-doctor/prefer-tag-over-role
         role="region"
         aria-roledescription="carousel"
         data-slot="carousel"
@@ -163,7 +159,6 @@ function CarouselItem({ className, ...props }: React.ComponentProps<"div">) {
 
   return (
     <div
-      // eslint-disable-next-line react-doctor/prefer-tag-over-role
       role="group"
       aria-roledescription="slide"
       data-slot="carousel-item"

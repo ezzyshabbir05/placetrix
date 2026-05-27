@@ -326,23 +326,14 @@ function StudentsSkeleton({
   )
 }
 
-// eslint-disable-next-line react-doctor/react-compiler-destructure-method
 function StudentsLoadingContent() {
-  // eslint-disable-next-line react-doctor/react-compiler-destructure-method
   const searchParams = useSearchParams()
-  // eslint-disable-next-line react-doctor/react-compiler-destructure-method
-  // eslint-disable-next-line react-doctor/react-compiler-destructure-method
-  // eslint-disable-next-line react-doctor/react-compiler-destructure-method
-  const get = (key: string) => searchParams?.get(key)
-  // eslint-disable-next-line react-doctor/react-compiler-destructure-method
-  const search = get("search") || ""
-  // eslint-disable-next-line react-doctor/react-compiler-destructure-method
-  const status = (get("status") || "all") as "all" | "verified" | "pending"
-  // eslint-disable-next-line react-doctor/react-compiler-destructure-method
-  const sortBy = get("sortBy") || "created"
-  const sortOrder = (get("sortOrder") || "desc") as "asc" | "desc"
-  const pageSize = get("size") || "10"
-  const page = get("page") || "1"
+  const search = searchParams?.get("search") || ""
+  const status = (searchParams?.get("status") || "all") as "all" | "verified" | "pending"
+  const sortBy = searchParams?.get("sortBy") || "created"
+  const sortOrder = (searchParams?.get("sortOrder") || "desc") as "asc" | "desc"
+  const pageSize = searchParams?.get("size") || "10"
+  const page = searchParams?.get("page") || "1"
 
   return (
     <StudentsSkeleton

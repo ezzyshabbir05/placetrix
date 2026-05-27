@@ -166,7 +166,7 @@ function SubmissionDiagnostics({ sub }: { sub: any }) {
     <div className="mt-1.5 p-3 bg-rose-500/5 dark:bg-rose-500/10 border border-rose-500/10 dark:border-rose-500/20 rounded-lg text-xs space-y-2 select-text">
       <div className="flex items-center justify-between select-none">
         <span className="font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider text-[9px] flex items-center gap-1">
-          <span className="size-1.5 rounded-full bg-rose-500 animate-pulse" />
+          <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
           Diagnostics: {sub.status}
         </span>
         {sub.passed_count !== null && sub.total_count !== null && (
@@ -229,8 +229,8 @@ function OnboardingBanner({
 }) {
   return (
     <Card className="border border-emerald-500/20 bg-emerald-500/5 hover:border-emerald-500/30 shadow-none rounded-2xl p-5 md:p-6 flex flex-col md:flex-row items-start md:items-center gap-5">
-      <div className="size-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-        <Sparkles className="size-6 text-emerald-500 dark:text-emerald-400" />
+      <div className="h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+        <Sparkles className="h-6 w-6 text-emerald-500 dark:text-emerald-400" />
       </div>
       <div className="flex-1 min-w-0">
         <h2 className="text-sm font-bold text-foreground mb-1">Your curriculum library is empty</h2>
@@ -251,13 +251,12 @@ function OnboardingBanner({
         >
           {isSeeding ? (
             <>
-              // eslint-disable-next-line react-doctor/design-no-three-period-ellipsis
-              <Loader2 className="size-3.5 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
               Seeding...
             </>
           ) : (
             <>
-              <Sparkles className="size-3.5" />
+              <Sparkles className="h-3.5 w-3.5" />
               Quick Seed
             </>
           )}
@@ -268,7 +267,7 @@ function OnboardingBanner({
           onClick={onImport}
           className="flex-1 md:flex-none flex items-center gap-2 rounded-xl border-muted-foreground/20 text-foreground hover:bg-secondary/50"
         >
-          <Upload className="size-3.5" />
+          <Upload className="h-3.5 w-3.5" />
           Manual Import
         </Button>
       </div>
@@ -276,7 +275,6 @@ function OnboardingBanner({
   )
 }
 
-// eslint-disable-next-line react-doctor/no-giant-component
 export function AdminDashboardClient({
   problems: initialProblems,
   analytics,
@@ -285,7 +283,6 @@ export function AdminDashboardClient({
   problems: Problem[]
   analytics: AnalyticsData
   recentSubmissions: SubmissionLog[]
-// eslint-disable-next-line react-doctor/prefer-useReducer
 }) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<"overview" | "analytics" | "problems" | "create">("overview")
@@ -388,7 +385,6 @@ export function AdminDashboardClient({
         `Seeded ${result.inserted} problems! ${result.skipped > 0 ? `(${result.skipped} already existed)` : ""}`,
         { id: tId }
       )
-      // eslint-disable-next-line react-doctor/react-compiler-destructure-method
       router.refresh()
     } catch (err: any) {
       toast.error(err.message || "Failed to seed problems", { id: tId })
@@ -418,7 +414,6 @@ export function AdminDashboardClient({
       toast.success("Problem deleted successfully!", { id: tId })
       setLocalProblems((prev) => prev.filter((p) => p.id !== deletingProblemId))
       setDeletingProblemId(null)
-      // eslint-disable-next-line react-doctor/react-compiler-destructure-method
       router.refresh()
     } catch (err: any) {
       toast.error(err?.message || "Failed to delete problem.", { id: tId })
@@ -457,10 +452,10 @@ export function AdminDashboardClient({
   const acceptanceRate = ((analytics.totalAccepted / totalSubmissions) * 100).toFixed(1)
 
   const tabConfig = [
-    { value: "overview", label: "Overview", icon: <LayoutDashboard className="size-3.5" /> },
-    { value: "analytics", label: "Concept Analytics", icon: <Tag className="size-3.5" /> },
-    { value: "problems", label: "Manage Problems", icon: <Code className="size-3.5" /> },
-    { value: "create", label: "Create / Import", icon: <Plus className="size-3.5" /> },
+    { value: "overview", label: "Overview", icon: <LayoutDashboard className="h-3.5 w-3.5" /> },
+    { value: "analytics", label: "Concept Analytics", icon: <Tag className="h-3.5 w-3.5" /> },
+    { value: "problems", label: "Manage Problems", icon: <Code className="h-3.5 w-3.5" /> },
+    { value: "create", label: "Create / Import", icon: <Plus className="h-3.5 w-3.5" /> },
   ] as const
 
   return (
@@ -515,7 +510,7 @@ export function AdminDashboardClient({
                     <CardHeader className="p-6 pb-4 flex flex-row items-center justify-between border-b select-none">
                       <div className="space-y-1">
                         <CardTitle className="text-base font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                          <Users className="size-4.5 text-emerald-500" />
+                          <Users className="h-4.5 w-4.5 text-emerald-500" />
                           Student Insights & Leaderboard
                         </CardTitle>
                         <CardDescription className="text-xs text-muted-foreground">
@@ -532,7 +527,7 @@ export function AdminDashboardClient({
                       {/* Search and export row */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 select-none">
                         <div className="relative w-full sm:max-w-md">
-                          <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground/60" />
+                          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground/60" />
                           <Input
                             placeholder="Search by student name or email..."
                             value={studentSearch}
@@ -543,14 +538,14 @@ export function AdminDashboardClient({
                             className="pl-9 pr-9 h-9 rounded-xl border-muted-foreground/20 bg-background focus-visible:ring-1 text-xs"
                           />
                           {studentSearch && (
-                            <button type="button"
+                            <button
                               onClick={() => {
                                 setStudentSearch("")
                                 setCurrentPage(1)
                               }}
-                              className="absolute right-3 top-2.5 size-4 flex items-center justify-center text-muted-foreground/60 hover:text-foreground transition-colors"
+                              className="absolute right-3 top-2.5 h-4 w-4 flex items-center justify-center text-muted-foreground/60 hover:text-foreground transition-colors"
                             >
-                              <X className="size-3.5" />
+                              <X className="h-3.5 w-3.5" />
                             </button>
                           )}
                         </div>
@@ -561,7 +556,7 @@ export function AdminDashboardClient({
                           onClick={handleExportRoster}
                           className="rounded-xl border-muted-foreground/20 text-foreground hover:bg-secondary/50 font-medium h-9"
                         >
-                          <Upload className="size-3.5 rotate-180 mr-1.5 text-emerald-500" />
+                          <Upload className="h-3.5 w-3.5 rotate-180 mr-1.5 text-emerald-500" />
                           Export CSV
                         </Button>
                       </div>
@@ -578,7 +573,7 @@ export function AdminDashboardClient({
                           }
                           
                           return (
-                            <button type="button"
+                            <button
                               key={cat}
                               onClick={() => {
                                 setStudentCategoryFilter(cat)
@@ -660,9 +655,7 @@ export function AdminDashboardClient({
                               <TableRow>
                                 <TableCell colSpan={6} className="px-4 py-16 text-center">
                                   <div className="flex flex-col items-center gap-2 text-muted-foreground/30">
-                                    // eslint-disable-next-line react-doctor/jsx-max-depth
-                                    <Users className="size-6 stroke-[1.5]" />
-                                    // eslint-disable-next-line react-doctor/jsx-max-depth
+                                    <Users className="h-6 w-6 stroke-[1.5]" />
                                     <span className="text-[10px] font-bold uppercase tracking-widest">
                                       {analytics.totalSubmissions === 0
                                         ? "No student submissions recorded"
@@ -714,29 +707,29 @@ export function AdminDashboardClient({
                             </div>
 
                             <div className="flex items-center gap-1">
-                              <Button variant="outline" size="icon" className="size-8 rounded-lg border-muted-foreground/20"
+                              <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-muted-foreground/20"
                                 onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>
-                                <ChevronsLeft className="size-4" />
+                                <ChevronsLeft className="h-4 w-4" />
                                 <span className="sr-only">First page</span>
                               </Button>
-                              <Button variant="outline" size="icon" className="size-8 rounded-lg border-muted-foreground/20"
+                              <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-muted-foreground/20"
                                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}>
-                                <ChevronLeft className="size-4" />
+                                <ChevronLeft className="h-4 w-4" />
                                 <span className="sr-only">Previous page</span>
                               </Button>
                               <div className="flex items-center justify-center text-xs font-semibold text-foreground min-w-[90px]">
                                 Page {currentPage} of {totalPages}
                               </div>
-                              <Button variant="outline" size="icon" className="size-8 rounded-lg border-muted-foreground/20"
+                              <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-muted-foreground/20"
                                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                                 disabled={currentPage === totalPages || totalPages === 0}>
-                                <ChevronRight className="size-4" />
+                                <ChevronRight className="h-4 w-4" />
                                 <span className="sr-only">Next page</span>
                               </Button>
-                              <Button variant="outline" size="icon" className="size-8 rounded-lg border-muted-foreground/20"
+                              <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-muted-foreground/20"
                                 onClick={() => setCurrentPage(totalPages)}
                                 disabled={currentPage === totalPages || totalPages === 0}>
-                                <ChevronsRight className="size-4" />
+                                <ChevronsRight className="h-4 w-4" />
                                 <span className="sr-only">Last page</span>
                               </Button>
                             </div>
@@ -755,7 +748,7 @@ export function AdminDashboardClient({
                     <CardHeader className="p-6 pb-4 flex flex-row items-center justify-between border-b select-none">
                       <div className="space-y-1">
                         <CardTitle className="text-base font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                          <Activity className="size-4.5 text-indigo-500" />
+                          <Activity className="h-4.5 w-4.5 text-indigo-500" />
                           Live Submission Feed
                         </CardTitle>
                         <CardDescription className="text-[10px] text-muted-foreground">
@@ -805,7 +798,7 @@ export function AdminDashboardClient({
                           ))
                         ) : (
                           <div className="h-full flex flex-col items-center justify-center py-10 gap-2 text-muted-foreground/30">
-                            <Activity className="size-7 stroke-[1.2]" />
+                            <Activity className="h-7 w-7 stroke-[1.2]" />
                             <span className="text-[10px] font-bold uppercase tracking-widest">
                               No submissions captured
                             </span>
@@ -819,7 +812,7 @@ export function AdminDashboardClient({
                   <Card className="border shadow-none overflow-hidden p-0 rounded-2xl">
                     <CardHeader className="p-6 pb-4 select-none border-b">
                       <CardTitle className="text-base font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                        <Cpu className="size-4.5 text-cyan-500" />
+                        <Cpu className="h-4.5 w-4.5 text-cyan-500" />
                         Language Popularity
                       </CardTitle>
                       <CardDescription className="text-xs text-muted-foreground">
@@ -871,7 +864,7 @@ export function AdminDashboardClient({
               <CardHeader className="p-6 pb-4 flex flex-row items-center justify-between border-b select-none">
                 <div className="space-y-1">
                   <CardTitle className="text-base font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                    <Tag className="size-4.5 text-amber-500" />
+                    <Tag className="h-4.5 w-4.5 text-amber-500" />
                     Concept Tag Analytics
                   </CardTitle>
                   <CardDescription className="text-xs text-muted-foreground">
@@ -916,7 +909,7 @@ export function AdminDashboardClient({
                             <TableRow key={tag.name} className="hover:bg-muted/30 border-b">
                               <TableCell className="px-5 py-4">
                                 <span className="inline-flex items-center gap-2 px-3 py-1 rounded-xl text-xs bg-background border border-border text-foreground/75 font-semibold">
-                                  <span className="size-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.3)]" />
+                                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.3)]" />
                                   {tag.name}
                                 </span>
                               </TableCell>
@@ -947,7 +940,6 @@ export function AdminDashboardClient({
                                     {tag.rate}%
                                   </span>
                                 ) : (
-                                  // eslint-disable-next-line react-doctor/design-no-em-dash-in-jsx-text
                                   <span className="text-xs text-muted-foreground/30 font-medium">—</span>
                                 )}
                               </TableCell>
@@ -959,7 +951,7 @@ export function AdminDashboardClient({
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-4 text-muted-foreground/30 border border-border/50 border-dashed rounded-2xl py-20 bg-background/10">
-                    <Tag className="size-10 stroke-[1.2]" />
+                    <Tag className="h-10 w-10 stroke-[1.2]" />
                     <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground/40">No Concept Tags Configured</p>
                   </div>
                 )}
@@ -974,7 +966,7 @@ export function AdminDashboardClient({
               {/* Toolbar */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 select-none">
                 <div className="relative flex-1 max-w-sm">
-                  <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground/60" />
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground/60" />
                   <Input
                     placeholder="Search challenges or tags..."
                     value={problemSearch}
@@ -982,11 +974,11 @@ export function AdminDashboardClient({
                     className="pl-9 pr-9 h-9 rounded-xl border-muted-foreground/20 bg-background focus-visible:ring-1 text-xs"
                   />
                   {problemSearch && (
-                    <button type="button"
+                    <button
                       onClick={() => setProblemSearch("")}
-                      className="absolute right-3 top-2.5 size-4 flex items-center justify-center text-muted-foreground/60 hover:text-foreground transition-colors"
+                      className="absolute right-3 top-2.5 h-4 w-4 flex items-center justify-center text-muted-foreground/60 hover:text-foreground transition-colors"
                     >
-                      <X className="size-3.5" />
+                      <X className="h-3.5 w-3.5" />
                     </button>
                   )}
                 </div>
@@ -1009,7 +1001,7 @@ export function AdminDashboardClient({
                     size="sm"
                     className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-500/90 text-white font-semibold rounded-xl h-9 px-4 text-xs select-none"
                   >
-                    <Plus className="size-4" /> Add Problem
+                    <Plus className="h-4 w-4" /> Add Problem
                   </Button>
                 </div>
               </div>
@@ -1050,13 +1042,13 @@ export function AdminDashboardClient({
                             </TableCell>
                             <TableCell className="px-4 py-3 text-right">
                               <div className="flex items-center justify-end gap-1.5">
-                                <Button asChild variant="outline" size="icon" className="size-8 rounded-lg border-muted-foreground/20 text-muted-foreground/75 hover:text-emerald-500 hover:bg-secondary/50">
+                                <Button asChild variant="outline" size="icon" className="h-8 w-8 rounded-lg border-muted-foreground/20 text-muted-foreground/75 hover:text-emerald-500 hover:bg-secondary/50">
                                   <Link href={`/~/logiclab/admin/edit/${problem.id}`} title="Edit Problem">
-                                    <Edit className="size-3.5" />
+                                    <Edit className="h-3.5 w-3.5" />
                                   </Link>
                                 </Button>
-                                <Button variant="outline" size="icon" onClick={() => setDeletingProblemId(problem.id)} className="size-8 rounded-lg border-muted-foreground/20 text-muted-foreground/75 hover:text-rose-500 hover:bg-secondary/50">
-                                  <Trash2 className="size-3.5" />
+                                <Button variant="outline" size="icon" onClick={() => setDeletingProblemId(problem.id)} className="h-8 w-8 rounded-lg border-muted-foreground/20 text-muted-foreground/75 hover:text-rose-500 hover:bg-secondary/50">
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
                               </div>
                             </TableCell>
@@ -1066,7 +1058,7 @@ export function AdminDashboardClient({
                         <TableRow>
                           <TableCell colSpan={5} className="px-4 py-16 text-center">
                             <div className="flex flex-col items-center gap-3 select-none">
-                              <Code className="size-8 text-muted-foreground/25 stroke-[1.2]" />
+                              <Code className="h-8 w-8 text-muted-foreground/25 stroke-[1.2]" />
                               <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground/40">
                                 {localProblems.length === 0
                                   ? "No challenges in your library yet"
@@ -1074,7 +1066,7 @@ export function AdminDashboardClient({
                               </p>
                               {localProblems.length === 0 && (
                                 <Button variant="link" onClick={() => setActiveTab("create")} className="text-xs text-emerald-500 hover:text-emerald-400 font-semibold gap-1.5">
-                                  <Upload className="size-3.5" /> Import or create problems
+                                  <Upload className="h-3.5 w-3.5" /> Import or create problems
                                 </Button>
                               )}
                             </div>
@@ -1102,7 +1094,7 @@ export function AdminDashboardClient({
         <DialogContent className="max-w-md rounded-2xl border bg-background text-foreground shadow-2xl p-0 overflow-hidden">
           <DialogHeader className="flex flex-row items-center justify-between px-6 py-4 bg-muted/50 border-b select-none">
             <DialogTitle className="text-sm font-bold text-rose-500 uppercase tracking-wider flex items-center gap-2">
-              <AlertTriangle className="size-4.5" /> Permanent Deletion
+              <AlertTriangle className="h-4.5 w-4.5" /> Permanent Deletion
             </DialogTitle>
           </DialogHeader>
           <div className="p-6 text-sm text-foreground/75 space-y-4">
@@ -1129,13 +1121,12 @@ export function AdminDashboardClient({
             >
               {isDeleting ? (
                 <>
-                  // eslint-disable-next-line react-doctor/design-no-three-period-ellipsis
-                  <Loader2 className="size-3.5 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   Deleting...
                 </>
               ) : (
                 <>
-                  <Trash2 className="size-3.5" />
+                  <Trash2 className="h-3.5 w-3.5" />
                   Delete Problem
                 </>
               )}
@@ -1204,7 +1195,7 @@ export function AdminDashboardClient({
               {/* Struggling Alert/Recommendation */}
               {selectedStudent.attemptCount >= 3 && selectedStudent.solvedCount < selectedStudent.attemptCount * 0.35 && (
                 <div className="bg-rose-500/5 border border-rose-500/15 rounded-2xl p-4 flex items-start gap-3 animate-in fade-in duration-300 select-none">
-                  <AlertTriangle className="size-5 text-rose-500 shrink-0 mt-0.5" />
+                  <AlertTriangle className="h-5 w-5 text-rose-500 shrink-0 mt-0.5" />
                   <div className="space-y-1">
                     <h6 className="text-xs font-bold text-rose-500 uppercase tracking-wider">Candidate Needs Attention</h6>
                     <p className="text-[11px] text-rose-400/80 leading-relaxed">
@@ -1266,7 +1257,7 @@ export function AdminDashboardClient({
                   {Object.entries(selectedStudent.solvedTags).length > 0 ? (
                     Object.entries(selectedStudent.solvedTags).map(([tag, count]) => (
                       <Badge key={tag} variant="secondary" className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-bold bg-muted text-foreground/80 hover:bg-muted border border-border/80">
-                        <span className="size-1.5 rounded-full bg-emerald-500" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                         {tag}
                         <Badge className="px-1.5 py-0.2 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-extrabold border border-emerald-500/20 text-[9px] ml-1">
                           {count}

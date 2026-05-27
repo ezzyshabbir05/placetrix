@@ -21,7 +21,6 @@ async function requireAuth(): Promise<string> {
 
 async function assertPostingOwner(postingId: string): Promise<string> {
   const userId = await requireAuth()
-  // eslint-disable-next-line react-doctor/server-sequential-independent-await
   const supabase = await createClient()
 
   const { data, error } = await supabase
@@ -42,9 +41,7 @@ async function assertPostingOwner(postingId: string): Promise<string> {
 export async function createPostingAction(
   form: JobPostingForm
 ): Promise<{ id: string }> {
-  // eslint-disable-next-line react-doctor/async-defer-await
   const userId = await requireAuth()
-  // eslint-disable-next-line react-doctor/server-sequential-independent-await
   const supabase = await createClient()
 
   if (!form.title.trim()) throw new Error("Title is required")
@@ -81,7 +78,6 @@ export async function updatePostingAction(
   postingId: string,
   form: JobPostingForm
 ): Promise<void> {
-  // eslint-disable-next-line react-doctor/async-defer-await, react-doctor/async-parallel
   await requireAuth()
   await assertPostingOwner(postingId)
   const supabase = await createClient()

@@ -121,7 +121,6 @@ function usernameStatusMessage(status: UsernameStatus): { text: string; classNam
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-// eslint-disable-next-line react-doctor/no-giant-component, react-doctor/prefer-useReducer
 export function RecruiterProfileClient({ userProfile, initialData }: Props) {
   const supabase = createClient()
   const { refresh } = useRouter()
@@ -494,7 +493,6 @@ export function RecruiterProfileClient({ userProfile, initialData }: Props) {
                 <div className="max-w-sm">
                   <p className="text-xs text-muted-foreground mb-1">Username</p>
                   <p className="text-sm font-medium text-muted-foreground italic">Not set yet</p>
-                  // eslint-disable-next-line react-doctor/design-no-em-dash-in-jsx-text
                   <p className="text-xs text-muted-foreground mt-1">Set your username — it cannot be changed once saved</p>
                 </div>
               )}
@@ -505,7 +503,7 @@ export function RecruiterProfileClient({ userProfile, initialData }: Props) {
                   Cancel
                 </Button>
                 <Button size="sm" onClick={() => handleSaveSection("account")} disabled={isPending}>
-                  {isPending && <Loader2 className="size-3.5 mr-1.5 animate-spin" />}
+                  {isPending && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
                   Save
                 </Button>
               </CardFooter>

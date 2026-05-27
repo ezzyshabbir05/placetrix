@@ -12,7 +12,6 @@ function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="input-group"
-      // eslint-disable-next-line react-doctor/prefer-tag-over-role
       role="group"
       className={cn(
         "group/input-group relative flex w-full items-center rounded-md border border-input shadow-xs transition-[color,box-shadow] outline-none dark:bg-input/30",
@@ -58,16 +57,13 @@ const inputGroupAddonVariants = cva(
   }
 )
 
-// eslint-disable-next-line react-doctor/no-multi-comp
 function InputGroupAddon({
   className,
   align = "inline-start",
   ...props
 }: React.ComponentProps<"div"> & VariantProps<typeof inputGroupAddonVariants>) {
   return (
-    // eslint-disable-next-line react-doctor/click-events-have-key-events
     <div
-      // eslint-disable-next-line react-doctor/prefer-tag-over-role
       role="group"
       data-slot="input-group-addon"
       data-align={align}
@@ -120,7 +116,6 @@ function InputGroupButton({
   )
 }
 
-// eslint-disable-next-line react-doctor/no-multi-comp
 function InputGroupText({ className, ...props }: React.ComponentProps<"span">) {
   return (
     <span

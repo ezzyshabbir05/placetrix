@@ -168,7 +168,7 @@ const TABS: { value: Tab; label: string }[] = [
 ]
 
 function DeviceIcon({ device }: { device: "desktop" | "mobile" | "tablet" }) {
-  const cls = "size-4 text-muted-foreground shrink-0 mt-0.5"
+  const cls = "h-4 w-4 text-muted-foreground shrink-0 mt-0.5"
   if (device === "mobile") return <Smartphone className={cls} />
   if (device === "tablet") return <Tablet className={cls} />
   return <Monitor className={cls} />
@@ -176,8 +176,6 @@ function DeviceIcon({ device }: { device: "desktop" | "mobile" | "tablet" }) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-// eslint-disable-next-line react-doctor/no-giant-component, react-doctor/prefer-useReducer
-// eslint-disable-next-line react-doctor/no-giant-component, react-doctor/prefer-useReducer
 export function InstituteSettingsClient({ userProfile, initialData }: Props) {
   const supabase = createClient()
   const [isPwPending, startPwTransition] = useTransition()
@@ -229,9 +227,7 @@ export function InstituteSettingsClient({ userProfile, initialData }: Props) {
       setSessLoading(false)
     }
   }, [supabase])
-// eslint-disable-next-line react-doctor/no-derived-state
 
-  // eslint-disable-next-line react-doctor/no-derived-state
   useEffect(() => { loadSessions() }, [loadSessions])
 
   async function handleRevokeSession(sessionId: string) {
@@ -366,8 +362,8 @@ export function InstituteSettingsClient({ userProfile, initialData }: Props) {
               <CardContent>
                 {pwSuccess ? (
                   <div className="flex flex-col items-center justify-center py-8 text-center gap-3">
-                    <div className="flex size-12 items-center justify-center rounded-full bg-emerald-500/10">
-                      <CheckCircle2 className="size-6 text-emerald-600 dark:text-emerald-400" />
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10">
+                      <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
                     </div>
                     <div className="space-y-0.5">
                       <p className="text-sm font-medium font-semibold">Password updated successfully</p>
@@ -400,7 +396,7 @@ export function InstituteSettingsClient({ userProfile, initialData }: Props) {
                           onClick={() => setPwShowCurrent((v) => !v)}
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                         >
-                          {pwShowCurrent ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                          {pwShowCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
                       {pwErrors.current && <p className="text-xs text-destructive">{pwErrors.current}</p>}
@@ -426,7 +422,7 @@ export function InstituteSettingsClient({ userProfile, initialData }: Props) {
                           onClick={() => setPwShowNew((v) => !v)}
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                         >
-                          {pwShowNew ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                          {pwShowNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
                       {pwNew ? (
@@ -467,7 +463,7 @@ export function InstituteSettingsClient({ userProfile, initialData }: Props) {
                           onClick={() => setPwShowConfirm((v) => !v)}
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                         >
-                          {pwShowConfirm ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                          {pwShowConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
                       {pwConfirmMatch && (
@@ -481,8 +477,8 @@ export function InstituteSettingsClient({ userProfile, initialData }: Props) {
 
                     <Button onClick={handlePasswordSubmit} disabled={isPwPending} className="gap-2">
                       {isPwPending
-                        ? <><Loader2 className="size-4 animate-spin" />Updating Password…</>
-                        : <><KeyRound className="size-4" />Update Password</>}
+                        ? <><Loader2 className="h-4 w-4 animate-spin" />Updating Password…</>
+                        : <><KeyRound className="h-4 w-4" />Update Password</>}
                     </Button>
                   </div>
                 )}
@@ -534,7 +530,7 @@ export function InstituteSettingsClient({ userProfile, initialData }: Props) {
                 <CardDescription>Devices currently signed in to your institution account</CardDescription>
                 <CardAction>
                   <Button variant="outline" size="sm" onClick={loadSessions} disabled={sessionsLoading} className="gap-1.5 text-xs h-8">
-                    {sessionsLoading ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
+                    {sessionsLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
                     Refresh
                   </Button>
                 </CardAction>
@@ -543,7 +539,7 @@ export function InstituteSettingsClient({ userProfile, initialData }: Props) {
                 {!sessionsLoading && otherSessionCount > 0 && (
                   <div className="flex items-center justify-between rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-2.5">
                     <div className="flex items-center gap-2">
-                      <ShieldAlert className="size-4 text-destructive" />
+                      <ShieldAlert className="h-4 w-4 text-destructive" />
                       <span className="text-xs font-medium text-destructive">
                         {otherSessionCount} other active session{otherSessionCount !== 1 ? "s" : ""} detected
                       </span>
@@ -551,7 +547,7 @@ export function InstituteSettingsClient({ userProfile, initialData }: Props) {
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="destructive" size="sm" disabled={revokingAll} className="h-7 px-3 text-xs gap-1.5">
-                          {revokingAll ? <Loader2 className="size-3 animate-spin" /> : <LogOut className="size-3" />}
+                          {revokingAll ? <Loader2 className="h-3 w-3 animate-spin" /> : <LogOut className="h-3 w-3" />}
                           Sign out all
                         </Button>
                       </AlertDialogTrigger>
@@ -578,7 +574,7 @@ export function InstituteSettingsClient({ userProfile, initialData }: Props) {
                   <div className="space-y-2">
                     {[...Array(3)].map((_, i) => (
                       <div key={i} className="flex items-center gap-3 rounded-lg border p-3.5 animate-pulse">
-                        <div className="size-9 rounded-md bg-muted shrink-0" />
+                        <div className="h-9 w-9 rounded-md bg-muted shrink-0" />
                         <div className="flex-1 space-y-2">
                           <div className="h-3 w-1/3 rounded bg-muted" />
                           <div className="h-2.5 w-1/2 rounded bg-muted" />
@@ -590,8 +586,8 @@ export function InstituteSettingsClient({ userProfile, initialData }: Props) {
 
                 {!sessionsLoading && sessions.length === 0 && (
                   <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12 text-center">
-                    <div className="mb-3 flex size-10 items-center justify-center rounded-full bg-muted">
-                      <Clock className="size-5 text-muted-foreground" />
+                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                      <Clock className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <p className="text-sm font-medium">No sessions found</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">Login activity will appear here once detected.</p>
@@ -617,7 +613,7 @@ export function InstituteSettingsClient({ userProfile, initialData }: Props) {
                           )}
                         >
                           <div className={cn(
-                            "flex size-9 shrink-0 items-center justify-center rounded-md",
+                            "flex h-9 w-9 shrink-0 items-center justify-center rounded-md",
                             isCurrent ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                           )}>
                             <DeviceIcon device={device} />
@@ -640,20 +636,20 @@ export function InstituteSettingsClient({ userProfile, initialData }: Props) {
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
                               {session.ip != null && (
                                 <span className="flex items-center gap-1">
-                                  <MapPin className="size-2.5" />{String(session.ip)}
+                                  <MapPin className="h-2.5 w-2.5" />{String(session.ip)}
                                 </span>
                               )}
                               <span className="flex items-center gap-1">
-                                <Clock className="size-2.5" />Signed in {formatTimeAgo(session.created_at)}
+                                <Clock className="h-2.5 w-2.5" />Signed in {formatTimeAgo(session.created_at)}
                               </span>
                               {session.updated_at && session.updated_at !== session.created_at && (
                                 <span className="flex items-center gap-1">
-                                  <RefreshCw className="size-2.5" />Last active {formatTimeAgo(session.updated_at)}
+                                  <RefreshCw className="h-2.5 w-2.5" />Last active {formatTimeAgo(session.updated_at)}
                                 </span>
                               )}
                               {expiryLabel && (
                                 <span className="flex items-center gap-1">
-                                  <CalendarClock className="size-2.5" />Expires {expiryLabel}
+                                  <CalendarClock className="h-2.5 w-2.5" />Expires {expiryLabel}
                                 </span>
                               )}
                             </div>
@@ -666,9 +662,9 @@ export function InstituteSettingsClient({ userProfile, initialData }: Props) {
                                   variant="ghost"
                                   size="icon"
                                   disabled={isRevoking || revokingAll}
-                                  className="size-8 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive hover:bg-destructive/10 transition-all"
+                                  className="h-8 w-8 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive hover:bg-destructive/10 transition-all"
                                 >
-                                  {isRevoking ? <Loader2 className="size-3.5 animate-spin" /> : <LogOut className="size-3.5" />}
+                                  {isRevoking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LogOut className="h-3.5 w-3.5" />}
                                 </Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>

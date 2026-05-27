@@ -1,5 +1,4 @@
 "use client";
-// eslint-disable-next-line react-doctor/use-lazy-motion
 import { motion } from "motion/react";
 
 export function FloatingPaths({ position }: { position: number }) {
@@ -38,7 +37,6 @@ export function FloatingPaths({ position }: { position: number }) {
 						strokeOpacity={0.1 + path.id * 0.03}
 						strokeWidth={path.width}
 						transition={{
-							// eslint-disable-next-line react-doctor/rendering-hydration-mismatch-time
 							duration: 20 + Math.random() * 10,
 							repeat: Number.POSITIVE_INFINITY,
 							ease: "linear",

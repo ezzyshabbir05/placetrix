@@ -151,7 +151,6 @@ export default async function AdminPage() {
       }
     })
 
-    // eslint-disable-next-line react-doctor/js-tosorted-immutable
     const studentRecentSubmissions = [...st.submissionsList]
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 5)
@@ -239,7 +238,6 @@ export default async function AdminPage() {
     const pSubs = submissions.filter((s: any) => s.problem_id === p.id)
     const pAcc = pSubs.filter((s: any) => s.status === "Accepted")
     // Unique students who got Accepted on this problem
-    // eslint-disable-next-line react-doctor/js-flatmap-filter
     const studentsSolvedThisProblem = new Set(pAcc.map((s: any) => s.user_id).filter(Boolean))
 
     pTags.forEach((tag: string) => {

@@ -6,7 +6,6 @@ import type { ApplicationDetails } from "./_types"
 
 export default async function ApplicationsPage({ params }: { params: Promise<{ postingId: string }> }) {
   const { postingId } = await params
-  // eslint-disable-next-line react-doctor/server-sequential-independent-await
   const profile = await getUserProfile()
   if (!profile || profile.account_type !== "recruiter") {
     redirect("/~/home")

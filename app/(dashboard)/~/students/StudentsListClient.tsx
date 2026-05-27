@@ -116,8 +116,6 @@ function SortableHead<T extends string>({
 }
 
 
-// eslint-disable-next-line react-doctor/no-giant-component
-// eslint-disable-next-line react-doctor/no-giant-component
 export function StudentsListClient({
   students,
   totalCount,

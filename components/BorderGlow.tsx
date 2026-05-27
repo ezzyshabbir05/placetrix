@@ -127,14 +127,11 @@ const BorderGlow: React.FC<BorderGlowProps> = ({
         setCursorAngle(getCursorAngle(card, x, y));
     }, [getEdgeProximity, getCursorAngle]);
 
-    // eslint-disable-next-line react-doctor/no-cascading-set-state
     useEffect(() => {
         if (!animated) return;
         const angleStart = 110;
         const angleEnd = 465;
-        // eslint-disable-next-line react-doctor/no-adjust-state-on-prop-change
         setSweepActive(true);
-        // eslint-disable-next-line react-doctor/no-adjust-state-on-prop-change
         setCursorAngle(angleStart);
 
         animateValue({ duration: 500, onUpdate: v => setEdgeProximity(v / 100) });

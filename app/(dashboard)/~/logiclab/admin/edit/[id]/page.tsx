@@ -16,7 +16,6 @@ interface PageProps {
 
 export default async function EditProblemPage({ params }: PageProps) {
   const { id } = await params
-  // eslint-disable-next-line react-doctor/server-sequential-independent-await
   const profile = await getUserProfile()
   if (!profile) redirect("/auth/login")
 

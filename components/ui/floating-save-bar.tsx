@@ -1,6 +1,5 @@
 "use client"
 
-// eslint-disable-next-line react-doctor/use-lazy-motion
 import { AnimatePresence, motion } from "framer-motion"
 import { Loader2, RotateCcw, Save } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -62,9 +61,9 @@ export function FloatingSaveBar({
                                 className="h-9 px-4 gap-1.5"
                             >
                                 {isPending ? (
-                                    <Loader2 className="size-3.5 animate-spin" />
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                 ) : (
-                                    <Save className="size-3.5" />
+                                    <Save className="h-3.5 w-3.5" />
                                 )}
                                 <span>Save</span>
                             </Button>
@@ -99,9 +98,9 @@ export function FloatingSaveBar({
                                 className="h-8 gap-1.5"
                             >
                                 {isPending ? (
-                                    <Loader2 className="size-3.5 animate-spin" />
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                 ) : (
-                                    <Save className="size-3.5" />
+                                    <Save className="h-3.5 w-3.5" />
                                 )}
                                 Save changes
                             </Button>

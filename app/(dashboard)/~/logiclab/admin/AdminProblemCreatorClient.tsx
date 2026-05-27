@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useState, useRef } from "react"
-// eslint-disable-next-line react-doctor/prefer-dynamic-import
 import Editor from "@monaco-editor/react"
 import { useTheme } from "next-themes"
 import Link from "next/link"
@@ -145,10 +144,8 @@ const validateProblems = (rawProblems: any[]): ParsedProblem[] => {
 
     let tags: string[] = []
     if (Array.isArray(p.tags)) {
-      // eslint-disable-next-line react-doctor/js-flatmap-filter
       tags = p.tags.map((t: any) => String(t).trim()).filter(Boolean)
     } else if (typeof p.tags === "string") {
-      // eslint-disable-next-line react-doctor/js-flatmap-filter
       tags = p.tags.split(/[;,]/).map((t: string) => t.trim()).filter(Boolean)
     }
 
@@ -273,14 +270,12 @@ const CSV_ROBUST_TEMPLATE = `title,description,difficulty,tags,time_limit,memory
 const CSV_SIMPLE_TEMPLATE = `title,description,difficulty,tags,time_limit,memory_limit,sample_input,sample_output
 "Two Sum","Given an array of integers...","Easy","Array;Hash Table",2.0,256,"[2,7,11,15]\\n9","[0,1]"`
 
-// eslint-disable-next-line react-doctor/no-giant-component
 export function AdminProblemCreatorClient({
   initialProblem,
   isEdit = false,
 }: {
   initialProblem?: any
   isEdit?: boolean
-// eslint-disable-next-line react-doctor/prefer-useReducer
 } = {}) {
   const { resolvedTheme } = useTheme()
   const monacoTheme = resolvedTheme === "light" ? "vs" : "vs-dark"
@@ -439,7 +434,6 @@ export function AdminProblemCreatorClient({
         title: title.trim(),
         description: description.trim(),
         difficulty,
-        // eslint-disable-next-line react-doctor/js-flatmap-filter
         tags: tags.split(",").map((t: string) => t.trim()).filter(Boolean),
         time_limit: timeLimit,
         memory_limit: memoryLimit,
@@ -471,7 +465,6 @@ export function AdminProblemCreatorClient({
       }
 
       toast.success(`Problem ${isEdit ? "updated" : "created"} successfully!`)
-      // eslint-disable-next-line react-doctor/react-compiler-destructure-method
       router.push("/~/logiclab/admin")
     } catch (err: any) {
       console.error("Save error:", err)
@@ -515,7 +508,6 @@ export function AdminProblemCreatorClient({
       }
 
       toast.success(`Successfully imported ${insertedProblems.length} problems!`)
-      // eslint-disable-next-line react-doctor/react-compiler-destructure-method
       router.push("/~/logiclab/admin")
     } catch (err: any) {
       console.error("Bulk Import Error:", err)
@@ -532,9 +524,9 @@ export function AdminProblemCreatorClient({
         <div className="flex items-center gap-3">
           <Link
             href="/~/logiclab/admin"
-            className="size-9 rounded-lg bg-muted border border-border flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors"
+            className="h-9 w-9 rounded-lg bg-muted border border-border flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors"
           >
-            <IconArrowLeft className="size-4 text-muted-foreground" />
+            <IconArrowLeft className="h-4 w-4 text-muted-foreground" />
           </Link>
           <div>
             <h1 className="text-lg font-bold tracking-tight text-foreground">
@@ -545,28 +537,27 @@ export function AdminProblemCreatorClient({
         </div>
 
         {activeTab === "single" ? (
-          <button type="button"
+          <button
             onClick={handleSave}
             disabled={saving}
             className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 disabled:bg-muted disabled:text-muted-foreground/60 text-black px-5 py-2 rounded-lg text-xs font-bold shadow-[0_0_16px_rgba(16,185,129,0.25)] hover:shadow-[0_0_22px_rgba(16,185,129,0.4)] disabled:shadow-none transition-all cursor-pointer"
           >
             {saving ? (
-              <><div className="size-3.5 border border-current border-t-transparent rounded-full animate-spin" /> {isEdit ? "Updating..." : "Saving..."}</>
+              <><div className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin" /> {isEdit ? "Updating..." : "Saving..."}</>
             ) : (
-              <><IconDeviceFloppy className="size-4" /> {isEdit ? "Update Problem" : "Save Problem"}</>
+              <><IconDeviceFloppy className="h-4 w-4" /> {isEdit ? "Update Problem" : "Save Problem"}</>
             )}
           </button>
         ) : (
-          <button type="button"
+          <button
             onClick={handleBulkImport}
             disabled={saving || parsedProblems.filter((p) => p.isValid).length === 0}
             className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 disabled:bg-muted disabled:text-muted-foreground/60 text-black px-5 py-2 rounded-lg text-xs font-bold shadow-[0_0_16px_rgba(16,185,129,0.25)] hover:shadow-[0_0_22px_rgba(16,185,129,0.4)] disabled:shadow-none transition-all cursor-pointer"
           >
             {saving ? (
-              // eslint-disable-next-line react-doctor/design-no-three-period-ellipsis
-              <><div className="size-3.5 border border-current border-t-transparent rounded-full animate-spin" /> Importing...</>
+              <><div className="h-3.5 w-3.5 border border-current border-t-transparent rounded-full animate-spin" /> Importing...</>
             ) : (
-              <><IconCircleCheck className="size-4" /> Import {parsedProblems.filter((p) => p.isValid).length} Problems</>
+              <><IconCircleCheck className="h-4 w-4" /> Import {parsedProblems.filter((p) => p.isValid).length} Problems</>
             )}
           </button>
         )}
@@ -575,7 +566,7 @@ export function AdminProblemCreatorClient({
       {/* Tabs bar */}
       {!isEdit && (
         <div className="flex border-b border-border shrink-0">
-          <button type="button"
+          <button
             onClick={() => setActiveTab("single")}
             className={`px-5 py-2.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
               activeTab === "single"
@@ -585,7 +576,7 @@ export function AdminProblemCreatorClient({
           >
             Single Problem Creator
           </button>
-          <button type="button"
+          <button
             onClick={() => setActiveTab("bulk")}
             className={`px-5 py-2.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
               activeTab === "bulk"
@@ -605,9 +596,7 @@ export function AdminProblemCreatorClient({
           <div className="space-y-4">
             {/* Title */}
             <div>
-              // eslint-disable-next-line react-doctor/label-has-associated-control
               <label className="text-[10px] text-muted-foreground/80 uppercase tracking-widest font-bold mb-1.5 block">Problem Title *</label>
-              // eslint-disable-next-line react-doctor/control-has-associated-label
               <input
                 type="text"
                 value={title}
@@ -619,11 +608,9 @@ export function AdminProblemCreatorClient({
 
             {/* Description */}
             <div>
-              // eslint-disable-next-line react-doctor/label-has-associated-control
               <label className="text-[10px] text-muted-foreground/80 uppercase tracking-widest font-bold mb-1.5 block">
                 Description * (Markdown supported)
               </label>
-              // eslint-disable-next-line react-doctor/control-has-associated-label
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -636,7 +623,6 @@ export function AdminProblemCreatorClient({
             {/* Difficulty + Tags */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                // eslint-disable-next-line react-doctor/label-has-associated-control
                 <label className="text-[10px] text-muted-foreground/80 uppercase tracking-widest font-bold mb-1.5 block">Difficulty *</label>
                 <select
                   value={difficulty}
@@ -649,9 +635,7 @@ export function AdminProblemCreatorClient({
                 </select>
               </div>
               <div>
-                // eslint-disable-next-line react-doctor/label-has-associated-control
                 <label className="text-[10px] text-muted-foreground/80 uppercase tracking-widest font-bold mb-1.5 block">Tags (comma separated)</label>
-                // eslint-disable-next-line react-doctor/control-has-associated-label
                 <input
                   type="text"
                   value={tags}
@@ -665,9 +649,7 @@ export function AdminProblemCreatorClient({
             {/* Limits */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                // eslint-disable-next-line react-doctor/label-has-associated-control
                 <label className="text-[10px] text-muted-foreground/80 uppercase tracking-widest font-bold mb-1.5 block">Time Limit (seconds)</label>
-                // eslint-disable-next-line react-doctor/control-has-associated-label
                 <input
                   type="number"
                   step="0.5"
@@ -679,9 +661,7 @@ export function AdminProblemCreatorClient({
                 />
               </div>
               <div>
-                // eslint-disable-next-line react-doctor/label-has-associated-control
                 <label className="text-[10px] text-muted-foreground/80 uppercase tracking-widest font-bold mb-1.5 block">Memory Limit (MB)</label>
-                // eslint-disable-next-line react-doctor/control-has-associated-label
                 <input
                   type="number"
                   min="32"
@@ -699,45 +679,42 @@ export function AdminProblemCreatorClient({
                 <label className="text-[10px] text-muted-foreground/80 uppercase tracking-widest font-bold">
                   Test Cases ({testCases.length})
                 </label>
-                <button type="button"
+                <button
                   onClick={addTestCase}
                   className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 font-bold uppercase tracking-widest transition-colors cursor-pointer"
                 >
-                  <IconPlus className="size-3" /> Add
+                  <IconPlus className="h-3 w-3" /> Add
                 </button>
               </div>
 
               <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
                 {testCases.map((tc, idx) => (
-                  // eslint-disable-next-line react-doctor/no-array-index-key, react-doctor/no-array-index-as-key
                   <div key={idx} className="bg-card border border-border rounded-lg p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-muted-foreground/80 font-bold uppercase tracking-widest">
                         Test Case #{idx + 1}
                       </span>
                       <div className="flex items-center gap-2">
-                        <button type="button"
+                        <button
                           onClick={() => updateTestCase(idx, "is_sample", !tc.is_sample)}
                           className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer ${tc.is_sample ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground/60 hover:text-muted-foreground"}`}
                         >
-                          {tc.is_sample ? <IconEye className="size-3" /> : <IconEyeOff className="size-3" />}
+                          {tc.is_sample ? <IconEye className="h-3 w-3" /> : <IconEyeOff className="h-3 w-3" />}
                           {tc.is_sample ? "Sample" : "Hidden"}
                         </button>
                         {testCases.length > 1 && (
-                          <button type="button"
+                          <button
                             onClick={() => removeTestCase(idx)}
                             className="text-muted-foreground/60 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer"
                           >
-                            <IconTrash className="size-3.5" />
+                            <IconTrash className="h-3.5 w-3.5" />
                           </button>
                         )}
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        // eslint-disable-next-line react-doctor/label-has-associated-control
                         <label className="text-[9px] text-muted-foreground/60 uppercase tracking-widest">Input (stdin)</label>
-                        // eslint-disable-next-line react-doctor/control-has-associated-label
                         <textarea
                           value={tc.input}
                           onChange={(e) => updateTestCase(idx, "input", e.target.value)}
@@ -747,9 +724,7 @@ export function AdminProblemCreatorClient({
                         />
                       </div>
                       <div>
-                        // eslint-disable-next-line react-doctor/label-has-associated-control
                         <label className="text-[9px] text-muted-foreground/60 uppercase tracking-widest">Expected Output</label>
-                        // eslint-disable-next-line react-doctor/control-has-associated-label
                         <textarea
                           value={tc.expected_output}
                           onChange={(e) => updateTestCase(idx, "expected_output", e.target.value)}
@@ -770,7 +745,7 @@ export function AdminProblemCreatorClient({
             {/* Language selector */}
             <div className="flex items-center gap-2">
               {LANGUAGES.map((lang) => (
-                <button type="button"
+                <button
                   key={lang.id}
                   onClick={() => setActiveLang(String(lang.id))}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${String(lang.id) === activeLang ? "bg-emerald-500/5 dark:bg-emerald-500/10 border-emerald-500/20 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold" : "bg-card border-border text-muted-foreground/80 hover:text-foreground/80 hover:border-border"}`}
@@ -783,7 +758,7 @@ export function AdminProblemCreatorClient({
             {/* Boilerplate Editor */}
             <div className="flex-1 flex flex-col bg-card border border-border rounded-xl overflow-hidden min-h-[250px]">
               <div className="flex items-center gap-2 bg-background px-4 py-2 border-b border-border shrink-0">
-                <IconCode className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                <IconCode className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                   User Boilerplate (visible to students)
                 </span>
@@ -811,8 +786,7 @@ export function AdminProblemCreatorClient({
             {/* Driver Code Editor */}
             <div className="flex-1 flex flex-col bg-card border border-border rounded-xl overflow-hidden min-h-[250px]">
               <div className="flex items-center gap-2 bg-background px-4 py-2 border-b border-border shrink-0">
-                <IconAlertTriangle className="size-3.5 text-amber-400" />
-                // eslint-disable-next-line react-doctor/design-no-em-dash-in-jsx-text
+                <IconAlertTriangle className="h-3.5 w-3.5 text-amber-400" />
                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                   Driver Code (hidden — appended to user code before execution)
                 </span>
@@ -844,7 +818,6 @@ export function AdminProblemCreatorClient({
           {/* Left Column: Dropzone & Validation summary */}
           <div className="xl:col-span-2 space-y-6">
             {/* Drop Zone */}
-            // eslint-disable-next-line react-doctor/click-events-have-key-events, react-doctor/no-static-element-interactions
             <div
               onDragEnter={handleDrag}
               onDragOver={handleDrag}
@@ -857,7 +830,6 @@ export function AdminProblemCreatorClient({
                   : "border-border hover:border-border hover:bg-card/60"
               }`}
             >
-              // eslint-disable-next-line react-doctor/control-has-associated-label
               <input
                 ref={fileInputRef}
                 type="file"
@@ -865,8 +837,8 @@ export function AdminProblemCreatorClient({
                 onChange={handleFileChange}
                 className="hidden"
               />
-              <div className="size-12 rounded-xl bg-card/80 border border-border flex items-center justify-center text-muted-foreground">
-                <IconUpload className="size-6 text-emerald-400" />
+              <div className="h-12 w-12 rounded-xl bg-card/80 border border-border flex items-center justify-center text-muted-foreground">
+                <IconUpload className="h-6 w-6 text-emerald-400" />
               </div>
               <div className="text-center">
                 <p className="text-sm font-semibold text-foreground/90">
@@ -883,7 +855,7 @@ export function AdminProblemCreatorClient({
               <div className="bg-card/30 border border-border/80 rounded-2xl overflow-hidden flex flex-col">
                 <div className="bg-card/80 border-b border-border px-5 py-3.5 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <IconFileDescription className="size-4 text-emerald-600 dark:text-emerald-400" />
+                    <IconFileDescription className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     <span className="text-xs font-bold text-foreground/80 uppercase tracking-widest">
                       Parsed Problems Summary ({parsedProblems.length})
                     </span>
@@ -895,7 +867,6 @@ export function AdminProblemCreatorClient({
 
                 <div className="divide-y divide-zinc-800/50 max-h-[480px] overflow-y-auto">
                   {parsedProblems.map((prob, idx) => (
-                    // eslint-disable-next-line react-doctor/no-array-index-key, react-doctor/no-array-index-as-key
                     <div key={idx} className="p-4 hover:bg-card/20 transition-colors space-y-3">
                       <div className="flex items-start justify-between gap-4">
                         <div className="space-y-1">
@@ -918,11 +889,11 @@ export function AdminProblemCreatorClient({
                           </span>
                           {prob.isValid ? (
                             <span className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 dark:bg-emerald-500/10 px-2.5 py-0.5 border border-emerald-500/15 dark:border-emerald-500/20 rounded-md font-bold uppercase tracking-wider">
-                              <IconCheck className="size-3" /> Valid
+                              <IconCheck className="h-3 w-3" /> Valid
                             </span>
                           ) : (
                             <span className="flex items-center gap-1 text-[10px] text-rose-600 dark:text-rose-400 bg-rose-500/5 dark:bg-rose-500/10 px-2.5 py-0.5 border border-rose-500/15 dark:border-rose-500/20 rounded-md font-bold uppercase tracking-wider">
-                              <IconX className="size-3" /> Invalid
+                              <IconX className="h-3 w-3" /> Invalid
                             </span>
                           )}
                         </div>
@@ -932,11 +903,10 @@ export function AdminProblemCreatorClient({
                       {!prob.isValid && (
                         <div className="bg-rose-500/5 border border-rose-500/10 rounded-lg p-3 space-y-1.5">
                           <div className="flex items-center gap-1 text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest">
-                            <IconAlertCircle className="size-3.5" /> Validation Errors:
+                            <IconAlertCircle className="h-3.5 w-3.5" /> Validation Errors:
                           </div>
                           <ul className="list-disc pl-4 text-xs text-muted-foreground space-y-0.5">
                             {prob.errors.map((err, errIdx) => (
-                              // eslint-disable-next-line react-doctor/no-array-index-key
                               <li key={errIdx}>{err}</li>
                             ))}
                           </ul>
@@ -977,7 +947,7 @@ export function AdminProblemCreatorClient({
 
             {/* Template Selector tabs */}
             <div className="grid grid-cols-3 gap-1 bg-background p-1 rounded-lg border border-border">
-              <button type="button"
+              <button
                 onClick={() => setActiveTemplateTab("json")}
                 className={`py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all cursor-pointer ${
                   activeTemplateTab === "json" ? "bg-muted text-emerald-400 shadow-sm" : "text-muted-foreground/80 hover:text-foreground/80"
@@ -985,7 +955,7 @@ export function AdminProblemCreatorClient({
               >
                 JSON
               </button>
-              <button type="button"
+              <button
                 onClick={() => setActiveTemplateTab("csv_robust")}
                 className={`py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all cursor-pointer ${
                   activeTemplateTab === "csv_robust" ? "bg-muted text-emerald-400 shadow-sm" : "text-muted-foreground/80 hover:text-foreground/80"
@@ -993,7 +963,7 @@ export function AdminProblemCreatorClient({
               >
                 CSV Robust
               </button>
-              <button type="button"
+              <button
                 onClick={() => setActiveTemplateTab("csv_simple")}
                 className={`py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all cursor-pointer ${
                   activeTemplateTab === "csv_simple" ? "bg-muted text-emerald-400 shadow-sm" : "text-muted-foreground/80 hover:text-foreground/80"
@@ -1005,7 +975,7 @@ export function AdminProblemCreatorClient({
 
             {/* Template preview */}
             <div className="relative bg-background border border-border rounded-xl p-3.5 font-mono text-[10px] overflow-x-auto text-muted-foreground max-h-[300px] whitespace-pre select-all">
-              <button type="button"
+              <button
                 onClick={() =>
                   handleCopyTemplate(
                     activeTemplateTab === "json"
@@ -1015,10 +985,10 @@ export function AdminProblemCreatorClient({
                       : CSV_SIMPLE_TEMPLATE
                   )
                 }
-                className="absolute right-2 top-2 size-7 rounded bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                className="absolute right-2 top-2 h-7 w-7 rounded bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
                 title="Copy Template"
               >
-                <IconCopy className="size-3.5" />
+                <IconCopy className="h-3.5 w-3.5" />
               </button>
               {activeTemplateTab === "json"
                 ? JSON_TEMPLATE
@@ -1030,7 +1000,7 @@ export function AdminProblemCreatorClient({
             {/* Format Instructions */}
             <div className="space-y-3.5 text-xs text-muted-foreground border-t border-border/80 pt-4">
               <div className="flex gap-2.5">
-                <IconInfoCircle className="size-4 text-emerald-400 shrink-0 mt-0.5" />
+                <IconInfoCircle className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
                 <div>
                   <h4 className="font-bold text-foreground/80">Format Rules</h4>
                   <ul className="list-disc pl-4 mt-1 space-y-1.5 text-muted-foreground/80 text-[11px]">

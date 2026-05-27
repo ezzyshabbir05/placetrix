@@ -14,7 +14,6 @@ export function Footer() {
       <div className="mx-auto max-w-5xl">
         <div className="grid max-w-5xl grid-cols-6 gap-6 p-4">
           <div className="col-span-6 flex flex-col gap-4 pt-5 md:col-span-4">
-            // eslint-disable-next-line react-doctor/anchor-is-valid
             <a className="font-bold" href="#">
               PlaceTrix
             </a>
@@ -72,7 +71,6 @@ export function Footer() {
         <div className="absolute inset-x-0 h-px w-full bg-border" />
         <div className="flex max-w-4xl flex-col justify-between gap-2 py-4">
           <p className="text-center font-light text-muted-foreground text-sm">
-            // eslint-disable-next-line react-doctor/rendering-hydration-mismatch-time
             &copy; {new Date().getFullYear()}, 360 View Tech, All rights reserved
           </p>
         </div>

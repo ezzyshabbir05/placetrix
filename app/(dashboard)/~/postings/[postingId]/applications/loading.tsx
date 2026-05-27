@@ -9,7 +9,7 @@ function StatCardSkeleton() {
     <Card className="rounded-xl py-0">
       <CardContent className="p-4 space-y-1">
         <div className="flex items-center gap-1.5">
-          <Skeleton className="size-3.5 rounded" />
+          <Skeleton className="h-3.5 w-3.5 rounded" />
           <Skeleton className="h-3 w-20 rounded" />
         </div>
         <Skeleton className="h-7 w-12 rounded" />
@@ -65,7 +65,7 @@ export default function ApplicationsListLoading() {
               <TableRow key={i} className="hover:bg-muted/20">
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <Skeleton className="size-9 rounded-full shrink-0" />
+                    <Skeleton className="h-9 w-9 rounded-full shrink-0" />
                     <div className="space-y-1.5 min-w-0">
                       <Skeleton className="h-3.5 w-28 rounded" />
                       <Skeleton className="h-3 w-36 rounded" />
@@ -94,7 +94,7 @@ export default function ApplicationsListLoading() {
               <Skeleton className="h-3.5 w-32 rounded" />
               <Skeleton className="h-4.5 w-16 rounded-full" />
             </div>
-            <Skeleton className="size-4 rounded shrink-0" />
+            <Skeleton className="h-4 w-4 rounded shrink-0" />
           </div>
         ))}
       </div>

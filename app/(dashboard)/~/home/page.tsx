@@ -89,7 +89,7 @@ function SectionHeader({ title, href }: { title: string; href: string }) {
         className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
       >
         View all
-        <ArrowRight className="size-3" />
+        <ArrowRight className="h-3 w-3" />
       </Link>
     </div>
   );
@@ -144,7 +144,7 @@ export default async function HomePage() {
               <Link href="/~/settings" className="shrink-0">
                 <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs">
                   Complete Profile
-                  <ArrowRight className="size-3.5" />
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               </Link>
             </div>
@@ -156,24 +156,24 @@ export default async function HomePage() {
               <SectionHeader title="Tests Overview" href="/~/tests" />
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <StatCard
-                  icon={<BookOpen className="size-4" />}
+                  icon={<BookOpen className="h-4 w-4" />}
                   label="Assigned"
                   value={stats.total_tests}
                 />
                 <StatCard
-                  icon={<PlayCircle className="size-4" />}
+                  icon={<PlayCircle className="h-4 w-4" />}
                   label="Live Now"
                   value={stats.live_tests}
                   accent={stats.live_tests > 0 ? "green" : "muted"}
                 />
                 <StatCard
-                  icon={<CalendarClock className="size-4" />}
+                  icon={<CalendarClock className="h-4 w-4" />}
                   label="Upcoming"
                   value={stats.upcoming_tests}
                   accent={stats.upcoming_tests > 0 ? "amber" : "muted"}
                 />
                 <StatCard
-                  icon={<CheckCircle2 className="size-4" />}
+                  icon={<CheckCircle2 className="h-4 w-4" />}
                   label="Completed"
                   value={stats.completed_tests}
                   accent={stats.completed_tests > 0 ? "blue" : "muted"}
@@ -194,7 +194,7 @@ export default async function HomePage() {
               <Link href="/~/tests" className="shrink-0">
                 <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs">
                   View Tests
-                  <ArrowRight className="size-3.5" />
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               </Link>
             </div>
@@ -244,7 +244,7 @@ export default async function HomePage() {
               <Link href="/~/settings" className="shrink-0">
                 <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs">
                   Complete Profile
-                  <ArrowRight className="size-3.5" />
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               </Link>
             </div>
@@ -256,34 +256,34 @@ export default async function HomePage() {
               <SectionHeader title="Tests Overview" href="/~/tests" />
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                 <StatCard
-                  icon={<ListCheck className="size-4" />}
+                  icon={<ListCheck className="h-4 w-4" />}
                   label="Total Tests"
                   value={stats.total_tests}
                 />
                 <StatCard
-                  icon={<PlayCircle className="size-4" />}
+                  icon={<PlayCircle className="h-4 w-4" />}
                   label="Live"
                   value={stats.live_tests}
                   accent={stats.live_tests > 0 ? "green" : "muted"}
                 />
                 <StatCard
-                  icon={<CalendarClock className="size-4" />}
+                  icon={<CalendarClock className="h-4 w-4" />}
                   label="Upcoming"
                   value={stats.upcoming_tests}
                   accent={stats.upcoming_tests > 0 ? "amber" : "muted"}
                 />
                 <StatCard
-                  icon={<CheckCircle2 className="size-4" />}
+                  icon={<CheckCircle2 className="h-4 w-4" />}
                   label="Past"
                   value={stats.past_tests}
                 />
                 <StatCard
-                  icon={<PenLine className="size-4" />}
+                  icon={<PenLine className="h-4 w-4" />}
                   label="Drafts"
                   value={stats.draft_tests}
                 />
                 <StatCard
-                  icon={<Users className="size-4" />}
+                  icon={<Users className="h-4 w-4" />}
                   label="Attempts"
                   value={stats.total_attempts}
                   accent={stats.total_attempts > 0 ? "blue" : "muted"}
@@ -327,7 +327,7 @@ export default async function HomePage() {
               <Link href="/~/settings" className="shrink-0">
                 <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs">
                   Complete Profile
-                  <ArrowRight className="size-3.5" />
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               </Link>
             </div>

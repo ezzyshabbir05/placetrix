@@ -1,4 +1,3 @@
-/* eslint-disable react-doctor/nextjs-missing-metadata */
 // app/auth/error/page.tsx
 import { AlertCircleIcon } from "lucide-react";
 import Link from "next/link";
@@ -25,7 +24,7 @@ export default function ErrorPage({
 }) {
   return (
     <div className="mx-auto space-y-4 sm:w-sm text-center">
-      <AlertCircleIcon className="mx-auto size-12 text-destructive" />
+      <AlertCircleIcon className="mx-auto h-12 w-12 text-destructive" />
       <div className="space-y-1">
         <h1 className="font-bold text-2xl tracking-wide">
           Something went wrong

@@ -26,7 +26,7 @@ function HeaderSkeleton() {
 
 function FooterSkeleton() {
   return (
-    <footer className="relative mt-auto border-t border-black/10 dark:border-white/10 py-10 bg-white dark:bg-gray-950">
+    <footer className="relative mt-auto border-t border-black/10 dark:border-white/10 py-10 bg-white dark:bg-black">
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <div className="grid grid-cols-6 gap-6">
           <div className="col-span-6 md:col-span-4 space-y-4">
@@ -56,13 +56,13 @@ function FooterSkeleton() {
 
 export default function PrivacyPolicyLoading() {
   return (
-    <div className="relative flex min-h-screen flex-col bg-white text-zinc-950 dark:bg-gray-950 dark:text-white">
+    <div className="relative flex min-h-screen flex-col bg-white text-zinc-950 dark:bg-black dark:text-white">
       <HeaderSkeleton />
       <main className="flex flex-col pt-24 md:pt-28">
         
         {/* Hero Section Skeleton */}
         <section className="py-14 md:py-20 text-center">
-          <div className="mx-auto w-full max-w-3xl px-4 md:px-6 gap-y-4 flex flex-col items-center">
+          <div className="mx-auto w-full max-w-3xl px-4 md:px-6 space-y-4 flex flex-col items-center">
             <Skeleton className="h-3 w-28 uppercase tracking-widest" />
             <Skeleton className="h-10 w-4/5 max-w-lg" />
             <Skeleton className="h-4 w-full max-w-xl" />

@@ -60,7 +60,6 @@ export function OTPInput({
   return (
     <div className={cn("flex gap-1.5 justify-center", className)}>
       {Array.from({ length }).map((_, i) => (
-        // eslint-disable-next-line react-doctor/control-has-associated-label
         <input
           key={i}
           ref={(el) => {

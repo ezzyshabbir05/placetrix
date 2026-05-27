@@ -57,9 +57,9 @@ function StatusBadge({ status }: { status: JobPostingStatus }) {
     case "active":
       return (
         <Badge className="gap-1.5 bg-emerald-500 hover:bg-emerald-500 text-white border-0 text-[11px] px-2 py-0.5">
-          <span className="relative flex size-1.5">
+          <span className="relative flex h-1.5 w-1.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-            <span className="relative inline-flex rounded-full size-1.5 bg-white" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white" />
           </span>
           Active
         </Badge>
@@ -67,19 +67,19 @@ function StatusBadge({ status }: { status: JobPostingStatus }) {
     case "draft":
       return (
         <Badge variant="outline" className="gap-1 text-[11px] px-2 py-0.5 text-muted-foreground border-dashed">
-          <PenLine className="size-3" />Draft
+          <PenLine className="h-3 w-3" />Draft
         </Badge>
       )
     case "paused":
       return (
         <Badge variant="secondary" className="gap-1 text-[11px] px-2 py-0.5">
-          <Pause className="size-3" />Paused
+          <Pause className="h-3 w-3" />Paused
         </Badge>
       )
     case "closed":
       return (
         <Badge variant="outline" className="gap-1 text-[11px] px-2 py-0.5 text-muted-foreground">
-          <CheckCircle2 className="size-3" />Closed
+          <CheckCircle2 className="h-3 w-3" />Closed
         </Badge>
       )
   }
@@ -123,43 +123,43 @@ function PostingCard({
           <CardAction className="absolute right-0 top-0 mt-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="size-8 p-0">
+                <Button variant="ghost" className="h-8 w-8 p-0">
                   <span className="sr-only">Open menu</span>
-                  <MoreVertical className="size-4 text-muted-foreground" />
+                  <MoreVertical className="h-4 w-4 text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => onEdit(posting)}>
-                  <PenLine className="size-4 mr-2 text-muted-foreground" /> Edit
+                  <PenLine className="h-4 w-4 mr-2 text-muted-foreground" /> Edit
                 </DropdownMenuItem>
                 
                 {posting.status === "draft" && (
                   <DropdownMenuItem onClick={() => onToggleStatus(posting.id, "active")}>
-                    <Play className="size-4 mr-2 text-emerald-600" /> Publish
+                    <Play className="h-4 w-4 mr-2 text-emerald-600" /> Publish
                   </DropdownMenuItem>
                 )}
                 
                 {posting.status === "active" && (
                   <DropdownMenuItem onClick={() => onToggleStatus(posting.id, "paused")}>
-                    <Pause className="size-4 mr-2 text-muted-foreground" /> Pause
+                    <Pause className="h-4 w-4 mr-2 text-muted-foreground" /> Pause
                   </DropdownMenuItem>
                 )}
                 
                 {posting.status === "paused" && (
                   <DropdownMenuItem onClick={() => onToggleStatus(posting.id, "active")}>
-                    <Play className="size-4 mr-2 text-emerald-600" /> Resume
+                    <Play className="h-4 w-4 mr-2 text-emerald-600" /> Resume
                   </DropdownMenuItem>
                 )}
                 
                 {posting.status !== "closed" && (
                   <DropdownMenuItem onClick={() => onClose(posting.id)}>
-                    <Archive className="size-4 mr-2 text-muted-foreground" /> Close
+                    <Archive className="h-4 w-4 mr-2 text-muted-foreground" /> Close
                   </DropdownMenuItem>
                 )}
                 
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={() => onDelete(posting.id)}>
-                  <Trash2 className="size-4 mr-2" /> Delete
+                  <Trash2 className="h-4 w-4 mr-2" /> Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -171,16 +171,16 @@ function PostingCard({
           <StatusBadge status={posting.status} />
           {posting.application_deadline && (
             <div className={cn("flex items-center gap-1.5 text-[11px] font-medium", isExpired ? "text-red-500" : "text-muted-foreground")}>
-              <CalendarClock className="size-3.5 shrink-0" />
+              <CalendarClock className="h-3.5 w-3.5 shrink-0" />
               {isExpired ? "Expired" : formatDate(posting.application_deadline)}
             </div>
           )}
         </div>
 
         <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-          <StatPill icon={<Briefcase className="size-3.5" />} label={JOB_TYPE_LABELS[posting.job_type]} />
-          <StatPill icon={<MapPin className="size-3.5" />} label={posting.location || WORK_MODE_LABELS[posting.work_mode]} />
-          {salary && <StatPill icon={<IndianRupee className="size-3.5" />} label={salary} />}
+          <StatPill icon={<Briefcase className="h-3.5 w-3.5" />} label={JOB_TYPE_LABELS[posting.job_type]} />
+          <StatPill icon={<MapPin className="h-3.5 w-3.5" />} label={posting.location || WORK_MODE_LABELS[posting.work_mode]} />
+          {salary && <StatPill icon={<IndianRupee className="h-3.5 w-3.5" />} label={salary} />}
         </div>
 
         {posting.skills.length > 0 && (
@@ -196,7 +196,7 @@ function PostingCard({
       </CardContent>
       <CardFooter className="pt-0 pb-4 px-4 flex justify-between items-center border-t border-border/50 mt-auto pt-4 bg-muted/20">
         <div className="flex items-center gap-2">
-          <Users className="size-4 text-muted-foreground" />
+          <Users className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium">
             {posting.application_count} {posting.application_count === 1 ? 'Applicant' : 'Applicants'}
           </span>
@@ -219,15 +219,15 @@ function PostingCard({
 function EmptyState({ isFiltered, onCreate }: { isFiltered: boolean; onCreate: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
-      <div className="size-12 rounded-xl bg-muted flex items-center justify-center">
-        <BriefcaseBusiness className="size-5 text-muted-foreground/60" />
+      <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
+        <BriefcaseBusiness className="h-5 w-5 text-muted-foreground/60" />
       </div>
       <div className="space-y-0.5">
         <p className="text-sm font-medium">{isFiltered ? "No postings in this category" : "No job postings yet"}</p>
         <p className="text-xs text-muted-foreground">{isFiltered ? "Try switching tabs to view others" : "Create your first job posting to attract candidates"}</p>
       </div>
       {!isFiltered && (
-        <Button size="sm" onClick={onCreate} className="gap-1.5 mt-1"><Plus className="size-3.5" />Create Posting</Button>
+        <Button size="sm" onClick={onCreate} className="gap-1.5 mt-1"><Plus className="h-3.5 w-3.5" />Create Posting</Button>
       )}
     </div>
   )
@@ -244,7 +244,6 @@ function PostingDialog({
   editId: string | null
   onSuccess: () => void
 }) {
-  // eslint-disable-next-line react-doctor/no-derived-useState
   const [form, setForm] = useState<JobPostingForm>(initial)
   const [skillInput, setSkillInput] = useState("")
   const [isPending, startTransition] = useTransition()
@@ -380,7 +379,7 @@ function PostingDialog({
                   <Badge key={s} variant="secondary" className="gap-1 text-xs pr-1">
                     {s}
                     <button type="button" onClick={() => removeSkill(s)} className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5">
-                      <X className="size-3" />
+                      <X className="h-3 w-3" />
                     </button>
                   </Badge>
                 ))}
@@ -397,11 +396,11 @@ function PostingDialog({
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" onClick={() => handleSave("draft")} disabled={isPending}>
-            {isPending ? <Loader2 className="size-4 animate-spin mr-1.5" /> : null}
+            {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : null}
             Save as Draft
           </Button>
           <Button onClick={() => handleSave("active")} disabled={isPending}>
-            {isPending ? <Loader2 className="size-4 animate-spin mr-1.5" /> : <Play className="size-4 mr-1.5" />}
+            {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Play className="h-4 w-4 mr-1.5" />}
             {editId ? "Save & Publish" : "Publish"}
           </Button>
         </DialogFooter>
@@ -416,12 +415,10 @@ interface Props {
   postings: JobPosting[]
 }
 
-// eslint-disable-next-line react-doctor/prefer-useReducer
 export function PostingsClient({ postings }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("all")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
-  // eslint-disable-next-line react-doctor/rerender-lazy-state-init
   const [editForm, setEditForm] = useState<JobPostingForm>(emptyForm())
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [closeId, setCloseId] = useState<string | null>(null)
@@ -472,7 +469,6 @@ export function PostingsClient({ postings }: Props) {
       try {
         await togglePostingStatusAction(id, newStatus)
         toast.success(`Posting ${STATUS_LABELS[newStatus].toLowerCase()}`)
-        // eslint-disable-next-line react-doctor/react-compiler-destructure-method
         router.refresh()
       } catch (err: any) {
         toast.error(err.message)
@@ -487,7 +483,6 @@ export function PostingsClient({ postings }: Props) {
         await togglePostingStatusAction(closeId, "closed")
         toast.success("Posting closed")
         setCloseId(null)
-        // eslint-disable-next-line react-doctor/react-compiler-destructure-method
         router.refresh()
       } catch (err: any) {
         toast.error(err.message)
@@ -502,7 +497,6 @@ export function PostingsClient({ postings }: Props) {
         await deletePostingAction(deleteId)
         toast.success("Posting deleted")
         setDeleteId(null)
-        // eslint-disable-next-line react-doctor/react-compiler-destructure-method
         router.refresh()
       } catch (err: any) {
         toast.error(err.message)
@@ -520,14 +514,14 @@ export function PostingsClient({ postings }: Props) {
             {postings.length} posting{postings.length !== 1 ? "s" : ""} total
             {active.length > 0 && (
               <span className="ml-2 inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
-                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 {active.length} active
               </span>
             )}
           </p>
         </div>
         <Button size="sm" onClick={handleCreate} className="gap-1.5 shrink-0">
-          <Plus className="size-3.5" />Create Posting
+          <Plus className="h-3.5 w-3.5" />Create Posting
         </Button>
       </div>
 
@@ -571,7 +565,6 @@ export function PostingsClient({ postings }: Props) {
         onOpenChange={setDialogOpen}
         initial={editForm}
         editId={editId}
-        // eslint-disable-next-line react-doctor/react-compiler-destructure-method
         onSuccess={() => router.refresh()}
       />
 
@@ -585,7 +578,7 @@ export function PostingsClient({ postings }: Props) {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleClose} disabled={isPending}>
-              {isPending ? <Loader2 className="size-4 animate-spin mr-1.5" /> : <Archive className="size-4 mr-1.5" />}
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Archive className="h-4 w-4 mr-1.5" />}
               Close Posting
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -602,7 +595,7 @@ export function PostingsClient({ postings }: Props) {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={isPending} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {isPending ? <Loader2 className="size-4 animate-spin mr-1.5" /> : <Trash2 className="size-4 mr-1.5" />}
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Trash2 className="h-4 w-4 mr-1.5" />}
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

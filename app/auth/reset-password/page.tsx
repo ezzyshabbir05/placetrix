@@ -1,4 +1,3 @@
-/* eslint-disable react-doctor/nextjs-missing-metadata */
 // app/auth/reset-password/page.tsx
 //
 // Full OTP-based password reset — all steps on a single page:
@@ -45,7 +44,6 @@ import { createClient } from "@/lib/supabase/client";
 type PageState = "email-form" | "otp-entry" | "password-form" | "success";
 
 const RESEND_COOLDOWN = 60;
-// eslint-disable-next-line react-doctor/no-giant-component, react-doctor/prefer-useReducer
 
 export default function ResetPasswordPage() {
   // ── State ──────────────────────────────────────────────────────────────────
@@ -179,8 +177,8 @@ export default function ResetPasswordPage() {
   if (pageState === "success") {
     return (
       <div className="mx-auto space-y-4 sm:w-sm text-center">
-        <div className="flex size-14 mx-auto items-center justify-center rounded-full bg-green-500/10">
-          <CheckCircleIcon className="size-7 text-green-500" />
+        <div className="flex h-14 w-14 mx-auto items-center justify-center rounded-full bg-green-500/10">
+          <CheckCircleIcon className="h-7 w-7 text-green-500" />
         </div>
         <div className="space-y-1">
           <h1 className="font-bold text-2xl tracking-wide">
@@ -265,7 +263,7 @@ export default function ResetPasswordPage() {
           <Button className="w-full" type="submit" disabled={isLoading}>
             {isLoading ? (
               <>
-                <Loader2Icon className="mr-2 size-4 animate-spin" />
+                <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
                 Updating…
               </>
             ) : (
@@ -282,8 +280,8 @@ export default function ResetPasswordPage() {
     return (
       <div className="mx-auto space-y-6 sm:w-sm">
         <div className="flex flex-col items-center space-y-3 text-center">
-          <div className="flex size-14 items-center justify-center rounded-full bg-primary/10">
-            <MailIcon className="size-7 text-primary" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+            <MailIcon className="h-7 w-7 text-primary" />
           </div>
           <div className="space-y-1">
             <h1 className="font-bold text-2xl tracking-wide">
@@ -312,7 +310,7 @@ export default function ResetPasswordPage() {
           >
             {isLoading ? (
               <>
-                <Loader2Icon className="mr-2 size-4 animate-spin" />
+                <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
                 Verifying…
               </>
             ) : (
@@ -323,7 +321,7 @@ export default function ResetPasswordPage() {
 
         <div className="rounded-md border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
           <div className="flex items-start gap-2">
-            <MailIcon className="mt-0.5 size-4 shrink-0" />
+            <MailIcon className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
               Didn&apos;t receive it?{" "}
               {resendCooldown > 0 ? (
@@ -391,7 +389,7 @@ export default function ResetPasswordPage() {
         <Button className="w-full" type="submit" disabled={isLoading}>
           {isLoading ? (
             <>
-              <Loader2Icon className="mr-2 size-4 animate-spin" />
+              <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
               Sending…
             </>
           ) : (

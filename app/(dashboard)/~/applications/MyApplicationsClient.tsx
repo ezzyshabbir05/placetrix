@@ -45,35 +45,35 @@ function StatusBadge({ status }: { status: MyJobApplication["status"] }) {
     case "applied":
       return (
         <Badge variant="secondary" className="gap-1 text-[11px] px-2 py-0.5">
-          <Clock className="size-3" />
+          <Clock className="h-3 w-3" />
           Applied
         </Badge>
       )
     case "reviewing":
       return (
         <Badge variant="outline" className="gap-1 text-[11px] px-2 py-0.5 border-blue-200 text-blue-600 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800 dark:text-blue-400">
-          <Users className="size-3" />
+          <Users className="h-3 w-3" />
           Reviewing
         </Badge>
       )
     case "shortlisted":
       return (
         <Badge variant="outline" className="gap-1 text-[11px] px-2 py-0.5 border-emerald-200 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400">
-          <CheckCircle2 className="size-3" />
+          <CheckCircle2 className="h-3 w-3" />
           Shortlisted
         </Badge>
       )
     case "rejected":
       return (
         <Badge variant="outline" className="gap-1 text-[11px] px-2 py-0.5 border-red-200 text-red-600 bg-red-50 dark:bg-red-950/30 dark:border-red-800 dark:text-red-400">
-          <XCircle className="size-3" />
+          <XCircle className="h-3 w-3" />
           Rejected
         </Badge>
       )
     case "hired":
       return (
         <Badge className="gap-1 text-[11px] px-2 py-0.5 bg-emerald-600 hover:bg-emerald-600 border-0">
-          <CheckCircle2 className="size-3" />
+          <CheckCircle2 className="h-3 w-3" />
           Hired
         </Badge>
       )
@@ -90,7 +90,7 @@ function ApplicationCard({ app }: { app: MyJobApplication }) {
           <div className="space-y-1 min-w-0">
             <CardTitle className="text-base leading-snug line-clamp-1">{app.job.title}</CardTitle>
             <CardDescription className="flex items-center gap-1.5 text-xs">
-              <Building2 className="size-3.5 shrink-0" />
+              <Building2 className="h-3.5 w-3.5 shrink-0" />
               {app.job.company_name}
             </CardDescription>
           </div>
@@ -102,11 +102,11 @@ function ApplicationCard({ app }: { app: MyJobApplication }) {
         {/* Meta */}
         <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
           <span className="flex items-center gap-1.5">
-            <MapPin className="size-3.5" />
+            <MapPin className="h-3.5 w-3.5" />
             {app.job.location || app.job.work_mode.replace("_", " ")}
           </span>
           <span className="flex items-center gap-1.5">
-            <CalendarClock className="size-3.5" />
+            <CalendarClock className="h-3.5 w-3.5" />
             Applied {formatDate(app.created_at)}
           </span>
         </div>
@@ -120,7 +120,7 @@ function ApplicationCard({ app }: { app: MyJobApplication }) {
         <div className="mt-auto">
           <Button asChild variant="outline" size="sm">
             <Link href="/~/jobs">
-              View Job <ExternalLink className="size-3.5 ml-1" />
+              View Job <ExternalLink className="h-3.5 w-3.5 ml-1" />
             </Link>
           </Button>
         </div>
@@ -134,8 +134,8 @@ function ApplicationCard({ app }: { app: MyJobApplication }) {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
-      <div className="size-12 rounded-xl bg-muted flex items-center justify-center">
-        <Briefcase className="size-5 text-muted-foreground/60" />
+      <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
+        <Briefcase className="h-5 w-5 text-muted-foreground/60" />
       </div>
       <div className="space-y-0.5">
         <p className="text-sm font-medium">No applications yet</p>

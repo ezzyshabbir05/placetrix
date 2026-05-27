@@ -11,7 +11,7 @@ export default function ProblemIDELoading() {
           {/* Header */}
           <div className="flex items-center justify-between gap-2 bg-card/60 border-b px-4 py-2 shrink-0">
             <div className="flex items-center gap-3">
-              <Skeleton className="size-8 rounded-lg shrink-0" />
+              <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
               <div className="space-y-1">
                 <Skeleton className="h-4 w-36 rounded" />
                 <div className="flex gap-2">
@@ -21,8 +21,8 @@ export default function ProblemIDELoading() {
               </div>
             </div>
             <div className="flex gap-1">
-              <Skeleton className="size-7 rounded-md" />
-              <Skeleton className="size-7 rounded-md" />
+              <Skeleton className="h-7 w-7 rounded-md" />
+              <Skeleton className="h-7 w-7 rounded-md" />
             </div>
           </div>
 
@@ -56,7 +56,7 @@ export default function ProblemIDELoading() {
           {/* Editor Header */}
           <div className="flex items-center justify-between bg-card px-4 py-2 border-b shrink-0">
             <div className="flex items-center gap-2">
-              <Skeleton className="size-2 rounded-full" />
+              <Skeleton className="h-2 w-2 rounded-full" />
               <Skeleton className="h-2.5 w-32 rounded" />
             </div>
             <div className="flex gap-2">
@@ -68,7 +68,7 @@ export default function ProblemIDELoading() {
 
           {/* Editor Block */}
           <div className="flex-1 flex flex-col items-center justify-center gap-2 bg-card p-10">
-            <div className="size-8 border-2 border-muted border-t-foreground rounded-full animate-spin" />
+            <div className="h-8 w-8 border-2 border-muted border-t-foreground rounded-full animate-spin" />
             <Skeleton className="h-3.5 w-24 rounded" />
           </div>
 

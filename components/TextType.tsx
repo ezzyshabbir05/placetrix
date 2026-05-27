@@ -39,20 +39,17 @@ const TextType = ({
   cursorCharacter = '|',
   cursorClassName = '',
   cursorBlinkDuration = 0.5,
-  // eslint-disable-next-line react-doctor/rerender-memo-with-default-value
   textColors = [],
   variableSpeed,
   onSentenceComplete,
   startOnVisible = false,
   reverseMode = false,
   ...props
-// eslint-disable-next-line react-doctor/prefer-useReducer
 }: TextTypeProps & React.HTMLAttributes<HTMLElement>) => {
   const [displayedText, setDisplayedText] = useState('');
   const [currentCharIndex, setCurrentCharIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
-  // eslint-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [isVisible, setIsVisible] = useState(!startOnVisible);
   const cursorRef = useRef<HTMLSpanElement>(null);
   const containerRef = useRef<HTMLElement>(null);
@@ -101,7 +98,6 @@ const TextType = ({
     }
   }, [showCursor, cursorBlinkDuration]);
 
-  // eslint-disable-next-line react-doctor/no-cascading-set-state
   useEffect(() => {
     if (!isVisible) return;
 
@@ -156,7 +152,6 @@ const TextType = ({
     }
 
     return () => clearTimeout(timeout);
-  // eslint-disable-next-line react-doctor/exhaustive-deps
   }, [
     currentCharIndex,
     displayedText,
@@ -171,7 +166,6 @@ const TextType = ({
     isVisible,
     reverseMode,
     variableSpeed,
-    // eslint-disable-next-line react-doctor/prefer-use-effect-event
     onSentenceComplete
   ]);
 

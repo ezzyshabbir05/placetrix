@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useState } from "react"
-// eslint-disable-next-line react-doctor/prefer-dynamic-import
 import Editor from "@monaco-editor/react"
 import { useTheme } from "next-themes"
 import Link from "next/link"
@@ -64,11 +63,9 @@ function parseInline(text: string) {
   const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g)
   return parts.map((part, idx) => {
     if (part.startsWith("**") && part.endsWith("**")) {
-      // eslint-disable-next-line react-doctor/no-array-index-key, react-doctor/no-array-index-as-key
       return <strong key={idx} className="font-bold text-foreground">{part.slice(2, -2)}</strong>
     }
     if (part.startsWith("`") && part.endsWith("`")) {
-      // eslint-disable-next-line react-doctor/no-array-index-key, react-doctor/no-array-index-as-key
       return <code key={idx} className="bg-card border border-border px-1 py-0.5 rounded text-xs font-mono text-emerald-600 dark:text-emerald-400">{part.slice(1, -1)}</code>
     }
     return part
@@ -96,7 +93,6 @@ function MarkdownDescription({ content }: { content: string }) {
           const lang = match ? match[1] : ""
           const codeText = match ? match[2] : block.slice(3, -3)
           return (
-            // eslint-disable-next-line react-doctor/no-array-index-key, react-doctor/no-array-index-as-key
             <div key={idx} className="bg-background border border-border rounded-lg overflow-hidden my-3 font-mono text-xs">
               {lang && (
                 <div className="bg-card/60 px-3 py-1 border-b border-border text-[10px] text-muted-foreground/80 uppercase tracking-widest font-bold">
@@ -110,28 +106,23 @@ function MarkdownDescription({ content }: { content: string }) {
 
         const lines = block.split("\n")
         return (
-          // eslint-disable-next-line react-doctor/no-array-index-key, react-doctor/no-array-index-as-key
           <div key={idx} className="space-y-2">
             {lines.map((line, lIdx) => {
               const trimmed = line.trim()
               if (!trimmed) return <div key={lIdx} className="h-1.5" />
 
               if (trimmed.startsWith("### ")) {
-                // eslint-disable-next-line react-doctor/no-array-index-key
                 return <h3 key={lIdx} className="text-sm font-bold text-foreground uppercase tracking-wider mt-4 mb-2">{parseInline(trimmed.slice(4))}</h3>
               }
               if (trimmed.startsWith("## ")) {
-                // eslint-disable-next-line react-doctor/no-array-index-key
                 return <h2 key={lIdx} className="text-base font-bold text-foreground uppercase tracking-wider mt-5 mb-2 border-b border-border/80 pb-1">{parseInline(trimmed.slice(3))}</h2>
               }
               if (trimmed.startsWith("# ")) {
-                // eslint-disable-next-line react-doctor/no-array-index-key
                 return <h1 key={lIdx} className="text-lg font-bold text-foreground uppercase tracking-wider mt-6 mb-3 border-b border-border/80 pb-1">{parseInline(trimmed.slice(2))}</h1>
               }
 
               if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
                 return (
-                  // eslint-disable-next-line react-doctor/no-array-index-key
                   <ul key={lIdx} className="list-disc pl-5 space-y-1 text-muted-foreground">
                     <li>{parseInline(trimmed.slice(2))}</li>
                   </ul>
@@ -141,7 +132,6 @@ function MarkdownDescription({ content }: { content: string }) {
               const numMatch = trimmed.match(/^(\d+)\.\s(.*)/)
               if (numMatch) {
                 return (
-                  // eslint-disable-next-line react-doctor/no-array-index-key
                   <ol key={lIdx} className="list-decimal pl-5 space-y-1 text-muted-foreground">
                     <li value={parseInt(numMatch[1])}>{parseInline(numMatch[2])}</li>
                   </ol>
@@ -150,7 +140,6 @@ function MarkdownDescription({ content }: { content: string }) {
 
               if (trimmed.startsWith("> ")) {
                 return (
-                  // eslint-disable-next-line react-doctor/no-array-index-key, react-doctor/no-side-tab-border
                   <blockquote key={lIdx} className="border-l-2 border-emerald-500 bg-card/40 px-3 py-2 rounded-r text-muted-foreground text-xs italic my-2">
                     {parseInline(trimmed.slice(2))}
                   </blockquote>
@@ -161,7 +150,6 @@ function MarkdownDescription({ content }: { content: string }) {
                 return <hr key={lIdx} className="border-border my-4" />
               }
 
-              // eslint-disable-next-line react-doctor/no-array-index-key
               return <p key={lIdx} className="text-foreground/80 leading-relaxed">{parseInline(line)}</p>
             })}
           </div>
@@ -214,7 +202,6 @@ interface Problem {
   driver_codes: Record<string, string>
 }
 
-// eslint-disable-next-line react-doctor/no-giant-component
 export function ProblemIDEClient({
   problem,
   sampleTestCases,
@@ -233,7 +220,6 @@ export function ProblemIDEClient({
   userProfile?: any
   prevProblemId: string | null
   nextProblemId: string | null
-// eslint-disable-next-line react-doctor/prefer-useReducer
 }) {
   const [startTime] = useState(() => Date.now())
   const { resolvedTheme } = useTheme()
@@ -270,9 +256,7 @@ export function ProblemIDEClient({
   const [activeTestcaseIndex, setActiveTestcaseIndex] = useState(0)
 
   React.useEffect(() => {
-    // eslint-disable-next-line react-doctor/no-derived-state, react-doctor/no-pass-data-to-parent
     setCustomInputs(sampleTestCases.map((tc) => tc.input))
-    // eslint-disable-next-line react-doctor/no-adjust-state-on-prop-change
     setActiveTestcaseIndex(0)
   }, [sampleTestCases])
 
@@ -280,18 +264,14 @@ export function ProblemIDEClient({
   React.useEffect(() => {
     const savedCode = localStorage.getItem(`logiclab_problem_${problem.id}_code_${selectedLang.value}`)
     if (savedCode) {
-      // eslint-disable-next-line react-doctor/no-derived-state
       setCode(savedCode)
     } else {
-      // eslint-disable-next-line react-doctor/no-derived-state
       setCode(parsedBoilerplates[String(selectedLang.id)] || `// Write your ${selectedLang.name} solution here\n`)
     }
   }, [problem.id, selectedLang.id, selectedLang.name, selectedLang.value, parsedBoilerplates])
 
   // Save code to local storage
-  // eslint-disable-next-line react-doctor/no-effect-chain
   React.useEffect(() => {
-    // eslint-disable-next-line react-doctor/no-event-handler
     if (code) {
       localStorage.setItem(`logiclab_problem_${problem.id}_code_${selectedLang.value}`, code)
     }
@@ -309,7 +289,6 @@ export function ProblemIDEClient({
       if (selectedLang.value === "python") {
         const match = boilerplate.match(/def\s+\w+\((self,\s*)?([^)]*)\)/)
         if (match && match[2]) {
-          // eslint-disable-next-line react-doctor/js-flatmap-filter
           return match[2]
             .split(",")
             .map((p: string) => p.split(":")[0].trim())
@@ -322,7 +301,6 @@ export function ProblemIDEClient({
         const simpleMatch = boilerplate.match(/\w+\(([^)]*)\)/)
         const params = (match && match[2]) || (simpleMatch && simpleMatch[1])
         if (params) {
-          // eslint-disable-next-line react-doctor/js-flatmap-filter
           return params
             .split(",")
             .map((p: string) => p.trim())
@@ -333,7 +311,6 @@ export function ProblemIDEClient({
       if (selectedLang.value === "cpp") {
         const match = boilerplate.match(/\w+\(([^)]*)\)/)
         if (match && match[1]) {
-          // eslint-disable-next-line react-doctor/js-flatmap-filter
           return match[1]
             .split(",")
             .map((p: string) => {
@@ -348,7 +325,6 @@ export function ProblemIDEClient({
       if (selectedLang.value === "java") {
         const match = boilerplate.match(/\w+\(([^)]*)\)/)
         if (match && match[1]) {
-          // eslint-disable-next-line react-doctor/js-flatmap-filter
           return match[1]
             .split(",")
             .map((p: string) => {
@@ -371,13 +347,11 @@ export function ProblemIDEClient({
         {lines.map((line, idx) => {
           const paramName = paramsList[idx] || `param${idx + 1}`
           return (
-            // eslint-disable-next-line react-doctor/no-array-index-key, react-doctor/no-array-index-as-key
             <div key={idx} className="space-y-1.5 text-xs">
               <span className="text-xs text-muted-foreground/80 font-bold block select-none">
                 {paramName} =
               </span>
               {isEditable ? (
-                // eslint-disable-next-line react-doctor/control-has-associated-label
                 <textarea
                   value={line}
                   onChange={(e) => onChange?.(idx, e.target.value)}
@@ -562,9 +536,9 @@ export function ProblemIDEClient({
             <div className="flex items-center gap-3 min-w-0">
               <Link
                 href="/~/logiclab"
-                className="size-8 rounded-lg bg-muted border border-border flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
+                className="h-8 w-8 rounded-lg bg-muted border border-border flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
               >
-                <IconArrowLeft className="size-4 text-muted-foreground" />
+                <IconArrowLeft className="h-4 w-4 text-muted-foreground" />
               </Link>
               <div className="min-w-0">
                 <p className="text-sm font-bold tracking-tight text-foreground truncate">
@@ -586,28 +560,28 @@ export function ProblemIDEClient({
               {prevProblemId ? (
                 <Link
                   href={`/~/logiclab/problems/${prevProblemId}`}
-                  className="size-7 rounded-md bg-muted border border-border flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
+                  className="h-7 w-7 rounded-md bg-muted border border-border flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
                   title="Previous Problem"
                 >
-                  <IconChevronLeft className="size-4 text-muted-foreground" />
+                  <IconChevronLeft className="h-4 w-4 text-muted-foreground" />
                 </Link>
               ) : (
-                <div className="size-7 rounded-md bg-muted/40 border border-border/40 flex items-center justify-center opacity-40 cursor-not-allowed">
-                  <IconChevronLeft className="size-4 text-muted-foreground/50" />
+                <div className="h-7 w-7 rounded-md bg-muted/40 border border-border/40 flex items-center justify-center opacity-40 cursor-not-allowed">
+                  <IconChevronLeft className="h-4 w-4 text-muted-foreground/50" />
                 </div>
               )}
 
               {nextProblemId ? (
                 <Link
                   href={`/~/logiclab/problems/${nextProblemId}`}
-                  className="size-7 rounded-md bg-muted border border-border flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
+                  className="h-7 w-7 rounded-md bg-muted border border-border flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
                   title="Next Problem"
                 >
-                  <IconChevronRight className="size-4 text-muted-foreground" />
+                  <IconChevronRight className="h-4 w-4 text-muted-foreground" />
                 </Link>
               ) : (
-                <div className="size-7 rounded-md bg-muted/40 border border-border/40 flex items-center justify-center opacity-40 cursor-not-allowed">
-                  <IconChevronRight className="size-4 text-muted-foreground/50" />
+                <div className="h-7 w-7 rounded-md bg-muted/40 border border-border/40 flex items-center justify-center opacity-40 cursor-not-allowed">
+                  <IconChevronRight className="h-4 w-4 text-muted-foreground/50" />
                 </div>
               )}
             </div>
@@ -615,26 +589,25 @@ export function ProblemIDEClient({
           
           {/* Tabs */}
           <div className="flex bg-card border-b border-border shrink-0">
-            <button type="button"
+            <button
               onClick={() => setActiveTab("description")}
               className={`px-4 py-2.5 text-xs font-bold uppercase tracking-widest transition-colors cursor-pointer ${activeTab === "description" ? "text-foreground border-b-2 border-emerald-400" : "text-muted-foreground/80 hover:text-foreground/80"}`}
             >
               Description
             </button>
             {(activeTab === "submission_result" || submitResult || submitting) && (
-              <button type="button"
+              <button
                 onClick={() => setActiveTab("submission_result")}
                 className={`px-4 py-2.5 text-xs font-bold uppercase tracking-widest transition-colors cursor-pointer flex items-center gap-1.5 ${activeTab === "submission_result" ? "text-foreground border-b-2 border-emerald-400" : "text-muted-foreground/80 hover:text-foreground/80"}`}
               >
                 {submitting ? (
-                  <IconRefresh className="size-3.5 text-blue-400 animate-spin" />
+                  <IconRefresh className="h-3.5 w-3.5 text-blue-400 animate-spin" />
                 ) : submitResult?.status === "Accepted" ? (
-                  <IconSparkles className="size-3.5 text-emerald-400" />
+                  <IconSparkles className="h-3.5 w-3.5 text-emerald-400" />
                 ) : (
-                  <IconAlertTriangle className="size-3.5 text-rose-400" />
+                  <IconAlertTriangle className="h-3.5 w-3.5 text-rose-400" />
                 )}
                 Submission
-                // eslint-disable-next-line react-doctor/click-events-have-key-events, react-doctor/no-static-element-interactions
                 <div
                   onClick={(e) => {
                     e.stopPropagation()
@@ -643,15 +616,15 @@ export function ProblemIDEClient({
                   }}
                   className="p-0.5 hover:bg-muted rounded text-muted-foreground hover:text-foreground shrink-0 cursor-pointer ml-1"
                 >
-                  <IconX className="size-3" />
+                  <IconX className="h-3 w-3" />
                 </div>
               </button>
             )}
-            <button type="button"
+            <button
               onClick={() => setActiveTab("submissions")}
               className={`px-4 py-2.5 text-xs font-bold uppercase tracking-widest transition-colors cursor-pointer flex items-center gap-1.5 ${activeTab === "submissions" ? "text-foreground border-b-2 border-emerald-400" : "text-muted-foreground/80 hover:text-foreground/80"}`}
             >
-              <IconHistory className="size-3" /> Submissions ({submissions.length})
+              <IconHistory className="h-3 w-3" /> Submissions ({submissions.length})
             </button>
 
 
@@ -722,7 +695,6 @@ export function ProblemIDEClient({
                     const canViewCode = sub.status === "Accepted";
                     return (
                       <div key={sub.id} className="space-y-1">
-                        // eslint-disable-next-line react-doctor/click-events-have-key-events, react-doctor/no-static-element-interactions
                         <div
                           onClick={() => {
                             if (canViewCode) {
@@ -738,9 +710,9 @@ export function ProblemIDEClient({
                         >
                           <div className="flex items-center gap-3">
                             {sub.status === "Accepted" ? (
-                              <IconCircleCheck className="size-4 text-emerald-500 shrink-0" />
+                              <IconCircleCheck className="h-4 w-4 text-emerald-500 shrink-0" />
                             ) : (
-                              <IconCircleX className="size-4 text-rose-500 shrink-0" />
+                              <IconCircleX className="h-4 w-4 text-rose-500 shrink-0" />
                             )}
                             <div>
                               <p className={`text-xs font-bold ${sub.status === "Accepted" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"} flex items-center gap-1.5`}>
@@ -759,10 +731,10 @@ export function ProblemIDEClient({
                           <div className="text-right">
                             <div className="flex items-center gap-3 text-[10px] text-muted-foreground/80">
                               {sub.runtime !== null && (
-                                <span className="flex items-center gap-0.5"><IconClock className="size-3" />{sub.runtime}s</span>
+                                <span className="flex items-center gap-0.5"><IconClock className="h-3 w-3" />{sub.runtime}s</span>
                               )}
                               {sub.memory !== null && (
-                                <span className="flex items-center gap-0.5"><IconCpu className="size-3" />{formatMemory(sub.memory, true)}</span>
+                                <span className="flex items-center gap-0.5"><IconCpu className="h-3 w-3" />{formatMemory(sub.memory, true)}</span>
                               )}
                             </div>
                             <p className="text-[9px] text-muted-foreground/40 mt-0.5">
@@ -773,7 +745,6 @@ export function ProblemIDEClient({
                         {isExpanded && (
                           <div className="border border-border/60 rounded-lg overflow-hidden animate-in slide-in-from-top-1 fade-in duration-200 shadow-sm mt-1">
                             {loadingCode ? (
-                               // eslint-disable-next-line react-doctor/design-no-three-period-ellipsis
                                <div className="p-6 text-center text-[10px] uppercase tracking-widest font-bold text-muted-foreground/60 animate-pulse bg-muted/20">
                                  Loading code...
                                </div>
@@ -800,10 +771,10 @@ export function ProblemIDEClient({
                                     }}
                                  />
                                  <div className="absolute top-3 right-4 flex gap-2 opacity-0 group-hover/editor:opacity-100 transition-opacity">
-                                    <button type="button" onClick={() => { setCode(viewingCode); toast.success("Restored to workspace!"); }} className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/20 px-2.5 py-1 rounded-md text-[10px] font-bold transition-all shadow-sm">
+                                    <button onClick={() => { setCode(viewingCode); toast.success("Restored to workspace!"); }} className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/20 px-2.5 py-1 rounded-md text-[10px] font-bold transition-all shadow-sm">
                                       Restore
                                     </button>
-                                    <button type="button" onClick={() => { navigator.clipboard.writeText(viewingCode); toast.success("Copied!"); }} className="bg-muted hover:bg-accent text-foreground border border-border px-2.5 py-1 rounded-md text-[10px] font-bold transition-all shadow-sm">
+                                    <button onClick={() => { navigator.clipboard.writeText(viewingCode); toast.success("Copied!"); }} className="bg-muted hover:bg-accent text-foreground border border-border px-2.5 py-1 rounded-md text-[10px] font-bold transition-all shadow-sm">
                                       Copy
                                     </button>
                                  </div>
@@ -816,7 +787,7 @@ export function ProblemIDEClient({
                   })
                 ) : (
                   <div className="flex flex-col items-center justify-center py-12 gap-2 select-none">
-                    <IconHistory className="size-8 text-muted-foreground/20" />
+                    <IconHistory className="h-8 w-8 text-muted-foreground/20" />
                     <p className="text-[10px] text-muted-foreground/40 uppercase font-bold tracking-widest">No submissions yet</p>
                   </div>
                 )}
@@ -825,13 +796,12 @@ export function ProblemIDEClient({
                 submitting ? (
                   <div className="flex flex-col items-center justify-center py-20 gap-4 animate-pulse select-none">
                     <div className="relative">
-                      <div className="size-14 border-2 border-emerald-500/20 border-t-emerald-400 rounded-full animate-spin" />
+                      <div className="h-14 w-14 border-2 border-emerald-500/20 border-t-emerald-400 rounded-full animate-spin" />
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <IconTerminal2 className="size-6 text-emerald-400" />
+                        <IconTerminal2 className="h-6 w-6 text-emerald-400" />
                       </div>
                     </div>
                     <div className="text-center space-y-1.5">
-                      // eslint-disable-next-line react-doctor/design-no-three-period-ellipsis
                       <p className="text-base font-bold text-emerald-500 uppercase tracking-widest shadow-emerald-500">
                         Judging Submission...
                       </p>
@@ -857,7 +827,6 @@ export function ProblemIDEClient({
                   const runtimeBeats = (70 + (seed % 28) + ((seed % 100) / 100)).toFixed(2);
                   const memoryBeats = (12 + (seed % 15) + ((seed % 100) / 100)).toFixed(2); // Match beats 14.58% in user screenshot!
 
-                  // eslint-disable-next-line react-doctor/rendering-hydration-mismatch-time
                   const elapsedMs = Date.now() - startTime;
                   const elapsedMins = Math.floor(elapsedMs / 60000);
                   const elapsedSecs = Math.floor((elapsedMs % 60000) / 1000);
@@ -871,7 +840,6 @@ export function ProblemIDEClient({
                   // Accurate index: higher beats means faster time, which is further left on the histogram.
                   const targetBarIndex = Math.max(0, Math.min(31, Math.floor((1 - (beatsFloat / 100)) * 32)));
 
-                  // eslint-disable-next-line react-doctor/rendering-hydration-mismatch-time
                   const submissionTimeStr = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) + " " + new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
                   const avatarUrl = buildStorageUrl("avatars", userProfile?.avatar_path) || "";
 
@@ -895,10 +863,9 @@ export function ProblemIDEClient({
                           
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             {avatarUrl ? (
-                              // eslint-disable-next-line react-doctor/nextjs-no-img-element
-                              <img src={avatarUrl} alt={displayName} className="size-5 rounded-full border border-border shrink-0" />
+                              <img src={avatarUrl} alt={displayName} className="h-5 w-5 rounded-full border border-border shrink-0" />
                             ) : (
-                              <div className="size-5 rounded-full bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-[8px] font-extrabold text-indigo-400 shrink-0 select-none">
+                              <div className="h-5 w-5 rounded-full bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-[8px] font-extrabold text-indigo-400 shrink-0 select-none">
                                 {initials}
                               </div>
                             )}
@@ -913,7 +880,7 @@ export function ProblemIDEClient({
                         {/* Runtime Card */}
                         <div className="bg-muted/30 dark:bg-card/40 border border-border/80 rounded-2xl p-3 flex flex-col gap-1 hover:border-indigo-500/20 transition-all">
                           <span className="text-muted-foreground/60 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
-                            <IconClock className="size-3.5 text-indigo-400" />
+                            <IconClock className="h-3.5 w-3.5 text-indigo-400" />
                             Runtime
                           </span>
                           <div className="flex items-baseline gap-2">
@@ -927,7 +894,7 @@ export function ProblemIDEClient({
                         {/* Memory Card */}
                         <div className="bg-muted/30 dark:bg-card/40 border border-border/80 rounded-2xl p-3 flex flex-col gap-1 hover:border-indigo-500/20 transition-all">
                           <span className="text-muted-foreground/60 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
-                            <IconCpu className="size-3.5 text-emerald-400" />
+                            <IconCpu className="h-3.5 w-3.5 text-emerald-400" />
                             Memory
                           </span>
                           <div className="flex items-baseline gap-2">
@@ -987,7 +954,6 @@ export function ProblemIDEClient({
                                       {avatarUrl ? (
                                         <foreignObject x="-10" y="-20" width="20" height="20">
                                           <div {...{ xmlns: "http://www.w3.org/1999/xhtml" }} className="w-full h-full flex items-center justify-center">
-                                            // eslint-disable-next-line react-doctor/nextjs-no-img-element
                                             <img src={avatarUrl} alt="" className="w-full h-full rounded-full object-cover border border-emerald-500/30" />
                                           </div>
                                         </foreignObject>
@@ -1058,7 +1024,7 @@ export function ProblemIDEClient({
                   {(submitResult.compile_output || submitResult.status === "Compile Error" || submitResult.status === "Runtime Error" || submitResult.status === "Time Limit Exceeded" || submitResult.status === "Memory Limit Exceeded") && (
                     <div className="p-4 bg-rose-500/5 border border-rose-500/20 rounded-xl space-y-2 select-text">
                       <p className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
-                        <IconAlertTriangle className="size-4" /> Diagnostics
+                        <IconAlertTriangle className="h-4 w-4" /> Diagnostics
                       </p>
                       <pre className="p-3 bg-black/40 border border-border/80 rounded-lg text-rose-400 text-xs font-mono whitespace-pre-wrap max-h-[300px] overflow-y-auto leading-relaxed">
                         {truncateText(submitResult.failed_test_case_info?.actual || submitResult.compile_output || submitResult.stderr || submitResult.status)}
@@ -1124,7 +1090,7 @@ export function ProblemIDEClient({
             <Panel defaultSize={70} minSize={20} className="flex flex-col min-h-0">
               <div className="flex items-center justify-between gap-2 bg-card px-4 py-2 border-b border-border shrink-0">
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   <span className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-widest hidden sm:inline-block">
                     {langForDisplay?.name} (.{langForDisplay?.extension})
                   </span>
@@ -1141,7 +1107,7 @@ export function ProblemIDEClient({
                     ))}
                   </select>
 
-                  <button type="button"
+                  <button
                     onClick={() => {
                       const boilerplate = parsedBoilerplates[String(selectedLang.id)] || `// Write your ${selectedLang.name} solution here\n`
                       setCode(boilerplate)
@@ -1149,34 +1115,32 @@ export function ProblemIDEClient({
                     }}
                     disabled={running || submitting}
                     title="Reset code"
-                    className="flex items-center justify-center bg-muted hover:bg-accent hover:text-accent-foreground disabled:opacity-40 text-muted-foreground hover:text-rose-400 size-7 rounded-lg border border-border transition-all cursor-pointer"
+                    className="flex items-center justify-center bg-muted hover:bg-accent hover:text-accent-foreground disabled:opacity-40 text-muted-foreground hover:text-rose-400 h-7 w-7 rounded-lg border border-border transition-all cursor-pointer"
                   >
-                    <IconRefresh className="size-3.5" />
+                    <IconRefresh className="h-3.5 w-3.5" />
                   </button>
 
-                  <button type="button"
+                  <button
                     onClick={handleRunCode}
                     disabled={running || submitting}
                     className="flex items-center gap-1.5 bg-muted hover:bg-accent hover:text-accent-foreground disabled:opacity-40 text-foreground/80 hover:text-foreground px-3 py-1 rounded-lg text-xs font-semibold border border-border transition-all cursor-pointer"
                   >
                     {running ? (
-                      // eslint-disable-next-line react-doctor/design-no-three-period-ellipsis
-                      <><div className="size-3 border border-current border-t-transparent rounded-full animate-spin" /> Running...</>
+                      <><div className="h-3 w-3 border border-current border-t-transparent rounded-full animate-spin" /> Running...</>
                     ) : (
-                      <><IconPlayerPlay className="size-3" /> Run</>
+                      <><IconPlayerPlay className="h-3 w-3" /> Run</>
                     )}
                   </button>
 
-                  <button type="button"
+                  <button
                     onClick={handleSubmitCode}
                     disabled={running || submitting}
                     className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 disabled:bg-muted disabled:text-muted-foreground/60 text-black px-3 py-1 rounded-lg text-xs font-bold shadow-[0_0_12px_rgba(16,185,129,0.25)] hover:shadow-[0_0_18px_rgba(16,185,129,0.4)] disabled:shadow-none transition-all cursor-pointer"
                   >
                     {submitting ? (
-                      // eslint-disable-next-line react-doctor/design-no-three-period-ellipsis
-                      <><div className="size-3 border border-current border-t-transparent rounded-full animate-spin" /> Judging...</>
+                      <><div className="h-3 w-3 border border-current border-t-transparent rounded-full animate-spin" /> Judging...</>
                     ) : (
-                      <><IconUpload className="size-3" /> Submit</>
+                      <><IconUpload className="h-3 w-3" /> Submit</>
                     )}
                   </button>
                 </div>
@@ -1197,11 +1161,9 @@ export function ProblemIDEClient({
                   padding: { top: 10, bottom: 10 },
                   lineNumbersMinChars: 3,
                 }}
-                // eslint-disable-next-line react-doctor/jsx-no-jsx-as-prop
                 loading={
                   <div className="flex flex-col items-center justify-center h-full gap-2 bg-background">
-                    <div className="size-6 border-2 border-muted border-t-foreground rounded-full animate-spin" />
-                    // eslint-disable-next-line react-doctor/design-no-three-period-ellipsis
+                    <div className="h-6 w-6 border-2 border-muted border-t-foreground rounded-full animate-spin" />
                     <span className="text-[10px] text-muted-foreground/60 uppercase tracking-widest">Loading...</span>
                   </div>
                 }
@@ -1216,24 +1178,24 @@ export function ProblemIDEClient({
               {/* Output tabs */}
             <div className="flex items-center justify-between bg-card border-b border-border px-3 shrink-0 select-none pt-0.5">
               <div className="flex">
-                <button type="button"
+                <button
                   onClick={() => setActiveOutputTab("testcases")}
                   className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold transition-all cursor-pointer border-b-2 ${activeOutputTab === "testcases" ? "text-foreground border-emerald-500 font-bold" : "text-muted-foreground border-transparent hover:text-foreground/80"}`}
                 >
-                  <IconCircleCheck className="size-3.5 text-emerald-500" />
+                  <IconCircleCheck className="h-3.5 w-3.5 text-emerald-500" />
                   <span>Testcase</span>
                 </button>
-                <button type="button"
+                <button
                   onClick={() => setActiveOutputTab("result")}
                   className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold transition-all cursor-pointer border-b-2 ${activeOutputTab === "result" ? "text-foreground border-emerald-500 font-bold" : "text-muted-foreground border-transparent hover:text-foreground/80"}`}
                 >
-                  <IconTerminal2 className="size-3.5 text-muted-foreground" />
+                  <IconTerminal2 className="h-3.5 w-3.5 text-muted-foreground" />
                   <span>Test Result</span>
                 </button>
               </div>
               {runResult && (
-                <button type="button" onClick={handleCopyOutput} className="p-1 hover:bg-muted rounded transition-all cursor-pointer text-muted-foreground/80 hover:text-foreground">
-                  {copied ? <IconCheck className="size-3 text-emerald-400" /> : <IconCopy className="size-3" />}
+                <button onClick={handleCopyOutput} className="p-1 hover:bg-muted rounded transition-all cursor-pointer text-muted-foreground/80 hover:text-foreground">
+                  {copied ? <IconCheck className="h-3 w-3 text-emerald-400" /> : <IconCopy className="h-3 w-3" />}
                 </button>
               )}
             </div>
@@ -1247,8 +1209,7 @@ export function ProblemIDEClient({
                       {sampleTestCases.map((_, index: number) => {
                         const isSelected = activeTestcaseIndex === index
                         return (
-                          <button type="button"
-                            // eslint-disable-next-line react-doctor/no-array-index-key, react-doctor/no-array-index-as-key
+                          <button
                             key={index}
                             onClick={() => setActiveTestcaseIndex(index)}
                             className={`px-3.5 py-1 text-[11px] font-bold rounded-lg border transition-all cursor-pointer ${
@@ -1265,7 +1226,6 @@ export function ProblemIDEClient({
 
                     {/* Case Input Textarea */}
                     <div className="animate-in fade-in duration-200">
-                      // eslint-disable-next-line react-doctor/no-render-in-render
                       {renderLeetCodeInput(
                         customInputs[activeTestcaseIndex] || "",
                         getParamNames(),
@@ -1291,17 +1251,15 @@ export function ProblemIDEClient({
                   {running ? (
                     <div className="flex flex-col items-center justify-center py-6 gap-3 animate-pulse my-auto">
                       <div className="relative">
-                        <div className="size-10 border-2 border-emerald-500/20 border-t-emerald-400 rounded-full animate-spin" />
+                        <div className="h-10 w-10 border-2 border-emerald-500/20 border-t-emerald-400 rounded-full animate-spin" />
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <IconTerminal2 className="size-4 text-emerald-400" />
+                          <IconTerminal2 className="h-4 w-4 text-emerald-400" />
                         </div>
                       </div>
                       <div className="text-center space-y-1">
-                        // eslint-disable-next-line react-doctor/design-no-three-period-ellipsis
                         <p className="text-xs font-bold text-foreground uppercase tracking-wider">
                           Compiling & Running...
                         </p>
-                        // eslint-disable-next-line react-doctor/design-no-three-period-ellipsis
                         <p className="text-[10px] text-muted-foreground/80">
                           Executing solution against the logiclab sandbox...
                         </p>
@@ -1318,7 +1276,7 @@ export function ProblemIDEClient({
                       return (
                         <div className="space-y-2 select-text select-none">
                           <p className="text-[9px] text-rose-600 dark:text-rose-400 uppercase tracking-widest font-bold flex items-center gap-1">
-                            <IconAlertTriangle className="size-3.5" /> Compile Output & Syntax Diagnostics
+                            <IconAlertTriangle className="h-3.5 w-3.5" /> Compile Output & Syntax Diagnostics
                           </p>
                           <pre className="p-3 bg-black/40 border border-border/80 rounded-lg text-rose-400 whitespace-pre-wrap text-[11px] font-mono max-h-[140px] overflow-y-auto leading-relaxed select-text">
                             {compileErrText}
@@ -1337,7 +1295,7 @@ export function ProblemIDEClient({
                         <div className="space-y-3">
                           <div className="p-2.5 rounded-lg flex items-center justify-between border bg-rose-500/5 border-rose-500/20 text-rose-600 dark:text-rose-400">
                             <div className="flex items-center gap-2">
-                              <IconCircleX className="size-4 text-rose-500" />
+                              <IconCircleX className="h-4 w-4 text-rose-500" />
                               <span className="font-bold uppercase tracking-wider text-[10px]">{isTLE ? "Time Limit Exceeded" : isMLE ? "Memory Limit Exceeded" : "Runtime Error"}</span>
                             </div>
                             {result.time && (
@@ -1382,7 +1340,7 @@ export function ProblemIDEClient({
                             </span>
                           </div>
                           <div className="text-[10px] text-muted-foreground font-medium flex items-center gap-1.5">
-                            <IconCpu className="size-3.5 text-emerald-400" />
+                            <IconCpu className="h-3.5 w-3.5 text-emerald-400" />
                             {memoryDisplay}
                           </div>
                         </div>
@@ -1393,8 +1351,7 @@ export function ProblemIDEClient({
                             const isSelected = selectedCaseIndex === index;
                             const isPassed = c.passed;
                             return (
-                              <button type="button"
-                                // eslint-disable-next-line react-doctor/no-array-index-key, react-doctor/no-array-index-as-key
+                              <button
                                 key={index}
                                 onClick={() => setSelectedCaseIndex(index)}
                                 className={`flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold rounded-lg border transition-all cursor-pointer ${
@@ -1408,9 +1365,9 @@ export function ProblemIDEClient({
                                 }`}
                               >
                                 {isPassed ? (
-                                  <IconCheck className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 stroke-[3]" />
+                                  <IconCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 stroke-[3]" />
                                 ) : (
-                                  <IconX className="size-3.5 text-rose-600 dark:text-rose-400 shrink-0 stroke-[3]" />
+                                  <IconX className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400 shrink-0 stroke-[3]" />
                                 )}
                                 <span>Case {index + 1}</span>
                               </button>
@@ -1422,7 +1379,6 @@ export function ProblemIDEClient({
                         <div className="space-y-4 select-text font-mono mt-2">
                           <div>
                             <span className="text-xs text-muted-foreground/80 uppercase tracking-widest font-bold block mb-1.5 select-none">Input</span>
-                            // eslint-disable-next-line react-doctor/no-render-in-render
                             {renderLeetCodeInput(activeCase.input || "", getParamNames())}
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1444,7 +1400,7 @@ export function ProblemIDEClient({
                   })()
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full gap-1.5 select-none my-auto">
-                      <IconTerminal2 className="size-6 text-muted-foreground/20" />
+                      <IconTerminal2 className="h-6 w-6 text-muted-foreground/20" />
                       <p className="text-[10px] text-muted-foreground/40 uppercase font-bold tracking-widest">Run your code to see results</p>
                     </div>
                   )}

@@ -9,7 +9,7 @@ function StatCardSkeleton() {
     <div className="rounded-lg border bg-card p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <Skeleton className="h-3 w-20" />
-        <Skeleton className="size-4 rounded" />
+        <Skeleton className="h-4 w-4 rounded" />
       </div>
       <Skeleton className="h-8 w-12" />
     </div>
@@ -37,7 +37,7 @@ export default function HomeLoading() {
             <Skeleton className="h-3 w-full max-w-[300px]" />
           </div>
           <Skeleton className="h-8 w-28 rounded-md shrink-0 hidden sm:block" />
-          <Skeleton className="size-8 rounded-md shrink-0 sm:hidden" />
+          <Skeleton className="h-8 w-8 rounded-md shrink-0 sm:hidden" />
         </div>
 
         {/* Section header + stat grid */}

@@ -20,7 +20,6 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function ProblemPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  // eslint-disable-next-line react-doctor/server-sequential-independent-await
   const profile = await getUserProfile()
   if (!profile) redirect("/auth/login")
 
@@ -45,17 +44,13 @@ export default async function ProblemPage({ params }: { params: Promise<{ id: st
     }
   }
 
-  // eslint-disable-next-line react-doctor/js-combine-iterations
-  const sampleTestCases = parsedTestCases.reduce((acc: any[], tc: any, idx: number) => {
-    if (tc.is_sample || tc.isSample) {
-      acc.push({
-        id: tc.id || String(idx),
-        input: tc.input || "",
-        expected_output: tc.expected_output || "",
-      })
-    }
-    return acc
-  }, [])
+  const sampleTestCases = parsedTestCases
+    .filter((tc: any) => tc.is_sample || tc.isSample)
+    .map((tc: any, idx: number) => ({
+      id: tc.id || String(idx),
+      input: tc.input || "",
+      expected_output: tc.expected_output || "",
+    }))
 
   const totalTestCases = parsedTestCases.length
 
@@ -66,7 +61,6 @@ export default async function ProblemPage({ params }: { params: Promise<{ id: st
     .eq("problem_id", id)
     .eq("user_id", profile.id)
     .order("created_at", { ascending: false })
-    // eslint-disable-next-line react-doctor/server-sequential-independent-await
     .limit(20)
 
   // Fetch all problem IDs in the same order as directory

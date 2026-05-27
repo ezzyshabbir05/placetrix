@@ -172,7 +172,6 @@ export function NavUser({ user }: { user: UserProfile | null }) {
   const { theme, setTheme } = useTheme()
 
   const [mounted, setMounted] = React.useState(false)
-  // eslint-disable-next-line react-doctor/no-initialize-state
   React.useEffect(() => setMounted(true), [])
 
   const displayName = user?.display_name?.trim() || "User"
@@ -190,7 +189,6 @@ export function NavUser({ user }: { user: UserProfile | null }) {
   const handleLogout = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
-    // eslint-disable-next-line react-doctor/react-compiler-destructure-method
     router.push("/auth/login")
   }
 
@@ -210,7 +208,7 @@ export function NavUser({ user }: { user: UserProfile | null }) {
               <div className="flex items-center gap-2 w-full" suppressHydrationWarning>
                 {user ? (
                   <>
-                    <Avatar className="size-8 rounded-lg shrink-0">
+                    <Avatar className="h-8 w-8 rounded-lg shrink-0">
                       <AvatarImage src={avatarUrl ?? undefined} alt={displayName} className="object-cover" />
                       <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
                     </Avatar>
@@ -222,12 +220,12 @@ export function NavUser({ user }: { user: UserProfile | null }) {
                   </>
                 ) : (
                   <>
-                    <Skeleton className="size-8 rounded-lg shrink-0" />
+                    <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
                     <div className="flex flex-col gap-1.5 flex-1 min-w-0">
                       <Skeleton className="h-3.5 w-28" />
                       <Skeleton className="h-3 w-36" />
                     </div>
-                    <Skeleton className="size-4 rounded shrink-0" />
+                    <Skeleton className="h-4 w-4 rounded shrink-0" />
                   </>
                 )}
               </div>
@@ -247,7 +245,7 @@ export function NavUser({ user }: { user: UserProfile | null }) {
               {/* ── User identity header ───────────────────── */}
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                  <Avatar className="size-8 rounded-lg">
+                  <Avatar className="h-8 w-8 rounded-lg">
                     <AvatarImage src={avatarUrl ?? undefined} alt={displayName} className="object-cover" />
                     <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
                   </Avatar>

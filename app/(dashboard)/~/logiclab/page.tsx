@@ -24,7 +24,6 @@ export default async function LogicLabPage() {
     .order("created_at", { ascending: false })
 
   // Fetch user's submission stats (best status per problem)
-  // eslint-disable-next-line react-doctor/server-sequential-independent-await
   const { data: submissions } = await supabase
     .from("coding_submissions")
     .select("problem_id, status")

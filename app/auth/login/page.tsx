@@ -1,4 +1,3 @@
-/* eslint-disable react-doctor/nextjs-missing-metadata */
 // app/auth/login/page.tsx
 //
 // Login flow:
@@ -55,7 +54,7 @@ export default function LoginPage() {
     <Suspense
       fallback={
         <div className="mx-auto flex sm:w-sm items-center justify-center py-12">
-          <Loader2Icon className="size-6 animate-spin text-muted-foreground" />
+          <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       }
     >
@@ -63,11 +62,9 @@ export default function LoginPage() {
     </Suspense>
   );
 }
-// eslint-disable-next-line react-doctor/no-giant-component, react-doctor/prefer-useReducer
 
 function LoginContent() {
   const router = useRouter();
-  // eslint-disable-next-line react-doctor/react-compiler-destructure-method
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/~";
 
@@ -137,9 +134,7 @@ function LoginContent() {
         }
         throw error;
       }
-// eslint-disable-next-line react-doctor/react-compiler-destructure-method
 
-      // eslint-disable-next-line react-doctor/react-compiler-destructure-method
       router.push(next);
       router.refresh();
     } catch (err: unknown) {
@@ -167,9 +162,7 @@ function LoginContent() {
         type: "signup",
       });
       if (error) throw error;
-// eslint-disable-next-line react-doctor/react-compiler-destructure-method
 
-      // eslint-disable-next-line react-doctor/react-compiler-destructure-method
       router.push(next);
       router.refresh();
     } catch (err: unknown) {
@@ -220,8 +213,8 @@ function LoginContent() {
     return (
       <div className="mx-auto space-y-6 sm:w-sm">
         <div className="flex flex-col items-center space-y-3 text-center">
-          <div className="flex size-14 items-center justify-center rounded-full bg-primary/10">
-            <MailIcon className="size-7 text-primary" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+            <MailIcon className="h-7 w-7 text-primary" />
           </div>
           <div className="space-y-1">
             <h1 className="font-bold text-2xl tracking-wide">
@@ -250,7 +243,7 @@ function LoginContent() {
           >
             {isLoading ? (
               <>
-                <Loader2Icon className="mr-2 size-4 animate-spin" />
+                <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
                 Verifying…
               </>
             ) : (
@@ -261,7 +254,7 @@ function LoginContent() {
 
         <div className="rounded-md border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
           <div className="flex items-start gap-2">
-            <MailIcon className="mt-0.5 size-4 shrink-0" />
+            <MailIcon className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
               Didn&apos;t receive it?{" "}
               {resendCooldown > 0 ? (
@@ -319,9 +312,9 @@ function LoginContent() {
           disabled={isGoogleLoading || isLoading}
         >
           {isGoogleLoading ? (
-            <Loader2Icon className="mr-2 size-4 animate-spin" />
+            <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            <GoogleIcon className="mr-2 size-4" />
+            <GoogleIcon className="mr-2 h-4 w-4" />
           )}
           {isGoogleLoading ? "Redirecting…" : "Continue with Google"}
         </Button>
@@ -387,7 +380,7 @@ function LoginContent() {
           >
             {isLoading ? (
               <>
-                <Loader2Icon className="mr-2 size-4 animate-spin" />
+                <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
                 Signing in…
               </>
             ) : (

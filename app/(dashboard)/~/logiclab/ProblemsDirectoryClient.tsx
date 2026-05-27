@@ -67,17 +67,13 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   Hard: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300",
 }
 
-// eslint-disable-next-line react-doctor/no-giant-component
 export function ProblemsDirectoryClient({
   problems,
   isAdmin,
   streakStats = { currentStreak: 0, maxStreak: 0 },
-  // eslint-disable-next-line react-doctor/rerender-memo-with-default-value
   activityCalendar = [],
-// eslint-disable-next-line react-doctor/prefer-useReducer
 }: ProblemsDirectoryProps) {
   const router = useRouter()
-  // eslint-disable-next-line react-doctor/no-derived-useState
   const [localProblems, setLocalProblems] = useState<Problem[]>(problems)
   const [search, setSearch] = useState("")
   const [difficultyFilter, setDifficultyFilter] = useState<string>("All")
@@ -138,9 +134,7 @@ export function ProblemsDirectoryClient({
     return list
   }, [weeks])
 
-  // eslint-disable-next-line react-doctor/no-mirror-prop-effect, react-doctor/no-derived-state-effect
   useEffect(() => {
-    // eslint-disable-next-line react-doctor/no-derived-state
     setLocalProblems(problems)
   }, [problems])
 
@@ -187,7 +181,6 @@ export function ProblemsDirectoryClient({
       toast.success("Problem deleted successfully!", { id: tId })
       setLocalProblems((prev) => prev.filter((p) => p.id !== deletingProblemId))
       setDeletingProblemId(null)
-      // eslint-disable-next-line react-doctor/react-compiler-destructure-method
       router.refresh()
     } catch (err: any) {
       toast.error(err?.message || "Failed to delete problem.", { id: tId })
@@ -251,7 +244,7 @@ export function ProblemsDirectoryClient({
         {isAdmin && (
           <Button asChild size="sm" className="w-fit gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white">
             <Link href="/~/logiclab/admin">
-              <Plus className="size-3.5" />
+              <Plus className="h-3.5 w-3.5" />
               Create Problem
             </Link>
           </Button>
@@ -268,7 +261,7 @@ export function ProblemsDirectoryClient({
             )}
           >
             {/* All Topics pill */}
-            <button type="button"
+            <button
               onClick={() => setTagFilter("All")}
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-bold border transition-all cursor-pointer whitespace-nowrap hover:scale-[1.02] active:scale-[0.98] duration-150",
@@ -293,7 +286,7 @@ export function ProblemsDirectoryClient({
               const isActive = tagFilter === tag
               const count = tagCounts[tag] || 0
               return (
-                <button type="button"
+                <button
                   key={tag}
                   onClick={() => setTagFilter(isActive ? "All" : tag)}
                   className={cn(
@@ -320,21 +313,21 @@ export function ProblemsDirectoryClient({
           {/* Collapse / Show All toggle */}
           {allTags.length > 8 && (
             <div className="flex justify-end mt-2 pt-2 border-t border-border/60">
-              <button type="button"
+              <button
                 onClick={() => setTagsExpanded((prev) => !prev)}
                 className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               >
                 {tagsExpanded ? (
                   <>
                     Collapse
-                    <svg className="size-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2}>
+                    <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2}>
                       <path d="M12 10L8 6l-4 4" />
                     </svg>
                   </>
                 ) : (
                   <>
                     Show All ({allTags.length + 1} topics)
-                    <svg className="size-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2}>
+                    <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2}>
                       <path d="M4 6l4 4 4-4" />
                     </svg>
                   </>
@@ -351,8 +344,8 @@ export function ProblemsDirectoryClient({
         <Card className="lg:col-span-3 border-border/70 bg-card p-3 flex flex-col justify-between">
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <div className="size-8 rounded-lg bg-background border border-input flex items-center justify-center shrink-0">
-                <Flame className="size-4 text-orange-500" />
+              <div className="h-8 w-8 rounded-lg bg-background border border-input flex items-center justify-center shrink-0">
+                <Flame className="h-4 w-4 text-orange-500" />
               </div>
               <div>
                 <span className="text-[9px] text-muted-foreground/70 uppercase tracking-widest font-bold block leading-none">Coding Streak</span>
@@ -378,7 +371,7 @@ export function ProblemsDirectoryClient({
           <div className="flex items-center justify-between pb-2 border-b border-border/40">
             <div className="flex flex-col gap-0.5">
               <div className="flex items-center gap-1.5">
-                <Code2 className="size-3.5 text-muted-foreground" />
+                <Code2 className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-xs font-bold text-foreground/90 tracking-tight uppercase">Coding Consistency</span>
               </div>
               <span className="text-[8px] text-muted-foreground/70 font-bold uppercase tracking-wider block ml-5 leading-none">Daily Contribution Grid</span>
@@ -402,7 +395,6 @@ export function ProblemsDirectoryClient({
               {/* Month labels row */}
               <div className="flex gap-[3px] text-[8px] h-3.5 text-muted-foreground/70 font-semibold select-none mb-0.5">
                 {visibleMonths.map((m, idx) => (
-                  // eslint-disable-next-line react-doctor/no-array-index-key, react-doctor/no-array-index-as-key
                   <div key={idx} className="relative w-[11px] shrink-0">
                     {m && (
                       <span className="absolute left-0 top-0 whitespace-nowrap text-[8px] text-muted-foreground/70 font-extrabold tracking-tight">
@@ -416,7 +408,6 @@ export function ProblemsDirectoryClient({
               {/* Tighter flex calendar layout */}
               <div className="flex gap-[3px]">
                 {weeks.map((week, wIdx) => (
-                  // eslint-disable-next-line react-doctor/no-array-index-key
                   <div key={wIdx} className="flex flex-col gap-[3px] shrink-0">
                     {week.map((cell, cIdx) => {
                       const formattedDate = formatDate(cell.date)
@@ -428,7 +419,6 @@ export function ProblemsDirectoryClient({
                           : "bg-muted/40 border border-border/20"
 
                       return (
-                        // eslint-disable-next-line react-doctor/no-array-index-key
                         <div key={cIdx} className="relative group">
                           <div
                             className={cn(
@@ -457,9 +447,9 @@ export function ProblemsDirectoryClient({
             <span>Grid spans 84 days</span>
             <div className="flex items-center gap-1">
               <span>Less</span>
-              <div className="size-1.5 rounded-[1px] bg-muted/40 border border-border/20" />
-              <div className="size-1.5 rounded-[1px] bg-amber-500/20 border border-amber-500/35" />
-              <div className="size-1.5 rounded-[1px] bg-emerald-500/30 border border-emerald-500/50" />
+              <div className="w-1.5 h-1.5 rounded-[1px] bg-muted/40 border border-border/20" />
+              <div className="w-1.5 h-1.5 rounded-[1px] bg-amber-500/20 border border-amber-500/35" />
+              <div className="w-1.5 h-1.5 rounded-[1px] bg-emerald-500/30 border border-emerald-500/50" />
               <span>More</span>
             </div>
           </div>
@@ -505,7 +495,7 @@ export function ProblemsDirectoryClient({
             <div className="grid grid-cols-3 gap-1 mt-1 text-[9px] font-bold">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                  <span className="size-1 rounded-full bg-emerald-500" />
+                  <span className="h-1 w-1 rounded-full bg-emerald-500" />
                   <span>Easy</span>
                 </div>
                 <span className="block text-[10px] text-foreground/75 font-extrabold ml-2">{solvedEasy} / {counts.easy}</span>
@@ -513,7 +503,7 @@ export function ProblemsDirectoryClient({
 
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                  <span className="size-1 rounded-full bg-amber-500" />
+                  <span className="h-1 w-1 rounded-full bg-amber-500" />
                   <span>Medium</span>
                 </div>
                 <span className="block text-[10px] text-foreground/75 font-extrabold ml-2">{solvedMedium} / {counts.medium}</span>
@@ -521,7 +511,7 @@ export function ProblemsDirectoryClient({
 
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1 text-rose-600 dark:text-rose-400">
-                  <span className="size-1 rounded-full bg-rose-500" />
+                  <span className="h-1 w-1 rounded-full bg-rose-500" />
                   <span>Hard</span>
                 </div>
                 <span className="block text-[10px] text-foreground/75 font-extrabold ml-2">{solvedHard} / {counts.hard}</span>
@@ -531,7 +521,7 @@ export function ProblemsDirectoryClient({
 
           <Button asChild variant="outline" size="sm" className="mt-3 w-full gap-2">
             <Link href="/~/logiclab/playground">
-              <Terminal className="size-4 text-emerald-500" />
+              <Terminal className="h-4 w-4 text-emerald-500" />
               Launch Code Playground
             </Link>
           </Button>
@@ -544,7 +534,7 @@ export function ProblemsDirectoryClient({
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 px-3 py-2.5 bg-muted/40 border-b border-border/60">
           {/* Search */}
           <div className="relative flex-1 min-w-0">
-            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               id="problem-search"
               placeholder="Search questions..."
@@ -553,11 +543,11 @@ export function ProblemsDirectoryClient({
               className="pl-9 pr-9"
             />
             {search && (
-              <button type="button"
+              <button
                 onClick={() => setSearch("")}
-                className="absolute right-2.5 top-2.5 size-4 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                className="absolute right-2.5 top-2.5 h-4 w-4 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
               >
-                <X className="size-3.5" />
+                <X className="h-3.5 w-3.5" />
               </button>
             )}
           </div>
@@ -590,7 +580,7 @@ export function ProblemsDirectoryClient({
 
           {/* Solved count badge */}
           <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground shrink-0 pl-2 border-l border-border/60">
-            <span className="size-2 rounded-full bg-emerald-500" />
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
             <span>
               <span className="text-foreground font-bold">{counts.solved}</span>
               <span className="text-muted-foreground/60">/{counts.total}</span>
@@ -613,21 +603,19 @@ export function ProblemsDirectoryClient({
         {filtered.length > 0 && (
           <div className="divide-y divide-border/50">
             {filtered.map((problem, idx) => (
-              // eslint-disable-next-line react-doctor/click-events-have-key-events, react-doctor/no-static-element-interactions
               <div
                 key={problem.id}
-                // eslint-disable-next-line react-doctor/react-compiler-destructure-method
                 onClick={() => router.push(`/~/logiclab/problems/${problem.id}`)}
                 className="grid grid-cols-12 gap-2 items-center px-4 py-3 hover:bg-muted/30 transition-colors group cursor-pointer"
               >
                 {/* Status */}
                 <div className="col-span-1">
                   {problem.solved_status === "Accepted" ? (
-                    <CircleCheck className="size-4 text-emerald-400" />
+                    <CircleCheck className="h-4 w-4 text-emerald-400" />
                   ) : problem.solved_status ? (
-                    <CircleDot className="size-4 text-amber-400" />
+                    <CircleDot className="h-4 w-4 text-amber-400" />
                   ) : (
-                    <div className="size-4 rounded-full border border-border" />
+                    <div className="h-4 w-4 rounded-full border border-border" />
                   )}
                 </div>
 
@@ -637,7 +625,7 @@ export function ProblemsDirectoryClient({
                   <span className="text-sm font-medium text-foreground/90 group-hover:text-foreground transition-colors truncate">
                     {problem.title}
                   </span>
-                  <ChevronRight className="size-3 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors ml-auto shrink-0 opacity-0 group-hover:opacity-100" />
+                  <ChevronRight className="h-3 w-3 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors ml-auto shrink-0 opacity-0 group-hover:opacity-100" />
                 </div>
 
                 {/* Difficulty */}
@@ -665,7 +653,7 @@ export function ProblemsDirectoryClient({
                 {/* Tags — clickable to filter */}
                 <div className="col-span-2 flex flex-wrap gap-1 justify-end">
                   {(problem.tags || []).slice(0, 2).map((tag) => (
-                    <button type="button"
+                    <button
                       key={tag}
                       onClick={(e) => {
                         e.stopPropagation()
@@ -698,9 +686,9 @@ export function ProblemsDirectoryClient({
                       className="p-1.5 hover:bg-muted rounded text-muted-foreground hover:text-emerald-400 transition-all inline-flex items-center justify-center cursor-pointer"
                       title="Edit Problem"
                     >
-                      <Pencil className="size-3.5" />
+                      <Pencil className="h-3.5 w-3.5" />
                     </Link>
-                    <button type="button"
+                    <button
                       onClick={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
@@ -709,7 +697,7 @@ export function ProblemsDirectoryClient({
                       className="p-1.5 hover:bg-muted hover:text-rose-400 rounded text-muted-foreground/70 transition-all inline-flex items-center justify-center cursor-pointer"
                       title="Delete Problem"
                     >
-                      <Trash2 className="size-3.5" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 )}
@@ -721,8 +709,8 @@ export function ProblemsDirectoryClient({
         {/* Empty state */}
         {filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
-            <div className="size-12 rounded-xl bg-muted flex items-center justify-center">
-              <BookOpen className="size-5 text-muted-foreground/60" />
+            <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
+              <BookOpen className="h-5 w-5 text-muted-foreground/60" />
             </div>
             <div className="space-y-0.5">
               <p className="text-sm font-medium">
@@ -750,14 +738,14 @@ export function ProblemsDirectoryClient({
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3.5 bg-muted/80 border-b border-border">
               <h3 className="text-sm font-bold flex items-center gap-2 text-rose-400 uppercase tracking-wider">
-                <AlertTriangle className="size-4" /> Permanent Deletion
+                <AlertTriangle className="h-4 w-4" /> Permanent Deletion
               </h3>
-              <button type="button"
+              <button
                 onClick={() => setDeletingProblemId(null)}
                 disabled={isDeleting}
                 className="p-1 hover:bg-muted rounded text-muted-foreground/70 hover:text-foreground transition-colors cursor-pointer"
               >
-                <X className="size-4" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
@@ -789,13 +777,12 @@ export function ProblemsDirectoryClient({
               >
                 {isDeleting ? (
                   <>
-                    // eslint-disable-next-line react-doctor/design-no-three-period-ellipsis
-                    <span className="size-3 border border-current border-t-transparent rounded-full animate-spin inline-block" />
+                    <span className="h-3 w-3 border border-current border-t-transparent rounded-full animate-spin inline-block" />
                     Deleting...
                   </>
                 ) : (
                   <>
-                    <Trash2 className="size-3.5" />
+                    <Trash2 className="h-3.5 w-3.5" />
                     Delete Problem
                   </>
                 )}
