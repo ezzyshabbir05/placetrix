@@ -1,11 +1,11 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
-import { getUserProfile } from "@/lib/supabase/profile"
+import { getUserProfile as getUser } from "@/lib/supabase/profile"
 import { revalidatePath } from "next/cache"
 
 export async function toggleStudentVerification(studentId: string, verified: boolean) {
-  const profile = await getUserProfile()
+  const profile = await getUser()
   if (!profile || profile.account_type !== "institute") {
     throw new Error("Unauthorized")
   }

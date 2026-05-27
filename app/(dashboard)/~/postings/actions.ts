@@ -11,7 +11,7 @@ import type { JobPostingForm, JobPostingStatus } from "./_types"
 
 // ─── Guard ────────────────────────────────────────────────────────────────────
 
-async function getAuthUserId(): Promise<string> {
+async function requireAuth(): Promise<string> {
   const supabase = await createClient()
   const { data } = await supabase.auth.getClaims()
   const user = data?.claims
@@ -20,7 +20,7 @@ async function getAuthUserId(): Promise<string> {
 }
 
 async function assertPostingOwner(postingId: string): Promise<string> {
-  const userId = await getAuthUserId()
+  const userId = await requireAuth()
   const supabase = await createClient()
 
   const { data, error } = await supabase
@@ -41,7 +41,7 @@ async function assertPostingOwner(postingId: string): Promise<string> {
 export async function createPostingAction(
   form: JobPostingForm
 ): Promise<{ id: string }> {
-  const userId = await getAuthUserId()
+  const userId = await requireAuth()
   const supabase = await createClient()
 
   if (!form.title.trim()) throw new Error("Title is required")
@@ -78,6 +78,7 @@ export async function updatePostingAction(
   postingId: string,
   form: JobPostingForm
 ): Promise<void> {
+  await requireAuth()
   await assertPostingOwner(postingId)
   const supabase = await createClient()
 
@@ -111,6 +112,7 @@ export async function togglePostingStatusAction(
   postingId: string,
   newStatus: JobPostingStatus
 ): Promise<void> {
+  await requireAuth()
   await assertPostingOwner(postingId)
   const supabase = await createClient()
 
@@ -127,6 +129,7 @@ export async function togglePostingStatusAction(
 // ─── Delete ───────────────────────────────────────────────────────────────────
 
 export async function deletePostingAction(postingId: string): Promise<void> {
+  await requireAuth()
   await assertPostingOwner(postingId)
   const supabase = await createClient()
 

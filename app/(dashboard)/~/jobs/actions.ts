@@ -2,10 +2,10 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
-import { getUserProfile } from "@/lib/supabase/profile"
+import { getUserProfile as getUser } from "@/lib/supabase/profile"
 
 export async function applyForJobAction(jobId: string, coverLetter?: string) {
-  const profile = await getUserProfile()
+  const profile = await getUser()
   if (!profile) throw new Error("Unauthorized")
 
   if (profile.account_type !== "candidate") {

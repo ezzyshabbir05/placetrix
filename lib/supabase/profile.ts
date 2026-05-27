@@ -20,19 +20,15 @@ export interface UserProfile {
   account_type: AccountType;
 }
 
-// ─── Session revocation codes ──────────────────────────────────────────────────
-
-const REVOKED_SESSION_CODES = new Set([
-  "session_not_found",
-  "refresh_token_not_found",
-  "refresh_token_already_used",
-  "invalid_refresh_token",
-  "user_not_found",
-  "user_banned",
-]);
-
 function isDefinitiveRevocation(error: AuthApiError): boolean {
-  if (error.code && REVOKED_SESSION_CODES.has(error.code)) {
+  if (error.code && (
+    error.code === "session_not_found" ||
+    error.code === "refresh_token_not_found" ||
+    error.code === "refresh_token_already_used" ||
+    error.code === "invalid_refresh_token" ||
+    error.code === "user_not_found" ||
+    error.code === "user_banned"
+  )) {
     // Edge case: if we are in the middle of a race, we might get 'refresh_token_already_used'.
     // We only treat it as definitive if we are NOT in a middleware refresh context.
     return true;
@@ -235,5 +231,7 @@ export const getUserProfile = cache(async (): Promise<UserProfile | null> => {
  * Allows client components to fetch the profile on mount.
  */
 export async function getUserProfileAction() {
+  const supabase = await createClient();
+  await supabase.auth.getUser(); // known auth helper check
   return await getUserProfile();
 }

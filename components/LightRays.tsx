@@ -106,6 +106,8 @@ const LightRays: React.FC<LightRaysProps> = ({
   const cleanupFunctionRef = useRef<(() => void) | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
+  const timeoutRef = useRef<number | null>(null);
+  const updatePlacementRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -131,6 +133,13 @@ const LightRays: React.FC<LightRaysProps> = ({
   useEffect(() => {
     if (!isVisible || !containerRef.current) return;
 
+    const handleResize = () => {
+      if (updatePlacementRef.current) {
+        updatePlacementRef.current();
+      }
+    };
+    window.addEventListener('resize', handleResize);
+
     if (cleanupFunctionRef.current) {
       cleanupFunctionRef.current();
       cleanupFunctionRef.current = null;
@@ -139,7 +148,11 @@ const LightRays: React.FC<LightRaysProps> = ({
     const initializeWebGL = async () => {
       if (!containerRef.current) return;
 
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise<void>(resolve => {
+        timeoutRef.current = window.setTimeout(() => {
+          resolve();
+        }, 10);
+      });
 
       if (!containerRef.current) return;
 
@@ -334,17 +347,22 @@ void main() {
         }
       };
 
-      window.addEventListener('resize', updatePlacement);
+      updatePlacementRef.current = updatePlacement;
       updatePlacement();
       animationIdRef.current = requestAnimationFrame(loop);
 
       cleanupFunctionRef.current = () => {
+        if (timeoutRef.current) {
+          window.clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+
         if (animationIdRef.current) {
           cancelAnimationFrame(animationIdRef.current);
           animationIdRef.current = null;
         }
 
-        window.removeEventListener('resize', updatePlacement);
+        updatePlacementRef.current = null;
 
         if (renderer) {
           try {
@@ -371,6 +389,7 @@ void main() {
     initializeWebGL();
 
     return () => {
+      window.removeEventListener('resize', handleResize);
       if (cleanupFunctionRef.current) {
         cleanupFunctionRef.current();
         cleanupFunctionRef.current = null;

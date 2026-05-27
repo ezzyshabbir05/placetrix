@@ -16,24 +16,7 @@ const HOVER_CLOSE_DELAY = 140  // ms
 // ─── Hover Context ────────────────────────────────────────────────────────────
 
 
-interface SidebarHoverContextValue {
-  /** Called by NavUser when its dropdown opens/closes */
-  onUserMenuOpenChange: (open: boolean) => void
-  /** Stable ref-based handlers — never cause re-renders in consumers */
-  hoverProps: {
-    onPointerEnter: (e: React.PointerEvent) => void
-    onPointerLeave: (e: React.PointerEvent) => void
-  }
-}
-
-export const SidebarHoverContext = React.createContext<SidebarHoverContextValue>({
-  onUserMenuOpenChange: () => { },
-  hoverProps: { onPointerEnter: () => { }, onPointerLeave: () => { } },
-})
-
-export function useSidebarHoverContext() {
-  return React.useContext(SidebarHoverContext)
-}
+import { SidebarHoverContext, type SidebarHoverContextValue } from "./sidebar-hover-context"
 
 
 // ─── Mobile Hover Guard ───────────────────────────────────────────────────────

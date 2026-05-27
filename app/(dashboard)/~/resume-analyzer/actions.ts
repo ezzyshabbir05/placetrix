@@ -1,6 +1,7 @@
 "use server"
 
 import OpenAI from "openai"
+import { getUserProfile as getUser } from "@/lib/supabase/profile"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -22,7 +23,7 @@ export type ResumeAnalysisResult = {
 
 // ─── Model fallback chain (Groq) ──────────────────────────────────────────────
 
-const MODEL_FALLBACK_CHAIN: string[] = [
+const MODEL_FALLBACK_CHAIN: readonly string[] = Object.freeze([
   "llama-3.3-70b-versatile",
   "moonshotai/kimi-k2-instruct-0905",
   "qwen/qwen3-32b",
@@ -30,7 +31,7 @@ const MODEL_FALLBACK_CHAIN: string[] = [
   "meta-llama/llama-4-scout-17b-16e-instruct",
   "openai/gpt-oss-20b",
   "llama-3.1-8b-instant",
-]
+])
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -64,6 +65,9 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
 export async function analyzeResumeAction(
   formData: FormData
 ): Promise<ResumeAnalysisResult> {
+  const user = await getUser()
+  if (!user) throw new Error("Unauthorized")
+
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) throw new Error("AI analysis is not configured. GROQ_API_KEY is missing.")
 

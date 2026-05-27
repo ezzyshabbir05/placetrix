@@ -108,10 +108,20 @@ async function saveTestToDb(
   }
 }
 
+async function requireAuth(): Promise<string> {
+  const supabase = await createClient()
+  const { data } = await supabase.auth.getClaims()
+  const user = data?.claims
+  if (!user) throw new Error("Not authenticated")
+  return user.sub as string
+}
+
 export async function loadTestAction(
   testId: string,
   userId: string
 ): Promise<InitialTestData | null> {
+  const authUserId = await requireAuth()
+  if (authUserId !== userId) throw new Error("Unauthorized")
   const supabase = await createClient()
 
   const { data: test } = await supabase
@@ -175,13 +185,8 @@ export async function saveDraftAction(
   settings: SettingsForm,
   questions: LocalQuestion[]
 ): Promise<void> {
-  const supabase = await createClient()
-  const { data: authData } = await supabase.auth.getClaims()
-  const user = authData?.claims
-
-  if (!user) throw new Error("Not authenticated")
-
-  await saveTestToDb(testId, user.sub as string, settings, questions, "draft")
+  const userSub = await requireAuth()
+  await saveTestToDb(testId, userSub, settings, questions, "draft")
   revalidatePath("/~/tests")
 }
 
@@ -190,29 +195,24 @@ export async function publishTestAction(
   settings: SettingsForm,
   questions: LocalQuestion[]
 ): Promise<void> {
+  const userSub = await requireAuth()
   if (!settings.title.trim()) throw new Error("Title is required.")
   if (questions.length === 0) throw new Error("Add at least one question.")
 
-  const supabase = await createClient()
-  const { data: authData } = await supabase.auth.getClaims()
-  const user = authData?.claims
-
-  if (!user) throw new Error("Not authenticated")
-
-  await saveTestToDb(testId, user.sub as string, settings, questions, "published")
+  await saveTestToDb(testId, userSub, settings, questions, "published")
   revalidatePath("/~/tests")
   redirect(`/~/tests/${testId}`)
 }
 
 // ─── AI Question Generation ───────────────────────────────────────────────────
 
-const DIFFICULTY_MARKS: Record<AiGenerateForm["difficulty"], number> = {
+const DIFFICULTY_MARKS: Record<AiGenerateForm["difficulty"], number> = Object.freeze({
   easy: 1,
   medium: 1,
   hard: 1,
-}
+})
 
-const MODEL_FALLBACK_CHAIN: string[] = [
+const MODEL_FALLBACK_CHAIN: readonly string[] = Object.freeze([
   "llama-3.3-70b-versatile",
   "moonshotai/kimi-k2-instruct-0905",
   "qwen/qwen3-32b",
@@ -220,7 +220,7 @@ const MODEL_FALLBACK_CHAIN: string[] = [
   "meta-llama/llama-4-scout-17b-16e-instruct",
   "openai/gpt-oss-20b",
   "llama-3.1-8b-instant",
-]
+])
 
 function isRetryableOnNextModel(err: unknown): boolean {
   if (err instanceof Error) {
@@ -300,6 +300,7 @@ function sanitizeQuestions(raw: any[], marksDefault: number): QuestionForm[] {
 export async function generateQuestionsAction(
   input: AiGenerateForm
 ): Promise<GenerateQuestionsResult> {
+  await requireAuth()
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) throw new Error("AI generation is not configured.")
 

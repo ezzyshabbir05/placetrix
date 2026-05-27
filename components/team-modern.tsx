@@ -3,7 +3,7 @@ import React, { useRef } from 'react'
 import { Codesandbox } from 'lucide-react'
 import { TimelineAnimation } from '@/components/timeline-animation'
 
-export const TEAM_MEMBERS_1 = [
+const TEAM_MEMBERS_1 = [
   {
     id: '1',
     name: 'Shabbir Ezzy',

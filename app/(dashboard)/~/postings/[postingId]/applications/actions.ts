@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
-import { getUserProfile } from "@/lib/supabase/profile"
+import { getUserProfile as getUser } from "@/lib/supabase/profile"
 import type { JobApplicationStatus } from "./_types"
 
 export async function updateApplicationStatusAction(applicationId: string, postingId: string, status: JobApplicationStatus) {
-  const profile = await getUserProfile()
+  const profile = await getUser()
   if (!profile || profile.account_type !== "recruiter") {
     throw new Error("Unauthorized")
   }

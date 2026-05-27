@@ -31,6 +31,42 @@ import {
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
+function SortableHeadLoading<T extends string>({
+  label,
+  col,
+  sortCol,
+  sortDir,
+  className,
+}: {
+  label: string
+  col: T
+  sortCol: T
+  sortDir: "asc" | "desc"
+  className?: string
+}) {
+  return (
+    <TableHead
+      className={cn(
+        "text-xs font-semibold select-none cursor-default",
+        className
+      )}
+    >
+      <div className="flex items-center gap-1.5">
+        {label}
+        {sortCol === col ? (
+          sortDir === "asc" ? (
+            <ArrowUp className="h-3.5 w-3.5 text-foreground" />
+          ) : (
+            <ArrowDown className="h-3.5 w-3.5 text-foreground" />
+          )
+        ) : (
+          <ArrowUpDown className="h-3.5 w-3.5 opacity-30" />
+        )}
+      </div>
+    </TableHead>
+  )
+}
+
 export default function StudentsLoading() {
   const searchParams = useSearchParams()
   const search = searchParams?.get("search") || ""
@@ -42,42 +78,6 @@ export default function StudentsLoading() {
 
   const pageNum = parseInt(page, 10)
   const isFirstPage = pageNum <= 1
-
-  function SortableHeadLoading<T extends string>({
-    label,
-    col,
-    sortCol,
-    sortDir,
-    className,
-  }: {
-    label: string
-    col: T
-    sortCol: T
-    sortDir: "asc" | "desc"
-    className?: string
-  }) {
-    return (
-      <TableHead
-        className={cn(
-          "text-xs font-semibold select-none cursor-default",
-          className
-        )}
-      >
-        <div className="flex items-center gap-1.5">
-          {label}
-          {sortCol === col ? (
-            sortDir === "asc" ? (
-              <ArrowUp className="h-3.5 w-3.5 text-foreground" />
-            ) : (
-              <ArrowDown className="h-3.5 w-3.5 text-foreground" />
-            )
-          ) : (
-            <ArrowUpDown className="h-3.5 w-3.5 opacity-30" />
-          )}
-        </div>
-      </TableHead>
-    )
-  }
 
   return (
     <div className="flex flex-col gap-6 px-4 py-8 md:px-8">

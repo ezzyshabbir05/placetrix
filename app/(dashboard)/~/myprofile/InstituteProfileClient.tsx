@@ -76,7 +76,7 @@ function ReadonlyField({ label, value }: { label: string; value?: string | null 
   return (
     <div className="space-y-0.5">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium">{value?.trim() ? value : <span className="text-muted-foreground font-normal">—</span>}</p>
+      <p className="text-sm font-medium">{value?.trim() ? value : <span className="text-muted-foreground font-normal">-</span>}</p>
     </div>
   )
 }
@@ -84,7 +84,7 @@ function ReadonlyField({ label, value }: { label: string; value?: string | null 
 function SectionComplete() {
   return (
     <Badge variant="secondary" className="h-8 px-3 gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800">
-      <CheckCircle className="h-3.5 w-3.5" />
+      <CheckCircle className="size-3.5" />
       Complete
     </Badge>
   )
@@ -93,7 +93,7 @@ function SectionComplete() {
 function SectionIncomplete() {
   return (
     <Badge variant="outline" className="h-8 px-3 gap-1.5 text-xs text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700">
-      <Info className="h-3.5 w-3.5" />
+      <Info className="size-3.5" />
       Not filled
     </Badge>
   )
@@ -110,9 +110,9 @@ function getStorageUrl(
 }
 
 function UsernameStatusIcon({ status }: { status: UsernameStatus }) {
-  if (status === "checking") return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-  if (status === "available") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-  if (status === "taken" || status === "invalid") return <XCircle className="h-4 w-4 text-destructive" />
+  if (status === "checking") return <Loader2 className="size-4 animate-spin text-muted-foreground" />
+  if (status === "available") return <CheckCircle2 className="size-4 text-emerald-500" />
+  if (status === "taken" || status === "invalid") return <XCircle className="size-4 text-destructive" />
   return null
 }
 
@@ -536,7 +536,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
         {/* Onboarding Banner */}
         {isFirstTime && !bannerDismissed && (
           <Alert className="border-primary/30 bg-primary/5">
-            <Info className="h-4 w-4 text-primary" />
+            <Info className="size-4 text-primary" />
             <AlertTitle className="text-primary">Welcome! Let's set up your institution profile</AlertTitle>
             <AlertDescription className="mt-1 flex items-start justify-between gap-4">
               <span className="text-muted-foreground text-sm">
@@ -546,10 +546,10 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="shrink-0 h-6 w-6"
+                className="shrink-0 size-6"
                 onClick={() => setBannerDismissed(true)}
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="size-3.5" />
               </Button>
             </AlertDescription>
           </Alert>
@@ -565,7 +565,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
               </div>
               {!editing("account") && (
                 <Button variant="outline" size="sm" onClick={() => openSection("account")}>
-                  <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                  <Pencil className="size-3.5 mr-1.5" />
                   Edit
                 </Button>
               )}
@@ -575,7 +575,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                 <div className="max-w-sm space-y-2">
                   <Label htmlFor="username">Username</Label>
                   <div className="relative">
-                    <AtSign className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <AtSign className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                     <Input
                       id="username"
                       placeholder="your_institution"
@@ -616,7 +616,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                   Cancel
                 </Button>
                 <Button size="sm" onClick={() => handleSaveSection("account")} disabled={isPending}>
-                  {isPending && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+                  {isPending && <Loader2 className="size-3.5 mr-1.5 animate-spin" />}
                   Save
                 </Button>
               </CardFooter>
@@ -633,7 +633,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
           <CardContent>
             <div className="flex items-center gap-4">
               <div className="relative shrink-0">
-                <Avatar className="h-20 w-20">
+                <Avatar className="size-20">
                   <AvatarImage src={logoSrc ?? undefined} alt="Institution logo" className="object-cover" />
                   <AvatarFallback className="text-xl font-semibold">
                     {instituteName ? instituteName[0].toUpperCase() : "?"}
@@ -644,11 +644,11 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                   onClick={() => logoInputRef.current?.click()}
                   disabled={isUploadingLogo}
                   aria-label="Change institution logo"
-                  className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                  className="absolute -bottom-1 -right-1 size-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:bg-primary/90 disabled:opacity-50 transition-colors"
                 >
                   {isUploadingLogo
-                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    : <Camera className="h-3.5 w-3.5" />}
+                    ? <Loader2 className="size-3.5 animate-spin" />
+                    : <Camera className="size-3.5" />}
                 </button>
               </div>
               <div className="space-y-2">
@@ -661,8 +661,8 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                 />
                 <Button variant="outline" size="sm" onClick={() => logoInputRef.current?.click()} disabled={isUploadingLogo}>
                   {isUploadingLogo
-                    ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading…</>
-                    : <><Upload className="h-4 w-4 mr-2" />Upload Logo</>}
+                    ? <><Loader2 className="size-4 mr-2 animate-spin" />Uploading…</>
+                    : <><Upload className="size-4 mr-2" />Upload Logo</>}
                 </Button>
                 <p className="text-xs text-muted-foreground">Square image recommended · max 2 MB</p>
                 {!initialData?.institute_name && (
@@ -686,7 +686,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
               {!editing("basic") && (basicComplete ? <SectionComplete /> : <SectionIncomplete />)}
               {!editing("basic") && (
                 <Button variant="outline" size="sm" onClick={() => openSection("basic")}>
-                  <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                  <Pencil className="size-3.5 mr-1.5" />
                   Edit
                 </Button>
               )}
@@ -842,7 +842,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                 Cancel
               </Button>
               <Button size="sm" onClick={() => handleSaveSection("basic")} disabled={isPending}>
-                {isPending && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+                {isPending && <Loader2 className="size-3.5 mr-1.5 animate-spin" />}
                 Save Changes
               </Button>
             </CardFooter>
@@ -860,7 +860,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
               {!editing("contact") && (contactComplete ? <SectionComplete /> : <SectionIncomplete />)}
               {!editing("contact") && (
                 <Button variant="outline" size="sm" onClick={() => openSection("contact")}>
-                  <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                  <Pencil className="size-3.5 mr-1.5" />
                   Edit
                 </Button>
               )}
@@ -873,7 +873,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="flex items-center gap-1.5">
-                      <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Phone className="size-3.5 text-muted-foreground" />
                       Contact Number<RequiredMark />
                     </Label>
                     <Input
@@ -886,7 +886,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                   </div>
                   <div className="space-y-2">
                     <Label className="flex items-center gap-1.5">
-                      <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Mail className="size-3.5 text-muted-foreground" />
                       Email Address<RequiredMark />
                     </Label>
                     <Input
@@ -900,7 +900,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                 </div>
                 <div className="space-y-2">
                   <Label className="flex items-center gap-1.5">
-                    <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+                    <Globe className="size-3.5 text-muted-foreground" />
                     Website URL
                   </Label>
                   <Input
@@ -926,7 +926,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                 Cancel
               </Button>
               <Button size="sm" onClick={() => handleSaveSection("contact")} disabled={isPending}>
-                {isPending && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+                {isPending && <Loader2 className="size-3.5 mr-1.5 animate-spin" />}
                 Save Changes
               </Button>
             </CardFooter>
@@ -944,7 +944,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
               {!editing("admin") && (adminComplete ? <SectionComplete /> : <SectionIncomplete />)}
               {!editing("admin") && (
                 <Button variant="outline" size="sm" onClick={() => openSection("admin")}>
-                  <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                  <Pencil className="size-3.5 mr-1.5" />
                   Edit
                 </Button>
               )}
@@ -1005,7 +1005,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                 Cancel
               </Button>
               <Button size="sm" onClick={() => handleSaveSection("admin")} disabled={isPending}>
-                {isPending && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+                {isPending && <Loader2 className="size-3.5 mr-1.5 animate-spin" />}
                 Save Changes
               </Button>
             </CardFooter>
@@ -1023,7 +1023,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
               {!editing("courses") && (coursesComplete ? <SectionComplete /> : <SectionIncomplete />)}
               {!editing("courses") && (
                 <Button variant="outline" size="sm" onClick={() => openSection("courses")}>
-                  <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                  <Pencil className="size-3.5 mr-1.5" />
                   Edit
                 </Button>
               )}
@@ -1042,13 +1042,13 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                     />
                     {courses.length > 1 && (
                       <Button variant="ghost" size="icon" type="button" onClick={() => removeCourse(index)}>
-                        <Minus className="h-4 w-4" />
+                        <Minus className="size-4" />
                       </Button>
                     )}
                   </div>
                 ))}
                 <Button variant="outline" size="sm" onClick={addCourse} type="button">
-                  <Plus className="h-4 w-4 mr-2" />Add course
+                  <Plus className="size-4 mr-2" />Add course
                 </Button>
               </div>
             ) : (
@@ -1072,7 +1072,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                 Cancel
               </Button>
               <Button size="sm" onClick={() => handleSaveSection("courses")} disabled={isPending}>
-                {isPending && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+                {isPending && <Loader2 className="size-3.5 mr-1.5 animate-spin" />}
                 Save Changes
               </Button>
             </CardFooter>
@@ -1090,7 +1090,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
               {!editing("social") && (socialComplete ? <SectionComplete /> : <SectionIncomplete />)}
               {!editing("social") && (
                 <Button variant="outline" size="sm" onClick={() => openSection("social")}>
-                  <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                  <Pencil className="size-3.5 mr-1.5" />
                   Edit
                 </Button>
               )}
@@ -1109,12 +1109,12 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                       type="url"
                     />
                     <Button variant="ghost" size="icon" type="button" onClick={() => removeSocialLink(index)}>
-                      <Minus className="h-4 w-4" />
+                      <Minus className="size-4" />
                     </Button>
                   </div>
                 ))}
                 <Button variant="outline" size="sm" onClick={addSocialLink} type="button">
-                  <Plus className="h-4 w-4 mr-2" />Add link
+                  <Plus className="size-4 mr-2" />Add link
                 </Button>
               </div>
             ) : (
@@ -1146,7 +1146,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                 Cancel
               </Button>
               <Button size="sm" onClick={() => handleSaveSection("social")} disabled={isPending}>
-                {isPending && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+                {isPending && <Loader2 className="size-3.5 mr-1.5 animate-spin" />}
                 Save Changes
               </Button>
             </CardFooter>

@@ -20,7 +20,7 @@ import type { AttemptInfo } from "./_types"
  * "Unauthorized" error the first time a save fires after the access token
  * silently expires in the background.
  */
-async function getSupabaseForAction() {
+async function requireAuth() {
   const supabase = await createClient()
   const profile = await getUserProfile()
   if (!profile) throw new Error("Unauthorized or session expired")
@@ -39,7 +39,7 @@ async function getSupabaseForAction() {
 // ──────────────────────────────────────────────────────────────────────────────
 
 export async function startAttemptAction(testId: string): Promise<AttemptInfo> {
-  const { supabase, userId } = await getSupabaseForAction()
+  const { supabase, userId } = await requireAuth()
 
   // Fetch everything we need in a single round-trip.
   const [profileRes, testRes, existingRes, completedRes] = await Promise.all([
@@ -192,7 +192,7 @@ export async function saveAnswerAction(
   selectedOptionIds: string[],
   timeSpentSeconds = 0
 ): Promise<void> {
-  const { supabase } = await getSupabaseForAction()
+  const { supabase } = await requireAuth()
 
   const { error } = await supabase.rpc("save_answer", {
     p_attempt_id: attemptId,
@@ -220,7 +220,7 @@ export async function saveAnswersBatchAction(
     timeSpentSeconds?: number
   }>
 ): Promise<void> {
-  const { supabase } = await getSupabaseForAction()
+  const { supabase } = await requireAuth()
 
   // Use the new bulk RPC to save everything in one round-trip.
   const { error } = await (supabase as any).rpc("bulk_save_answers", {
@@ -246,7 +246,7 @@ export async function submitAttemptAction(
   attemptId: string,
   timeSpentSeconds: number
 ): Promise<string> {
-  const { supabase, userId } = await getSupabaseForAction()
+  const { supabase, userId } = await requireAuth()
 
   // Verify ownership before grading so a malicious caller cannot grade someone
   // else's attempt by guessing a UUID.
@@ -302,7 +302,7 @@ export async function recordViolationAction(
   _timestamp: string
 ): Promise<void> {
   try {
-    const { supabase, userId } = await getSupabaseForAction()
+    const { supabase, userId } = await requireAuth()
 
     const { error } = await supabase
       .from("test_attempts")
@@ -338,7 +338,7 @@ export async function submitFeedbackAction(
     difficultyFelt?: "too_easy" | "as_expected" | "too_hard"
   }
 ): Promise<void> {
-  const { supabase, userId } = await getSupabaseForAction()
+  const { supabase, userId } = await requireAuth()
 
   const { error } = await (supabase as any).from("test_attempt_feedback").insert({
     attempt_id: attemptId,

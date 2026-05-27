@@ -12,11 +12,17 @@ import { createClient } from "@/lib/supabase/server"
 // ─── Guard helper ─────────────────────────────────────────────────────────────
 // Verifies the authenticated user is the institute that owns the test.
 
-async function assertOwner(testId: string): Promise<string> {
+async function requireAuth(): Promise<string> {
   const supabase = await createClient()
   const { data } = await supabase.auth.getClaims()
   const user = data?.claims
   if (!user) throw new Error("Not authenticated")
+  return user.sub as string
+}
+
+async function assertOwner(testId: string): Promise<string> {
+  const userSub = await requireAuth()
+  const supabase = await createClient()
 
   const { data: test, error } = await supabase
     .from("tests")
@@ -25,9 +31,9 @@ async function assertOwner(testId: string): Promise<string> {
     .single()
 
   if (error || !test) throw new Error("Test not found")
-  if (test.institute_id !== user.sub) throw new Error("Forbidden")
+  if (test.institute_id !== userSub) throw new Error("Forbidden")
 
-  return user.sub as string
+  return userSub
 }
 
 
@@ -35,6 +41,7 @@ async function assertOwner(testId: string): Promise<string> {
 // Flips results_available. Students can/cannot see scores after this.
 
 export async function toggleResultsAction(testId: string): Promise<void> {
+  await requireAuth()
   await assertOwner(testId)
   const supabase = await createClient()
 
@@ -59,6 +66,7 @@ export async function toggleResultsAction(testId: string): Promise<void> {
 // Archived tests are not touched here.
 
 export async function togglePublishAction(testId: string): Promise<void> {
+  await requireAuth()
   await assertOwner(testId)
   const supabase = await createClient()
 
@@ -87,6 +95,7 @@ export async function togglePublishAction(testId: string): Promise<void> {
 // Hard-deletes the test row. Cascade removes questions, options, attempts.
 
 export async function deleteTestAction(testId: string): Promise<void> {
+  await requireAuth()
   await assertOwner(testId)
   const supabase = await createClient()
 
@@ -106,6 +115,7 @@ export async function deleteTestAction(testId: string): Promise<void> {
 // Hard-deletes a single test attempt. Cascade removes answers.
 
 export async function deleteAttemptAction(testId: string, attemptId: string): Promise<void> {
+  await requireAuth()
   await assertOwner(testId)
   const supabase = await createClient()
 
