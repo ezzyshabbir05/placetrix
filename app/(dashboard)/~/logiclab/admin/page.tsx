@@ -39,15 +39,27 @@ export default async function AdminPage() {
     .from("profiles" as any)
     .select("id, display_name, email, account_type")
     .in("account_type", ["candidate", "user", null])
-    .limit(500)
+    .limit(1000)
 
-  let profileMap: Record<string, { display_name: string; email: string }> = {}
+  let profileMap: Record<string, { display_name: string; email: string; account_type: string }> = {}
   ;(rawAllProfiles || []).forEach((p: any) => {
-    // Include all non-admin profiles
-    if (p.account_type !== "admin" && p.account_type !== "institute") {
-      profileMap[p.id] = { display_name: p.display_name || "", email: p.email || "" }
-    }
+    profileMap[p.id] = { display_name: p.display_name || "", email: p.email || "", account_type: p.account_type || "candidate" }
   })
+
+  // Fetch any missing profiles for users who have submitted (e.g. admins testing)
+  const submissionUserIds = Array.from(new Set(submissions.map((s: any) => s.user_id).filter(Boolean)))
+  const missingUserIds = submissionUserIds.filter(uid => !profileMap[uid as string])
+  
+  if (missingUserIds.length > 0) {
+    const { data: missingProfiles } = await supabase
+      .from("profiles" as any)
+      .select("id, display_name, email, account_type")
+      .in("id", missingUserIds)
+
+    ;(missingProfiles || []).forEach((p: any) => {
+      profileMap[p.id] = { display_name: p.display_name || "", email: p.email || "", account_type: p.account_type || "candidate" }
+    })
+  }
 
   // ── 3. Enrich problems with in-memory submission metrics ──
   const problems = rawProblemsList.map((p: any) => {
@@ -81,17 +93,19 @@ export default async function AdminPage() {
     submissionsList: any[]
   }> = {}
 
-  // Seed ALL profiles so students with 0 submissions still appear
+  // Seed ALL student profiles so students with 0 submissions still appear
   Object.entries(profileMap).forEach(([uid, prof]) => {
-    const email = prof.email || "student@placetrix.com"
-    const name = prof.display_name || email.split("@")[0] || "Active Student"
-    studentMap[uid] = {
-      user_id: uid,
-      student_name: name,
-      student_email: email,
-      solvedProblems: new Set<string>(),
-      attemptCount: 0,
-      submissionsList: [],
+    if (prof.account_type !== "admin" && prof.account_type !== "institute") {
+      const email = prof.email || "student@placetrix.com"
+      const name = prof.display_name || email.split("@")[0] || "Active Student"
+      studentMap[uid] = {
+        user_id: uid,
+        student_name: name,
+        student_email: email,
+        solvedProblems: new Set<string>(),
+        attemptCount: 0,
+        submissionsList: [],
+      }
     }
   })
 
@@ -99,11 +113,15 @@ export default async function AdminPage() {
   submissions.forEach((s: any) => {
     if (!s.user_id) return
     if (!studentMap[s.user_id]) {
-      // Submission from a user not in profiles (edge case)
+      // Submission from a user not in initial seed (e.g. an admin testing the code)
+      const prof = profileMap[s.user_id]
+      const email = prof?.email || "student@placetrix.com"
+      const name = prof?.display_name || email.split("@")[0] || "Active Student"
+      
       studentMap[s.user_id] = {
         user_id: s.user_id,
-        student_name: "Active Student",
-        student_email: "student@placetrix.com",
+        student_name: name,
+        student_email: email,
         solvedProblems: new Set<string>(),
         attemptCount: 0,
         submissionsList: [],
