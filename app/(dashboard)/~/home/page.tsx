@@ -57,10 +57,10 @@ function StatCard({
     accent === "green"
       ? "text-emerald-600 dark:text-emerald-400"
       : accent === "amber"
-      ? "text-amber-600 dark:text-amber-400"
-      : accent === "blue"
-      ? "text-blue-600 dark:text-blue-400"
-      : "text-foreground";
+        ? "text-amber-600 dark:text-amber-400"
+        : accent === "blue"
+          ? "text-blue-600 dark:text-blue-400"
+          : "text-foreground";
 
   return (
     <div className="rounded-lg border bg-card p-4 flex flex-col gap-3">
@@ -121,8 +121,8 @@ export default async function HomePage() {
     const profileSubtitle = !cp
       ? "You haven't set up your profile yet. Fill in your details to access all features."
       : !hasBeenSaved
-      ? "Your profile has been started but not saved yet."
-      : "A few required fields are still missing.";
+        ? "Your profile has been started but not saved yet."
+        : "A few required fields are still missing.";
 
     return (
       <div className="flex flex-col gap-6 px-4 py-8 md:px-8">
@@ -141,7 +141,7 @@ export default async function HomePage() {
                 <p className="text-sm font-medium">Your profile isn't complete yet</p>
                 <p className="text-xs text-muted-foreground">{profileSubtitle}</p>
               </div>
-              <Link href="/~/settings" className="shrink-0">
+              <Link href="/~/myprofile" className="shrink-0">
                 <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs">
                   Complete Profile
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -221,8 +221,8 @@ export default async function HomePage() {
     const profileSubtitle = !ip
       ? "You haven't set up your institution profile yet. Add your details to get started."
       : !hasBeenSaved
-      ? "Your profile has been started but not saved yet."
-      : "A few required fields are still missing.";
+        ? "Your profile has been started but not saved yet."
+        : "A few required fields are still missing.";
 
     return (
       <div className="flex flex-col gap-6 px-4 py-8 md:px-8">
@@ -241,7 +241,7 @@ export default async function HomePage() {
                 <p className="text-sm font-medium">Your institution profile isn't complete yet</p>
                 <p className="text-xs text-muted-foreground">{profileSubtitle}</p>
               </div>
-              <Link href="/~/settings" className="shrink-0">
+              <Link href="/~/myprofile" className="shrink-0">
                 <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs">
                   Complete Profile
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -324,7 +324,7 @@ export default async function HomePage() {
                   Fill in your company details to unlock all recruiter features.
                 </p>
               </div>
-              <Link href="/~/settings" className="shrink-0">
+              <Link href="/~/myprofile" className="shrink-0">
                 <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs">
                   Complete Profile
                   <ArrowRight className="h-3.5 w-3.5" />

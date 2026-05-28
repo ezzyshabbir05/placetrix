@@ -22,7 +22,12 @@ export const createClient = cache(async () => {
   try {
     const headersList = await headers();
     userAgent = headersList.get("user-agent");
-    ip = headersList.get("x-forwarded-for") || headersList.get("x-real-ip");
+    // Firebase App Hosting exposes the verified real client IP in x-fah-client-ip.
+    // Fall back to x-real-ip, then x-forwarded-for[0].
+    const fahClientIp = headersList.get("x-fah-client-ip");
+    const xRealIp = headersList.get("x-real-ip");
+    const xForwardedFor = headersList.get("x-forwarded-for");
+    ip = fahClientIp ?? xRealIp ?? (xForwardedFor ? xForwardedFor.split(",")[0].trim() : null);
   } catch {
     // Ignore error if called outside a request context (e.g. static generation)
   }
@@ -32,9 +37,7 @@ export const createClient = cache(async () => {
     globalHeaders["User-Agent"] = userAgent;
   }
   if (ip) {
-    // x-forwarded-for can be a comma-separated list. We only want the client's actual IP (the first one).
-    const clientIp = ip.split(",")[0].trim();
-    globalHeaders["x-forwarded-for"] = clientIp;
+    globalHeaders["x-forwarded-for"] = ip;
   }
 
   return createServerClient<Database>(

@@ -35,16 +35,19 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   let supabaseResponse = NextResponse.next({ request });
 
   const userAgent = request.headers.get("user-agent");
-  const ip = request.headers.get("x-forwarded-for") ?? request.headers.get("x-real-ip");
+  // Firebase App Hosting exposes the verified real client IP in x-fah-client-ip.
+  // Fall back to x-real-ip, then to x-forwarded-for[0] (first non-proxy IP in the chain).
+  const fahClientIp = request.headers.get("x-fah-client-ip");
+  const xRealIp = request.headers.get("x-real-ip");
+  const xForwardedFor = request.headers.get("x-forwarded-for");
+  const ip = fahClientIp ?? xRealIp ?? (xForwardedFor ? xForwardedFor.split(",")[0].trim() : null);
 
   const globalHeaders: Record<string, string> = {};
   if (userAgent) {
     globalHeaders["User-Agent"] = userAgent;
   }
   if (ip) {
-    // x-forwarded-for can be a comma-separated list. We only want the client's actual IP (the first one).
-    const clientIp = ip.split(",")[0].trim();
-    globalHeaders["x-forwarded-for"] = clientIp;
+    globalHeaders["x-forwarded-for"] = ip;
   }
 
   const supabase = createServerClient(

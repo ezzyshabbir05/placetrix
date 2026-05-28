@@ -22,6 +22,7 @@ import {
   CheckCircle2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { parseUserAgent } from "@/lib/ua-parser"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -39,51 +40,7 @@ interface SessionEntry {
   user_agent: string | null
 }
 
-interface ParsedUA {
-  browser: string
-  os: string
-  device: "desktop" | "mobile" | "tablet"
-}
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function parseUserAgent(ua: string | null): ParsedUA {
-  if (!ua) return { browser: "Unknown Browser", os: "Unknown OS", device: "desktop" }
-
-  if (
-    ua.includes("Next.js") ||
-    ua.includes("Middleware") ||
-    ua.includes("Vercel") ||
-    ua.includes("node-fetch") ||
-    ua.includes("undici") ||
-    ua.includes("Go-http-client") ||
-    ua.includes("postgrest-js") ||
-    ua.includes("supabase-js")
-  ) {
-    return { browser: "System Server", os: "Next.js / Node", device: "desktop" }
-  }
-
-  let browser = "Unknown Browser", os = "Unknown OS"
-  let device: "desktop" | "mobile" | "tablet" = "desktop"
-
-  if (ua.includes("Edg/") || ua.includes("EdgA/") || ua.includes("Edge/")) browser = "Edge"
-  else if (ua.includes("SamsungBrowser/")) browser = "Samsung Browser"
-  else if (ua.includes("OPR/") || ua.includes("Opera/")) browser = "Opera"
-  else if (ua.includes("Chrome/") && !ua.includes("Chromium/")) browser = "Chrome"
-  else if (ua.includes("Firefox/") || ua.includes("FxiOS/")) browser = "Firefox"
-  else if (ua.includes("Safari/") && !ua.includes("Chrome/")) browser = "Safari"
-  else if (ua.includes("MSIE") || ua.includes("Trident/")) browser = "Internet Explorer"
-
-  if (ua.includes("iPhone")) { os = "iOS"; device = "mobile" }
-  else if (ua.includes("iPad")) { os = "iPadOS"; device = "tablet" }
-  else if (ua.includes("Android")) { os = "Android"; device = ua.includes("Mobile") ? "mobile" : "tablet" }
-  else if (ua.includes("Windows NT")) os = "Windows"
-  else if (ua.includes("Macintosh") || ua.includes("Mac OS X")) os = "macOS"
-  else if (ua.includes("CrOS")) os = "ChromeOS"
-  else if (ua.includes("Linux")) os = "Linux"
-
-  return { browser, os, device }
-}
 
 function formatTimeAgo(dateStr: string | null): string {
   if (!dateStr) return "Unknown"
