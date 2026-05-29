@@ -19,6 +19,7 @@ import type {
   InstituteTestDetail,
   InstituteQuestion,
   InstituteAttemptRow,
+  AttemptPageStats,
 } from "./_types"
 
 
@@ -160,6 +161,25 @@ async function fetchCandidateView(
 
 // ─── Institute data ───────────────────────────────────────────────────────────
 
+const PAGE_SIZE = 20
+
+function mapAttemptRow(a: any): InstituteAttemptRow {
+  return {
+    id: a.attempt_id,
+    student_name: a.student_name ?? null,
+    student_email: a.student_email ?? null,
+    status: a.status as InstituteAttemptRow["status"],
+    score: a.score ?? null,
+    total_marks: a.total_marks ?? null,
+    percentage: a.percentage ?? null,
+    time_spent_seconds: a.time_spent_seconds ?? null,
+    started_at: a.started_at,
+    submitted_at: a.submitted_at ?? null,
+    tab_switch_count: a.tab_switch_count ?? null,
+    branch: a.branch ?? null,
+    passout_year: a.passout_year ?? null,
+  }
+}
 
 async function fetchInstituteView(
   testId: string,
@@ -167,8 +187,7 @@ async function fetchInstituteView(
 ): Promise<InstituteTestDetail> {
   const supabase = await createClient()
 
-  // 1. Unified Institute View Query
-  // Combines core test data, questions, and baseline attempt info.
+  // 1. Core test data + questions — no attempts in this query
   const { data: raw, error } = await (supabase as any)
     .from("tests")
     .select(`
@@ -179,19 +198,60 @@ async function fetchInstituteView(
         id, question_text, question_type, marks, order_index, explanation, 
         options (id, option_text, is_correct, order_index),
         question_tags (tags (id, name))
-      ),
-      attempts:view_test_results_detailed (
-        attempt_id, student_id, student_name, student_email, branch, passout_year,
-        tab_switch_count, status, score, total_marks, percentage, 
-        time_spent_seconds, started_at, submitted_at
       )
     `)
     .eq("id", testId)
     .eq("institute_id", userId)
-    .order("started_at", { foreignTable: "view_test_results_detailed", ascending: false })
     .single()
 
   if (error || !raw) notFound()
+
+  // 2. First page of attempts (SSR seed, 20 rows, newest first)
+  const [attemptsRes, statsRes] = await Promise.all([
+    (supabase as any)
+      .from("view_test_results_detailed")
+      .select(
+        "attempt_id, student_name, student_email, branch, passout_year, tab_switch_count, status, score, total_marks, percentage, time_spent_seconds, started_at, submitted_at"
+      )
+      .eq("test_id", testId)
+      .not("attempt_id", "is", null)
+      .not("started_at", "is", null)
+      .order("started_at", { ascending: false })
+      .range(0, PAGE_SIZE - 1),
+
+    // 3. Aggregate stats across ALL attempts (count + avg score)
+    (supabase as any)
+      .from("view_test_results_detailed")
+      .select("status, percentage, score, total_marks", { count: "exact" })
+      .eq("test_id", testId)
+      .not("attempt_id", "is", null),
+  ])
+
+  const firstPageAttempts: InstituteAttemptRow[] = (attemptsRes.data ?? []).map(mapAttemptRow)
+
+  // Compute aggregate stats from the lightweight stats query
+  const allRows: any[] = statsRes.data ?? []
+  const totalCount: number = statsRes.count ?? allRows.length
+  const submittedRows = allRows.filter(
+    (a: any) => a.status === "submitted" || a.status === "auto_submitted"
+  )
+  const inProgressCount = allRows.filter((a: any) => a.status === "in_progress").length
+  const avgPct =
+    submittedRows.length > 0
+      ? submittedRows.reduce((sum: number, a: any) => {
+          if (a.percentage != null) return sum + a.percentage
+          if (a.score != null && a.total_marks != null && a.total_marks > 0)
+            return sum + (a.score / a.total_marks) * 100
+          return sum
+        }, 0) / submittedRows.length
+      : null
+
+  const attemptStats: AttemptPageStats = {
+    total: totalCount,
+    submitted: submittedRows.length,
+    in_progress: inProgressCount,
+    avg_pct: avgPct,
+  }
 
   const questions: InstituteQuestion[] = (raw.questions ?? []).map((q: any) => ({
     id: q.id,
@@ -212,27 +272,6 @@ async function fetchInstituteView(
       .flat(),
   }))
 
-  // 2. Map attempts
-  const attempts: InstituteAttemptRow[] = (raw.attempts ?? [])
-    .filter((a: any): a is any & { attempt_id: string; started_at: string } =>
-      a.attempt_id != null && a.started_at != null
-    )
-    .map((a: any) => ({
-      id: a.attempt_id,
-      student_name: a.student_name,
-      student_email: a.student_email,
-      status: a.status as InstituteAttemptRow["status"],
-      score: a.score ?? null,
-      total_marks: a.total_marks ?? null,
-      percentage: a.percentage ?? null,
-      time_spent_seconds: a.time_spent_seconds ?? null,
-      started_at: a.started_at,
-      submitted_at: a.submitted_at ?? null,
-      tab_switch_count: a.tab_switch_count ?? null,
-      branch: a.branch,
-      passout_year: a.passout_year,
-    }))
-
   return {
     id: raw.id,
     title: raw.title,
@@ -245,7 +284,8 @@ async function fetchInstituteView(
     results_available: raw.results_available,
     institute_name: (raw.institute as any)?.institute_name ?? null,
     questions,
-    attempts,
+    attempts: firstPageAttempts,
+    attemptStats,
   }
 }
 

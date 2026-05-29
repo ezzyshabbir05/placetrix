@@ -5,6 +5,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useState, useCallback, useEffect, useMemo, useRef, type ReactNode } from "react"
+import type { AttemptPageStats } from "./_types"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
@@ -87,6 +88,8 @@ import {
   Filter,
   X,
   ExternalLink,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -139,24 +142,9 @@ function useActionState() {
 
 // ─── Stats Bar ────────────────────────────────────────────────────────────────
 
-function StatsBar({ test, liveAttempts, totalMarks }: { test: InstituteTestDetail; liveAttempts: InstituteAttemptRow[]; totalMarks: number }) {
-  const submitted = liveAttempts.filter((a) => a.status === "submitted" || a.status === "auto_submitted")
-  const inProgress = liveAttempts.filter((a) => a.status === "in_progress")
-
-  const avgPct =
-    submitted.length > 0
-      ? (
-        submitted.reduce(
-          (acc, a) => acc + resolvePct(a.percentage, a.score, a.total_marks),
-          0
-        ) / submitted.length
-      ).toFixed(2)
-      : null
-
+function StatsBar({ test, stats, totalMarks }: { test: InstituteTestDetail; stats: AttemptPageStats; totalMarks: number }) {
   const completionPct =
-    liveAttempts.length > 0
-      ? ((submitted.length / liveAttempts.length) * 100).toFixed(2)
-      : 0
+    stats.total > 0 ? ((stats.submitted / stats.total) * 100).toFixed(2) : 0
 
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -177,8 +165,8 @@ function StatsBar({ test, liveAttempts, totalMarks }: { test: InstituteTestDetai
             <Users className="h-3.5 w-3.5" />
             <p className="text-xs font-medium">Attempts</p>
           </div>
-          <p className="text-2xl font-bold tabular-nums">{liveAttempts.length}</p>
-          <p className="text-xs text-muted-foreground">{inProgress.length} in progress</p>
+          <p className="text-2xl font-bold tabular-nums">{stats.total}</p>
+          <p className="text-xs text-muted-foreground">{stats.in_progress} in progress</p>
         </CardContent>
       </Card>
 
@@ -188,9 +176,9 @@ function StatsBar({ test, liveAttempts, totalMarks }: { test: InstituteTestDetai
             <CheckCircle2 className="h-3.5 w-3.5" />
             <p className="text-xs font-medium">Submitted</p>
           </div>
-          <p className="text-2xl font-bold tabular-nums">{submitted.length}</p>
+          <p className="text-2xl font-bold tabular-nums">{stats.submitted}</p>
           <p className="text-xs text-muted-foreground">
-            {liveAttempts.length > 0 ? `${completionPct}% completion` : "No attempts yet"}
+            {stats.total > 0 ? `${completionPct}% completion` : "No attempts yet"}
           </p>
         </CardContent>
       </Card>
@@ -202,10 +190,10 @@ function StatsBar({ test, liveAttempts, totalMarks }: { test: InstituteTestDetai
             <p className="text-xs font-medium">Avg Score</p>
           </div>
           <p className="text-2xl font-bold tabular-nums">
-            {avgPct != null ? `${avgPct}%` : "—"}
+            {stats.avg_pct != null ? `${stats.avg_pct.toFixed(2)}%` : "—"}
           </p>
           <p className="text-xs text-muted-foreground">
-            {avgPct != null ? "Submitted average" : "No submissions yet"}
+            {stats.avg_pct != null ? "Submitted average" : "No submissions yet"}
           </p>
         </CardContent>
       </Card>
@@ -655,347 +643,266 @@ const DesktopAttemptRow = React.memo(function DesktopAttemptRow({
 })
 
 
+// ─── Page size constant shared by AttemptsTab and refreshAttempts ─────────────
+
+const ATTEMPTS_PAGE_SIZE = 20
+
+// Map of sort column → view_test_results_detailed column name
+const SORT_COL_MAP: Record<SortColumn, string> = {
+  student_name: "student_name",
+  education: "branch",
+  status: "status",
+  score: "percentage",
+  time: "time_spent_seconds",
+  violations: "tab_switch_count",
+  started: "started_at",
+  submitted: "submitted_at",
+}
+
+
 // ─── Attempts Tab ─────────────────────────────────────────────────────────────
 
 function AttemptsTab({ 
   test, 
-  liveAttempts, 
+  pageRows,
+  totalCount,
+  stats,
   totalMarks, 
-  serverNow, 
   getNowOnServer,
   onDeleteAttempt,
   onDeleteSuccess,
+  onFetchPage,
+  onFetchStats,
+  onFetchAllForExport,
 }: { 
   test: InstituteTestDetail
-  liveAttempts: InstituteAttemptRow[]
-  totalMarks: number 
-  serverNow: string
+  pageRows: InstituteAttemptRow[]
+  totalCount: number
+  stats: AttemptPageStats
+  totalMarks: number
   getNowOnServer: () => Date
   onDeleteAttempt?: (attemptId: string) => Promise<void>
   onDeleteSuccess?: (attemptId: string) => void
+  onFetchPage: (params: AttemptQueryParams) => Promise<void>
+  onFetchStats: () => Promise<void>
+  onFetchAllForExport: (params: Omit<AttemptQueryParams, "page">) => Promise<InstituteAttemptRow[]>
 }) {
-  const attempts = liveAttempts
   const [scoresVisible, setScoresVisible] = useState(false)
   const [attemptToDelete, setAttemptToDelete] = useState<InstituteAttemptRow | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isLoadingPage, setIsLoadingPage] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
 
-  // ── Filters ─────────────────────────────────────────────────────────────
+  // ── Filters & sort ──────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "submitted" | "in_progress">("all")
-  const [branchFilter, setBranchFilter] = useState("all")
   const [scoreFilter, setScoreFilter] = useState<"all" | "high" | "mid" | "low">("all")
+  const [sortCol, setSortCol] = useState<SortColumn>("submitted")
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
+  const [page, setPage] = useState(0)
 
-  // Debounce: search string used for filtering lags 200 ms behind what the
-  // user types so the input stays responsive even with 500+ rows.
-  const debouncedSearch = useDebounce(searchQuery, 100)
-
-  // ── Memoized derived data ────────────────────────────────────────────────
-
-  const submitted = useMemo(
-    () => attempts.filter((a) => a.status === "submitted" || a.status === "auto_submitted"),
-    [attempts]
-  )
-
-  const inProgress = useMemo(
-    () => attempts.filter((a) => a.status === "in_progress"),
-    [attempts]
-  )
-
-  const avgPct = useMemo(
-    () =>
-      submitted.length > 0
-        ? (
-          submitted.reduce(
-            (acc, a) => acc + resolvePct(a.percentage, a.score, a.total_marks),
-            0
-          ) / submitted.length
-        ).toFixed(2)
-        : null,
-    [submitted]
-  )
-
-  const uniqueBranches = useMemo(
-    () =>
-      Array.from(new Set(attempts.map((a) => a.branch).filter(Boolean))).sort() as string[],
-    [attempts]
-  )
+  const debouncedSearch = useDebounce(searchQuery, 300)
 
   const activeFilterCount = useMemo(
     () =>
       [
         debouncedSearch.trim() !== "",
         statusFilter !== "all",
-        branchFilter !== "all",
         scoreFilter !== "all",
       ].filter(Boolean).length,
-    [debouncedSearch, statusFilter, branchFilter, scoreFilter]
+    [debouncedSearch, statusFilter, scoreFilter]
   )
 
   const clearFilters = useCallback(() => {
     setSearchQuery("")
     setStatusFilter("all")
-    setBranchFilter("all")
     setScoreFilter("all")
   }, [])
 
-  const filtered = useMemo(() => {
-    return attempts.filter((a) => {
-      if (debouncedSearch.trim()) {
-        const q = debouncedSearch.toLowerCase()
-        if (
-          !(a.student_name ?? "").toLowerCase().includes(q) &&
-          !(a.student_email ?? "").toLowerCase().includes(q)
-        )
-          return false
-      }
-      if (statusFilter !== "all") {
-        if (statusFilter === "submitted") {
-          if (a.status !== "submitted" && a.status !== "auto_submitted") return false
-        } else if (a.status !== statusFilter) {
-          return false
-        }
-      }
-      if (branchFilter !== "all" && a.branch !== branchFilter) return false
-      if (scoreFilter !== "all") {
-        if (a.status !== "submitted" && a.status !== "auto_submitted") return false
-        const pct = resolvePct(a.percentage, a.score, a.total_marks)
-        if (scoreFilter === "high" && pct < 75) return false
-        if (scoreFilter === "mid" && (pct < 50 || pct >= 75)) return false
-        if (scoreFilter === "low" && pct >= 50) return false
-      }
-      return true
-    })
-  }, [attempts, debouncedSearch, statusFilter, branchFilter, scoreFilter])
-
-  const [sortCol, setSortCol] = useState<SortColumn>("submitted")
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
+  // Re-fetch whenever filters / sort / page change
+  const fetchCurrentPage = useCallback(async (
+    overrides: Partial<AttemptQueryParams> = {}
+  ) => {
+    setIsLoadingPage(true)
+    try {
+      await onFetchPage({
+        search: debouncedSearch.trim(),
+        statusFilter,
+        scoreFilter,
+        sortCol,
+        sortDir,
+        page,
+        ...overrides,
+      })
+    } finally {
+      setIsLoadingPage(false)
+    }
+  }, [debouncedSearch, statusFilter, scoreFilter, sortCol, sortDir, page, onFetchPage])
 
   const handleSort = useCallback((col: SortColumn) => {
-    if (sortCol === col) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"))
-    } else {
-      setSortCol(col)
-      const defaultAsc = ["student_name", "education", "status", "started", "submitted"].includes(col)
-      setSortDir(defaultAsc ? "asc" : "desc")
-      return col
+    const newDir = sortCol === col ? (sortDir === "asc" ? "desc" : "asc") : 
+      ["student_name", "education", "status", "started", "submitted"].includes(col) ? "asc" : "desc"
+    const newPage = 0
+    setSortCol(col)
+    setSortDir(newDir)
+    setPage(newPage)
+    setIsLoadingPage(true)
+    onFetchPage({ search: debouncedSearch.trim(), statusFilter, scoreFilter, sortCol: col, sortDir: newDir, page: newPage })
+      .finally(() => setIsLoadingPage(false))
+  }, [sortCol, sortDir, debouncedSearch, statusFilter, scoreFilter, onFetchPage])
+
+  const handleFilterChange = useCallback((
+    patch: Partial<{ statusFilter: typeof statusFilter; scoreFilter: typeof scoreFilter }>
+  ) => {
+    const newStatus = patch.statusFilter ?? statusFilter
+    const newScore = patch.scoreFilter ?? scoreFilter
+    if (patch.statusFilter !== undefined) setStatusFilter(newStatus)
+    if (patch.scoreFilter !== undefined) setScoreFilter(newScore)
+    setPage(0)
+    setIsLoadingPage(true)
+    onFetchPage({ search: debouncedSearch.trim(), statusFilter: newStatus, scoreFilter: newScore, sortCol, sortDir, page: 0 })
+      .finally(() => setIsLoadingPage(false))
+  }, [statusFilter, scoreFilter, debouncedSearch, sortCol, sortDir, onFetchPage])
+
+  // Handle search debounce — reset to page 0
+  const prevSearch = useRef(debouncedSearch)
+  useEffect(() => {
+    if (debouncedSearch === prevSearch.current) return
+    prevSearch.current = debouncedSearch
+    setPage(0)
+    setIsLoadingPage(true)
+    onFetchPage({ search: debouncedSearch.trim(), statusFilter, scoreFilter, sortCol, sortDir, page: 0 })
+      .finally(() => setIsLoadingPage(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch])
+
+  // Navigate pages
+  const totalPages = Math.max(1, Math.ceil(totalCount / ATTEMPTS_PAGE_SIZE))
+  const goToPage = useCallback((newPage: number) => {
+    setPage(newPage)
+    setIsLoadingPage(true)
+    onFetchPage({ search: debouncedSearch.trim(), statusFilter, scoreFilter, sortCol, sortDir, page: newPage })
+      .finally(() => setIsLoadingPage(false))
+  }, [debouncedSearch, statusFilter, scoreFilter, sortCol, sortDir, onFetchPage])
+
+  // ── Export helpers ───────────────────────────────────────────────────────
+  const buildExportRows = (rows: InstituteAttemptRow[]) => rows.map((a) => [
+    a.student_name || "Unknown",
+    a.student_email || "—",
+    a.branch || "—",
+    a.passout_year?.toString() || "—",
+    (a.status === "submitted" || a.status === "auto_submitted") ? "Submitted" : "In Progress",
+    a.score ?? "—",
+    a.total_marks ?? "—",
+    (a.status === "submitted" || a.status === "auto_submitted") ? resolvePct(a.percentage, a.score, a.total_marks).toFixed(2) : "—",
+    formatSeconds(a.time_spent_seconds),
+    a.tab_switch_count?.toString() ?? "0",
+    formatDateTime(a.started_at),
+    a.submitted_at ? formatDateTime(a.submitted_at) : "—",
+  ])
+
+  const handleExportCSV = useCallback(async () => {
+    setIsExporting(true)
+    try {
+      const allRows = await onFetchAllForExport({ search: debouncedSearch.trim(), statusFilter, scoreFilter, sortCol, sortDir })
+      const headers = ["Student Name","Email","Branch","Passout Year","Status","Score","Total Marks","Percentage (%)","Time Spent","Violations","Started At","Submitted At"]
+      const escapeCsv = (str: any) => `"${String(str).replace(/"/g, '""')}"`
+      const csvContent = [headers, ...buildExportRows(allRows)].map((row) => row.map(escapeCsv).join(",")).join("\n")
+      const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.setAttribute("download", `${test.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_results.csv`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } finally {
+      setIsExporting(false)
     }
-  }, [sortCol])
-
-  const sorted = useMemo(() => {
-    return [...filtered].sort((a, b) => {
-      let diff = 0
-      switch (sortCol) {
-        case "student_name":
-          diff = (a.student_name || "").localeCompare(b.student_name || "")
-          break
-        case "education":
-          diff = (a.branch || "").localeCompare(b.branch || "")
-          if (diff === 0) diff = (a.passout_year || 0) - (b.passout_year || 0)
-          break
-        case "status":
-          diff = a.status.localeCompare(b.status)
-          break
-        case "score": {
-          const isComp = (s: string) => s === "submitted" || s === "auto_submitted"
-          const scoreA = isComp(a.status) ? resolvePct(a.percentage, a.score, a.total_marks) : -1
-          const scoreB = isComp(b.status) ? resolvePct(b.percentage, b.score, b.total_marks) : -1
-          diff = scoreA - scoreB
-          break
-        }
-        case "time":
-          diff = (a.time_spent_seconds || 0) - (b.time_spent_seconds || 0)
-          break
-        case "violations":
-          diff = (a.tab_switch_count || 0) - (b.tab_switch_count || 0)
-          break
-        case "started":
-          diff = a.started_at.localeCompare(b.started_at)
-          break
-        case "submitted": {
-          const isCompA = a.status === "submitted" || a.status === "auto_submitted"
-          const isCompB = b.status === "submitted" || b.status === "auto_submitted"
-
-          // Group In-Progress/Abandoned at the bottom when sorting by date descending, 
-          // or at the top when sorting by date ascending.
-          if (isCompA && !isCompB) return sortDir === "desc" ? -1 : 1
-          if (!isCompA && isCompB) return sortDir === "desc" ? 1 : -1
-
-          if (isCompA && isCompB) {
-            diff = (a.submitted_at || "").localeCompare(b.submitted_at || "")
-          } else {
-            // Both are in-progress or mixed
-            diff = a.started_at.localeCompare(b.started_at)
-          }
-          break
-        }
-      }
-      return sortDir === "asc" ? diff : -diff
-    })
-  }, [filtered, sortCol, sortDir])
-
-  const handleExportCSV = useCallback(() => {
-    const headers = [
-      "Student Name",
-      "Email",
-      "Branch",
-      "Passout Year",
-      "Status",
-      "Score",
-      "Total Marks",
-      "Percentage (%)",
-      "Time Spent",
-      "Violations",
-      "Started At",
-      "Submitted At",
-    ]
-
-    const rows = sorted.map((a) => [
-      a.student_name || "Unknown",
-      a.student_email || "—",
-      a.branch || "—",
-      a.passout_year?.toString() || "—",
-      (a.status === "submitted" || a.status === "auto_submitted") ? "Submitted" : "In Progress",
-      a.score ?? "—",
-      a.total_marks ?? "—",
-      (a.status === "submitted" || a.status === "auto_submitted") ? resolvePct(a.percentage, a.score, a.total_marks).toFixed(2) : "—",
-      formatSeconds(a.time_spent_seconds),
-      a.tab_switch_count?.toString() ?? "0",
-      formatDateTime(a.started_at),
-      a.submitted_at ? formatDateTime(a.submitted_at) : "—",
-    ])
-
-    const escapeCsv = (str: any) => `"${String(str).replace(/"/g, '""')}"`
-    const csvContent = [headers, ...rows].map((row) => row.map(escapeCsv).join(",")).join("\n")
-
-    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement("a")
-    link.href = url
-    link.setAttribute("download", `${test.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_results.csv`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-  }, [sorted, test.title])
+  }, [debouncedSearch, statusFilter, scoreFilter, sortCol, sortDir, onFetchAllForExport, test.title])
 
   const handleExportPDF = useCallback(async () => {
-    const { default: jsPDF } = await import("jspdf")
-    const { default: autoTable } = await import("jspdf-autotable")
+    setIsExporting(true)
+    try {
+      const allRows = await onFetchAllForExport({ search: debouncedSearch.trim(), statusFilter, scoreFilter, sortCol, sortDir })
+      const { default: jsPDF } = await import("jspdf")
+      const { default: autoTable } = await import("jspdf-autotable")
 
-    const doc = new jsPDF("landscape", "mm", "a4")
-    const pageWidth = doc.internal.pageSize.width
+      const doc = new jsPDF("landscape", "mm", "a4")
+      const pageWidth = doc.internal.pageSize.width
+      let currentY = 14
 
-    let currentY = 14
+      if (test.institute_name) {
+        doc.setFont("helvetica", "bold")
+        doc.setFontSize(8)
+        doc.setTextColor(120, 120, 120)
+        doc.text(test.institute_name.toUpperCase(), 14, currentY)
+        currentY += 6
+      }
 
-    if (test.institute_name) {
       doc.setFont("helvetica", "bold")
+      doc.setFontSize(14)
+      doc.setTextColor(20, 20, 20)
+      doc.text(test.title, 14, currentY)
+      currentY += 5
+
+      doc.setFont("helvetica", "normal")
       doc.setFontSize(8)
-      doc.setTextColor(120, 120, 120)
-      doc.text(test.institute_name.toUpperCase(), 14, currentY)
-      currentY += 6
+      doc.setTextColor(100, 100, 100)
+      doc.text(`Test ID: ${test.id}   |   Duration: ${formatDuration(test.time_limit_seconds)}   |   Questions: ${test.questions.length}   |   Total Marks: ${totalMarks}`, 14, currentY)
+      currentY += 4.5
+      doc.text(`Total Attempts: ${stats.total}   |   ${stats.avg_pct != null ? `Average Score: ${stats.avg_pct.toFixed(2)}%   |   ` : ""}Exported On: ${getNowOnServer().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}`, 14, currentY)
+      currentY += 8
+
+      const tableColumn = ["#", "Student", "Email", "Branch", "Grad", "Status", "Score", "Pct", "Time", "Viol", "Submitted"]
+      const tableRows = allRows.map((a, i) => [
+        String(i + 1),
+        a.student_name || "Unknown",
+        a.student_email || "—",
+        a.branch || "—",
+        a.passout_year?.toString() || "—",
+        (a.status === "submitted" || a.status === "auto_submitted") ? "Submitted" : "In Progress",
+        (a.status === "submitted" || a.status === "auto_submitted") ? `${a.score ?? "—"}/${a.total_marks ?? "—"}` : "—",
+        (a.status === "submitted" || a.status === "auto_submitted") ? `${resolvePct(a.percentage, a.score, a.total_marks).toFixed(2)}%` : "—",
+        formatSeconds(a.time_spent_seconds),
+        a.tab_switch_count?.toString() ?? "0",
+        a.submitted_at ? formatDateTime(a.submitted_at) : "—",
+      ])
+
+      autoTable(doc, {
+        startY: currentY,
+        head: [tableColumn],
+        body: tableRows,
+        theme: "grid",
+        styles: { font: "helvetica", fontSize: 7, cellPadding: 2.5, textColor: [33, 33, 33], lineWidth: 0.2, lineColor: [189, 189, 189], overflow: "linebreak" },
+        headStyles: { fontSize: 7.5, textColor: [255, 255, 255], fontStyle: "bold", fillColor: [55, 86, 35], lineWidth: 0.2, lineColor: [45, 70, 28], halign: "center", valign: "middle" },
+        bodyStyles: { lineWidth: 0.2, lineColor: [189, 189, 189], valign: "middle" },
+        alternateRowStyles: { fillColor: [234, 241, 228] },
+        columnStyles: {
+          0: { cellWidth: 12, halign: "center" }, 1: { cellWidth: 42 }, 2: { cellWidth: 48 },
+          3: { cellWidth: 35 }, 4: { halign: "center", cellWidth: 14 }, 5: { cellWidth: 20 },
+          6: { halign: "right", cellWidth: 18 }, 7: { halign: "right", cellWidth: 16 },
+          8: { halign: "right", cellWidth: 18 }, 9: { halign: "center", cellWidth: 12 }, 10: { halign: "right" },
+        },
+        didDrawPage: (data) => {
+          const pg = data.pageNumber
+          const pageHeight = doc.internal.pageSize.height
+          doc.setFontSize(6); doc.setFont("helvetica", "normal"); doc.setTextColor(180, 180, 180)
+          doc.text("Generated using Placetrix", 14, pageHeight - 8)
+          doc.setFontSize(7)
+          doc.text(`Page ${pg}`, pageWidth - 14, pageHeight - 8, { align: "right" })
+        },
+      })
+
+      const ts = getNowOnServer().toISOString().replace(/[:.]/g, "-").slice(0, 19)
+      doc.save(`${test.id}_${ts}.pdf`)
+    } finally {
+      setIsExporting(false)
     }
+  }, [debouncedSearch, statusFilter, scoreFilter, sortCol, sortDir, onFetchAllForExport, test, totalMarks, stats, getNowOnServer])
 
-    doc.setFont("helvetica", "bold")
-    doc.setFontSize(14)
-    doc.setTextColor(20, 20, 20)
-    doc.text(test.title, 14, currentY)
-    currentY += 5
-
-    doc.setFont("helvetica", "normal")
-    doc.setFontSize(8)
-    doc.setTextColor(100, 100, 100)
-
-    const testInfo = `Test ID: ${test.id}   |   Duration: ${formatDuration(test.time_limit_seconds)}   |   Questions: ${test.questions.length}   |   Total Marks: ${totalMarks}`
-    doc.text(testInfo, 14, currentY)
-    currentY += 4.5
-
-    const dateStr = getNowOnServer().toLocaleString("en-IN", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    })
-
-    const attemptInfo = `Total Attempts: ${attempts.length}   |   ${avgPct != null ? `Average Score: ${avgPct}%   |   ` : ""
-      }Exported On: ${dateStr}`
-    doc.text(attemptInfo, 14, currentY)
-    currentY += 8
-
-    const tableColumn = ["#", "Student", "Email", "Branch", "Grad", "Status", "Score", "Pct", "Time", "Viol", "Submitted"]
-    const tableRows = sorted.map((a, i) => [
-      String(i + 1),
-      a.student_name || "Unknown",
-      a.student_email || "—",
-      a.branch || "—",
-      a.passout_year?.toString() || "—",
-      (a.status === "submitted" || a.status === "auto_submitted") ? "Submitted" : "In Progress",
-      (a.status === "submitted" || a.status === "auto_submitted") ? `${a.score ?? "—"}/${a.total_marks ?? "—"}` : "—",
-      (a.status === "submitted" || a.status === "auto_submitted") ? `${resolvePct(a.percentage, a.score, a.total_marks).toFixed(2)}%` : "—",
-      formatSeconds(a.time_spent_seconds),
-      a.tab_switch_count?.toString() ?? "0",
-      a.submitted_at ? formatDateTime(a.submitted_at) : "—",
-    ])
-
-    autoTable(doc, {
-      startY: currentY,
-      head: [tableColumn],
-      body: tableRows,
-      theme: "grid",
-      styles: {
-        font: "helvetica",
-        fontSize: 7,
-        cellPadding: 2.5,
-        textColor: [33, 33, 33],
-        lineWidth: 0.2,
-        lineColor: [189, 189, 189],
-        overflow: "linebreak",
-      },
-      headStyles: {
-        fontSize: 7.5,
-        textColor: [255, 255, 255],
-        fontStyle: "bold",
-        fillColor: [55, 86, 35],
-        lineWidth: 0.2,
-        lineColor: [45, 70, 28],
-        halign: "center",
-        valign: "middle",
-      },
-      bodyStyles: {
-        lineWidth: 0.2,
-        lineColor: [189, 189, 189],
-        valign: "middle",
-      },
-      alternateRowStyles: {
-        fillColor: [234, 241, 228],
-      },
-      columnStyles: {
-        0: { cellWidth: 12, halign: "center" },
-        1: { cellWidth: 42 },
-        2: { cellWidth: 48 },
-        3: { cellWidth: 35 },
-        4: { halign: "center", cellWidth: 14 },
-        5: { cellWidth: 20 },
-        6: { halign: "right", cellWidth: 18 },
-        7: { halign: "right", cellWidth: 16 },
-        8: { halign: "right", cellWidth: 18 },
-        9: { halign: "center", cellWidth: 12 },
-        10: { halign: "right" },
-      },
-      didDrawPage: (data) => {
-        const currentPage = data.pageNumber
-        const pageHeight = doc.internal.pageSize.height
-        doc.setFontSize(6)
-        doc.setFont("helvetica", "normal")
-        doc.setTextColor(180, 180, 180)
-        doc.text("Generated using Placetrix", 14, pageHeight - 8)
-        doc.setFontSize(7)
-        doc.text(`Page ${currentPage}`, pageWidth - 14, pageHeight - 8, { align: "right" })
-      },
-    })
-
-    const ts = getNowOnServer().toISOString().replace(/[:.]/g, "-").slice(0, 19)
-    doc.save(`${test.id}_${ts}.pdf`)
-  }, [sorted, test, totalMarks, attempts.length, avgPct])
-
-  if (attempts.length === 0) {
+  if (stats.total === 0) {
     return (
       <Card className="rounded-xl border-dashed">
         <CardContent className="flex flex-col items-center justify-center gap-3 py-12 text-center">
@@ -1019,19 +926,19 @@ function AttemptsTab({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-sm">
           <span>
-            <span className="font-semibold tabular-nums">{submitted.length}</span>
+            <span className="font-semibold tabular-nums">{stats.submitted}</span>
             <span className="ml-1 text-muted-foreground">Submitted</span>
           </span>
           <Separator orientation="vertical" className="h-3.5" />
           <span>
-            <span className="font-semibold tabular-nums">{inProgress.length}</span>
+            <span className="font-semibold tabular-nums">{stats.in_progress}</span>
             <span className="ml-1 text-muted-foreground">In Progress</span>
           </span>
-          {scoresVisible && avgPct != null && (
+          {scoresVisible && stats.avg_pct != null && (
             <>
               <Separator orientation="vertical" className="h-3.5" />
               <span>
-                <span className="font-semibold tabular-nums">{avgPct}%</span>
+                <span className="font-semibold tabular-nums">{stats.avg_pct.toFixed(2)}%</span>
                 <span className="ml-1 text-muted-foreground">Avg Score</span>
               </span>
             </>
@@ -1040,8 +947,8 @@ function AttemptsTab({
             <>
               <Separator orientation="vertical" className="h-3.5" />
               <span className="flex items-center gap-1">
-                <span className="font-semibold tabular-nums">{sorted.length}</span>
-                <span className="text-muted-foreground">of {attempts.length} matching</span>
+                <span className="font-semibold tabular-nums">{totalCount}</span>
+                <span className="text-muted-foreground">matching</span>
               </span>
             </>
           )}
@@ -1049,17 +956,17 @@ function AttemptsTab({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2">
-              <Download className="h-4 w-4" />
+            <Button variant="outline" size="sm" className="gap-2" disabled={isExporting}>
+              {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
               Export Data
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={handleExportCSV}>
+            <DropdownMenuItem onClick={handleExportCSV} disabled={isExporting}>
               <FileSpreadsheet className="mr-2 h-4 w-4" />
               Export as CSV (Excel)
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleExportPDF}>
+            <DropdownMenuItem onClick={handleExportPDF} disabled={isExporting}>
               <FileText className="mr-2 h-4 w-4" />
               Export as PDF
             </DropdownMenuItem>
@@ -1070,7 +977,7 @@ function AttemptsTab({
       {/* ── Filter bar ─────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-2 rounded-xl border bg-muted/10 p-3">
         <div className="flex flex-col sm:flex-row gap-2">
-          {/* Search — input updates instantly; filtering is debounced 200ms */}
+          {/* Search — input updates instantly; query is debounced 300ms */}
           <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
@@ -1081,7 +988,7 @@ function AttemptsTab({
             />
             {searchQuery && (
               <button
-                onClick={() => setSearchQuery("")}
+                onClick={() => { setSearchQuery(""); setPage(0); onFetchPage({ search: "", statusFilter, scoreFilter, sortCol, sortDir, page: 0 }) }}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 transition-colors"
                 title="Clear search"
               >
@@ -1107,7 +1014,7 @@ function AttemptsTab({
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1">General</p>
-                    <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+                    <Select value={statusFilter} onValueChange={(v) => handleFilterChange({ statusFilter: v as any })}>
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="All Statuses" />
                       </SelectTrigger>
@@ -1115,33 +1022,13 @@ function AttemptsTab({
                         <SelectItem value="all">All Statuses</SelectItem>
                         <SelectItem value="submitted">Submitted & Auto</SelectItem>
                         <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="abandoned">Abandoned</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1">Education</p>
-                    {uniqueBranches.length > 0 ? (
-                      <Select value={branchFilter} onValueChange={setBranchFilter}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="All Branches" />
-                        </SelectTrigger>
-                        <SelectContent position="popper" className="w-(--radix-select-trigger-width)">
-                          <SelectItem value="all">All Branches</SelectItem>
-                          {uniqueBranches.map((b) => (
-                            <SelectItem key={b} value={b}>{b}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <p className="text-[10px] italic text-muted-foreground px-1">No branch data available</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1">Performance</p>
-                    <Select value={scoreFilter} onValueChange={(v) => setScoreFilter(v as any)}>
+                    <Select value={scoreFilter} onValueChange={(v) => handleFilterChange({ scoreFilter: v as any })}>
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="All Scores" />
                       </SelectTrigger>
@@ -1169,30 +1056,22 @@ function AttemptsTab({
             <span className="text-[10px] text-muted-foreground mr-1 flex items-center gap-1 font-medium">
               Active:
             </span>
-            {/* Show the live searchQuery in the chip, not the debounced value,
-                so the chip updates immediately when the user clears it */}
             {searchQuery.trim() && (
               <Badge variant="secondary" className="gap-1 h-5 px-1.5 text-[10px] font-normal rounded-full">
                 "{searchQuery.trim()}"
-                <X className="h-2.5 w-2.5 cursor-pointer hover:text-foreground" onClick={() => setSearchQuery("")} />
+                <X className="h-2.5 w-2.5 cursor-pointer hover:text-foreground" onClick={() => { setSearchQuery(""); setPage(0); onFetchPage({ search: "", statusFilter, scoreFilter, sortCol, sortDir, page: 0 }) }} />
               </Badge>
             )}
             {statusFilter !== "all" && (
               <Badge variant="secondary" className="gap-1 h-5 px-1.5 text-[10px] font-normal rounded-full">
                 {statusFilter === "submitted" ? "Submitted" : "In Progress"}
-                <X className="h-2.5 w-2.5 cursor-pointer hover:text-foreground" onClick={() => setStatusFilter("all")} />
-              </Badge>
-            )}
-            {branchFilter !== "all" && (
-              <Badge variant="secondary" className="gap-1 h-5 px-1.5 text-[10px] font-normal rounded-full">
-                {branchFilter}
-                <X className="h-2.5 w-2.5 cursor-pointer hover:text-foreground" onClick={() => setBranchFilter("all")} />
+                <X className="h-2.5 w-2.5 cursor-pointer hover:text-foreground" onClick={() => handleFilterChange({ statusFilter: "all" })} />
               </Badge>
             )}
             {scoreFilter !== "all" && (
               <Badge variant="secondary" className="gap-1 h-5 px-1.5 text-[10px] font-normal rounded-full">
                 {scoreFilter === "high" ? "≥75%" : scoreFilter === "mid" ? "50–74%" : "<50%"}
-                <X className="h-2.5 w-2.5 cursor-pointer hover:text-foreground" onClick={() => setScoreFilter("all")} />
+                <X className="h-2.5 w-2.5 cursor-pointer hover:text-foreground" onClick={() => handleFilterChange({ scoreFilter: "all" })} />
               </Badge>
             )}
             <button
@@ -1252,23 +1131,20 @@ function AttemptsTab({
       </div>
 
       {/* Mobile compact list */}
-      <div className="rounded-xl border overflow-hidden md:hidden">
-        {sorted.length === 0 ? (
+      <div className={cn("rounded-xl border overflow-hidden md:hidden", isLoadingPage && "opacity-60 pointer-events-none")}>
+        {pageRows.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-12 text-center bg-muted/5">
             <Filter className="h-6 w-6 text-muted-foreground/50" />
             <div className="space-y-1">
               <p className="text-sm font-medium">No results match filters</p>
-              <button
-                onClick={clearFilters}
-                className="text-xs text-primary hover:underline font-medium"
-              >
+              <button onClick={clearFilters} className="text-xs text-primary hover:underline font-medium">
                 Clear all filters
               </button>
             </div>
           </div>
         ) : (
           <Accordion type="single" collapsible className="divide-y divide-border/60">
-            {sorted.map((a) => (
+            {pageRows.map((a) => (
               <MobileAttemptRow key={a.id} attempt={a} scoresVisible={scoresVisible} testId={test.id} onDelete={setAttemptToDelete} />
             ))}
           </Accordion>
@@ -1277,7 +1153,7 @@ function AttemptsTab({
 
 
       {/* Desktop table */}
-      <div className="hidden overflow-hidden rounded-xl border md:block">
+      <div className={cn("hidden overflow-hidden rounded-xl border md:block", isLoadingPage && "opacity-60 pointer-events-none")}>
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/40 hover:bg-muted/40">
@@ -1293,9 +1169,9 @@ function AttemptsTab({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sorted.length === 0 ? (
+            {pageRows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="py-12 text-center">
+                <TableCell colSpan={9} className="py-12 text-center">
                   <div className="flex flex-col items-center gap-2">
                     <Filter className="h-5 w-5 text-muted-foreground" />
                     <p className="text-sm text-muted-foreground">No results match your filters.</p>
@@ -1306,13 +1182,45 @@ function AttemptsTab({
                 </TableCell>
               </TableRow>
             ) : (
-              sorted.map((a) => (
+              pageRows.map((a) => (
                 <DesktopAttemptRow key={a.id} attempt={a} scoresVisible={scoresVisible} testId={test.id} onDelete={setAttemptToDelete} />
               ))
             )}
           </TableBody>
         </Table>
       </div>
+
+      {/* ── Pagination controls ────────────────────────────────────────────── */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-1 text-xs text-muted-foreground">
+          <span className="tabular-nums">
+            Page {page + 1} of {totalPages}
+            <span className="ml-1 text-muted-foreground/60">({totalCount} total)</span>
+          </span>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 px-2 gap-1"
+              disabled={page === 0 || isLoadingPage}
+              onClick={() => goToPage(page - 1)}
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+              Prev
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 px-2 gap-1"
+              disabled={page >= totalPages - 1 || isLoadingPage}
+              onClick={() => goToPage(page + 1)}
+            >
+              Next
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       <AlertDialog open={!!attemptToDelete} onOpenChange={(open) => !open && setAttemptToDelete(null)}>
         <AlertDialogContent>
@@ -1499,6 +1407,94 @@ function OverviewTab({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+// ─── Query params type for paged fetches ──────────────────────────────────────
+
+interface AttemptQueryParams {
+  search: string
+  statusFilter: "all" | "submitted" | "in_progress"
+  scoreFilter: "all" | "high" | "mid" | "low"
+  sortCol: SortColumn
+  sortDir: "asc" | "desc"
+  page: number
+}
+
+
+// ─── Supabase query builder ───────────────────────────────────────────────────
+
+function buildAttemptsQuery(
+  supabase: ReturnType<typeof createClient>,
+  testId: string,
+  params: Omit<AttemptQueryParams, "page"> & { range?: [number, number] }
+) {
+  const dbCol = SORT_COL_MAP[params.sortCol]
+  // For "submitted" sort column we need to handle nulls for in-progress rows.
+  // Use submitted_at primarily and fall back to started_at via coalesce — but
+  // the view doesn't support coalesce in .order(), so we sort by submitted_at
+  // and let nulls float (Postgres puts NULLs last with NULLS LAST by default).
+  let q = (supabase as any)
+    .from("view_test_results_detailed")
+    .select(
+      "attempt_id, student_name, student_email, branch, passout_year, tab_switch_count, status, score, total_marks, percentage, time_spent_seconds, started_at, submitted_at",
+      params.range ? undefined : { count: "exact" }
+    )
+    .eq("test_id", testId)
+    .not("attempt_id", "is", null)
+    .not("started_at", "is", null)
+
+  // Status filter
+  if (params.statusFilter === "submitted") {
+    q = q.in("status", ["submitted", "auto_submitted"])
+  } else if (params.statusFilter === "in_progress") {
+    q = q.eq("status", "in_progress")
+  }
+
+  // Score filter (only meaningful for submitted rows)
+  if (params.scoreFilter === "high") q = q.gte("percentage", 75)
+  else if (params.scoreFilter === "mid") q = q.gte("percentage", 50).lt("percentage", 75)
+  else if (params.scoreFilter === "low") q = q.lt("percentage", 50)
+
+  // Search (name or email ILIKE)
+  if (params.search) {
+    q = q.or(`student_name.ilike.%${params.search}%,student_email.ilike.%${params.search}%`)
+  }
+
+  // Sort
+  const nullsFirst = params.sortDir === "asc"
+  q = q.order(dbCol, { ascending: params.sortDir === "asc", nullsFirst })
+  // Always secondary-sort by started_at for stable ordering
+  if (dbCol !== "started_at") {
+    q = q.order("started_at", { ascending: false })
+  }
+
+  // Pagination range
+  if (params.range) {
+    q = q.range(params.range[0], params.range[1])
+  }
+
+  return q
+}
+
+function mapRawAttempt(a: any): InstituteAttemptRow {
+  return {
+    id: a.attempt_id,
+    student_name: a.student_name ?? null,
+    student_email: a.student_email ?? null,
+    status: a.status as InstituteAttemptRow["status"],
+    score: a.score ?? null,
+    total_marks: a.total_marks ?? null,
+    percentage: a.percentage ?? null,
+    time_spent_seconds: a.time_spent_seconds ?? null,
+    started_at: a.started_at,
+    submitted_at: a.submitted_at ?? null,
+    tab_switch_count: a.tab_switch_count ?? null,
+    branch: a.branch ?? null,
+    passout_year: a.passout_year ?? null,
+  }
+}
+
+
+// ─── Page component ───────────────────────────────────────────────────────────
+
 interface Props {
   testId: string
   test: InstituteTestDetail
@@ -1533,47 +1529,72 @@ export function InstituteTestDetailClient({
     return new Date(Date.now() + serverTimeOffset)
   }, [serverTimeOffset])
 
-  // ── Live attempts state ──────────────────────────────────────────────────
-  const [liveAttempts, setLiveAttempts] = useState<InstituteAttemptRow[]>(test.attempts)
+  // ── Paginated attempts state ────────────────────────────────────────────
+  const [pageRows, setPageRows] = useState<InstituteAttemptRow[]>(test.attempts)
+  const [totalCount, setTotalCount] = useState(test.attemptStats.total)
+  const [liveStats, setLiveStats] = useState<AttemptPageStats>(test.attemptStats)
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null)
 
-  const refreshAttempts = useCallback(async () => {
+  // Tracks the most recent query params so Realtime refresh re-fetches the same view
+  const lastParamsRef = useRef<AttemptQueryParams>({
+    search: "",
+    statusFilter: "all",
+    scoreFilter: "all",
+    sortCol: "submitted",
+    sortDir: "desc",
+    page: 0,
+  })
+
+  // Fetch one page of attempts and update count
+  const handleFetchPage = useCallback(async (params: AttemptQueryParams) => {
+    lastParamsRef.current = params
     const supabase = createClient()
+    const from = params.page * ATTEMPTS_PAGE_SIZE
+    const to = from + ATTEMPTS_PAGE_SIZE - 1
 
-    const { data: raw, error } = await (supabase as any)
+    const { data, count, error } = await buildAttemptsQuery(supabase, testId, {
+      ...params,
+      range: [from, to],
+    })
+
+    if (error || !data) return
+    setPageRows(data.map(mapRawAttempt))
+    if (count != null) setTotalCount(count)
+  }, [testId])
+
+  // Fetch aggregate stats independently (runs after Realtime events)
+  const refreshStats = useCallback(async () => {
+    const supabase = createClient()
+    const { data: statsData, count } = await (supabase as any)
       .from("view_test_results_detailed")
-      .select("*")
+      .select("status, percentage, score, total_marks", { count: "exact" })
       .eq("test_id", testId)
-      .order("started_at", { ascending: false })
+      .not("attempt_id", "is", null)
 
-    if (error || !raw) return
+    if (!statsData) return
+    const allRows: any[] = statsData
+    const total = count ?? allRows.length
+    const submittedRows = allRows.filter((a: any) => a.status === "submitted" || a.status === "auto_submitted")
+    const inProgressCount = allRows.filter((a: any) => a.status === "in_progress").length
+    const avgPct = submittedRows.length > 0
+      ? submittedRows.reduce((sum: number, a: any) => {
+          if (a.percentage != null) return sum + a.percentage
+          if (a.score != null && a.total_marks != null && a.total_marks > 0) return sum + (a.score / a.total_marks) * 100
+          return sum
+        }, 0) / submittedRows.length
+      : null
+    setLiveStats({ total, submitted: submittedRows.length, in_progress: inProgressCount, avg_pct: avgPct })
+  }, [testId])
 
-    const freshAttempts: InstituteAttemptRow[] = raw
-      .filter(
-        (a: any): a is any & { attempt_id: string; started_at: string } =>
-          a.attempt_id != null && a.started_at != null
-      )
-      .map((a: any) => ({
-        id: a.attempt_id,
-        student_name: a.student_name ?? null,
-        student_email: a.student_email ?? null,
-        status: a.status as InstituteAttemptRow["status"],
-        score: a.score ?? null,
-        total_marks: totalMarks > 0 ? totalMarks : (a.total_marks ?? null),
-        percentage:
-          a.score != null && totalMarks > 0
-            ? (a.score / totalMarks) * 100
-            : (a.percentage ?? null),
-        time_spent_seconds: a.time_spent_seconds ?? null,
-        started_at: a.started_at,
-        submitted_at: a.submitted_at ?? null,
-        tab_switch_count: a.tab_switch_count ?? null,
-        branch: a.branch ?? null,
-        passout_year: a.passout_year ?? null,
-      }))
-
-    setLiveAttempts(freshAttempts)
-  }, [testId, totalMarks])
+  // Fetch all rows for export (no pagination, respects current filters/sort)
+  const handleFetchAllForExport = useCallback(async (
+    params: Omit<AttemptQueryParams, "page">
+  ): Promise<InstituteAttemptRow[]> => {
+    const supabase = createClient()
+    const { data, error } = await buildAttemptsQuery(supabase, testId, params)
+    if (error || !data) return []
+    return data.map(mapRawAttempt)
+  }, [testId])
 
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -1592,7 +1613,9 @@ export function InstituteTestDetailClient({
         () => {
           if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current)
           refreshTimerRef.current = setTimeout(() => {
-            refreshAttempts()
+            // Refresh current page view + aggregate stats
+            handleFetchPage(lastParamsRef.current)
+            refreshStats()
             refreshTimerRef.current = null
           }, 2000)
         }
@@ -1605,7 +1628,7 @@ export function InstituteTestDetailClient({
       supabase.removeChannel(channel)
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current)
     }
-  }, [testId, refreshAttempts])
+  }, [testId, handleFetchPage, refreshStats])
 
   return (
     <div className="flex flex-col gap-6 px-4 py-8 md:px-8">
@@ -1757,7 +1780,7 @@ export function InstituteTestDetailClient({
         </div>
 
         {/* ── Stats ───────────────────────────────────────────────────────── */}
-        <StatsBar test={test} liveAttempts={liveAttempts} totalMarks={totalMarks} />
+        <StatsBar test={test} stats={liveStats} totalMarks={totalMarks} />
 
         {/* ── Tabs ────────────────────────────────────────────────────────── */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -1766,7 +1789,7 @@ export function InstituteTestDetailClient({
               {[
                 { value: "overview", label: "Overview", icon: <Info className="h-3.5 w-3.5" />, count: null },
                 { value: "questions", label: "Questions", icon: <ListChecks className="h-3.5 w-3.5" />, count: test.questions.length },
-                { value: "attempts", label: "Attempts", icon: <Users className="h-3.5 w-3.5" />, count: liveAttempts.length },
+                { value: "attempts", label: "Attempts", icon: <Users className="h-3.5 w-3.5" />, count: liveStats.total },
               ].map(({ value, label, icon, count }) => (
                 <TabsTrigger
                   key={value}
@@ -1815,13 +1838,25 @@ export function InstituteTestDetailClient({
 
           <TabsContent value="attempts" className="m-0">
             <AttemptsTab 
-              test={test} 
-              liveAttempts={liveAttempts} 
-              totalMarks={totalMarks} 
-              serverNow={serverNow} 
-              getNowOnServer={getNowOnServer} 
+              test={test}
+              pageRows={pageRows}
+              totalCount={totalCount}
+              stats={liveStats}
+              totalMarks={totalMarks}
+              getNowOnServer={getNowOnServer}
               onDeleteAttempt={onDeleteAttempt}
-              onDeleteSuccess={(id) => setLiveAttempts((prev) => prev.filter((a) => a.id !== id))}
+              onDeleteSuccess={(id) => {
+                setPageRows((prev) => prev.filter((a) => a.id !== id))
+                setLiveStats((prev) => ({
+                  ...prev,
+                  total: Math.max(0, prev.total - 1),
+                  submitted: prev.submitted > 0 ? prev.submitted - 1 : 0,
+                }))
+                setTotalCount((c) => Math.max(0, c - 1))
+              }}
+              onFetchPage={handleFetchPage}
+              onFetchStats={refreshStats}
+              onFetchAllForExport={handleFetchAllForExport}
             />
           </TabsContent>
         </Tabs>

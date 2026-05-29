@@ -95,6 +95,17 @@ export interface InstituteQuestion
   tags: Pick<TagRow, "id" | "name">[]
 }
 
+// ─── Attempt Pagination ──────────────────────────────────────────────────────
+
+/** Pre-computed aggregate stats across ALL attempts for a test (not just one page). */
+export interface AttemptPageStats {
+  total: number
+  submitted: number
+  in_progress: number
+  /** Average percentage across submitted attempts; null if no submissions yet. */
+  avg_pct: number | null
+}
+
 // AttemptDetail is a view — all columns are nullable in generated types.
 // We override the fields we know are structurally non-null using MergeDeep,
 // OR simply Pick + override manually (no extra dependency needed):
@@ -132,7 +143,10 @@ export interface InstituteTestDetail
   status: "draft" | "published" | "archived"  // narrow the DB string
   institute_name: string | null
   questions: InstituteQuestion[]
+  /** First page of attempts (20 rows) — SSR seed for the client. */
   attempts: InstituteAttemptRow[]
+  /** Aggregate counts for ALL attempts — SSR seed for the client. */
+  attemptStats: AttemptPageStats
 }
 
 
