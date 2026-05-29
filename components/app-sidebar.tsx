@@ -82,7 +82,7 @@ const NAV_MAIN: Record<AccountType, NavItem[]> = {
     { title: "Drives", url: "/~/drives", icon: IconFolder },
     { title: "Tests", url: "/~/tests", icon: IconChartBar },
     { title: "Events", url: "/~/events", icon: IconCalendarEvent },
-    { title: "LogicLab", url: "/~/logiclab", icon: IconCode, badge: "Beta" },
+    { title: "LogicLab", url: "/~/logiclab/admin", icon: IconCode, badge: "Beta" },
     { title: "Recruiters", url: "/~/recruiters", icon: IconBriefcase },
   ],
   admin: [
@@ -91,7 +91,7 @@ const NAV_MAIN: Record<AccountType, NavItem[]> = {
     { title: "Groups", url: "/~/groups", icon: IconUsersGroup },
     { title: "Drives", url: "/~/drives", icon: IconFolder },
     { title: "Tests", url: "/~/tests", icon: IconChartBar },
-    { title: "LogicLab", url: "/~/logiclab", icon: IconCode, badge: "Beta" },
+    { title: "LogicLab", url: "/~/logiclab/admin", icon: IconCode, badge: "Beta" },
     { title: "Events", url: "/~/events", icon: IconCalendarEvent },
     { title: "Analytics", url: "/~/analytics", icon: IconFileAnalytics },
   ],

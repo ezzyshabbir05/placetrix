@@ -182,10 +182,27 @@ export const getUserProfile = cache(async (): Promise<UserProfile | null> => {
   }
 
   if (user) {
-    // ── Zero-Latency Profile Pattern ──
-    // We completely skip querying the "profiles" table. Since all profile updates
-    // (avatar, name) also call supabase.auth.updateUser(), the user's JWT metadata
-    // is guaranteed to be fresh. This saves 1 DB query per page load!
+    const id = user.sub ?? (user as any).id;
+    if (id) {
+      const { data: dbProfile } = await supabase
+        .from("profiles")
+        .select("id, display_name, email, avatar_path, username, account_type")
+        .eq("id", id)
+        .single();
+        
+      if (dbProfile) {
+        return {
+          id: dbProfile.id,
+          email: dbProfile.email ?? (user as any).email ?? "",
+          display_name: dbProfile.display_name ?? (user as any).user_metadata?.display_name ?? "User",
+          avatar_path: dbProfile.avatar_path ?? null,
+          username: dbProfile.username ?? null,
+          account_type: (dbProfile.account_type as AccountType) ?? "candidate",
+        };
+      }
+    }
+    
+    // Fallback if DB profile is somehow missing
     return profileFromAuthUser(user as any);
   }
 

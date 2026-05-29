@@ -26,11 +26,26 @@ import {
   IconShare,
   IconChevronLeft,
   IconChevronRight,
+  IconMaximize,
+  IconMinimize,
+  IconFileText,
+  IconList,
+  IconPlus,
+  IconTrash,
+  IconLayoutBoard,
+  IconLayoutSidebar,
+  IconLayoutNavbar,
 } from "@tabler/icons-react"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
 import { buildStorageUrl } from "@/lib/storage"
+import { useMonaco } from "@monaco-editor/react"
 import { Group as PanelGroup, Panel, Separator as PanelResizeHandle } from "react-resizable-panels"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 // Robust memory usage display formatter
 const formatMemory = (memKbOrMb: number | string | undefined | null, isAlreadyMb = false) => {
@@ -224,6 +239,29 @@ export function ProblemIDEClient({
   const [startTime] = useState(() => Date.now())
   const { resolvedTheme } = useTheme()
   const monacoTheme = resolvedTheme === "light" ? "vs" : "vs-dark"
+  const sidebarRef = React.useRef<any>(null)
+  const ideContainerRef = React.useRef<HTMLDivElement>(null)
+
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [isFullScreen, setIsFullScreen] = useState(false)
+
+  React.useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullScreen(!!document.fullscreenElement)
+    }
+    document.addEventListener("fullscreenchange", handleFullscreenChange)
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange)
+  }, [])
+
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      ideContainerRef.current?.requestFullscreen().catch((err) => {
+        toast.error("Error attempting to enable fullscreen mode: " + err.message)
+      })
+    } else {
+      document.exitFullscreen()
+    }
+  }
 
   const parsedBoilerplates = React.useMemo(() => {
     let parsed: any = problem.boilerplates || {}
@@ -248,6 +286,59 @@ export function ProblemIDEClient({
   const [runResult, setRunResult] = useState<any>(null)
   const [submitResult, setSubmitResult] = useState<any>(null)
   const [selectedCaseIndex, setSelectedCaseIndex] = useState(0)
+
+  const [isProblemListOpen, setIsProblemListOpen] = useState(false)
+  const [problemList, setProblemList] = useState<any[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [isLoadingProblems, setIsLoadingProblems] = useState(false)
+
+  const [ideLayout, setIdeLayout] = useState<"standard" | "split" | "vertical">("standard")
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem("logiclab_ide_layout")
+    if (saved === "standard" || saved === "split" || saved === "vertical") {
+      setIdeLayout(saved)
+    }
+  }, [])
+  
+  const handleLayoutChange = (layout: "standard" | "split" | "vertical") => {
+    setIdeLayout(layout)
+    localStorage.setItem("logiclab_ide_layout", layout)
+  }
+
+  React.useEffect(() => {
+    if (isProblemListOpen && problemList.length === 0) {
+      const fetchProblems = async () => {
+        setIsLoadingProblems(true)
+        const supabase = createClient() as any
+        
+        const { data: problems } = await supabase
+          .from("coding_problems")
+          .select("id, title, difficulty, created_at")
+          .order("created_at", { ascending: true })
+          
+        const { data: solvedData } = await supabase
+          .from("coding_submissions")
+          .select("problem_id")
+          .eq("user_id", userId)
+          .eq("status", "Accepted")
+          
+        const solvedSet = new Set(solvedData?.map((s: any) => s.problem_id) || [])
+        
+        const enhancedProblems = (problems || []).map((p: any, idx: number) => ({
+          ...p,
+          number: idx + 1,
+          isSolved: solvedSet.has(p.id)
+        }))
+        
+        setProblemList(enhancedProblems)
+        setIsLoadingProblems(false)
+      }
+      fetchProblems()
+    }
+  }, [isProblemListOpen, problemList.length, userId])
+
+  const filteredProblems = problemList.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()))
 
   // Custom case state
   const [customInputs, setCustomInputs] = useState<string[]>(() =>
@@ -526,113 +617,177 @@ export function ProblemIDEClient({
 
   const langForDisplay = LANGUAGES.find((l) => l.id === selectedLang.id)
 
-  return (
-    <div className="flex flex-col h-[calc(100svh-56px)] bg-background text-foreground overflow-hidden">
-      <PanelGroup orientation="horizontal">
-        {/* LEFT PANEL: Description / Submissions */}
-        <Panel defaultSize={40} minSize={25} className="flex flex-col border-r border-border min-h-0 overflow-hidden bg-card/10">
-          {/* Top Bar for Left Panel */}
-          <div className="flex items-center justify-between gap-2 bg-card/60 border-b border-border px-4 py-1 shrink-0">
-            <div className="flex items-center gap-3 min-w-0">
-              <Link
-                href="/~/logiclab"
-                className="h-8 w-8 rounded-lg bg-muted border border-border flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
+  const topNavbarContent = (
+    <div className="flex items-center justify-between px-4 py-2 bg-zinc-100 dark:bg-zinc-950 border-b border-border shrink-0 w-full select-none">
+      {/* Left section: Navigation & Title */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Link 
+            href="/~/logiclab/problems"
+            className="flex items-center justify-center h-8 w-8 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-all shrink-0"
+            title="Back to Problems"
+          >
+            <IconArrowLeft className="h-4 w-4" />
+          </Link>
+          <Button 
+            variant="ghost"
+            onClick={() => setIsProblemListOpen(!isProblemListOpen)}
+            className="h-8 px-3 text-muted-foreground hover:text-foreground font-semibold"
+          >
+            <IconList className="h-4 w-4 mr-2" />
+            Problem List
+          </Button>
+        </div>
+        <div className="h-4 w-px bg-border mx-1" />
+        <div className="flex items-center gap-1">
+          {prevProblemId ? (
+            <Link href={`/~/logiclab/problems/${prevProblemId}`} className="p-1 hover:bg-muted rounded text-muted-foreground transition-colors" title="Previous"><IconChevronLeft className="h-4 w-4" /></Link>
+          ) : (
+            <div className="p-1 text-muted-foreground/30"><IconChevronLeft className="h-4 w-4" /></div>
+          )}
+          {nextProblemId ? (
+            <Link href={`/~/logiclab/problems/${nextProblemId}`} className="p-1 hover:bg-muted rounded text-muted-foreground transition-colors" title="Next"><IconChevronRight className="h-4 w-4" /></Link>
+          ) : (
+            <div className="p-1 text-muted-foreground/30"><IconChevronRight className="h-4 w-4" /></div>
+          )}
+        </div>
+        <div className="h-4 w-px bg-border mx-1" />
+        <span className="text-sm font-bold tracking-tight text-foreground truncate max-w-[200px] sm:max-w-[300px]">
+          {problem.title}
+        </span>
+      </div>
+
+      {/* Center section: Run & Submit */}
+      <div className="flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
+        <Button
+          variant="secondary"
+          onClick={handleRunCode}
+          disabled={running || submitting}
+          className="h-8 px-4 text-xs font-semibold bg-muted/50 hover:bg-muted"
+        >
+          {running ? (
+            <><div className="h-3 w-3 border border-current border-t-transparent rounded-full animate-spin mr-1.5" /> Running</>
+          ) : (
+            <><IconPlayerPlay className="h-3.5 w-3.5 text-emerald-500 mr-1.5" /> Run</>
+          )}
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={handleSubmitCode}
+          disabled={running || submitting}
+          className="h-8 px-4 text-xs font-bold text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 group"
+        >
+          {submitting ? (
+            <><div className="h-3 w-3 border border-current border-t-transparent rounded-full animate-spin mr-1.5" /> Judging</>
+          ) : (
+            <><IconUpload className="h-3.5 w-3.5 group-hover:-translate-y-0.5 transition-transform mr-1.5" /> Submit</>
+          )}
+        </Button>
+      </div>
+
+      {/* Right section: Settings, Language, Toggle */}
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-1.5" title="Change Layout">
+          {ideLayout === "standard" ? <IconLayoutSidebar className="h-4 w-4 text-muted-foreground" /> : ideLayout === "split" ? <IconLayoutBoard className="h-4 w-4 text-muted-foreground" /> : <IconLayoutNavbar className="h-4 w-4 text-muted-foreground" />}
+          <Select value={ideLayout} onValueChange={(val: any) => handleLayoutChange(val)}>
+            <SelectTrigger className="h-7 text-xs font-semibold bg-muted/50 border border-border hover:bg-muted focus:ring-0 focus-visible:ring-0 focus-visible:outline-none px-2 min-w-[90px] transition-colors rounded-md">
+              <SelectValue placeholder="Layout" />
+            </SelectTrigger>
+            <SelectContent position="popper" sideOffset={4} className="z-[9999]">
+              <SelectItem value="standard">Standard</SelectItem>
+              <SelectItem value="split">Split</SelectItem>
+              <SelectItem value="vertical">Vertical</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="h-4 w-px bg-border" />
+        <div className="flex items-center gap-2">
+          <Select value={selectedLang.value} onValueChange={handleLangChange}>
+            <SelectTrigger className="h-7 text-xs font-semibold bg-muted/50 border border-border hover:bg-muted focus:ring-0 focus-visible:ring-0 focus-visible:outline-none px-2 min-w-[100px] transition-colors rounded-md">
+              <SelectValue placeholder="Language" />
+            </SelectTrigger>
+            <SelectContent position="popper" sideOffset={4} className="z-[9999]">
+              {LANGUAGES.map((l) => (
+                <SelectItem key={l.id} value={l.value}>{l.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            const boilerplate = parsedBoilerplates[String(selectedLang.id)] || `// Write your ${selectedLang.name} solution here\n`
+            setCode(boilerplate)
+            toast.success("Code reset to boilerplate")
+          }}
+          disabled={running || submitting}
+          title="Reset code"
+          className="h-7 w-7 text-muted-foreground"
+        >
+          <IconRefresh className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleFullScreen}
+          title={isFullScreen ? "Exit Full Screen" : "Full Screen Mode"}
+          className="h-7 w-7 text-muted-foreground"
+        >
+          {isFullScreen ? <IconMinimize className="h-4 w-4" /> : <IconMaximize className="h-4 w-4" />}
+        </Button>
+      </div>
+    </div>
+  );
+
+  const leftPanelContent = (
+    <div className="flex flex-col h-full bg-card overflow-hidden">
+      <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="flex flex-col h-full w-full">
+        {/* Tabs */}
+        <TabsList className="flex bg-card border-b border-border shrink-0 justify-start h-auto p-0 rounded-none bg-transparent overflow-x-auto scrollbar-hide">
+          <TabsTrigger
+            value="description"
+            className="px-4 py-2.5 text-xs font-bold uppercase tracking-widest transition-colors cursor-pointer data-[state=active]:text-foreground data-[state=active]:border-b-2 data-[state=active]:border-emerald-400 data-[state=active]:!bg-transparent dark:data-[state=active]:!bg-transparent data-[state=active]:!border-t-transparent data-[state=active]:!border-x-transparent dark:data-[state=active]:!border-t-transparent dark:data-[state=active]:!border-x-transparent data-[state=active]:shadow-none text-muted-foreground/80 hover:text-foreground/80 !rounded-none border-b-2 border-transparent focus-visible:ring-0 focus-visible:outline-none"
+          >
+            Description
+          </TabsTrigger>
+          {(activeTab === "submission_result" || submitResult || submitting) && (
+            <TabsTrigger
+              value="submission_result"
+              className="px-4 py-2.5 text-xs font-bold uppercase tracking-widest transition-colors cursor-pointer flex items-center gap-1.5 data-[state=active]:text-foreground data-[state=active]:border-b-2 data-[state=active]:border-emerald-400 data-[state=active]:!bg-transparent dark:data-[state=active]:!bg-transparent data-[state=active]:!border-t-transparent data-[state=active]:!border-x-transparent dark:data-[state=active]:!border-t-transparent dark:data-[state=active]:!border-x-transparent data-[state=active]:shadow-none text-muted-foreground/80 hover:text-foreground/80 !rounded-none border-b-2 border-transparent focus-visible:ring-0 focus-visible:outline-none"
+            >
+              {submitting ? (
+                <IconRefresh className="h-3.5 w-3.5 text-blue-400 animate-spin" />
+              ) : submitResult?.status === "Accepted" ? (
+                <IconSparkles className="h-3.5 w-3.5 text-emerald-400" />
+              ) : (
+                <IconAlertTriangle className="h-3.5 w-3.5 text-rose-400" />
+              )}
+              Submission
+              <div
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setActiveTab("description")
+                  setSubmitResult(null)
+                }}
+                className="p-0.5 hover:bg-muted rounded text-muted-foreground hover:text-foreground shrink-0 cursor-pointer ml-1"
               >
-                <IconArrowLeft className="h-4 w-4 text-muted-foreground" />
-              </Link>
-              <div className="min-w-0">
-                <p className="text-sm font-bold tracking-tight text-foreground truncate">
-                  {problem.title}
-                </p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className={`inline-block px-1.5 py-0 rounded text-[9px] font-bold uppercase tracking-wider border ${DIFFICULTY_COLORS[problem.difficulty]}`}>
-                    {problem.difficulty}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground/60 whitespace-nowrap">
-                    {totalTestCases} cases · {problem.time_limit}s · {problem.memory_limit}MB
-                  </span>
-                </div>
+                <IconX className="h-3 w-3" />
               </div>
-            </div>
+            </TabsTrigger>
+          )}
+          <TabsTrigger
+            value="submissions"
+            className="px-4 py-2.5 text-xs font-bold uppercase tracking-widest transition-colors cursor-pointer flex items-center gap-1.5 data-[state=active]:text-foreground data-[state=active]:border-b-2 data-[state=active]:border-emerald-400 data-[state=active]:!bg-transparent dark:data-[state=active]:!bg-transparent data-[state=active]:!border-t-transparent data-[state=active]:!border-x-transparent dark:data-[state=active]:!border-t-transparent dark:data-[state=active]:!border-x-transparent data-[state=active]:shadow-none text-muted-foreground/80 hover:text-foreground/80 !rounded-none border-b-2 border-transparent focus-visible:ring-0 focus-visible:outline-none"
+          >
+            <IconHistory className="h-3 w-3" /> Submissions ({submissions.length})
+          </TabsTrigger>
+        </TabsList>
 
-            {/* Navigation Arrows */}
-            <div className="flex items-center gap-1.5 shrink-0 select-none">
-              {prevProblemId ? (
-                <Link
-                  href={`/~/logiclab/problems/${prevProblemId}`}
-                  className="h-7 w-7 rounded-md bg-muted border border-border flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
-                  title="Previous Problem"
-                >
-                  <IconChevronLeft className="h-4 w-4 text-muted-foreground" />
-                </Link>
-              ) : (
-                <div className="h-7 w-7 rounded-md bg-muted/40 border border-border/40 flex items-center justify-center opacity-40 cursor-not-allowed">
-                  <IconChevronLeft className="h-4 w-4 text-muted-foreground/50" />
-                </div>
-              )}
-
-              {nextProblemId ? (
-                <Link
-                  href={`/~/logiclab/problems/${nextProblemId}`}
-                  className="h-7 w-7 rounded-md bg-muted border border-border flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
-                  title="Next Problem"
-                >
-                  <IconChevronRight className="h-4 w-4 text-muted-foreground" />
-                </Link>
-              ) : (
-                <div className="h-7 w-7 rounded-md bg-muted/40 border border-border/40 flex items-center justify-center opacity-40 cursor-not-allowed">
-                  <IconChevronRight className="h-4 w-4 text-muted-foreground/50" />
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* Tabs */}
-          <div className="flex bg-card border-b border-border shrink-0">
-            <button
-              onClick={() => setActiveTab("description")}
-              className={`px-4 py-2.5 text-xs font-bold uppercase tracking-widest transition-colors cursor-pointer ${activeTab === "description" ? "text-foreground border-b-2 border-emerald-400" : "text-muted-foreground/80 hover:text-foreground/80"}`}
-            >
-              Description
-            </button>
-            {(activeTab === "submission_result" || submitResult || submitting) && (
-              <button
-                onClick={() => setActiveTab("submission_result")}
-                className={`px-4 py-2.5 text-xs font-bold uppercase tracking-widest transition-colors cursor-pointer flex items-center gap-1.5 ${activeTab === "submission_result" ? "text-foreground border-b-2 border-emerald-400" : "text-muted-foreground/80 hover:text-foreground/80"}`}
-              >
-                {submitting ? (
-                  <IconRefresh className="h-3.5 w-3.5 text-blue-400 animate-spin" />
-                ) : submitResult?.status === "Accepted" ? (
-                  <IconSparkles className="h-3.5 w-3.5 text-emerald-400" />
-                ) : (
-                  <IconAlertTriangle className="h-3.5 w-3.5 text-rose-400" />
-                )}
-                Submission
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setActiveTab("description")
-                    setSubmitResult(null)
-                  }}
-                  className="p-0.5 hover:bg-muted rounded text-muted-foreground hover:text-foreground shrink-0 cursor-pointer ml-1"
-                >
-                  <IconX className="h-3 w-3" />
-                </div>
-              </button>
-            )}
-            <button
-              onClick={() => setActiveTab("submissions")}
-              className={`px-4 py-2.5 text-xs font-bold uppercase tracking-widest transition-colors cursor-pointer flex items-center gap-1.5 ${activeTab === "submissions" ? "text-foreground border-b-2 border-emerald-400" : "text-muted-foreground/80 hover:text-foreground/80"}`}
-            >
-              <IconHistory className="h-3 w-3" /> Submissions ({submissions.length})
-            </button>
-
-
-          </div>
-
-          {/* Tab Content */}
-          <div className="flex-1 overflow-y-auto scrollbar-hide p-5 min-h-0">
-            {activeTab === "description" ? (
+        {/* Tab Content */}
+        <ScrollArea className="flex-1 w-full min-h-0">
+          <div className="p-5">
+            <TabsContent value="description" className="mt-0 outline-none">
               <div className="space-y-5">
                 {/* Description */}
                 <MarkdownDescription content={problem.description} />
@@ -686,8 +841,8 @@ export function ProblemIDEClient({
                   </div>
                 </div>
               </div>
-            ) : activeTab === "submissions" ? (
-              /* Submissions History */
+            </TabsContent>
+            <TabsContent value="submissions" className="mt-0 outline-none">
               <div className="space-y-2">
                 {submissions.length > 0 ? (
                   submissions.map((sub) => {
@@ -771,7 +926,14 @@ export function ProblemIDEClient({
                                     }}
                                  />
                                  <div className="absolute top-3 right-4 flex gap-2 opacity-0 group-hover/editor:opacity-100 transition-opacity">
-                                    <button onClick={() => { setCode(viewingCode); toast.success("Restored to workspace!"); }} className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/20 px-2.5 py-1 rounded-md text-[10px] font-bold transition-all shadow-sm">
+                                    <button onClick={() => { 
+                                      setCode(viewingCode); 
+                                      const lang = LANGUAGES.find(l => l.id === viewingSubmission?.language_id);
+                                      if (lang) {
+                                        setSelectedLang(lang);
+                                      }
+                                      toast.success("Restored to workspace!"); 
+                                    }} className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/20 px-2.5 py-1 rounded-md text-[10px] font-bold transition-all shadow-sm">
                                       Restore
                                     </button>
                                     <button onClick={() => { navigator.clipboard.writeText(viewingCode); toast.success("Copied!"); }} className="bg-muted hover:bg-accent text-foreground border border-border px-2.5 py-1 rounded-md text-[10px] font-bold transition-all shadow-sm">
@@ -792,8 +954,9 @@ export function ProblemIDEClient({
                   </div>
                 )}
               </div>
-            ) : activeTab === "submission_result" ? (
-                submitting ? (
+            </TabsContent>
+            <TabsContent value="submission_result" className="mt-0 outline-none h-full">
+                {submitting ? (
                   <div className="flex flex-col items-center justify-center py-20 gap-4 animate-pulse select-none">
                     <div className="relative">
                       <div className="h-14 w-14 border-2 border-emerald-500/20 border-t-emerald-400 rounded-full animate-spin" />
@@ -1076,156 +1239,134 @@ export function ProblemIDEClient({
                     </div>
                   </div>
                 </div>
-              ) : null
-            ) : null}
+              ) : null}
+            </TabsContent>
           </div>
-        </Panel>
-
-        <PanelResizeHandle className="w-1.5 bg-border hover:bg-emerald-500/50 transition-colors" />
-
-        {/* RIGHT PANEL: Editor + Output */}
-        <Panel defaultSize={60} minSize={30}>
-          <PanelGroup orientation="vertical">
-            {/* Code Editor */}
-            <Panel defaultSize={70} minSize={20} className="flex flex-col min-h-0">
-              <div className="flex items-center justify-between gap-2 bg-card px-4 py-2 border-b border-border shrink-0">
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-widest hidden sm:inline-block">
-                    {langForDisplay?.name} (.{langForDisplay?.extension})
-                  </span>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <select
-                    value={selectedLang.value}
-                    onChange={(e) => handleLangChange(e.target.value)}
-                    className="bg-muted border border-border rounded-lg px-2 py-1 text-xs font-semibold text-foreground/90 focus:outline-none cursor-pointer"
-                  >
-                    {LANGUAGES.map((l) => (
-                      <option key={l.id} value={l.value}>{l.name}</option>
-                    ))}
-                  </select>
-
-                  <button
-                    onClick={() => {
-                      const boilerplate = parsedBoilerplates[String(selectedLang.id)] || `// Write your ${selectedLang.name} solution here\n`
-                      setCode(boilerplate)
-                      toast.success("Code reset to boilerplate")
-                    }}
-                    disabled={running || submitting}
-                    title="Reset code"
-                    className="flex items-center justify-center bg-muted hover:bg-accent hover:text-accent-foreground disabled:opacity-40 text-muted-foreground hover:text-rose-400 h-7 w-7 rounded-lg border border-border transition-all cursor-pointer"
-                  >
-                    <IconRefresh className="h-3.5 w-3.5" />
-                  </button>
-
-                  <button
-                    onClick={handleRunCode}
-                    disabled={running || submitting}
-                    className="flex items-center gap-1.5 bg-muted hover:bg-accent hover:text-accent-foreground disabled:opacity-40 text-foreground/80 hover:text-foreground px-3 py-1 rounded-lg text-xs font-semibold border border-border transition-all cursor-pointer"
-                  >
-                    {running ? (
-                      <><div className="h-3 w-3 border border-current border-t-transparent rounded-full animate-spin" /> Running...</>
-                    ) : (
-                      <><IconPlayerPlay className="h-3 w-3" /> Run</>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={handleSubmitCode}
-                    disabled={running || submitting}
-                    className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 disabled:bg-muted disabled:text-muted-foreground/60 text-black px-3 py-1 rounded-lg text-xs font-bold shadow-[0_0_12px_rgba(16,185,129,0.25)] hover:shadow-[0_0_18px_rgba(16,185,129,0.4)] disabled:shadow-none transition-all cursor-pointer"
-                  >
-                    {submitting ? (
-                      <><div className="h-3 w-3 border border-current border-t-transparent rounded-full animate-spin" /> Judging...</>
-                    ) : (
-                      <><IconUpload className="h-3 w-3" /> Submit</>
-                    )}
-                  </button>
-                </div>
-              </div>
-              <div className="flex-1 min-h-0">
-              <Editor
-                height="100%"
-                language={selectedLang.value}
-                value={code}
-                onChange={(v) => setCode(v || "")}
-                theme={monacoTheme}
-                options={{
-                  fontSize: 13,
-                  minimap: { enabled: false },
-                  scrollBeyondLastLine: false,
-                  wordWrap: "on",
-                  automaticLayout: true,
-                  padding: { top: 10, bottom: 10 },
-                  lineNumbersMinChars: 3,
-                }}
-                loading={
-                  <div className="flex flex-col items-center justify-center h-full gap-2 bg-background">
-                    <div className="h-6 w-6 border-2 border-muted border-t-foreground rounded-full animate-spin" />
-                    <span className="text-[10px] text-muted-foreground/60 uppercase tracking-widest">Loading...</span>
-                  </div>
-                }
-              />
+        </ScrollArea>
+      </Tabs>
+    </div>
+  );
+  const editorContent = (
+    <div className="flex flex-col h-full bg-card overflow-hidden relative">
+      <div className="flex items-center justify-between bg-card border-b border-border px-3 shrink-0 select-none pt-0.5">
+        <div className="flex">
+          <div className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold text-foreground border-b-2 border-emerald-500">
+            <IconCode className="h-3.5 w-3.5 text-emerald-500" />
+            <span>Code</span>
+          </div>
+        </div>
+      </div>
+      <div className="flex-1 min-h-0 pt-2">
+        <Editor
+          height="100%"
+          language={selectedLang.value}
+          value={code}
+          onChange={(v) => setCode(v || "")}
+          theme={monacoTheme}
+          options={{
+            fontSize: 13,
+            minimap: { enabled: false },
+            scrollBeyondLastLine: false,
+            wordWrap: "on",
+            automaticLayout: true,
+            padding: { top: 10, bottom: 10 },
+            lineNumbersMinChars: 3,
+          }}
+          loading={
+            <div className="flex flex-col items-center justify-center h-full gap-2 bg-background">
+              <div className="h-6 w-6 border-2 border-muted border-t-foreground rounded-full animate-spin" />
+              <span className="text-[10px] text-muted-foreground/60 uppercase tracking-widest">Loading...</span>
             </div>
-            </Panel>
+          }
+        />
+      </div>
+    </div>
+  );
 
-            <PanelResizeHandle className="h-1.5 bg-border hover:bg-emerald-500/50 transition-colors" />
+  const outputContent = (
+    <div className="flex flex-col h-full bg-card overflow-hidden">
+      <Tabs value={activeOutputTab} onValueChange={(val: any) => setActiveOutputTab(val)} className="flex flex-col h-full w-full">
+        <div className="flex items-center justify-between bg-card border-b border-border px-3 shrink-0 select-none pt-0.5 overflow-x-auto scrollbar-hide">
+          <TabsList className="flex bg-transparent h-auto p-0 rounded-none justify-start min-w-0">
+            <TabsTrigger
+              value="testcases"
+              className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold transition-all cursor-pointer border-b-2 data-[state=active]:text-foreground data-[state=active]:border-emerald-500 data-[state=active]:!bg-transparent dark:data-[state=active]:!bg-transparent data-[state=active]:!border-t-transparent data-[state=active]:!border-x-transparent dark:data-[state=active]:!border-t-transparent dark:data-[state=active]:!border-x-transparent data-[state=active]:shadow-none data-[state=active]:font-bold text-muted-foreground border-transparent hover:text-foreground/80 !rounded-none focus-visible:ring-0 focus-visible:outline-none"
+            >
+              <IconCircleCheck className="h-3.5 w-3.5 text-emerald-500" />
+              <span>Testcase</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="result"
+              className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold transition-all cursor-pointer border-b-2 data-[state=active]:text-foreground data-[state=active]:border-emerald-500 data-[state=active]:!bg-transparent dark:data-[state=active]:!bg-transparent data-[state=active]:!border-t-transparent data-[state=active]:!border-x-transparent dark:data-[state=active]:!border-t-transparent dark:data-[state=active]:!border-x-transparent data-[state=active]:shadow-none data-[state=active]:font-bold text-muted-foreground border-transparent hover:text-foreground/80 !rounded-none focus-visible:ring-0 focus-visible:outline-none"
+            >
+              <IconTerminal2 className="h-3.5 w-3.5 text-muted-foreground" />
+              <span>Test Result</span>
+            </TabsTrigger>
+          </TabsList>
+          {runResult && (
+            <Button variant="ghost" size="icon" onClick={handleCopyOutput} className="h-7 w-7 text-muted-foreground/80 hover:text-foreground shrink-0 ml-2">
+              {copied ? <IconCheck className="h-3.5 w-3.5 text-emerald-400" /> : <IconCopy className="h-3.5 w-3.5" />}
+            </Button>
+          )}
+        </div>
 
-            {/* Output Panel */}
-            <Panel defaultSize={30} minSize={10} className="flex flex-col border-t border-border bg-card animate-in fade-in duration-300 min-h-0 relative">
-              {/* Output tabs */}
-            <div className="flex items-center justify-between bg-card border-b border-border px-3 shrink-0 select-none pt-0.5">
-              <div className="flex">
-                <button
-                  onClick={() => setActiveOutputTab("testcases")}
-                  className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold transition-all cursor-pointer border-b-2 ${activeOutputTab === "testcases" ? "text-foreground border-emerald-500 font-bold" : "text-muted-foreground border-transparent hover:text-foreground/80"}`}
-                >
-                  <IconCircleCheck className="h-3.5 w-3.5 text-emerald-500" />
-                  <span>Testcase</span>
-                </button>
-                <button
-                  onClick={() => setActiveOutputTab("result")}
-                  className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold transition-all cursor-pointer border-b-2 ${activeOutputTab === "result" ? "text-foreground border-emerald-500 font-bold" : "text-muted-foreground border-transparent hover:text-foreground/80"}`}
-                >
-                  <IconTerminal2 className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span>Test Result</span>
-                </button>
-              </div>
-              {runResult && (
-                <button onClick={handleCopyOutput} className="p-1 hover:bg-muted rounded transition-all cursor-pointer text-muted-foreground/80 hover:text-foreground">
-                  {copied ? <IconCheck className="h-3 w-3 text-emerald-400" /> : <IconCopy className="h-3 w-3" />}
-                </button>
-              )}
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-3.5 font-mono text-xs">
-              {activeOutputTab === "testcases" ? (
-                sampleTestCases.length > 0 ? (
+        <ScrollArea className="flex-1 w-full min-h-0">
+          <div className="p-3.5 font-mono text-xs">
+            <TabsContent value="testcases" className="mt-0 outline-none">
+              {customInputs.length > 0 ? (
                   <div className="space-y-3.5">
                     {/* Case selector buttons */}
-                    <div className="flex flex-wrap gap-2 select-none border-b border-border/10 pb-2.5">
-                      {sampleTestCases.map((_, index: number) => {
+                    <div className="flex flex-wrap items-center gap-2 select-none border-b border-border/10 pb-2.5">
+                      {customInputs.map((_, index: number) => {
                         const isSelected = activeTestcaseIndex === index
                         return (
-                          <button
+                          <Button
                             key={index}
+                            variant={isSelected ? "secondary" : "ghost"}
                             onClick={() => setActiveTestcaseIndex(index)}
-                            className={`px-3.5 py-1 text-[11px] font-bold rounded-lg border transition-all cursor-pointer ${
-                              isSelected
-                                ? "bg-muted text-foreground border-border"
-                                : "bg-transparent text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/30"
-                            }`}
+                            className="h-6 px-3.5 text-[11px] font-bold rounded-lg transition-all"
                           >
                             Case {index + 1}
-                          </button>
+                          </Button>
                         )
                       })}
+                      {customInputs.length < 8 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            const params = getParamNames()
+                            const emptyInput = params.map(() => "").join("\n")
+                            setCustomInputs([...customInputs, emptyInput])
+                            setActiveTestcaseIndex(customInputs.length)
+                          }}
+                          title="Add new testcase"
+                          className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                        >
+                          <IconPlus className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
 
                     {/* Case Input Textarea */}
-                    <div className="animate-in fade-in duration-200">
+                    <div className="animate-in fade-in duration-200 relative">
+                      {activeTestcaseIndex >= sampleTestCases.length && (
+                        <div className="absolute right-0 -top-8">
+                           <Button 
+                             variant="ghost"
+                             size="icon"
+                             onClick={() => {
+                               const newInputs = customInputs.filter((_, idx) => idx !== activeTestcaseIndex)
+                               setCustomInputs(newInputs)
+                               setActiveTestcaseIndex(Math.max(0, activeTestcaseIndex - 1))
+                             }}
+                             className="h-6 w-6 text-rose-500 hover:text-rose-600 hover:bg-rose-500/10"
+                             title="Delete testcase"
+                           >
+                             <IconTrash className="h-3.5 w-3.5" />
+                           </Button>
+                        </div>
+                      )}
                       {renderLeetCodeInput(
                         customInputs[activeTestcaseIndex] || "",
                         getParamNames(),
@@ -1244,9 +1385,9 @@ export function ProblemIDEClient({
                   </div>
                 ) : (
                   <p className="text-muted-foreground/40 text-[10px]">No sample test cases available.</p>
-                )
-              ) : (
-                /* Result tab */
+                )}
+              </TabsContent>
+              <TabsContent value="result" className="mt-0 outline-none h-full">
                 <div className="space-y-2 h-full flex flex-col justify-start">
                   {running ? (
                     <div className="flex flex-col items-center justify-center py-6 gap-3 animate-pulse my-auto">
@@ -1405,14 +1546,153 @@ export function ProblemIDEClient({
                     </div>
                   )}
                 </div>
-              )}
-              </div>
+              </TabsContent>
+            </div>
+          </ScrollArea>
+        </Tabs>
+      </div>
+  );
+
+  return (
+    <div ref={ideContainerRef} className="flex flex-col h-[100dvh] w-full min-h-0 bg-zinc-100 dark:bg-zinc-950 text-foreground overflow-hidden">
+      {topNavbarContent}
+      <div className="flex-1 p-2 min-h-0 overflow-hidden">
+        {ideLayout === "standard" && (
+          <PanelGroup id="standard-layout" orientation="horizontal" className="gap-2">
+            {/* LEFT PANEL: Description/Submissions */}
+            <Panel 
+              id="sidebar-standard"
+              defaultSize={45} 
+              minSize={25} 
+              className="flex flex-col min-h-0 rounded-xl border border-border/40 overflow-hidden shadow-sm"
+            >
+              {leftPanelContent}
+            </Panel>
+            
+            <PanelResizeHandle id="resize-1" className="w-1 rounded-full transition-colors bg-border/40 hover:bg-emerald-500 cursor-col-resize" />
+
+            {/* RIGHT PANEL: Editor + Output */}
+            <Panel id="editor-container-standard" defaultSize={55} minSize={30} className="flex flex-col min-h-0">
+              <PanelGroup id="right-group-standard" orientation="vertical" className="gap-2">
+                <Panel id="editor-standard" defaultSize={55} minSize={20} className="flex flex-col min-h-0 rounded-xl border border-border/40 overflow-hidden shadow-sm">
+                  {editorContent}
+                </Panel>
+                
+                <PanelResizeHandle id="resize-2" className="h-1 rounded-full transition-colors bg-border/40 hover:bg-emerald-500 cursor-row-resize" />
+                
+                <Panel id="output-standard" defaultSize={45} minSize={10} className="flex flex-col min-h-0 rounded-xl border border-border/40 overflow-hidden shadow-sm">
+                  {outputContent}
+                </Panel>
+              </PanelGroup>
             </Panel>
           </PanelGroup>
-        </Panel>
-      </PanelGroup>
+        )}
 
+        {ideLayout === "split" && (
+          <PanelGroup id="split-layout" orientation="horizontal" className="gap-2">
+            <Panel id="sidebar-split" defaultSize={30} minSize={20} className="flex flex-col min-h-0 rounded-xl border border-border/40 overflow-hidden shadow-sm">
+              {leftPanelContent}
+            </Panel>
+            <PanelResizeHandle id="resize-3" className="w-1 rounded-full transition-colors bg-border/40 hover:bg-emerald-500 cursor-col-resize" />
+            
+            <Panel id="editor-split" defaultSize={40} minSize={20} className="flex flex-col min-h-0 rounded-xl border border-border/40 overflow-hidden shadow-sm">
+              {editorContent}
+            </Panel>
+            <PanelResizeHandle id="resize-4" className="w-1 rounded-full transition-colors bg-border/40 hover:bg-emerald-500 cursor-col-resize" />
+            
+            <Panel id="output-split" defaultSize={30} minSize={20} className="flex flex-col min-h-0 rounded-xl border border-border/40 overflow-hidden shadow-sm">
+              {outputContent}
+            </Panel>
+          </PanelGroup>
+        )}
 
+        {ideLayout === "vertical" && (
+          <PanelGroup id="vertical-layout" orientation="vertical" className="gap-2">
+            <Panel id="sidebar-vertical" defaultSize={40} minSize={20} className="flex flex-col min-h-0 rounded-xl border border-border/40 overflow-hidden shadow-sm">
+              {leftPanelContent}
+            </Panel>
+            <PanelResizeHandle id="resize-5" className="h-1 rounded-full transition-colors bg-border/40 hover:bg-emerald-500 cursor-row-resize" />
+            
+            <Panel id="bottom-container-vertical" defaultSize={60} minSize={30} className="flex flex-col min-h-0">
+              <PanelGroup id="bottom-group-vertical" orientation="horizontal" className="gap-2">
+                <Panel id="editor-vertical" defaultSize={50} minSize={20} className="flex flex-col min-h-0 rounded-xl border border-border/40 overflow-hidden shadow-sm">
+                  {editorContent}
+                </Panel>
+                <PanelResizeHandle id="resize-6" className="w-1 rounded-full transition-colors bg-border/40 hover:bg-emerald-500 cursor-col-resize" />
+                <Panel id="output-vertical" defaultSize={50} minSize={20} className="flex flex-col min-h-0 rounded-xl border border-border/40 overflow-hidden shadow-sm">
+                  {outputContent}
+                </Panel>
+              </PanelGroup>
+            </Panel>
+          </PanelGroup>
+        )}
+      </div>
+
+      {/* PROBLEM LIST DRAWER */}
+      <Sheet open={isProblemListOpen} onOpenChange={setIsProblemListOpen} modal={false}>
+        <SheetContent side="left" className="w-[400px] p-0 flex flex-col sm:max-w-none border-r border-border/60">
+          <SheetHeader className="p-4 border-b border-border/60 text-left">
+            <SheetTitle className="font-bold text-lg flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <IconList className="h-5 w-5" /> Problem List
+              </div>
+              <span className="text-xs font-semibold text-muted-foreground tracking-wide font-normal">
+                {problemList.filter(p => p.isSolved).length}/{problemList.length} Solved
+              </span>
+            </SheetTitle>
+          </SheetHeader>
+          
+          <div className="p-3 border-b border-border/60">
+            <div className="relative">
+              <input 
+                type="text" 
+                placeholder="Search questions" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-muted/50 border border-border/60 rounded-md py-1.5 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all"
+              />
+            </div>
+          </div>
+
+          <ScrollArea className="flex-1 w-full min-h-0">
+            <div className="py-2">
+              {isLoadingProblems ? (
+                <div className="flex flex-col items-center justify-center py-20 gap-3">
+                  <div className="h-6 w-6 border-2 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
+                  <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Loading...</span>
+                </div>
+              ) : filteredProblems.length > 0 ? (
+                filteredProblems.map(p => (
+                  <Link 
+                    href={`/~/logiclab/problems/${p.id}`}
+                    key={p.id}
+                    onClick={() => setIsProblemListOpen(false)}
+                    className={`flex items-center justify-between px-4 py-2.5 hover:bg-muted/60 transition-colors ${p.id === problem.id ? 'bg-muted border-l-2 border-emerald-500' : ''}`}
+                  >
+                    <div className="flex items-center gap-3 truncate pr-4">
+                      {p.isSolved ? (
+                        <IconCheck className="h-4 w-4 text-emerald-500 shrink-0" />
+                      ) : (
+                        <div className="h-4 w-4 shrink-0" /> // spacer
+                      )}
+                      <span className={`text-sm truncate ${p.id === problem.id ? 'font-bold' : 'font-medium'}`}>
+                        {p.number}. {p.title}
+                      </span>
+                    </div>
+                    <span className={`text-xs font-bold shrink-0 ${p.difficulty === 'Easy' ? 'text-emerald-500' : p.difficulty === 'Medium' ? 'text-amber-500' : 'text-rose-500'}`}>
+                      {p.difficulty === 'Medium' ? 'Med.' : p.difficulty}
+                    </span>
+                  </Link>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center py-20 text-muted-foreground text-sm">
+                  No problems found.
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
     </div>
-  )
+  );
 }
