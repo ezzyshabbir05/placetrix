@@ -4,7 +4,7 @@
 // app/~/tests/[id]/CandidateTestDetailClient.tsx
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { type ReactNode, useMemo, useCallback, useEffect } from "react"
+import { type ReactNode, useMemo, useCallback } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -29,12 +29,9 @@ import {
   CalendarX,
   Lightbulb,
   ListChecks,
-  Trophy,
-  ArrowRight,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { MathText } from "@/components/ui/math-text"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import type {
   CandidateTestDetail,
   CandidateAttemptDetail,
@@ -43,6 +40,28 @@ import type {
 } from "./_types"
 import { formatDuration, formatDateTime, formatSeconds, resolvePct } from "./_types"
 
+
+// ─── Page Header ──────────────────────────────────────────────────────────────
+
+function PageHeader({ test }: { test: CandidateTestDetail }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <h1 className="text-3xl font-bold font-cirka tracking-tight text-foreground">
+        {test.title}
+      </h1>
+      {test.institute_name && (
+        <p className="text-sm text-muted-foreground">
+          Published by {test.institute_name}
+        </p>
+      )}
+      {test.description && (
+        <p className="mt-0.5 max-w-2xl text-sm text-muted-foreground">
+          {test.description}
+        </p>
+      )}
+    </div>
+  )
+}
 
 
 // ─── Meta Item ────────────────────────────────────────────────────────────────
@@ -271,141 +290,111 @@ export function CandidateTestDetailClient({ test, attempt, serverNow }: Props) {
       <div className="flex flex-col gap-6 px-4 py-8 md:px-8">
 
         {/* ── Page Header ──────────────────────────────────────────────── */}
-        <div className="flex flex-col gap-3">
-          {test.institute_name && (
-            <div className="flex items-center gap-2">
-              <Avatar className="h-6 w-6 border shadow-sm bg-muted">
-                {test.institute_logo_url && (
-                  <AvatarImage
-                    src={test.institute_logo_url}
-                    alt={test.institute_name}
-                    className="object-cover"
-                  />
-                )}
-                <AvatarFallback className="text-[10px] font-bold text-muted-foreground">
-                  {test.institute_name[0].toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                {test.institute_name}
-              </p>
-            </div>
+        <PageHeader test={test} />
+
+        {/* ── Meta grid ───────────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <MetaItem
+            icon={<ListChecks className="h-3.5 w-3.5" />}
+            label="Questions"
+            value={`${questionCount} question${questionCount !== 1 ? "s" : ""} · ${totalMarks} mark${totalMarks !== 1 ? "s" : ""}`}
+          />
+          <MetaItem
+            icon={<Clock className="h-3.5 w-3.5" />}
+            label="Duration"
+            value={formatDuration(test.time_limit_seconds)}
+          />
+          {test.available_from && (
+            <MetaItem
+              icon={<CalendarClock className="h-3.5 w-3.5" />}
+              label="Opens"
+              value={formatDateTime(test.available_from)}
+            />
           )}
-          <div className="flex flex-col gap-1.5">
-            <h1 className="text-3xl font-bold font-cirka tracking-tight text-foreground">
-              {test.title}
-            </h1>
-            {test.description && (
-              <p className="max-w-2xl text-sm text-muted-foreground">
-                {test.description}
-              </p>
-            )}
-          </div>
+          {test.available_until && (
+            <MetaItem
+              icon={<CalendarX className="h-3.5 w-3.5" />}
+              label={isExpired ? "Closed On" : "Closes"}
+              value={formatDateTime(test.available_until)}
+            />
+          )}
         </div>
 
-          {/* ── Meta grid ───────────────────────────────────────────────── */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <MetaItem
-              icon={<ListChecks className="h-3.5 w-3.5" />}
-              label="Questions"
-              value={`${questionCount} question${questionCount !== 1 ? "s" : ""} · ${totalMarks} mark${totalMarks !== 1 ? "s" : ""}`}
-            />
-            <MetaItem
-              icon={<Clock className="h-3.5 w-3.5" />}
-              label="Duration"
-              value={formatDuration(test.time_limit_seconds)}
-            />
-            {test.available_from && (
-              <MetaItem
-                icon={<CalendarClock className="h-3.5 w-3.5" />}
-                label="Opens"
-                value={formatDateTime(test.available_from)}
-              />
-            )}
-            {test.available_until && (
-              <MetaItem
-                icon={<CalendarX className="h-3.5 w-3.5" />}
-                label={isExpired ? "Closed On" : "Closes"}
-                value={formatDateTime(test.available_until)}
-              />
-            )}
+        {/* ── Instructions ────────────────────────────────────────────── */}
+        {test.instructions && (
+          <div className="rounded-xl border bg-muted/30 p-4">
+            <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <BookOpen className="h-3.5 w-3.5" />
+              Instructions
+            </p>
+            <p className="overflow-hidden break-words whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+              {test.instructions}
+            </p>
           </div>
+        )}
 
-          {/* ── Instructions ────────────────────────────────────────────── */}
-          {test.instructions && (
-            <div className="rounded-xl border bg-muted/30 p-4">
-              <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <BookOpen className="h-3.5 w-3.5" />
-                Instructions
-              </p>
-              <p className="overflow-hidden break-words whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
-                {test.instructions}
+        {/* ── In Progress: resume banner ───────────────────────────────── */}
+        {isInProgress && (
+          <div className="space-y-2.5 rounded-xl border border-primary/20 bg-primary/5 p-4">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+              <p className="text-sm font-medium text-primary">You have an unfinished attempt.</p>
+            </div>
+            <div className="flex items-start gap-2">
+              <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+              <p className="text-sm text-primary/80">
+                Resume to continue from where you left off. Your previous answers are saved.
               </p>
             </div>
-          )}
-
-          {/* ── In Progress: resume banner ───────────────────────────────── */}
-          {isInProgress && (
-            <div className="space-y-2.5 rounded-xl border border-primary/20 bg-primary/5 p-4">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                <p className="text-sm font-medium text-primary">You have an unfinished attempt.</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                <p className="text-sm text-primary/80">
-                  Resume to continue from where you left off. Your previous answers are saved.
-                </p>
-              </div>
-              <div className="pt-1">
-                <Button asChild size="sm" className="w-full sm:w-auto">
-                  <Link href={`${test.id}/attempt`}>
-                    <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-                    Resume Test
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* ── Live: CTA ───────────────────────────────────────────────── */}
-          {!attempt && isLive && (
-            <div>
-              <Button asChild size="lg" className="w-full sm:w-auto">
+            <div className="pt-1">
+              <Button asChild size="sm" className="w-full sm:w-auto">
                 <Link href={`${test.id}/attempt`}>
-                  Start Assessment
+                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                  Resume Test
                 </Link>
               </Button>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* ── Expired ─────────────────────────────────────────────────── */}
-          {!attempt && isExpired && (
-            <div className="space-y-2.5 rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-xs text-destructive">
-              <div className="flex items-start gap-2">
-                <CalendarX className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <p className="text-sm font-medium">Test Closed</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <p>Stopped accepting responses on {formatDateTime(test.available_until!)}.</p>
-              </div>
-            </div>
-          )}
+        {/* ── Live: CTA ───────────────────────────────────────────────── */}
+        {!attempt && isLive && (
+          <div>
+            <Button asChild size="lg" className="w-full sm:w-auto">
+              <Link href={`${test.id}/attempt`}>
+                Start Assessment
+              </Link>
+            </Button>
+          </div>
+        )}
 
-          {/* ── Not yet open ────────────────────────────────────────────── */}
-          {!attempt && isNotYetOpen && (
-            <div className="space-y-2.5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-300">
-              <div className="flex items-start gap-2">
-                <CalendarClock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <p className="text-sm font-medium">Not Yet Available</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <p>Opens on {formatDateTime(test.available_from!)}.</p>
-              </div>
+        {/* ── Expired ─────────────────────────────────────────────────── */}
+        {!attempt && isExpired && (
+          <div className="space-y-2.5 rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-xs text-destructive">
+            <div className="flex items-start gap-2">
+              <CalendarX className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <p className="text-sm font-medium">Test Closed</p>
             </div>
-          )}
+            <div className="flex items-start gap-2">
+              <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <p>Stopped accepting responses on {formatDateTime(test.available_until!)}.</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Not yet open ────────────────────────────────────────────── */}
+        {!attempt && isNotYetOpen && (
+          <div className="space-y-2.5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-300">
+            <div className="flex items-start gap-2">
+              <CalendarClock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <p className="text-sm font-medium">Not Yet Available</p>
+            </div>
+            <div className="flex items-start gap-2">
+              <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <p>Opens on {formatDateTime(test.available_from!)}.</p>
+            </div>
+          </div>
+        )}
 
       </div>
     )
@@ -418,93 +407,63 @@ export function CandidateTestDetailClient({ test, attempt, serverNow }: Props) {
     <div className="flex flex-col gap-6 px-4 py-8 md:px-8 animate-in fade-in duration-500">
 
       {/* ── Page Header ────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-3">
-        {test.institute_name && (
-          <div className="flex items-center gap-2">
-            <Avatar className="h-6 w-6 border shadow-sm bg-muted">
-              {test.institute_logo_url && (
-                <AvatarImage
-                  src={test.institute_logo_url}
-                  alt={test.institute_name}
-                  className="object-cover"
-                />
-              )}
-              <AvatarFallback className="text-[10px] font-bold text-muted-foreground">
-                {test.institute_name[0].toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-              {test.institute_name}
-            </p>
-          </div>
-        )}
-        <div className="flex flex-col gap-1.5">
-          <h1 className="text-3xl font-bold font-cirka tracking-tight text-foreground">
-            {test.title}
-          </h1>
-          {test.description && (
-            <p className="max-w-2xl text-sm text-muted-foreground line-clamp-2">
-              {test.description}
-            </p>
-          )}
-        </div>
-      </div>
+      <PageHeader test={test} />
 
-        <Card className="rounded-xl overflow-hidden border py-0">
-          <CardContent className="p-0">
-            <div className="p-5 space-y-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Performance Summary
-                  </p>
-                  <h3 className="text-lg font-semibold">Test Submitted</h3>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <CalendarClock className="h-3.5 w-3.5" />
-                    <span>
-                      {attempt?.submitted_at ? formatDateTime(attempt.submitted_at) : "Recorded successfully"}
-                    </span>
-                  </div>
+      <Card className="rounded-xl overflow-hidden border py-0">
+        <CardContent className="p-0">
+          <div className="p-5 space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-1">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Performance Summary
+                </p>
+                <h3 className="text-lg font-semibold">Test Submitted</h3>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <CalendarClock className="h-3.5 w-3.5" />
+                  <span>
+                    {attempt?.submitted_at ? formatDateTime(attempt.submitted_at) : "Recorded successfully"}
+                  </span>
                 </div>
               </div>
+            </div>
 
-              {!test.results_available ? (
-                <div className="rounded-lg border bg-muted/30 p-3 flex items-start gap-2.5">
-                  <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                  <p className="text-xs leading-relaxed text-muted-foreground">
-                    Detailed results and scores are currently hidden by the instructor. They will be visible once released.
+            {!test.results_available ? (
+              <div className="rounded-lg border bg-muted/30 p-3 flex items-start gap-2.5">
+                <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  Detailed results and scores are currently hidden by the instructor. They will be visible once released.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg border bg-muted/20 p-3">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Score</p>
+                  <p className={cn("mt-1 text-2xl font-bold tabular-nums", pctColorClass)}>
+                    {pct.toFixed(2)}%
                   </p>
                 </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-lg border bg-muted/20 p-3">
-                    <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Score</p>
-                    <p className={cn("mt-1 text-2xl font-bold tabular-nums", pctColorClass)}>
-                      {pct.toFixed(2)}%
-                    </p>
-                  </div>
-                  <div className="rounded-lg border bg-muted/20 p-3">
-                    <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Time Taken</p>
-                    <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
-                      {attempt?.time_spent_seconds ? formatSeconds(attempt.time_spent_seconds) : "—"}
-                    </p>
-                  </div>
+                <div className="rounded-lg border bg-muted/20 p-3">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Time Taken</p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
+                    {attempt?.time_spent_seconds ? formatSeconds(attempt.time_spent_seconds) : "—"}
+                  </p>
                 </div>
-              )}
+              </div>
+            )}
 
-              {test.results_available && (
-                <div className="pt-2">
-                  <Button asChild variant="default" className="w-full sm:w-auto">
-                    <Link href={`/~/tests/${test.id}/result/${attempt?.id}`}>
-                      View Detailed Report
-                    </Link>
-                  </Button>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+            {test.results_available && (
+              <div className="pt-2">
+                <Button asChild variant="default" className="w-full sm:w-auto">
+                  <Link href={`/~/tests/${test.id}/result/${attempt?.id}`}>
+                    View Detailed Report
+                  </Link>
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-      </div>
+    </div>
   )
 }

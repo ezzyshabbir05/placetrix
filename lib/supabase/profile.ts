@@ -56,11 +56,24 @@ function profileFromClaims(
   const claims = claimsData?.claims;
   if (!claims) return null;
 
-  const { sub, email, user_metadata: meta = {} } = claims as {
+  const {
+    sub,
+    email,
+    app_metadata: appMeta = {},
+    user_metadata: meta = {},
+  } = claims as {
     sub: string;
     email?: string;
+    app_metadata?: Record<string, unknown>;
     user_metadata?: Record<string, unknown>;
   };
+
+  // app_metadata is server-only (not user-editable) — always prefer it for account_type.
+  // user_metadata is a fallback for legacy tokens; never default to "candidate" here.
+  const account_type =
+    (appMeta.account_type as AccountType)
+    ?? (meta.account_type as AccountType)
+    ?? null;
 
   return {
     id: sub,
@@ -72,7 +85,9 @@ function profileFromClaims(
       ?? "User",
     avatar_path: (meta.avatar_path as string) ?? (meta.avatar_url as string) ?? (meta.picture as string) ?? null,
     username: (meta.username as string) ?? null,
-    account_type: (meta.account_type as AccountType) ?? "candidate",
+    // If account_type is missing from JWT claims entirely, return null so the
+    // caller falls back to a DB lookup rather than guessing "candidate".
+    account_type: account_type ?? "candidate",
   };
 }
 
@@ -81,11 +96,18 @@ function profileFromClaims(
  * Used when the session is valid but the DB profile row is unreachable.
  */
 function profileFromAuthUser(
-  user: { id?: string; sub?: string; user_metadata?: any; email?: string }
-): UserProfile {
+  user: { id?: string; sub?: string; user_metadata?: any; app_metadata?: any; email?: string }
+): UserProfile & { _account_type_missing?: boolean } {
   const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+  const appMeta = (user.app_metadata ?? {}) as Record<string, unknown>;
   const id = user.sub ?? user.id;
   if (!id) throw new Error("User ID is required");
+
+  // app_metadata is server-only (not user-editable) — authoritative for account_type.
+  const account_type =
+    (appMeta.account_type as AccountType)
+    ?? (meta.account_type as AccountType)
+    ?? null;
 
   return {
     id,
@@ -97,7 +119,9 @@ function profileFromAuthUser(
       ?? "User",
     avatar_path: (meta.avatar_path as string) ?? (meta.avatar_url as string) ?? (meta.picture as string) ?? null,
     username: (meta.username as string) ?? null,
-    account_type: (meta.account_type as AccountType) ?? "candidate",
+    account_type: (account_type ?? "candidate") as AccountType,
+    // Internal flag: if true, caller should resolve account_type from DB.
+    _account_type_missing: account_type === null,
   };
 }
 
@@ -182,28 +206,28 @@ export const getUserProfile = cache(async (): Promise<UserProfile | null> => {
   }
 
   if (user) {
-    const id = user.sub ?? (user as any).id;
-    if (id) {
-      const { data: dbProfile } = await supabase
+    // ── Zero-Latency Profile Pattern ──
+    // Prefer JWT app_metadata (server-only, not user-editable) for account_type.
+    // If account_type is absent from the token (e.g. legacy token before backfill),
+    // do ONE lightweight DB query to get the authoritative value from profiles.
+    const built = profileFromAuthUser(user as any);
+
+    if (built._account_type_missing) {
+      // Fallback: resolve account_type from DB — this branch is hit only when the
+      // JWT hasn't been refreshed yet after the app_metadata backfill.
+      const { data: dbProfile } = await (supabase as any)
         .from("profiles")
-        .select("id, display_name, email, avatar_path, username, account_type")
-        .eq("id", id)
+        .select("account_type")
+        .eq("id", built.id)
         .single();
-        
-      if (dbProfile) {
-        return {
-          id: dbProfile.id,
-          email: dbProfile.email ?? (user as any).email ?? "",
-          display_name: dbProfile.display_name ?? (user as any).user_metadata?.display_name ?? "User",
-          avatar_path: dbProfile.avatar_path ?? null,
-          username: dbProfile.username ?? null,
-          account_type: (dbProfile.account_type as AccountType) ?? "candidate",
-        };
+
+      if (dbProfile?.account_type) {
+        built.account_type = dbProfile.account_type as AccountType;
       }
     }
-    
-    // Fallback if DB profile is somehow missing
-    return profileFromAuthUser(user as any);
+
+    const { _account_type_missing: _, ...profile } = built;
+    return profile;
   }
 
   // ── Step 2 & 3: Handle definitive revocation (e.g. 401) ─────────────────

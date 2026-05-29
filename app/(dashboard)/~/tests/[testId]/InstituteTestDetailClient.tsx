@@ -1613,11 +1613,6 @@ export function InstituteTestDetailClient({
         {/* ── Page Header ─────────────────────────────────────────────────── */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex flex-col gap-1.5 min-w-0">
-            {test.institute_name && (
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                {test.institute_name}
-              </p>
-            )}
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               <h1 className="text-3xl font-bold font-cirka tracking-tight text-foreground">
                 {test.title}
@@ -1634,6 +1629,11 @@ export function InstituteTestDetailClient({
                 </Badge>
               )}
             </div>
+            {test.institute_name && (
+              <p className="text-sm text-muted-foreground">
+                Published by {test.institute_name}
+              </p>
+            )}
             {test.description && (
               <p className="max-w-2xl text-sm text-muted-foreground line-clamp-2">
                 {test.description}
