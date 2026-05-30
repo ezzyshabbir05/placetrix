@@ -125,7 +125,9 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/maintenance";
     url.search = "";
-    return NextResponse.redirect(url, { status: 307 });
+    const res = NextResponse.redirect(url, { status: 307 });
+    res.headers.set("Cache-Control", "no-store, max-age=0");
+    return res;
   }
 
   if (systemStatus === "connection_error") {
@@ -134,7 +136,9 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/connection-error";
     url.search = "";
-    return NextResponse.redirect(url, { status: 307 });
+    const res = NextResponse.redirect(url, { status: 307 });
+    res.headers.set("Cache-Control", "no-store, max-age=0");
+    return res;
   }
 
   // 4. System is online.
@@ -144,7 +148,9 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     url.search = "";
-    return NextResponse.redirect(url, { status: 307 });
+    const res = NextResponse.redirect(url, { status: 307 });
+    res.headers.set("Cache-Control", "no-store, max-age=0");
+    return res;
   }
 
   // 5. Session refresh + auth route guards (only reached when system is online
