@@ -15,7 +15,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { OTPInput } from "@/components/ui/otp-input";
 import { Button } from "@/components/ui/button";
-import { Loader2Icon, ShieldCheckIcon, LogOutIcon } from "lucide-react";
+import { Loader2Icon, LogOutIcon } from "lucide-react";
 import Link from "next/link";
 
 export default function MfaPage() {
@@ -121,18 +121,13 @@ function MfaContent() {
   return (
     <div className="mx-auto space-y-6 sm:w-sm">
       {/* Header */}
-      <div className="flex flex-col items-center space-y-3 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-          <ShieldCheckIcon className="h-7 w-7 text-primary" />
-        </div>
-        <div className="space-y-1">
-          <h1 className="font-bold text-2xl tracking-wide">
-            Two-Factor Authentication
-          </h1>
-          <p className="text-base text-muted-foreground">
-            Enter the 6-digit code from your authenticator app to continue.
-          </p>
-        </div>
+      <div className="flex flex-col space-y-1">
+        <h1 className="font-cirka font-bold text-2xl tracking-wide">
+          Two-Factor Authentication
+        </h1>
+        <p className="text-base text-muted-foreground">
+          Enter the 6-digit code from your authenticator app to continue.
+        </p>
       </div>
 
       {/* Form */}

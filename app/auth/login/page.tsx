@@ -228,12 +228,12 @@ function LoginContent() {
   if (pageState === "mfa-challenge") {
     return (
       <div className="mx-auto space-y-6 sm:w-sm">
-        <div className="flex flex-col items-center space-y-3 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-            <ShieldCheckIcon className="h-7 w-7 text-primary" />
+        <div className="flex flex-col space-y-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <ShieldCheckIcon className="h-6 w-6 text-primary" />
           </div>
           <div className="space-y-1">
-            <h1 className="font-bold text-2xl tracking-wide">Two-Factor Authentication</h1>
+            <h1 className="font-cirka font-bold text-2xl tracking-wide">Two-Factor Authentication</h1>
             <p className="text-base text-muted-foreground">
               Enter the 6-digit code from your authenticator app.
             </p>
@@ -270,7 +270,7 @@ function LoginContent() {
           <OTPInput length={6} value={otp} onChange={setOtp} disabled={isLoading} />
 
           {error && (
-            <p className="text-sm text-destructive rounded-md bg-destructive/10 px-3 py-2 text-center">
+            <p className="text-sm text-destructive rounded-md bg-destructive/10 px-3 py-2">
               {error}
             </p>
           )}
@@ -307,12 +307,12 @@ function LoginContent() {
   if (pageState === "otp-entry") {
     return (
       <div className="mx-auto space-y-6 sm:w-sm">
-        <div className="flex flex-col items-center space-y-3 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-            <MailIcon className="h-7 w-7 text-primary" />
+        <div className="flex flex-col space-y-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <MailIcon className="h-6 w-6 text-primary" />
           </div>
           <div className="space-y-1">
-            <h1 className="font-bold text-2xl tracking-wide">
+            <h1 className="font-cirka font-bold text-2xl tracking-wide">
               Confirm Your Email
             </h1>
             <p className="text-base text-muted-foreground">
@@ -393,7 +393,7 @@ function LoginContent() {
 
       <div className="mx-auto space-y-4 sm:w-sm">
         <div className="flex flex-col space-y-1">
-          <h1 className="font-bold text-2xl tracking-wide">Welcome Back!</h1>
+          <h1 className="font-cirka font-bold text-2xl tracking-wide">Welcome Back!</h1>
           <p className="text-base text-muted-foreground">
             Sign in to your account to continue.
           </p>

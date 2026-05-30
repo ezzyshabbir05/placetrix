@@ -23,19 +23,23 @@ export default function ErrorPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   return (
-    <div className="mx-auto space-y-4 sm:w-sm text-center">
-      <AlertCircleIcon className="mx-auto h-12 w-12 text-destructive" />
-      <div className="space-y-1">
-        <h1 className="font-bold text-2xl tracking-wide">
-          Something went wrong
-        </h1>
-        <Suspense
-          fallback={
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          }
-        >
-          <ErrorMessage searchParams={searchParams} />
-        </Suspense>
+    <div className="mx-auto space-y-4 sm:w-sm">
+      <div className="flex flex-col space-y-3">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+          <AlertCircleIcon className="h-6 w-6 text-destructive" />
+        </div>
+        <div className="space-y-1">
+          <h1 className="font-cirka font-bold text-2xl tracking-wide">
+            Something went wrong
+          </h1>
+          <Suspense
+            fallback={
+              <p className="text-sm text-muted-foreground">Loading…</p>
+            }
+          >
+            <ErrorMessage searchParams={searchParams} />
+          </Suspense>
+        </div>
       </div>
       <Button asChild variant="outline" className="w-full">
         <Link href="/auth/login">Back to Sign In</Link>

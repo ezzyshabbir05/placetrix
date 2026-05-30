@@ -9,19 +9,21 @@ import { Button } from "@/components/ui/button";
 
 export default function SignUpSuccessPage() {
   return (
-    <div className="mx-auto space-y-4 sm:w-sm text-center">
-      <div className="flex h-14 w-14 mx-auto items-center justify-center rounded-full bg-primary/10">
-        <MailIcon className="h-7 w-7 text-primary" />
-      </div>
-      <div className="space-y-1">
-        <h1 className="font-bold text-2xl tracking-wide">Check Your Email</h1>
-        <p className="text-base text-muted-foreground">
-          We sent a confirmation code to your email address. Enter the code on
-          the sign-up page to activate your account.
-        </p>
-        <p className="text-sm text-muted-foreground">
-          The code works from any device or browser.
-        </p>
+    <div className="mx-auto space-y-4 sm:w-sm">
+      <div className="flex flex-col space-y-3">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+          <MailIcon className="h-6 w-6 text-primary" />
+        </div>
+        <div className="space-y-1">
+          <h1 className="font-cirka font-bold text-2xl tracking-wide">Check Your Email</h1>
+          <p className="text-base text-muted-foreground">
+            We sent a confirmation code to your email address. Enter the code on
+            the sign-up page to activate your account.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            The code works from any device or browser.
+          </p>
+        </div>
       </div>
       <Button asChild className="w-full">
         <Link href="/auth/sign-up">Enter Code</Link>

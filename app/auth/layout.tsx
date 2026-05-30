@@ -11,8 +11,10 @@
 //   /auth/confirm   — Link-based token verification (same reason)
 
 import { Suspense } from "react";
+import Image from "next/image";
 import { FloatingPaths } from "@/components/ui/auth_page/floating-paths";
 import Link from "next/link";
+import PlaceTrixLogo from "@/assets/placetrix.svg";
 
 export default function AuthLayout({
   children,
@@ -24,8 +26,18 @@ export default function AuthLayout({
       {/* ── Left decorative panel (desktop only) ── */}
       <div className="relative hidden h-full flex-col border-r bg-secondary p-10 lg:flex dark:bg-secondary/20">
         <div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-background pointer-events-none" />
-        <Link href="/" className="font-bold text-xl">
-          PlaceTrix
+        <Link href="/" className="flex items-center gap-2 font-bold tracking-[0.05em]">
+          <Image
+            src={PlaceTrixLogo}
+            alt="PlaceTrix"
+            width={24}
+            height={24}
+            className="size-6 dark:invert"
+            priority
+          />
+          <span className="pl-1 text-lg font-bold tracking-wider text-zinc-950 dark:text-white">
+            PlaceTrix
+          </span>
         </Link>
         <div className="z-10 mt-auto">
           <blockquote className="space-y-2">

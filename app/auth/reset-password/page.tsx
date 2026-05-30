@@ -176,18 +176,20 @@ export default function ResetPasswordPage() {
   // ── Success ────────────────────────────────────────────────────────────────
   if (pageState === "success") {
     return (
-      <div className="mx-auto space-y-4 sm:w-sm text-center">
-        <div className="flex h-14 w-14 mx-auto items-center justify-center rounded-full bg-green-500/10">
-          <CheckCircleIcon className="h-7 w-7 text-green-500" />
-        </div>
-        <div className="space-y-1">
-          <h1 className="font-bold text-2xl tracking-wide">
-            Password Updated!
-          </h1>
-          <p className="text-base text-muted-foreground">
-            Your password has been reset successfully. Sign in with your new
-            password to continue.
-          </p>
+      <div className="mx-auto space-y-4 sm:w-sm">
+        <div className="flex flex-col space-y-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10">
+            <CheckCircleIcon className="h-6 w-6 text-green-500" />
+          </div>
+          <div className="space-y-1">
+            <h1 className="font-cirka font-bold text-2xl tracking-wide">
+              Password Updated!
+            </h1>
+            <p className="text-base text-muted-foreground">
+              Your password has been reset successfully. Sign in with your new
+              password to continue.
+            </p>
+          </div>
         </div>
         <Button asChild className="w-full">
           <Link href="/auth/login">Sign In</Link>
@@ -201,7 +203,7 @@ export default function ResetPasswordPage() {
     return (
       <div className="mx-auto space-y-4 sm:w-sm">
         <div className="flex flex-col space-y-1">
-          <h1 className="font-bold text-2xl tracking-wide">Set New Password</h1>
+          <h1 className="font-cirka font-bold text-2xl tracking-wide">Set New Password</h1>
           <p className="text-base text-muted-foreground">
             Choose a strong password for your account.
           </p>
@@ -279,12 +281,12 @@ export default function ResetPasswordPage() {
   if (pageState === "otp-entry") {
     return (
       <div className="mx-auto space-y-6 sm:w-sm">
-        <div className="flex flex-col items-center space-y-3 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-            <MailIcon className="h-7 w-7 text-primary" />
+        <div className="flex flex-col space-y-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <MailIcon className="h-6 w-6 text-primary" />
           </div>
           <div className="space-y-1">
-            <h1 className="font-bold text-2xl tracking-wide">
+            <h1 className="font-cirka font-bold text-2xl tracking-wide">
               Enter Reset Code
             </h1>
             <p className="text-base text-muted-foreground">
@@ -359,7 +361,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="mx-auto space-y-4 sm:w-sm">
       <div className="flex flex-col space-y-1">
-        <h1 className="font-bold text-2xl tracking-wide">Reset Password</h1>
+        <h1 className="font-cirka font-bold text-2xl tracking-wide">Reset Password</h1>
         <p className="text-base text-muted-foreground">
           Enter your email and we&apos;ll send you a reset code.
         </p>

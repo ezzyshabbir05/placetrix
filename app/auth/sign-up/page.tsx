@@ -191,12 +191,12 @@ export default function SignUpPage() {
     // One Tap intentionally hidden during OTP step — user already chose email flow
     return (
       <div className="mx-auto space-y-6 sm:w-sm">
-        <div className="flex flex-col items-center space-y-3 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-            <MailIcon className="h-7 w-7 text-primary" />
+        <div className="flex flex-col space-y-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <MailIcon className="h-6 w-6 text-primary" />
           </div>
           <div className="space-y-1">
-            <h1 className="font-bold text-2xl tracking-wide">
+            <h1 className="font-cirka font-bold text-2xl tracking-wide">
               Check Your Email
             </h1>
             <p className="text-base text-muted-foreground">
@@ -277,7 +277,7 @@ export default function SignUpPage() {
 
       <div className="mx-auto space-y-4 sm:w-sm">
         <div className="flex flex-col space-y-1">
-          <h1 className="font-bold text-2xl tracking-wide">
+          <h1 className="font-cirka font-bold text-2xl tracking-wide">
             Create an Account
           </h1>
           <p className="text-base text-muted-foreground">
