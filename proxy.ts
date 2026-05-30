@@ -13,6 +13,8 @@
 //     If Supabase itself is unreachable, maintenance mode is activated
 //     automatically — the whole app depends on Supabase, so an unreachable DB
 //     is effectively downtime.
+//  5. When the user refreshes /maintenance or /connection-error and the system
+//     has recovered, they are automatically redirected back to /.
 //
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -58,7 +60,6 @@ async function getSystemStatus(): Promise<SystemStatus> {
     );
 
     if (!res.ok) {
-      // Supabase returned an error — the DB is unavailable or degraded.
       console.error("[status] Failed to fetch app_config:", res.status);
       statusCache = { value: "connection_error", expiresAt: now + CACHE_TTL_MS };
       return "connection_error";
@@ -71,31 +72,29 @@ async function getSystemStatus(): Promise<SystemStatus> {
     statusCache = { value: status, expiresAt: now + CACHE_TTL_MS };
     return status;
   } catch (err) {
-    // Network error — Supabase is unreachable.
     console.error("[status] Supabase unreachable:", err);
     statusCache = { value: "connection_error", expiresAt: now + CACHE_TTL_MS };
     return "connection_error";
   }
 }
 
-// Paths that should never be intercepted by maintenance mode
-const MAINTENANCE_BYPASS_PREFIXES = [
-  "/maintenance",
-  "/connection-error",
-  "/_next",
-  "/api/",
-  "/favicon",
-];
+// Paths that bypass ALL middleware logic — no status check, no auth guard.
+const BYPASS_PREFIXES = ["/_next", "/api/", "/favicon"];
+
+// Paths that get the status check but skip updateSession.
+// They must NOT be in BYPASS_PREFIXES so a refresh can detect recovery
+// and redirect the user back to / when the system comes back online.
+const STATUS_ONLY_PREFIXES = ["/maintenance", "/connection-error"];
 
 function isBypassPath(pathname: string): boolean {
-  if (MAINTENANCE_BYPASS_PREFIXES.some((p) => pathname.startsWith(p))) {
-    return true;
-  }
+  if (BYPASS_PREFIXES.some((p) => pathname.startsWith(p))) return true;
   // Static files (images, icons, fonts, etc.)
-  if (/\.[a-zA-Z0-9]+$/.test(pathname)) {
-    return true;
-  }
+  if (/\.[a-zA-Z0-9]+$/.test(pathname)) return true;
   return false;
+}
+
+function isStatusOnlyPath(pathname: string): boolean {
+  return STATUS_ONLY_PREFIXES.some((p) => pathname.startsWith(p));
 }
 
 export async function proxy(request: NextRequest) {
@@ -105,26 +104,42 @@ export async function proxy(request: NextRequest) {
   const isPrefetch =
     request.headers.get("next-router-prefetch") ||
     request.headers.get("purpose") === "prefetch";
-  if (isPrefetch) {
-    return NextResponse.next();
-  }
+  if (isPrefetch) return NextResponse.next();
 
-  // 2. Check system status (DB-driven, cached for 30 s)
   const { pathname } = request.nextUrl;
 
-  if (!isBypassPath(pathname)) {
-    const systemStatus = await getSystemStatus();
+  // 2. Full bypass — skip status check and auth entirely (/_next, /api/, static files).
+  if (isBypassPath(pathname)) return NextResponse.next();
 
-    if (systemStatus === "maintenance") {
-      // Rewrite to /maintenance so the URL stays the same in the browser
-      return NextResponse.rewrite(new URL("/maintenance", request.url));
-    } else if (systemStatus === "connection_error") {
-      // Rewrite to /connection-error so the URL stays the same in the browser
-      return NextResponse.rewrite(new URL("/connection-error", request.url));
-    }
+  // 3. Check system status (DB-driven, cached for 30 s).
+  //    Also runs on /maintenance and /connection-error so that a page refresh
+  //    detects recovery and sends the user back to /.
+  //    Use 307 Temporary Redirect — browsers do NOT cache 307, so toggling
+  //    maintenance off takes effect immediately without the browser serving
+  //    a stale redirect from cache (which 301/302 would risk).
+  const systemStatus = await getSystemStatus();
+
+  if (systemStatus === "maintenance") {
+    // Already on the maintenance page — render it, don't loop.
+    if (pathname.startsWith("/maintenance")) return NextResponse.next();
+    return NextResponse.redirect(new URL("/maintenance", request.url), { status: 307 });
   }
 
-  // 3. Session refresh + auth route guards
+  if (systemStatus === "connection_error") {
+    // Already on the connection-error page — render it, don't loop.
+    if (pathname.startsWith("/connection-error")) return NextResponse.next();
+    return NextResponse.redirect(new URL("/connection-error", request.url), { status: 307 });
+  }
+
+  // 4. System is online.
+  //    If the user is sitting on /maintenance or /connection-error and refreshes,
+  //    send them back to the homepage now that the system has recovered.
+  if (isStatusOnlyPath(pathname)) {
+    return NextResponse.redirect(new URL("/", request.url), { status: 307 });
+  }
+
+  // 5. Session refresh + auth route guards (only reached when system is online
+  //    and the path is not a status page).
   return await updateSession(request);
 }
 
