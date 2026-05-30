@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import { MfaTwoFactor } from "@/components/ui/mfa-two-factor";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 interface Props {
   userProfile: UserProfile;
   initialData: any;
@@ -38,6 +40,8 @@ interface SessionEntry {
   ip: unknown;
   user_agent: string | null;
 }
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatTimeAgo(dateStr: string | null): string {
   if (!dateStr) return "Unknown";
@@ -67,6 +71,8 @@ function formatExpiry(dateStr: string | null): string | null {
 function isExpired(not_after: string | null): boolean {
   return !!not_after && new Date(not_after) < new Date();
 }
+
+// ─── Password Strength ────────────────────────────────────────────────────────
 
 interface StrengthResult {
   score: 0 | 1 | 2 | 3 | 4;
@@ -108,6 +114,8 @@ function PasswordStrengthBar({ score }: { score: 0 | 1 | 2 | 3 | 4 }) {
   );
 }
 
+// ─── Tab config ───────────────────────────────────────────────────────────────
+
 type Tab = "security" | "notifications" | "history" | "privacy";
 
 const TABS: { value: Tab; label: string }[] = [
@@ -124,6 +132,8 @@ function DeviceIcon({ device }: { device: "desktop" | "mobile" | "tablet" }) {
   return <Monitor className={cls} />;
 }
 
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function AdminSettingsClient({ userProfile }: Props) {
   const supabase = createClient();
   const [isPwPending, startPwTransition] = useTransition();
@@ -136,7 +146,7 @@ export function AdminSettingsClient({ userProfile }: Props) {
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [revokingAll, setRevokingAll] = useState(false);
 
-  // Password state
+  // ─── Password state ──────────────────────────────────────────────────────────
   const [pwCurrent, setPwCurrent] = useState("");
   const [pwNew, setPwNew] = useState("");
   const [pwConfirm, setPwConfirm] = useState("");
@@ -149,6 +159,8 @@ export function AdminSettingsClient({ userProfile }: Props) {
   const pwStrength = getPasswordStrength(pwNew);
   const pwConfirmMatch = pwConfirm.length > 0 && pwConfirm === pwNew;
   const pwConfirmMismatch = pwConfirm.length > 0 && pwConfirm !== pwNew;
+
+  // ─── Login History Loading ───────────────────────────────────────────────────
 
   const loadSessions = useCallback(async () => {
     setSessLoading(true);
@@ -210,6 +222,8 @@ export function AdminSettingsClient({ userProfile }: Props) {
 
   const otherSessionCount = sessions.filter((s) => s.id !== currentSessionId).length;
 
+  // ─── Password handlers ───────────────────────────────────────────────────────
+
   function clearPwError(key: string) {
     setPwErrors((prev) => {
       if (!prev[key]) return prev;
@@ -270,8 +284,8 @@ export function AdminSettingsClient({ userProfile }: Props) {
     <div className="flex flex-col gap-6 px-4 py-8 md:px-8">
       {/* Page Header */}
       <div className="flex flex-col gap-1.5">
-        <h1 className="text-3xl font-bold font-cirka tracking-tight text-foreground">Admin Settings</h1>
-        <p className="text-sm text-muted-foreground">Manage your admin credentials and security preferences</p>
+        <h1 className="text-3xl font-bold font-cirka tracking-tight text-foreground">Settings</h1>
+        <p className="text-sm text-muted-foreground">Manage your administrator preferences and security</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as Tab)}>
@@ -290,9 +304,10 @@ export function AdminSettingsClient({ userProfile }: Props) {
           </TabsList>
         </div>
 
-        <div className="mt-4 max-w-3xl">
+        <div className="mt-4">
           {/* ── SECURITY TAB ── */}
           <TabsContent value="security" className="space-y-6 mt-0">
+            {/* Change Password */}
             <Card>
               <CardHeader>
                 <CardTitle>Change Password</CardTitle>
@@ -365,7 +380,7 @@ export function AdminSettingsClient({ userProfile }: Props) {
                       </div>
                       {pwNew ? (
                         <>
-                          <PasswordStrengthBar score={pwStrength.score} />
+                           <PasswordStrengthBar score={pwStrength.score} />
                           <p className={cn("text-xs", pwStrength.color)}>{pwStrength.label}</p>
                         </>
                       ) : (
@@ -423,10 +438,11 @@ export function AdminSettingsClient({ userProfile }: Props) {
               </CardContent>
             </Card>
 
+            {/* Two-Factor Authentication */}
             <Card>
               <CardHeader>
                 <CardTitle>Two-Factor Authentication</CardTitle>
-                <CardDescription>Setup multi-factor verification for administrator actions</CardDescription>
+                <CardDescription>Add an extra layer of security to your administrator account</CardDescription>
               </CardHeader>
               <CardContent>
                 <MfaTwoFactor />
@@ -448,7 +464,7 @@ export function AdminSettingsClient({ userProfile }: Props) {
                 ].map(({ label, desc }) => (
                   <div key={label} className="flex items-center justify-between">
                     <div>
-                      <Label className="font-semibold">{label}</Label>
+                      <Label>{label}</Label>
                       <p className="text-sm text-muted-foreground">{desc}</p>
                     </div>
                     <Switch defaultChecked />
@@ -462,8 +478,8 @@ export function AdminSettingsClient({ userProfile }: Props) {
           <TabsContent value="history" className="mt-0">
             <Card>
               <CardHeader>
-                <CardTitle>Login Sessions</CardTitle>
-                <CardDescription>Active web sessions authorized to manage the platform</CardDescription>
+                <CardTitle>Login History</CardTitle>
+                <CardDescription>Devices currently signed in to your administrator account</CardDescription>
                 <CardAction>
                   <Button variant="outline" size="sm" onClick={loadSessions} disabled={sessionsLoading} className="gap-1.5 text-xs h-8">
                     {sessionsLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
@@ -491,7 +507,8 @@ export function AdminSettingsClient({ userProfile }: Props) {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Sign out all other sessions?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            <strong>{otherSessionCount} other device{otherSessionCount !== 1 ? "s" : ""}</strong> will be logged out of this admin console.
+                            <strong>{otherSessionCount} other device{otherSessionCount !== 1 ? "s" : ""}</strong>{" "}
+                            will be signed out immediately. Your current session will remain active.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -507,7 +524,7 @@ export function AdminSettingsClient({ userProfile }: Props) {
 
                 {sessionsLoading && (
                   <div className="space-y-2">
-                    {[...Array(2)].map((_, i) => (
+                    {[...Array(3)].map((_, i) => (
                       <div key={i} className="flex items-center gap-3 rounded-lg border p-3.5 animate-pulse">
                         <div className="h-9 w-9 rounded-md bg-muted shrink-0" />
                         <div className="flex-1 space-y-2">
@@ -525,6 +542,7 @@ export function AdminSettingsClient({ userProfile }: Props) {
                       <Clock className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <p className="text-sm font-medium">No sessions found</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">Login activity will appear here once detected.</p>
                   </div>
                 )}
 
@@ -561,6 +579,11 @@ export function AdminSettingsClient({ userProfile }: Props) {
                                   This device
                                 </Badge>
                               )}
+                              {expired && (
+                                <Badge className="h-4 px-1.5 text-[10px] rounded-sm bg-orange-500/10 text-orange-600 dark:text-orange-400 border-0 font-medium">
+                                  Expired
+                                </Badge>
+                              )}
                             </div>
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
                               {session.ip != null && (
@@ -571,6 +594,11 @@ export function AdminSettingsClient({ userProfile }: Props) {
                               <span className="flex items-center gap-1">
                                 <Clock className="h-2.5 w-2.5" />Signed in {formatTimeAgo(session.created_at)}
                               </span>
+                              {session.updated_at && session.updated_at !== session.created_at && (
+                                <span className="flex items-center gap-1">
+                                  <RefreshCw className="h-2.5 w-2.5" />Last active {formatTimeAgo(session.updated_at)}
+                                </span>
+                              )}
                               {expiryLabel && (
                                 <span className="flex items-center gap-1">
                                   <CalendarClock className="h-2.5 w-2.5" />Expires {expiryLabel}
@@ -595,7 +623,8 @@ export function AdminSettingsClient({ userProfile }: Props) {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Sign out this device?</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    <strong>{browser} on {os}</strong> will be logged out.
+                                    <strong>{browser} on {os}</strong>
+                                    {session.ip != null ? ` (IP: ${String(session.ip)})` : ""} will be signed out immediately.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
@@ -622,15 +651,22 @@ export function AdminSettingsClient({ userProfile }: Props) {
           {/* ── PRIVACY TAB ── */}
           <TabsContent value="privacy" className="space-y-6 mt-0">
             <Card>
-              <CardHeader><CardTitle>Admin Privacy</CardTitle><CardDescription>System auditing and logging preferences</CardDescription></CardHeader>
+              <CardHeader>
+                <CardTitle>Privacy Controls</CardTitle>
+                <CardDescription>Manage your administrator privacy settings</CardDescription>
+              </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="font-semibold">Activity Logging</Label>
-                    <p className="text-sm text-muted-foreground">Log my administrative changes for security audit trails</p>
+                {[
+                  { label: "Activity Logging", desc: "Log my administrative changes for security audit trails" },
+                ].map(({ label, desc }) => (
+                  <div key={label} className="flex items-center justify-between">
+                    <div>
+                      <Label>{label}</Label>
+                      <p className="text-sm text-muted-foreground">{desc}</p>
+                    </div>
+                    <Switch defaultChecked />
                   </div>
-                  <Switch defaultChecked />
-                </div>
+                ))}
               </CardContent>
             </Card>
           </TabsContent>

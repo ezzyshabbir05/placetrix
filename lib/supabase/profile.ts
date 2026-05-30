@@ -206,23 +206,41 @@ export const getUserProfile = cache(async (): Promise<UserProfile | null> => {
   }
 
   if (user) {
-    // ── Zero-Latency Profile Pattern ──
-    // Prefer JWT app_metadata (server-only, not user-editable) for account_type.
-    // If account_type is absent from the token (e.g. legacy token before backfill),
-    // do ONE lightweight DB query to get the authoritative value from profiles.
     const built = profileFromAuthUser(user as any);
+
+    try {
+      const { data: dbProfile } = await (supabase as any)
+        .from("profiles")
+        .select("username, display_name, avatar_path, account_type")
+        .eq("id", built.id)
+        .maybeSingle();
+
+      if (dbProfile) {
+        if (dbProfile.username !== undefined) built.username = dbProfile.username;
+        if (dbProfile.display_name !== undefined) built.display_name = dbProfile.display_name;
+        if (dbProfile.avatar_path !== undefined) built.avatar_path = dbProfile.avatar_path;
+        if (dbProfile.account_type !== undefined) built.account_type = dbProfile.account_type as AccountType;
+        built._account_type_missing = false;
+      }
+    } catch (e) {
+      console.error("[getUserProfile] Failed to fetch database profile:", e);
+    }
 
     if (built._account_type_missing) {
       // Fallback: resolve account_type from DB — this branch is hit only when the
       // JWT hasn't been refreshed yet after the app_metadata backfill.
-      const { data: dbProfile } = await (supabase as any)
-        .from("profiles")
-        .select("account_type")
-        .eq("id", built.id)
-        .single();
+      try {
+        const { data: dbProfile } = await (supabase as any)
+          .from("profiles")
+          .select("account_type")
+          .eq("id", built.id)
+          .single();
 
-      if (dbProfile?.account_type) {
-        built.account_type = dbProfile.account_type as AccountType;
+        if (dbProfile?.account_type) {
+          built.account_type = dbProfile.account_type as AccountType;
+        }
+      } catch (e) {
+        console.error("[getUserProfile] Failed fallback account_type fetch:", e);
       }
     }
 
