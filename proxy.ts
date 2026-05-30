@@ -122,20 +122,29 @@ export async function proxy(request: NextRequest) {
   if (systemStatus === "maintenance") {
     // Already on the maintenance page — render it, don't loop.
     if (pathname.startsWith("/maintenance")) return NextResponse.next();
-    return NextResponse.redirect(new URL("/maintenance", request.url), { status: 307 });
+    const url = request.nextUrl.clone();
+    url.pathname = "/maintenance";
+    url.search = "";
+    return NextResponse.redirect(url, { status: 307 });
   }
 
   if (systemStatus === "connection_error") {
     // Already on the connection-error page — render it, don't loop.
     if (pathname.startsWith("/connection-error")) return NextResponse.next();
-    return NextResponse.redirect(new URL("/connection-error", request.url), { status: 307 });
+    const url = request.nextUrl.clone();
+    url.pathname = "/connection-error";
+    url.search = "";
+    return NextResponse.redirect(url, { status: 307 });
   }
 
   // 4. System is online.
   //    If the user is sitting on /maintenance or /connection-error and refreshes,
   //    send them back to the homepage now that the system has recovered.
   if (isStatusOnlyPath(pathname)) {
-    return NextResponse.redirect(new URL("/", request.url), { status: 307 });
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    url.search = "";
+    return NextResponse.redirect(url, { status: 307 });
   }
 
   // 5. Session refresh + auth route guards (only reached when system is online
