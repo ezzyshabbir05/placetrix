@@ -573,7 +573,7 @@ export function RecruiterProfileClient({ userProfile, initialData }: Props) {
                       id="companyName"
                       placeholder="e.g. Acme Corp"
                       value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
+                      onChange={(e) => setCompanyName(e.target.value.replace(/[<>]/g, ''))}
                       className={errors.companyName ? "border-destructive" : ""}
                     />
                     <FieldError message={errors.companyName} />
@@ -745,14 +745,14 @@ export function RecruiterProfileClient({ userProfile, initialData }: Props) {
                       id="designation"
                       placeholder="e.g. HR Manager"
                       value={designation}
-                      onChange={(e) => setDesignation(e.target.value)}
+                      onChange={(e) => setDesignation(e.target.value.replace(/[<>]/g, ''))}
                       className={errors.designation ? "border-destructive" : ""}
                     />
                     <FieldError message={errors.designation} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="department">Department</Label>
-                    <Input id="department" placeholder="e.g. Human Resources" value={department} onChange={(e) => setDepartment(e.target.value)} />
+                    <Input id="department" placeholder="e.g. Human Resources" value={department} onChange={(e) => setDepartment(e.target.value.replace(/[<>]/g, ''))} />
                   </div>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">

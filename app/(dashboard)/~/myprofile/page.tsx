@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { getUserProfile } from "@/lib/supabase/profile"
 import { redirect } from "next/navigation"
+import { decryptString, maskAadhaar } from "@/lib/encryption"
 import { CandidateProfileClient } from "./CandidateProfileClient"
 import { InstituteProfileClient } from "./InstituteProfileClient"
 import { RecruiterProfileClient } from "./RecruiterProfileClient"
@@ -27,6 +28,16 @@ export default async function MyProfilePage() {
       .select("*")
       .eq("profile_id", profile.id)
       .maybeSingle() // Fix: prevents throwing if 0 rows exist
+
+    if (candidateProfile?.aadhaar_number) {
+      try {
+        const decrypted = decryptString(candidateProfile.aadhaar_number);
+        candidateProfile.aadhaar_number = maskAadhaar(decrypted);
+      } catch (err) {
+        console.error("Failed to decrypt Aadhaar number for profile", profile.id);
+        candidateProfile.aadhaar_number = maskAadhaar(candidateProfile.aadhaar_number);
+      }
+    }
 
     return (
       <CandidateProfileClient

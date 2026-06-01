@@ -489,7 +489,7 @@ export function AdminProfileClient({ userProfile }: Props) {
                     id="displayName"
                     placeholder="e.g. Administrator"
                     value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
+                    onChange={(e) => setDisplayName(e.target.value.replace(/[<>]/g, ''))}
                     className={errors.displayName ? "border-destructive" : ""}
                   />
                   <FieldError message={errors.displayName} />

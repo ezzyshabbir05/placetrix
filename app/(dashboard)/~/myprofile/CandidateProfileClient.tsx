@@ -4,6 +4,7 @@ import { useState, useEffect, useTransition, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { UserProfile } from "@/lib/supabase/profile";
+import { updateCandidatePersonalDetails } from "./actions";
 import { toast } from "sonner";
 import {
   Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
@@ -126,7 +127,9 @@ function SectionIncomplete() {
 
 function capitalizeFirstLetterOnly(str: string): string {
   if (!str) return str;
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  const sanitized = str.replace(/[<>]/g, '');
+  if (!sanitized) return sanitized;
+  return sanitized.charAt(0).toUpperCase() + sanitized.slice(1).toLowerCase();
 }
 
 function formatDate(date: Date): string {
@@ -496,7 +499,7 @@ export function CandidateProfileClient({ userProfile, initialData }: Props) {
     if (!phoneNumber.trim()) e.phoneNumber = "Contact number is required";
     else if (!/^[0-9]{10}$/.test(phoneNumber)) e.phoneNumber = "Must be exactly 10 digits";
     if (!dateOfBirth) e.dateOfBirth = "Date of birth is required";
-    if (aadhaarNumber && !/^[0-9]{12}$/.test(aadhaarNumber))
+    if (aadhaarNumber && !aadhaarNumber.includes("*") && !/^[0-9]{12}$/.test(aadhaarNumber))
       e.aadhaarNumber = "Aadhaar must be exactly 12 digits";
     return e;
   }
@@ -578,10 +581,7 @@ export function CandidateProfileClient({ userProfile, initialData }: Props) {
             permanent_address: permanentAddress.trim() || null,
             profile_updated: true,
           };
-          const { error } = await (supabase as any)
-            .from("candidate_profiles")
-            .upsert(payload as any, { onConflict: "profile_id" });
-          if (error) throw error;
+          await updateCandidatePersonalDetails(payload);
 
           const newDisplayName = [firstName.trim(), lastName.trim()]
             .filter(Boolean).join(" ") || userProfile.display_name;
@@ -917,7 +917,7 @@ export function CandidateProfileClient({ userProfile, initialData }: Props) {
 
                 <div className="space-y-2">
                   <Label>Current Address</Label>
-                  <Textarea placeholder="Current address" rows={3} value={currentAddress} onChange={(e) => setCurrentAddress(e.target.value)} />
+                  <Textarea placeholder="Current address" rows={3} value={currentAddress} onChange={(e) => setCurrentAddress(e.target.value.replace(/[<>]/g, ''))} />
                 </div>
 
                 <div className="space-y-2">
@@ -927,7 +927,7 @@ export function CandidateProfileClient({ userProfile, initialData }: Props) {
                       <Copy className="h-3 w-3 mr-1" />Same as current
                     </Button>
                   </div>
-                  <Textarea placeholder="Permanent address" rows={3} value={permanentAddress} onChange={(e) => setPermanentAddress(e.target.value)} />
+                  <Textarea placeholder="Permanent address" rows={3} value={permanentAddress} onChange={(e) => setPermanentAddress(e.target.value.replace(/[<>]/g, ''))} />
                 </div>
               </div>
             ) : (

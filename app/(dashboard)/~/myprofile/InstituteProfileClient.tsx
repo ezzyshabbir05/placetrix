@@ -836,7 +836,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                     <Input
                       placeholder="Enter college name"
                       value={instituteName}
-                      onChange={(e) => dispatch({ type: "SET_FIELD", field: "instituteName", value: e.target.value })}
+                      onChange={(e) => dispatch({ type: "SET_FIELD", field: "instituteName", value: e.target.value.replace(/[<>]/g, '') })}
                     />
                     <FieldError message={errors.instituteName} />
                   </div>
@@ -887,7 +887,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                     placeholder="Complete address"
                     rows={3}
                     value={address}
-                    onChange={(e) => dispatch({ type: "SET_FIELD", field: "address", value: e.target.value })}
+                    onChange={(e) => dispatch({ type: "SET_FIELD", field: "address", value: e.target.value.replace(/[<>]/g, '') })}
                   />
                   <FieldError message={errors.address} />
                 </div>
@@ -895,7 +895,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>City<RequiredMark /></Label>
-                    <Input placeholder="City" value={city} onChange={(e) => dispatch({ type: "SET_FIELD", field: "city", value: e.target.value })} />
+                    <Input placeholder="City" value={city} onChange={(e) => dispatch({ type: "SET_FIELD", field: "city", value: e.target.value.replace(/[<>]/g, '') })} />
                     <FieldError message={errors.city} />
                   </div>
                   <div className="space-y-2">
@@ -1095,7 +1095,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                     <Input
                       placeholder="Principal name"
                       value={principalName}
-                      onChange={(e) => dispatch({ type: "SET_FIELD", field: "principalName", value: e.target.value })}
+                      onChange={(e) => dispatch({ type: "SET_FIELD", field: "principalName", value: e.target.value.replace(/[<>]/g, '') })}
                     />
                     <FieldError message={errors.principalName} />
                   </div>
