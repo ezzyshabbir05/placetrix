@@ -47,6 +47,17 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 // Robust memory usage display formatter
@@ -305,6 +316,7 @@ export function ProblemIDEClient({
   const [selectedCaseIndex, setSelectedCaseIndex] = useState(0)
 
   const [isProblemListOpen, setIsProblemListOpen] = useState(false)
+  const [isResetOpen, setIsResetOpen] = useState(false)
   const [problemList, setProblemList] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "solved" | "unsolved">("all")
@@ -761,20 +773,40 @@ export function ProblemIDEClient({
             </SelectContent>
           </Select>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => {
-            const boilerplate = parsedBoilerplates[String(selectedLang.id)] || `// Write your ${selectedLang.name} solution here\n`
-            setCode(boilerplate)
-            toast.success("Code reset to boilerplate")
-          }}
-          disabled={running || submitting}
-          title="Reset code"
-          className="h-7 w-7 text-muted-foreground"
-        >
-          <IconRefresh className="h-4 w-4" />
-        </Button>
+        <Popover open={isResetOpen} onOpenChange={setIsResetOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={running || submitting}
+              title="Reset code"
+              className="h-7 w-7 text-muted-foreground"
+            >
+              <IconRefresh className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-64 p-3 z-[9999]" side="bottom" align="end">
+            <div className="flex flex-col gap-3">
+              <span className="text-sm font-medium">Reset code?</span>
+              <span className="text-xs text-muted-foreground">
+                This will delete your current code and restore the default boilerplate.
+              </span>
+              <div className="flex gap-2 justify-end mt-1">
+                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setIsResetOpen(false)}>
+                  Cancel
+                </Button>
+                <Button variant="destructive" size="sm" className="h-7 text-xs" onClick={() => {
+                  const boilerplate = parsedBoilerplates[String(selectedLang.id)] || `// Write your ${selectedLang.name} solution here\n`
+                  setCode(boilerplate)
+                  toast.success("Code reset to boilerplate")
+                  setIsResetOpen(false)
+                }}>
+                  Reset
+                </Button>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
         <Button
           variant="ghost"
           size="icon"
@@ -833,7 +865,7 @@ export function ProblemIDEClient({
         </TabsList>
 
         {/* Tab Content */}
-        <ScrollArea className="flex-1 w-full min-h-0">
+        <ScrollArea className="flex-1 w-full min-h-0 [&_[data-slot=scroll-area-scrollbar]]:hidden">
           <div className="p-5">
             <TabsContent value="description" className="mt-0 outline-none">
               <div className="space-y-5">
@@ -1073,13 +1105,12 @@ export function ProblemIDEClient({
                           </div>
                           
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            {avatarUrl ? (
-                              <img src={avatarUrl} alt={displayName} className="h-5 w-5 rounded-full border border-border shrink-0" />
-                            ) : (
-                              <div className="h-5 w-5 rounded-full bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-[8px] font-extrabold text-indigo-400 shrink-0 select-none">
+                            <Avatar className="h-5 w-5 shrink-0 border border-border">
+                              <AvatarImage src={avatarUrl} alt={displayName} />
+                              <AvatarFallback className="bg-indigo-500/10 text-indigo-400 text-[8px] font-extrabold border border-indigo-500/30">
                                 {initials}
-                              </div>
-                            )}
+                              </AvatarFallback>
+                            </Avatar>
                             <span className="font-semibold text-foreground/90">{displayName}</span>
                             <span>submitted at {submissionTimeStr}</span>
                         </div>
@@ -1162,15 +1193,16 @@ export function ProblemIDEClient({
                                       <line x1="0" y1="0" x2="0" y2="8" stroke="#10b981" strokeWidth="1.5" />
                                       <circle cx="0" cy="-10" r="10" fill="#10b981" opacity="0.2" className="animate-ping" />
                                       <circle cx="0" cy="-10" r="10" fill="#18181b" stroke="#10b981" strokeWidth="1.5" />
-                                      {avatarUrl ? (
-                                        <foreignObject x="-10" y="-20" width="20" height="20">
-                                          <div {...{ xmlns: "http://www.w3.org/1999/xhtml" }} className="w-full h-full flex items-center justify-center">
-                                            <img src={avatarUrl} alt="" className="w-full h-full rounded-full object-cover border border-emerald-500/30" />
-                                          </div>
-                                        </foreignObject>
-                                      ) : (
-                                        <text x="0" y="-7.5" textAnchor="middle" fill="#10b981" fontSize="7" fontWeight="bold" fontFamily="sans-serif">{initials.slice(0, 1)}</text>
-                                      )}
+                                      <foreignObject x="-10" y="-20" width="20" height="20">
+                                        <div {...{ xmlns: "http://www.w3.org/1999/xhtml" }} className="w-full h-full flex items-center justify-center">
+                                          <Avatar className="w-full h-full border border-emerald-500/30">
+                                            <AvatarImage src={avatarUrl} alt="" className="object-cover" />
+                                            <AvatarFallback className="bg-emerald-500/10 text-emerald-500 text-[7px] font-bold">
+                                              {initials.slice(0, 1)}
+                                            </AvatarFallback>
+                                          </Avatar>
+                                        </div>
+                                      </foreignObject>
                                     </g>
                                   )}
                                 </g>
@@ -1321,9 +1353,19 @@ export function ProblemIDEClient({
             lineNumbersMinChars: 3,
           }}
           loading={
-            <div className="flex flex-col items-center justify-center h-full gap-2 bg-background">
-              <div className="h-6 w-6 border-2 border-muted border-t-foreground rounded-full animate-spin" />
-              <span className="text-[10px] text-muted-foreground/60 uppercase tracking-widest">Loading...</span>
+            <div className="flex flex-col w-full h-full p-4 space-y-3 bg-background font-mono opacity-60">
+              {Array.from({ length: 12 }).map((_, i) => {
+                const widths = [40, 60, 30, 75, 50, 85, 45, 65, 35, 70, 55, 80]
+                const indent = [0, 4, 4, 8, 8, 8, 4, 4, 0, 4, 4, 0]
+                return (
+                  <div key={i} className="flex items-center gap-4">
+                    <div className="w-6 text-right text-[10px] text-muted-foreground/40 select-none">{i + 1}</div>
+                    <div style={{ paddingLeft: `${indent[i]}rem`, width: '100%' }}>
+                      <div className="h-3.5 bg-muted/60 rounded-md animate-pulse" style={{ width: `${widths[i]}%` }} />
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           }
         />

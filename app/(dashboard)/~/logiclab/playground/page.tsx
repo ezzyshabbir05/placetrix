@@ -255,9 +255,19 @@ export default function PlaygroundPage() {
                 lineNumbersMinChars: 3,
               }}
               loading={
-                <div className="flex flex-col items-center justify-center h-full gap-2 bg-card">
-                  <div className="h-8 w-8 border-2 border-muted border-t-foreground rounded-full animate-spin" />
-                  <span className="text-[10px] text-muted-foreground/60 uppercase tracking-widest">Loading Editor...</span>
+                <div className="flex flex-col w-full h-full p-4 space-y-3 bg-card font-mono opacity-60">
+                  {Array.from({ length: 12 }).map((_, i) => {
+                    const widths = [40, 60, 30, 75, 50, 85, 45, 65, 35, 70, 55, 80]
+                    const indent = [0, 4, 4, 8, 8, 8, 4, 4, 0, 4, 4, 0]
+                    return (
+                      <div key={i} className="flex items-center gap-4">
+                        <div className="w-6 text-right text-[10px] text-muted-foreground/40 select-none">{i + 1}</div>
+                        <div style={{ paddingLeft: `${indent[i]}rem`, width: '100%' }}>
+                          <div className="h-3.5 bg-muted/60 rounded-md animate-pulse" style={{ width: `${widths[i]}%` }} />
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               }
             />
