@@ -8,17 +8,36 @@ export const metadata = {
   description: "Solve coding challenges, practice algorithms, and sharpen your programming skills.",
 }
 
-export default async function LogicLabPage() {
+interface SearchParams {
+  page?: string
+  size?: string
+  search?: string
+  tab?: string
+  difficulty?: string
+  tag?: string
+}
+
+export default async function LogicLabPage(props: {
+  searchParams: Promise<SearchParams>
+}) {
   const profile = await getUserProfile()
   if (!profile) redirect("/auth/login")
 
   const isAdmin = profile.account_type === "admin" || profile.account_type === "institute"
   if (isAdmin) redirect("/~/logiclab/admin")
 
+  const params = await props.searchParams
+  const page = Math.max(1, parseInt(params.page || "1", 10))
+  const size = Math.max(1, parseInt(params.size || "10", 10))
+  const search = params.search || ""
+  const tab = params.tab || "all"
+  const difficulty = params.difficulty || "All"
+  const tag = params.tag || "All"
+
   const supabase = (await createClient()) as any
 
   // Fetch all problems
-  const { data: problems, error } = await (supabase as any)
+  const { data: problems } = await (supabase as any)
     .from("coding_problems")
     .select("id, title, difficulty, tags, created_at")
     .order("created_at", { ascending: false })
@@ -50,7 +69,11 @@ export default async function LogicLabPage() {
   }
 
   const enrichedProblems = (problems ?? []).map((p: any) => ({
-    ...p,
+    id: p.id,
+    title: p.title,
+    difficulty: p.difficulty as "Easy" | "Medium" | "Hard",
+    tags: (p.tags || []) as string[],
+    created_at: p.created_at,
     solved_status: solvedMap[p.id] || null,
     acceptance_rate: statsMap[p.id]
       ? Math.round((statsMap[p.id].accepted / statsMap[p.id].total) * 100)
@@ -135,46 +158,86 @@ export default async function LogicLabPage() {
   if (currentStreak > maxStreak) maxStreak = currentStreak
   const streakStats = { currentStreak, maxStreak }
 
-  // Generate exactly 84 days ending on current week's Saturday (or ending today) aligned to start on a Sunday
-  const activityCalendar = []
-  const startCal = new Date(today)
-  startCal.setDate(today.getDate() - ((11 * 7) + today.getDay()))
-  
-  for (let i = 0; i < 84; i++) {
-    const current = new Date(startCal)
-    current.setDate(startCal.getDate() + i)
-    
-    const year = current.getFullYear()
-    const month = String(current.getMonth() + 1).padStart(2, '0')
-    const day = String(current.getDate()).padStart(2, '0')
-    const dateStr = `${year}-${month}-${day}`
-    
-    const daySubmissions = (userSubmissions ?? []).filter((sub: any) => {
-      if (!sub.created_at) return false
-      return sub.created_at.split("T")[0] === dateStr
-    })
-    
-    const count = daySubmissions.length
-    let status: "none" | "attempted" | "solved" = "none" as const
-    if (count > 0) {
-      const hasSolved = daySubmissions.some((sub: any) => sub.status === "Accepted")
-      status = hasSolved ? ("solved" as const) : ("attempted" as const)
+  const activityCalendar: any[] = []
+
+  // Derive unique tags and counts from all enriched problems
+  const tagCounts: Record<string, number> = {}
+  const allTagsSet = new Set<string>()
+  for (const p of enrichedProblems) {
+    for (const t of p.tags || []) {
+      const trimmed = t.trim()
+      allTagsSet.add(trimmed)
+      tagCounts[trimmed] = (tagCounts[trimmed] || 0) + 1
     }
-    
-    activityCalendar.push({
-      date: dateStr,
-      count,
-      status,
-      dayOfWeek: current.getDay()
-    })
+  }
+  const allTags = Array.from(allTagsSet).sort((a, b) => a.localeCompare(b))
+
+  // Filter problems based on query params
+  const filteredProblems = enrichedProblems.filter((p: any) => {
+    const matchesSearch = !search || p.title.toLowerCase().includes(search.toLowerCase()) ||
+      p.tags?.some((t: string) => t.toLowerCase().includes(search.toLowerCase()))
+    const matchesDifficulty = difficulty === "All" || p.difficulty === difficulty
+    const matchesTag = tag === "All" || (p.tags || []).includes(tag)
+    return matchesSearch && matchesDifficulty && matchesTag
+  })
+
+  // Compute tab counts based on filtered subset (excluding tab filter itself)
+  const tabCounts = {
+    all: filteredProblems.length,
+    solved: filteredProblems.filter((p: any) => p.solved_status === "Accepted").length,
+    attempted: filteredProblems.filter((p: any) => p.solved_status && p.solved_status !== "Accepted").length,
+    unsolved: filteredProblems.filter((p: any) => !p.solved_status).length,
+  }
+
+  // Apply active tab filtering
+  const activeTab = ["all", "solved", "attempted", "unsolved"].includes(tab) ? tab : "all"
+  const finalFiltered = filteredProblems.filter((p: any) => {
+    if (activeTab === "solved") return p.solved_status === "Accepted"
+    if (activeTab === "attempted") return p.solved_status && p.solved_status !== "Accepted"
+    if (activeTab === "unsolved") return !p.solved_status
+    return true
+  })
+
+  // Paginate list
+  const totalCount = finalFiltered.length
+  const from = (page - 1) * size
+  const to = page * size
+  const paginatedProblems = finalFiltered.slice(from, to)
+
+  const globalStats = {
+    total: enrichedProblems.length,
+    solved: enrichedProblems.filter((p: any) => p.solved_status === "Accepted").length,
+    easy: {
+      total: enrichedProblems.filter((p: any) => p.difficulty === "Easy").length,
+      solved: enrichedProblems.filter((p: any) => p.difficulty === "Easy" && p.solved_status === "Accepted").length,
+    },
+    medium: {
+      total: enrichedProblems.filter((p: any) => p.difficulty === "Medium").length,
+      solved: enrichedProblems.filter((p: any) => p.difficulty === "Medium" && p.solved_status === "Accepted").length,
+    },
+    hard: {
+      total: enrichedProblems.filter((p: any) => p.difficulty === "Hard").length,
+      solved: enrichedProblems.filter((p: any) => p.difficulty === "Hard" && p.solved_status === "Accepted").length,
+    },
   }
 
   return (
     <ProblemsDirectoryClient
-      problems={enrichedProblems}
+      problems={paginatedProblems}
       isAdmin={isAdmin}
       streakStats={streakStats}
       activityCalendar={activityCalendar}
+      initialPage={page}
+      initialPageSize={size}
+      initialSearch={search}
+      initialTab={activeTab}
+      initialDifficulty={difficulty}
+      initialTag={tag}
+      totalCount={totalCount}
+      tabCounts={tabCounts}
+      allTags={allTags}
+      tagCounts={tagCounts}
+      globalStats={globalStats}
     />
   )
 }

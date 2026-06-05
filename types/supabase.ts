@@ -390,6 +390,224 @@ export type Database = {
           },
         ]
       }
+      course_certificates: {
+        Row: {
+          course_id: string
+          id: string
+          issued_at: string
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          id?: string
+          issued_at?: string
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          id?: string
+          issued_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_certificates_course_id_fkey"
+            columns: ["course_id"]
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_certificates_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_enrollments: {
+        Row: {
+          course_id: string
+          enrolled_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          enrolled_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          enrolled_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_enrollments_course_id_fkey"
+            columns: ["course_id"]
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_enrollments_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_module_progress: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          course_id: string
+          id: string
+          module_id: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          course_id: string
+          id?: string
+          module_id: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          course_id?: string
+          id?: string
+          module_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_module_progress_course_id_fkey"
+            columns: ["course_id"]
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_module_progress_module_id_fkey"
+            columns: ["module_id"]
+            referencedRelation: "course_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_module_progress_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_modules: {
+        Row: {
+          content: string | null
+          course_id: string
+          created_at: string
+          description: string | null
+          duration: string | null
+          id: string
+          order_index: number
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          course_id: string
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          id?: string
+          order_index?: number
+          title: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          id?: string
+          order_index?: number
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_modules_course_id_fkey"
+            columns: ["course_id"]
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          badge: string | null
+          category: string
+          cover_image_path: string | null
+          created_at: string
+          created_by: string | null
+          description: string
+          duration: string
+          id: string
+          instructor_name: string
+          is_published: boolean
+          level: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          badge?: string | null
+          category?: string
+          cover_image_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          duration?: string
+          id?: string
+          instructor_name?: string
+          is_published?: boolean
+          level?: string
+          title: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          badge?: string | null
+          category?: string
+          cover_image_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          duration?: string
+          id?: string
+          instructor_name?: string
+          is_published?: boolean
+          level?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courses_created_by_fkey"
+            columns: ["created_by"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       institute_profiles: {
         Row: {
           address: string | null
@@ -666,6 +884,46 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
+      }
+      pt_mt_info: {
+        Row: {
+          candidate_uuid: string
+          company_name: string | null
+          created_at: string
+          ctc: number | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          candidate_uuid: string
+          company_name?: string | null
+          created_at?: string
+          ctc?: number | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          candidate_uuid?: string
+          company_name?: string | null
+          created_at?: string
+          ctc?: number | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pt_mt_info_candidate_uuid_fkey"
+            columns: ["candidate_uuid"]
+            referencedRelation: "candidate_profiles"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "pt_mt_info_candidate_uuid_fkey"
+            columns: ["candidate_uuid"]
+            referencedRelation: "placement_management_view"
+            referencedColumns: ["profile_id"]
+          },
+        ]
       }
       question_tags: {
         Row: {
@@ -1229,6 +1487,25 @@ export type Database = {
             foreignKeyName: "test_attempts_test_id_fkey"
             columns: ["test_id"]
             referencedRelation: "view_test_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      placement_management_view: {
+        Row: {
+          company_name: string | null
+          course_name: string | null
+          ctc: number | null
+          display_name: string | null
+          institute_id: string | null
+          passout_year: number | null
+          profile_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_profiles_profile_id_fkey"
+            columns: ["profile_id"]
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

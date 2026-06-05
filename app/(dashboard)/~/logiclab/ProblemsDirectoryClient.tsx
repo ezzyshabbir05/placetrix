@@ -1,10 +1,9 @@
 "use client"
 
-import React, { useState, useEffect, useMemo } from "react"
+import React, { useState, useEffect, useCallback, useTransition, useRef } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import {
-  Code2,
   Terminal,
   Plus,
   Search,
@@ -17,12 +16,16 @@ import {
   X,
   Flame,
   BookOpen,
-  Activity,
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight,
+  Loader2,
+  Filter,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
-import { Card } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -32,11 +35,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
 
 interface Problem {
@@ -60,106 +68,98 @@ interface CalendarCell {
 interface ProblemsDirectoryProps {
   problems: Problem[]
   isAdmin: boolean
-  streakStats?: {
+  streakStats: {
     currentStreak: number
     maxStreak: number
   }
-  activityCalendar?: CalendarCell[]
+  activityCalendar: CalendarCell[]
+  initialPage: number
+  initialPageSize: number
+  initialSearch: string
+  initialTab: string
+  initialDifficulty: string
+  initialTag: string
+  totalCount: number
+  tabCounts: { all: number; solved: number; attempted: number; unsolved: number }
+  allTags: string[]
+  tagCounts: Record<string, number>
+  globalStats: {
+    total: number
+    solved: number
+    easy: { total: number; solved: number }
+    medium: { total: number; solved: number }
+    hard: { total: number; solved: number }
+  }
 }
 
 const DIFFICULTY_COLORS: Record<string, string> = {
-  Easy: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300",
-  Medium: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300",
-  Hard: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300",
+  Easy: "bg-emerald-100/80 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-400 border-transparent",
+  Medium: "bg-amber-100/80 text-amber-700 hover:bg-amber-100 dark:bg-amber-500/15 dark:text-amber-400 border-transparent",
+  Hard: "bg-rose-100/80 text-rose-700 hover:bg-rose-100 dark:bg-rose-500/15 dark:text-rose-400 border-transparent",
 }
 
 export function ProblemsDirectoryClient({
   problems,
   isAdmin,
-  streakStats = { currentStreak: 0, maxStreak: 0 },
-  activityCalendar = [],
+  streakStats,
+  initialPage,
+  initialPageSize,
+  initialSearch,
+  initialTab,
+  initialDifficulty,
+  initialTag,
+  totalCount,
+  allTags,
+  globalStats,
 }: ProblemsDirectoryProps) {
   const router = useRouter()
-  const [localProblems, setLocalProblems] = useState<Problem[]>(problems)
-  const [search, setSearch] = useState("")
-  const [difficultyFilter, setDifficultyFilter] = useState<string>("All")
-  const [statusFilter, setStatusFilter] = useState<string>("All")
-  const [tagFilter, setTagFilter] = useState<string>("All")
-  const [tagsExpanded, setTagsExpanded] = useState(false)
+  const pathname = usePathname()
+
+  const [isPending, startTransition] = useTransition()
+  const [searchInput, setSearchInput] = useState(initialSearch)
+  const isOwnUpdateRef = useRef(false)
 
   // Modal deletion state
   const [deletingProblemId, setDeletingProblemId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Group cells into weeks (each week is an array of 7 cells)
-  const weeks = useMemo(() => {
-    const result: CalendarCell[][] = []
-    for (let i = 0; i < activityCalendar.length; i += 7) {
-      result.push(activityCalendar.slice(i, i + 7))
-    }
-    return result
-  }, [activityCalendar])
-
-  // Month labels row for the grid header (constant 12 columns based on full 84 days)
-  const visibleMonths = useMemo(() => {
-    const list: string[] = []
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-
-    weeks.forEach((week) => {
-      const monthCounts: Record<string, number> = {}
-      week.forEach((cell) => {
-        if (!cell.date) return
-        const parts = cell.date.split("-")
-        if (parts.length >= 2) {
-          const m = parts[1]
-          monthCounts[m] = (monthCounts[m] || 0) + 1
-        }
-      })
-
-      let maxMonth = ""
-      let maxCount = 0
-      Object.entries(monthCounts).forEach(([m, count]) => {
-        if (count > maxCount) {
-          maxCount = count
-          maxMonth = m
-        }
-      })
-
-      if (!maxMonth) {
-        list.push("")
-        return
-      }
-
-      const label = monthNames[parseInt(maxMonth) - 1] || ""
-      if (list.length === 0 || list[list.length - 1] !== label) {
-        list.push(label)
-      } else {
-        list.push("") // placeholder
-      }
-    })
-    return list
-  }, [weeks])
-
+  // Sync search input only on external navigation
   useEffect(() => {
-    setLocalProblems(problems)
-  }, [problems])
+    if (isOwnUpdateRef.current) {
+      isOwnUpdateRef.current = false
+      return
+    }
+    setSearchInput(initialSearch)
+  }, [initialSearch])
 
-  // Derive unique tags from problems that actually have problems assigned (dynamic)
-  const allTags = useMemo(() => {
-    const tagSet = new Set<string>()
-    localProblems.forEach((p) => (p.tags || []).forEach((t) => tagSet.add(t.trim())))
-    return Array.from(tagSet).sort((a, b) => a.localeCompare(b))
-  }, [localProblems])
+  // Helper to push updated params to url
+  const updateParams = useCallback(
+    (newParams: Partial<Record<string, string | number>>) => {
+      const params = new URLSearchParams(window.location.search)
+      Object.entries(newParams).forEach(([key, val]) => {
+        if (val === undefined || val === "" || val === null || val === "All") {
+          params.delete(key)
+        } else {
+          params.set(key, String(val))
+        }
+      })
+      startTransition(() => {
+        router.push(`${pathname}?${params.toString()}`)
+      })
+    },
+    [pathname, router]
+  )
 
-  // Count problems per tag (for badges on pills)
-  const tagCounts = useMemo(() => {
-    const counts: Record<string, number> = {}
-    localProblems.forEach((p) => (p.tags || []).forEach((t) => {
-      const trimmed = t.trim()
-      counts[trimmed] = (counts[trimmed] || 0) + 1
-    }))
-    return counts
-  }, [localProblems])
+  // Debounce search input
+  useEffect(() => {
+    if (searchInput === initialSearch) return
+
+    const timer = setTimeout(() => {
+      isOwnUpdateRef.current = true
+      updateParams({ search: searchInput, page: 1 })
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [searchInput, initialSearch, updateParams])
 
   const handleConfirmDelete = async () => {
     if (!deletingProblemId) return
@@ -185,7 +185,6 @@ export function ProblemsDirectoryClient({
       if (probError) throw new Error(probError.message)
 
       toast.success("Problem deleted successfully!", { id: tId })
-      setLocalProblems((prev) => prev.filter((p) => p.id !== deletingProblemId))
       setDeletingProblemId(null)
       router.refresh()
     } catch (err: any) {
@@ -195,71 +194,30 @@ export function ProblemsDirectoryClient({
     }
   }
 
-  const filtered = localProblems.filter((p) => {
-    const matchesSearch = p.title.toLowerCase().includes(search.toLowerCase()) ||
-      p.tags?.some((t) => t.toLowerCase().includes(search.toLowerCase()))
-    const matchesDifficulty = difficultyFilter === "All" || p.difficulty === difficultyFilter
-    const matchesStatus =
-      statusFilter === "All" ||
-      (statusFilter === "Solved" && p.solved_status === "Accepted") ||
-      (statusFilter === "Attempted" && p.solved_status && p.solved_status !== "Accepted") ||
-      (statusFilter === "Unsolved" && !p.solved_status)
-    const matchesTag = tagFilter === "All" || (p.tags || []).includes(tagFilter)
-    return matchesSearch && matchesDifficulty && matchesStatus && matchesTag
-  })
-
-  const counts = {
-    total: localProblems.length,
-    easy: localProblems.filter((p) => p.difficulty === "Easy").length,
-    medium: localProblems.filter((p) => p.difficulty === "Medium").length,
-    hard: localProblems.filter((p) => p.difficulty === "Hard").length,
-    solved: localProblems.filter((p) => p.solved_status === "Accepted").length,
-  }
-
-  const solvedEasy = localProblems.filter((p) => p.difficulty === "Easy" && p.solved_status === "Accepted").length
-  const solvedMedium = localProblems.filter((p) => p.difficulty === "Medium" && p.solved_status === "Accepted").length
-  const solvedHard = localProblems.filter((p) => p.difficulty === "Hard" && p.solved_status === "Accepted").length
-
-  const easyPct = counts.total > 0 ? (solvedEasy / counts.total) * 100 : 0
-  const mediumPct = counts.total > 0 ? (solvedMedium / counts.total) * 100 : 0
-  const hardPct = counts.total > 0 ? (solvedHard / counts.total) * 100 : 0
-
-  const easyRingPct = counts.easy > 0 ? (solvedEasy / counts.easy) * 100 : 0
-  const mediumRingPct = counts.medium > 0 ? (solvedMedium / counts.medium) * 100 : 0
-  const hardRingPct = counts.hard > 0 ? (solvedHard / counts.hard) * 100 : 0
-
-  const r1 = 34, r2 = 24, r3 = 14;
-  const c1 = 2 * Math.PI * r1;
-  const c2 = 2 * Math.PI * r2;
-  const c3 = 2 * Math.PI * r3;
-
-  const formatDate = (dateStr: string) => {
-    try {
-      const [y, m, d] = dateStr.split("-")
-      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-      return `${months[parseInt(m) - 1]} ${parseInt(d)}, ${y}`
-    } catch {
-      return dateStr
-    }
-  }
+  const totalPages = Math.ceil(totalCount / initialPageSize)
+  const activePage = Math.min(initialPage, Math.max(1, totalPages))
 
   return (
-    <div className="flex flex-col gap-6 px-4 py-8 md:px-8">
-
+    <div className="flex flex-col gap-8 px-4 py-8 md:px-8">
       {/* Page Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-1.5">
-          <h1 className="text-3xl font-bold font-cirka tracking-tight text-foreground">LogicLab</h1>
-          <p className="text-sm text-muted-foreground">
-            {counts.solved} of {counts.total} problem{counts.total !== 1 ? "s" : ""} solved
+          <h1 className="text-4xl font-bold font-cirka tracking-tight text-foreground">LogicLab</h1>
+          <p className="text-base text-muted-foreground">
+            Master your coding skills with our curated problem set.
           </p>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Admin CTA */}
+        <div className="flex items-center gap-3">
+          <Button asChild variant="outline" className="gap-2 h-10 px-5">
+            <Link href="/~/logiclab/playground">
+              <Terminal className="h-4 w-4" />
+              Playground
+            </Link>
+          </Button>
           {isAdmin && (
-            <Button asChild size="sm" className="w-fit gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-500/20">
+            <Button asChild className="gap-2 h-10 px-5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
               <Link href="/~/logiclab/admin">
                 <Plus className="h-4 w-4" />
                 Create Problem
@@ -269,449 +227,389 @@ export function ProblemsDirectoryClient({
         </div>
       </div>
 
-      {/* ── Dashboard Grid: Tags & Stats ── */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-4">
-        {/* ── Tag Filter Pills — LeetCode style: wrapped, collapsible ── */}
-        {allTags.length > 0 ? (
-          <Card className="border-border/70 bg-card p-3 h-full flex flex-col justify-between">
-            <div
-              className={cn(
-                "flex flex-wrap gap-1.5 transition-all duration-300 overflow-hidden",
-                !tagsExpanded && "max-h-[140px]"
-              )}
-            >
-              {/* All Topics pill */}
-              <button
-                onClick={() => setTagFilter("All")}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-bold border transition-all cursor-pointer whitespace-nowrap hover:scale-[1.02] active:scale-[0.98] duration-150",
-                  tagFilter === "All"
-                    ? "bg-emerald-500 border-emerald-500 text-black shadow-lg shadow-emerald-500/10"
-                    : "bg-muted/50 dark:bg-muted/30 border-border hover:bg-muted hover:text-foreground text-muted-foreground"
-                )}
-              >
-                All Topics
-                <span className={cn(
-                  "px-1.5 py-0.5 rounded text-[9px] font-extrabold leading-none transition-colors",
-                  tagFilter === "All"
-                    ? "bg-black/10 text-black"
-                    : "bg-muted-foreground/20 text-muted-foreground"
-                )}>
-                  {localProblems.length}
-                </span>
-              </button>
-
-              {/* Per-tag pills */}
-              {allTags.map((tag) => {
-                const isActive = tagFilter === tag
-                const count = tagCounts[tag] || 0
-                return (
-                  <button
-                    key={tag}
-                    onClick={() => setTagFilter(isActive ? "All" : tag)}
-                    className={cn(
-                      "flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-semibold border transition-all cursor-pointer whitespace-nowrap hover:scale-[1.02] active:scale-[0.98] duration-150",
-                      isActive
-                        ? "bg-emerald-500/10 dark:bg-emerald-500/20 border-emerald-500/30 dark:border-emerald-500/50 text-emerald-600 dark:text-emerald-400 font-bold shadow-md shadow-emerald-500/5"
-                        : "bg-muted/50 dark:bg-muted/30 border-border hover:bg-muted hover:text-foreground text-muted-foreground"
-                    )}
-                  >
-                    {tag}
-                    <span className={cn(
-                      "px-1.5 py-0.5 rounded text-[9px] font-bold leading-none transition-colors",
-                      isActive
-                        ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-300"
-                        : "bg-muted-foreground/20 text-muted-foreground"
-                    )}>
-                      {count}
-                    </span>
-                  </button>
-                )
-              })}
+      {/* Metrics Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Card 1: Progress */}
+        <Card className="shadow-sm border-border/60">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Progress</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-baseline gap-2 mb-4">
+              <span className="text-4xl font-bold">{globalStats.solved}</span>
+              <span className="text-sm text-muted-foreground font-medium">/ {globalStats.total} solved</span>
             </div>
+            <Progress 
+              value={globalStats.total > 0 ? (globalStats.solved / globalStats.total) * 100 : 0} 
+              className="h-2 bg-muted [&>div]:bg-emerald-500"
+            />
+          </CardContent>
+        </Card>
 
-            {/* Collapse / Show All toggle */}
-            {allTags.length > 8 && (
-              <div className="flex justify-end mt-2 pt-2 border-t border-border/60">
-                <button
-                  onClick={() => setTagsExpanded((prev) => !prev)}
-                  className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                >
-                  {tagsExpanded ? (
-                    <>
-                      Collapse
-                      <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2}>
-                        <path d="M12 10L8 6l-4 4" />
-                      </svg>
-                    </>
-                  ) : (
-                    <>
-                      Show All ({allTags.length + 1} topics)
-                      <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2}>
-                        <path d="M4 6l4 4 4-4" />
-                      </svg>
-                    </>
-                  )}
-                </button>
+        {/* Card 2: Difficulty */}
+        <Card className="shadow-sm border-border/60">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Difficulty Breakdown</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between mt-2 px-2">
+              <div className="flex flex-col items-center">
+                <span className="text-emerald-500 font-bold text-3xl">{globalStats.easy.solved}</span>
+                <span className="text-xs text-muted-foreground font-medium uppercase mt-1">Easy</span>
               </div>
-            )}
-          </Card>
-        ) : <div />}
-
-        {/* ── Apple Fitness Unified Widget (Single Row) ── */}
-        <Card className="p-3 md:p-4 border-border/40 shadow-sm bg-card/40 backdrop-blur-sm relative overflow-hidden w-full h-full flex flex-col justify-center">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -z-10" />
-
-          <div className="flex flex-wrap lg:flex-nowrap items-center justify-center gap-8 sm:gap-12 md:gap-16 w-full">
-            {/* 1. The Rings */}
-            <div className="flex items-center gap-4 shrink-0">
-              <div className="relative w-[80px] h-[80px] flex items-center justify-center">
-                <svg width="80" height="80" viewBox="0 0 90 90" className="rotate-[-90deg] drop-shadow-md">
-                    <circle cx="45" cy="45" r={r1} stroke="currentColor" className="text-emerald-500/20" strokeWidth="7" fill="none" />
-                    <circle cx="45" cy="45" r={r2} stroke="currentColor" className="text-amber-500/20" strokeWidth="7" fill="none" />
-                    <circle cx="45" cy="45" r={r3} stroke="currentColor" className="text-rose-500/20" strokeWidth="7" fill="none" />
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <circle cx="45" cy="45" r={r1} stroke="currentColor" className="text-emerald-500 drop-shadow-[0_0_4px_rgba(16,185,129,0.5)] transition-all duration-1000 ease-out cursor-help focus:outline-none" strokeWidth="7" fill="none" strokeDasharray={c1} strokeDashoffset={c1 - (easyRingPct / 100) * c1} strokeLinecap="round" />
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                        <span className="text-xs font-semibold">Easy: {Math.round(easyRingPct)}% ({solvedEasy}/{counts.easy})</span>
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <circle cx="45" cy="45" r={r2} stroke="currentColor" className="text-amber-500 drop-shadow-[0_0_4px_rgba(245,158,11,0.5)] transition-all duration-1000 ease-out cursor-help focus:outline-none" strokeWidth="7" fill="none" strokeDasharray={c2} strokeDashoffset={c2 - (mediumRingPct / 100) * c2} strokeLinecap="round" />
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-amber-500" />
-                        <span className="text-xs font-semibold">Medium: {Math.round(mediumRingPct)}% ({solvedMedium}/{counts.medium})</span>
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <circle cx="45" cy="45" r={r3} stroke="currentColor" className="text-rose-500 drop-shadow-[0_0_4px_rgba(243,33,101,0.5)] transition-all duration-1000 ease-out cursor-help focus:outline-none" strokeWidth="7" fill="none" strokeDasharray={c3} strokeDashoffset={c3 - (hardRingPct / 100) * c3} strokeLinecap="round" />
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-rose-500" />
-                        <span className="text-xs font-semibold">Hard: {Math.round(hardRingPct)}% ({solvedHard}/{counts.hard})</span>
-                      </TooltipContent>
-                    </Tooltip>
-                  </svg>
+              <div className="flex flex-col items-center">
+                <span className="text-amber-500 font-bold text-3xl">{globalStats.medium.solved}</span>
+                <span className="text-xs text-muted-foreground font-medium uppercase mt-1">Medium</span>
               </div>
-
-              <div className="flex flex-col gap-1 text-[11px] font-semibold">
-                <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-emerald-500" /> <span className="text-foreground/90">{solvedEasy}/{counts.easy} <span className="hidden sm:inline text-muted-foreground font-normal">Easy</span></span></div>
-                <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-amber-500" /> <span className="text-foreground/90">{solvedMedium}/{counts.medium} <span className="hidden sm:inline text-muted-foreground font-normal">Med</span></span></div>
-                <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-rose-500" /> <span className="text-foreground/90">{solvedHard}/{counts.hard} <span className="hidden sm:inline text-muted-foreground font-normal">Hard</span></span></div>
+              <div className="flex flex-col items-center">
+                <span className="text-rose-500 font-bold text-3xl">{globalStats.hard.solved}</span>
+                <span className="text-xs text-muted-foreground font-medium uppercase mt-1">Hard</span>
               </div>
             </div>
+          </CardContent>
+        </Card>
 
-            <div className="w-px h-16 bg-border/50 hidden lg:block shrink-0" />
-
-            {/* 2. The Streak & Actions */}
-            <div className="flex flex-col gap-2.5 shrink-0 min-w-[90px]">
-              <div className="flex flex-col gap-0 text-center sm:text-left">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Current Streak</span>
-                <div className="flex items-baseline gap-1 justify-center sm:justify-start">
-                  <span className="text-3xl font-extrabold text-orange-500 tracking-tighter">{streakStats.currentStreak}</span>
-                  <span className="text-[11px] font-bold text-orange-500/50">Days</span>
-                </div>
-              </div>
-              <Button asChild size="sm" variant="outline" className="h-7 w-full text-[10px] gap-1.5">
-                <Link href="/~/logiclab/playground">
-                  <Terminal className="h-3 w-3" />
-                  Playground
-                </Link>
-              </Button>
-            </div>
-
-            <div className="w-px h-16 bg-border/50 hidden xl:block shrink-0" />
-
-            {/* 3. The Activity Graph */}
-            <div className="flex flex-col gap-2 shrink-0">
-              <div className="flex items-center justify-between w-full">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Recent Activity</span>
-              </div>
-
-              <div className="flex gap-[3px] overflow-x-auto scrollbar-none justify-center sm:justify-end">
-                {weeks.slice(-20).map((week, wIdx) => (
-                  <div key={wIdx} className="flex flex-col gap-[3px] shrink-0">
-                    {week.map((cell, cIdx) => {
-                      const cellColor = cell.status === "solved" ? "bg-emerald-500/70 border border-emerald-500/30" : cell.status === "attempted" ? "bg-amber-500/50" : "bg-muted/40"
-                      return <div key={cIdx} className={cn("w-[11px] h-[11px] shrink-0 rounded-[2px] cursor-pointer hover:scale-125 transition-transform", cellColor)} title={`${formatDate(cell.date)}: ${cell.count} submissions`} />
-                    })}
-                  </div>
-                ))}
-              </div>
-            </div>
-
+        {/* Card 3: Streak */}
+        <Card className="shadow-sm border-border/60 relative overflow-hidden">
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-[0.35] text-orange-500 pointer-events-none">
+            <Flame className="w-20 h-20" />
           </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Current Streak</CardTitle>
+          </CardHeader>
+          <CardContent className="relative z-10">
+            <div className="flex items-baseline gap-2">
+              <span className="text-4xl font-bold text-orange-500">{streakStats.currentStreak}</span>
+              <span className="text-sm text-orange-500/70 font-medium">Days</span>
+            </div>
+            <p className="text-sm text-muted-foreground mt-2 font-medium">
+              Max Streak: <span className="text-foreground">{streakStats.maxStreak}</span>
+            </p>
+          </CardContent>
         </Card>
       </div>
 
+      {/* Main Content Area */}
+      <div className="flex flex-col gap-4 min-w-0 w-full">
 
-      {/* ── Problems Table ── */}
-      <Card className="border-border/70 overflow-hidden p-0">
-        {/* ── Search + Filter Toolbar ── */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 px-3 py-2.5 bg-muted/40 border-b border-border/60">
-          {/* Search */}
-          <div className="relative flex-1 min-w-0">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              id="problem-search"
-              placeholder="Search questions..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-9"
-            />
-            {search && (
-              <button
-                onClick={() => setSearch("")}
-                className="absolute right-2.5 top-2.5 h-4 w-4 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Difficulty filter */}
-          <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
-            <SelectTrigger id="difficulty-filter" className="h-9 w-full sm:w-[130px] text-xs">
-              <SelectValue placeholder="Difficulty" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All" className="text-xs">All Difficulties</SelectItem>
-              <SelectItem value="Easy" className="text-xs">Easy</SelectItem>
-              <SelectItem value="Medium" className="text-xs">Medium</SelectItem>
-              <SelectItem value="Hard" className="text-xs">Hard</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Status filter */}
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger id="status-filter" className="h-9 w-full sm:w-[130px] text-xs">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All" className="text-xs">All Statuses</SelectItem>
-              <SelectItem value="Solved" className="text-xs">Solved</SelectItem>
-              <SelectItem value="Attempted" className="text-xs">Attempted</SelectItem>
-              <SelectItem value="Unsolved" className="text-xs">Unsolved</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Solved count badge */}
-          <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground shrink-0 pl-2 border-l border-border/60">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            <span>
-              <span className="text-foreground font-bold">{counts.solved}</span>
-              <span className="text-muted-foreground/60">/{counts.total}</span>
-              <span className="text-muted-foreground/60 ml-1">Solved</span>
-            </span>
-          </div>
-        </div>
-
-        {/* Column Header */}
-        <div className="grid grid-cols-12 gap-2 px-4 py-2.5 bg-muted/30 border-b border-border/60 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">
-          <div className="col-span-1">Status</div>
-          <div className={cn(isAdmin ? "col-span-4" : "col-span-5")}>Title</div>
-          <div className="col-span-2">Difficulty</div>
-          <div className={cn(isAdmin ? "col-span-1" : "col-span-2")}>Acceptance</div>
-          <div className="col-span-2 text-right">Tags</div>
-          {isAdmin && <div className="col-span-2 text-right">Actions</div>}
-        </div>
-
-        {/* Rows */}
-        {filtered.length > 0 && (
-          <div className="divide-y divide-border/50">
-            {filtered.map((problem, idx) => (
-              <div
-                key={problem.id}
-                onClick={() => router.push(`/~/logiclab/problems/${problem.id}`)}
-                className="grid grid-cols-12 gap-2 items-center px-4 py-3 hover:bg-muted/30 transition-colors group cursor-pointer"
-              >
-                {/* Status */}
-                <div className="col-span-1">
-                  {problem.solved_status === "Accepted" ? (
-                    <CircleCheck className="h-4 w-4 text-emerald-400" />
-                  ) : problem.solved_status ? (
-                    <CircleDot className="h-4 w-4 text-amber-400" />
-                  ) : (
-                    <div className="h-4 w-4 rounded-full border border-border" />
-                  )}
-                </div>
-
-                {/* Title */}
-                <div className={cn(isAdmin ? "col-span-4" : "col-span-5", "flex items-center gap-2")}>
-                  <span className="text-xs text-muted-foreground/70 font-mono w-6 shrink-0">{idx + 1}.</span>
-                  <span className="text-sm font-medium text-foreground/90 group-hover:text-foreground transition-colors truncate">
-                    {problem.title}
-                  </span>
-                  <ChevronRight className="h-3 w-3 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors ml-auto shrink-0 opacity-0 group-hover:opacity-100" />
-                </div>
-
-                {/* Difficulty */}
-                <div className="col-span-2">
-                  <Badge
-                    variant="outline"
-                    className={cn("text-[10px] font-bold uppercase tracking-wider px-2 py-0.5", DIFFICULTY_COLORS[problem.difficulty])}
+        {/* Table Section */}
+        <Card className="shadow-sm border-border/60 overflow-hidden">
+          {/* Toolbar */}
+          <div className="p-4 border-b border-border/60 bg-muted/10 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
+              <div className="relative w-full sm:w-80">
+                {isPending ? (
+                  <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
+                ) : (
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                )}
+                <Input
+                  placeholder="Search problems..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="pl-9 pr-9 h-10 w-full bg-background text-sm"
+                />
+                {searchInput && (
+                  <button
+                    onClick={() => {
+                      isOwnUpdateRef.current = true
+                      setSearchInput("")
+                      updateParams({ search: "", page: 1 })
+                    }}
+                    className="absolute right-3 top-2.5 h-5 w-5 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    {problem.difficulty}
-                  </Badge>
-                </div>
-
-                {/* Acceptance Rate */}
-                <div className={cn(isAdmin ? "col-span-1" : "col-span-2")}>
-                  <span className="text-xs text-muted-foreground">
-                    {problem.acceptance_rate !== null ? `${problem.acceptance_rate}%` : "—"}
-                  </span>
-                  {problem.total_submissions > 0 && (
-                    <span className="text-[10px] text-muted-foreground/50 ml-1">
-                      ({problem.total_submissions})
-                    </span>
-                  )}
-                </div>
-
-                {/* Tags — clickable to filter */}
-                <div className="col-span-2 flex flex-wrap gap-1 justify-end">
-                  {(problem.tags || []).slice(0, 2).map((tag) => (
-                    <button
-                      key={tag}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setTagFilter(tagFilter === tag ? "All" : tag)
-                      }}
-                      title={`Filter by ${tag}`}
-                      className={cn(
-                        "px-1.5 py-0.5 rounded text-[9px] font-semibold border transition-all cursor-pointer",
-                        tagFilter === tag
-                          ? "bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500/30 dark:border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
-                          : "bg-muted border-border/70 text-muted-foreground/75 hover:border-border hover:text-foreground"
-                      )}
-                    >
-                      {tag}
-                    </button>
-                  ))}
-                  {(problem.tags || []).length > 2 && (
-                    <span className="px-1.5 py-0.5 bg-muted/50 border border-border/60 rounded text-[9px] text-muted-foreground/50 font-medium">
-                      +{(problem.tags || []).length - 2}
-                    </span>
-                  )}
-                </div>
-
-                {/* Actions */}
-                {isAdmin && (
-                  <div className="col-span-2 flex items-center justify-end gap-1">
-                    <Link
-                      href={`/~/logiclab/admin/edit/${problem.id}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="p-1.5 hover:bg-muted rounded text-muted-foreground hover:text-emerald-400 transition-all inline-flex items-center justify-center cursor-pointer"
-                      title="Edit Problem"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Link>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        setDeletingProblemId(problem.id)
-                      }}
-                      className="p-1.5 hover:bg-muted hover:text-rose-400 rounded text-muted-foreground/70 transition-all inline-flex items-center justify-center cursor-pointer"
-                      title="Delete Problem"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
+                    <X className="h-4 w-4" />
+                  </button>
                 )}
               </div>
-            ))}
-          </div>
-        )}
-
-        {/* Empty state */}
-        {filtered.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
-              <BookOpen className="h-5 w-5 text-muted-foreground/60" />
+              <Select value={initialDifficulty} onValueChange={(val) => updateParams({ difficulty: val, page: 1 })}>
+                <SelectTrigger className="h-10 w-full sm:w-[160px] bg-background text-sm">
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-muted-foreground" />
+                    <SelectValue placeholder="Difficulty" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All Difficulties</SelectItem>
+                  <SelectItem value="Easy">Easy</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="Hard">Hard</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="space-y-0.5">
-              <p className="text-sm font-medium">
-                {problems.length === 0 ? "No problems yet" : "No matching problems"}
-              </p>
-              {isAdmin && problems.length === 0 ? (
-                <Link
-                  href="/~/logiclab/admin"
-                  className="text-xs text-emerald-500 hover:text-emerald-400 font-semibold"
-                >
-                  Create your first problem →
-                </Link>
+
+            <Tabs value={initialTab} onValueChange={(v) => updateParams({ tab: v, page: 1 })} className="w-full xl:w-auto">
+              <TabsList className="h-10 w-full xl:w-auto p-1 bg-muted/50 overflow-x-auto flex justify-start">
+                <TabsTrigger value="all" className="px-5 text-sm">All</TabsTrigger>
+                <TabsTrigger value="solved" className="px-5 text-sm">Solved</TabsTrigger>
+                <TabsTrigger value="attempted" className="px-5 text-sm">Attempted</TabsTrigger>
+                <TabsTrigger value="unsolved" className="px-5 text-sm">Unsolved</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          {/* Table Body */}
+          <div className="relative">
+            {isPending && (
+              <div className="absolute inset-0 z-50 bg-background/50 backdrop-blur-[1px] flex items-center justify-center min-h-[200px]">
+                <div className="flex flex-col items-center gap-3 rounded-xl border bg-card px-6 py-5 shadow-lg">
+                  <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                  <span className="text-sm font-medium text-muted-foreground">Loading problems...</span>
+                </div>
+              </div>
+            )}
+
+            <div className={cn("transition-opacity duration-200", isPending && "opacity-40 pointer-events-none")}>
+              {totalCount === 0 ? (
+                <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
+                  <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center">
+                    <BookOpen className="h-8 w-8 text-muted-foreground/60" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-lg font-semibold text-foreground">No problems found</p>
+                    <p className="text-sm text-muted-foreground max-w-sm">
+                      We couldn't find any problems matching your current filters. Try adjusting your search or removing some tags.
+                    </p>
+                  </div>
+                  <Button variant="outline" onClick={() => updateParams({ search: "All", tag: "All", difficulty: "All", tab: "all", page: 1 })} className="mt-2">
+                    Clear all filters
+                  </Button>
+                </div>
               ) : (
-                <p className="text-xs text-muted-foreground">Try adjusting your search or filters</p>
+                <div className="w-full overflow-x-auto">
+                  <Table className="min-w-[800px]">
+                    <TableHeader className="bg-muted/10 h-12">
+                      <TableRow className="hover:bg-transparent border-b-border/60">
+                        <TableHead className="w-[80px] pl-6 text-sm font-medium">Status</TableHead>
+                        <TableHead className="text-sm font-medium">Title</TableHead>
+                        <TableHead className="w-[140px] text-sm font-medium">Difficulty</TableHead>
+                        <TableHead className="w-[180px] text-sm font-medium">Acceptance</TableHead>
+                        <TableHead className="w-[200px] text-sm font-medium">Tags</TableHead>
+                        {isAdmin && <TableHead className="text-right pr-6 w-[120px] text-sm font-medium">Actions</TableHead>}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {problems.map((problem, idx) => (
+                        <TableRow
+                          key={problem.id}
+                          onClick={() => router.push(`/~/logiclab/problems/${problem.id}`)}
+                          className="group cursor-pointer hover:bg-muted/40 transition-colors h-16 border-b-border/60"
+                        >
+                          {/* Status */}
+                          <TableCell className="pl-6">
+                            {problem.solved_status === "Accepted" ? (
+                              <CircleCheck className="h-5 w-5 text-emerald-500 fill-emerald-50 dark:fill-emerald-950/20" />
+                            ) : problem.solved_status ? (
+                              <CircleDot className="h-5 w-5 text-amber-500 fill-amber-50 dark:fill-amber-950/20" />
+                            ) : (
+                              <div className="h-4 w-4 ml-0.5 rounded-full border-2 border-muted-foreground/30" />
+                            )}
+                          </TableCell>
+
+                          {/* Title */}
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm text-muted-foreground/60 font-mono w-6 shrink-0">
+                                {idx + 1 + (activePage - 1) * initialPageSize}.
+                              </span>
+                              <span className="text-base font-medium text-foreground/90 group-hover:text-foreground transition-colors">
+                                {problem.title}
+                              </span>
+                            </div>
+                          </TableCell>
+
+                          {/* Difficulty */}
+                          <TableCell>
+                            <Badge
+                              variant="secondary"
+                              className={cn("text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md", DIFFICULTY_COLORS[problem.difficulty])}
+                            >
+                              {problem.difficulty}
+                            </Badge>
+                          </TableCell>
+
+                          {/* Acceptance Rate */}
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-foreground/80">
+                                {problem.acceptance_rate !== null ? `${problem.acceptance_rate}%` : "—"}
+                              </span>
+                              {problem.total_submissions > 0 && (
+                                <span className="text-xs text-muted-foreground/60">
+                                  ({problem.total_submissions})
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+
+                          {/* Tags */}
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1.5">
+                              {(problem.tags || []).slice(0, 2).map((tag) => (
+                                <Badge
+                                  key={tag}
+                                  variant="secondary"
+                                  className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted/80 text-muted-foreground/80 hover:bg-muted border-transparent"
+                                >
+                                  {tag}
+                                </Badge>
+                              ))}
+                              {(problem.tags || []).length > 2 && (
+                                <Badge 
+                                  variant="secondary"
+                                  className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted/40 text-muted-foreground/60 hover:bg-muted/50 border-transparent"
+                                >
+                                  +{(problem.tags || []).length - 2}
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+
+                          {/* Admin actions */}
+                          {isAdmin && (
+                            <TableCell className="text-right pr-6" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Link
+                                  href={`/~/logiclab/admin/edit/${problem.id}`}
+                                  className="p-2 hover:bg-background rounded-md text-muted-foreground hover:text-emerald-500 transition-all cursor-pointer shadow-sm border border-transparent hover:border-border/60"
+                                  title="Edit Problem"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Link>
+                                <button
+                                  onClick={() => setDeletingProblemId(problem.id)}
+                                  className="p-2 hover:bg-background rounded-md text-muted-foreground/70 hover:text-rose-500 transition-all cursor-pointer shadow-sm border border-transparent hover:border-border/60"
+                                  title="Delete Problem"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+
+              {/* Pagination Footer */}
+              {totalCount > 0 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-border/60 bg-muted/5">
+                  <div className="text-sm text-muted-foreground">
+                    Showing{" "}
+                    <span className="font-medium text-foreground">
+                      {totalCount === 0 ? 0 : Math.min(totalCount, (activePage - 1) * initialPageSize + 1)}
+                    </span>
+                    {" "}to{" "}
+                    <span className="font-medium text-foreground">{Math.min(totalCount, activePage * initialPageSize)}</span>
+                    {" "}of{" "}
+                    <span className="font-medium text-foreground">{totalCount}</span> problems
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground whitespace-nowrap">Rows per page</span>
+                      <Select
+                        value={initialPageSize.toString()}
+                        onValueChange={(val) => updateParams({ size: val, page: 1 })}
+                      >
+                        <SelectTrigger className="h-9 w-[80px] bg-background text-sm">
+                          <SelectValue placeholder={initialPageSize.toString()} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[5, 10, 20, 50].map((s) => (
+                            <SelectItem key={s} value={s.toString()} className="text-sm">{s}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <Button variant="outline" size="icon" className="h-9 w-9 bg-background"
+                        onClick={() => updateParams({ page: 1 })} disabled={activePage === 1}>
+                        <ChevronsLeft className="h-4 w-4" />
+                        <span className="sr-only">First page</span>
+                      </Button>
+                      <Button variant="outline" size="icon" className="h-9 w-9 bg-background"
+                        onClick={() => updateParams({ page: Math.max(1, activePage - 1) })} disabled={activePage === 1}>
+                        <ChevronLeft className="h-4 w-4" />
+                        <span className="sr-only">Previous page</span>
+                      </Button>
+                      <div className="flex items-center justify-center text-sm font-medium min-w-[100px] text-muted-foreground">
+                        Page <span className="text-foreground mx-1">{activePage}</span> of {totalPages}
+                      </div>
+                      <Button variant="outline" size="icon" className="h-9 w-9 bg-background"
+                        onClick={() => updateParams({ page: Math.min(totalPages, activePage + 1) })}
+                        disabled={activePage === totalPages || totalPages === 0}>
+                        <ChevronRight className="h-4 w-4" />
+                        <span className="sr-only">Next page</span>
+                      </Button>
+                      <Button variant="outline" size="icon" className="h-9 w-9 bg-background"
+                        onClick={() => updateParams({ page: totalPages })}
+                        disabled={activePage === totalPages || totalPages === 0}>
+                        <ChevronsRight className="h-4 w-4" />
+                        <span className="sr-only">Last page</span>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           </div>
-        )}
-      </Card>
+        </Card>
+      </div>
 
       {/* ── Delete Confirmation Modal ── */}
       {deletingProblemId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-background border border-border rounded-xl shadow-2xl overflow-hidden w-full max-w-md flex flex-col animate-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3.5 bg-muted/80 border-b border-border">
-              <h3 className="text-sm font-bold flex items-center gap-2 text-rose-400 uppercase tracking-wider">
-                <AlertTriangle className="h-4 w-4" /> Permanent Deletion
+            <div className="flex items-center justify-between px-5 py-4 bg-muted/80 border-b border-border">
+              <h3 className="text-base font-bold flex items-center gap-2 text-rose-500 uppercase tracking-wider">
+                <AlertTriangle className="h-5 w-5" /> Permanent Deletion
               </h3>
               <button
                 onClick={() => setDeletingProblemId(null)}
                 disabled={isDeleting}
-                className="p-1 hover:bg-muted rounded text-muted-foreground/70 hover:text-foreground transition-colors cursor-pointer"
+                className="p-1.5 hover:bg-muted rounded-md text-muted-foreground/70 hover:text-foreground transition-colors cursor-pointer"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Body */}
-            <div className="p-5 text-sm text-foreground/75 space-y-3">
-              <p>
+            <div className="p-6 text-sm text-foreground/80 space-y-4">
+              <p className="text-base">
                 Are you absolutely sure you want to permanently delete this coding problem?
               </p>
-              <div className="p-3 bg-rose-500/5 border border-rose-500/10 rounded-lg text-xs text-rose-400/90 leading-relaxed">
-                <strong>WARNING:</strong> This action is irreversible. All student submissions and graded performance records for this challenge will be permanently purged.
+              <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-600 dark:text-rose-400 font-medium">
+                This action cannot be undone. All associated user submissions and attempts will also be deleted.
               </div>
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-2 px-4 py-3 bg-muted/50 border-t border-border">
+            <div className="flex items-center justify-end gap-3 px-5 py-4 bg-muted/30 border-t border-border">
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => setDeletingProblemId(null)}
                 disabled={isDeleting}
+                className="h-10"
               >
                 Cancel
               </Button>
               <Button
-                size="sm"
+                variant="destructive"
                 onClick={handleConfirmDelete}
                 disabled={isDeleting}
-                className="gap-1.5 bg-rose-500 hover:bg-rose-400 text-white"
+                className="h-10 px-5 gap-2"
               >
                 {isDeleting ? (
-                  <>
-                    <span className="h-3 w-3 border border-current border-t-transparent rounded-full animate-spin inline-block" />
-                    Deleting...
-                  </>
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <>
-                    <Trash2 className="h-3.5 w-3.5" />
-                    Delete Problem
-                  </>
+                  <Trash2 className="h-4 w-4" />
                 )}
+                {isDeleting ? "Deleting..." : "Delete Problem"}
               </Button>
             </div>
           </div>
