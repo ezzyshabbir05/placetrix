@@ -48,7 +48,7 @@ export default async function LogicLabPage(props: {
   const { data: problems } = await (supabase as any)
     .from("coding_problems")
     .select("id, title, difficulty, tags, created_at")
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: true })
 
   // Fetch user's submission stats (best status per problem)
   const { data: submissions } = await (supabase as any)

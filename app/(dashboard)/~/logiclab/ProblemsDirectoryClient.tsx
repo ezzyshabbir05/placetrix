@@ -98,6 +98,27 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   Hard: "bg-rose-100/80 text-rose-700 hover:bg-rose-100 dark:bg-rose-500/15 dark:text-rose-400 border-transparent",
 }
 
+function ConcentricRing({ radius, value, max, color, trackColor }: { radius: number, value: number, max: number, color: string, trackColor: string }) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
+  const circumference = 2 * Math.PI * radius
+  const percent = max > 0 ? value / max : 0
+  const strokeDashoffset = circumference - percent * circumference
+  
+  return (
+    <g transform="rotate(-90 50 50)">
+      <circle cx="50" cy="50" r={radius} fill="none" stroke={trackColor} strokeWidth="8" />
+      <circle 
+        cx="50" cy="50" r={radius} fill="none" stroke={color} strokeWidth="8"
+        strokeDasharray={circumference} strokeDashoffset={mounted ? strokeDashoffset : circumference}
+        strokeLinecap="round"
+        className="transition-all duration-1000 ease-out"
+      />
+    </g>
+  )
+}
+
 export function ProblemsDirectoryClient({
   problems,
   isAdmin,
@@ -308,27 +329,49 @@ export function ProblemsDirectoryClient({
           <CardHeader className="pb-0 pt-4 px-5">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Progress</CardTitle>
           </CardHeader>
-          <CardContent className="pb-4 px-5">
-            <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-4xl font-bold">{globalStats.solved}</span>
-              <span className="text-sm text-muted-foreground font-medium">/ {globalStats.total} solved</span>
-            </div>
-            <Progress 
-              value={globalStats.total > 0 ? (globalStats.solved / globalStats.total) * 100 : 0} 
-              className="h-2 bg-muted [&>div]:bg-emerald-500 mb-3"
-            />
-            <div className="flex items-center justify-between pt-2 border-t border-border/40">
-              <div className="flex flex-col items-start">
-                <span className="text-emerald-500 font-bold text-lg">{globalStats.easy.solved}</span>
-                <span className="text-[10px] text-muted-foreground font-medium uppercase">Easy</span>
+          <CardContent className="pb-4 px-5 h-full flex flex-col justify-center">
+            <div className="flex items-center justify-between w-full">
+              <div className="flex flex-col justify-center">
+                <div className="flex items-baseline gap-1.5 mb-1">
+                  <span className="text-4xl font-extrabold">{globalStats.solved}</span>
+                  <span className="text-xs text-muted-foreground font-semibold">/ {globalStats.total}</span>
+                </div>
+                <div className="flex flex-col gap-1.5 mt-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500"/>
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Easy <span className="text-emerald-500 ml-1">{globalStats.easy.solved}</span></span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-amber-500"/>
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Med <span className="text-amber-500 ml-1">{globalStats.medium.solved}</span></span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-rose-500"/>
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Hard <span className="text-rose-500 ml-1">{globalStats.hard.solved}</span></span>
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-col items-center">
-                <span className="text-amber-500 font-bold text-lg">{globalStats.medium.solved}</span>
-                <span className="text-[10px] text-muted-foreground font-medium uppercase">Med</span>
-              </div>
-              <div className="flex flex-col items-end">
-                <span className="text-rose-500 font-bold text-lg">{globalStats.hard.solved}</span>
-                <span className="text-[10px] text-muted-foreground font-medium uppercase">Hard</span>
+              
+              <div className="relative w-[85px] h-[85px] shrink-0">
+                <svg className="w-full h-full drop-shadow-md" viewBox="0 0 100 100">
+                  <defs>
+                    <linearGradient id="easyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#34d399" />
+                      <stop offset="100%" stopColor="#059669" />
+                    </linearGradient>
+                    <linearGradient id="medGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#fbbf24" />
+                      <stop offset="100%" stopColor="#d97706" />
+                    </linearGradient>
+                    <linearGradient id="hardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#fb7185" />
+                      <stop offset="100%" stopColor="#be123c" />
+                    </linearGradient>
+                  </defs>
+                  <ConcentricRing radius={40} value={globalStats.easy.solved} max={globalStats.easy.total} color="url(#easyGrad)" trackColor="rgba(16, 185, 129, 0.15)" />
+                  <ConcentricRing radius={28} value={globalStats.medium.solved} max={globalStats.medium.total} color="url(#medGrad)" trackColor="rgba(245, 158, 11, 0.15)" />
+                  <ConcentricRing radius={16} value={globalStats.hard.solved} max={globalStats.hard.total} color="url(#hardGrad)" trackColor="rgba(244, 63, 94, 0.15)" />
+                </svg>
               </div>
             </div>
           </CardContent>
@@ -369,8 +412,18 @@ export function ProblemsDirectoryClient({
                     <div key={wIdx} className="flex flex-col gap-[3px] shrink-0">
                       {week.map((cell, cIdx) => {
                         if (!cell.date) return <div key={cIdx} className="w-[12px] h-[12px] shrink-0 rounded-[2px] bg-transparent pointer-events-none" />
-                        const cellColor = cell.status === "solved" ? "bg-emerald-500/70 border border-emerald-500/30" : cell.status === "attempted" ? "bg-amber-500/50" : "bg-muted/60 dark:bg-muted/30"
-                        return <div key={cIdx} className={cn("w-[12px] h-[12px] shrink-0 rounded-[2px] transition-transform hover:scale-125 cursor-pointer", cellColor)} title={`${cell.date}: ${cell.count} submissions`} />
+                        
+                        let cellColor = "bg-muted/60 dark:bg-muted/30";
+                        if (cell.status === "attempted") {
+                          cellColor = "bg-amber-500/70 border border-amber-500/30";
+                        } else if (cell.status === "solved") {
+                          if (cell.count === 1) cellColor = "bg-emerald-300/80 border border-emerald-300/40 dark:bg-emerald-900/80 dark:border-emerald-900/40";
+                          else if (cell.count <= 3) cellColor = "bg-emerald-400/90 border border-emerald-400/50 dark:bg-emerald-700/90 dark:border-emerald-700/50";
+                          else if (cell.count <= 6) cellColor = "bg-emerald-500 border border-emerald-500/60 dark:bg-emerald-500/90 dark:border-emerald-500/60";
+                          else cellColor = "bg-emerald-600 border border-emerald-600/70 dark:bg-emerald-400 dark:border-emerald-400/70";
+                        }
+
+                        return <div key={cIdx} className={cn("w-[12px] h-[12px] shrink-0 rounded-[2px] cursor-pointer", cellColor)} title={`${cell.date}: ${cell.count} submissions`} />
                       })}
                     </div>
                   ))}
@@ -379,10 +432,13 @@ export function ProblemsDirectoryClient({
                 {/* Legend */}
                 <div className="flex items-center justify-end gap-1.5 mt-1.5 text-[10px] text-muted-foreground/80 font-medium">
                   <span>Less</span>
-                  <div className="flex gap-[3px]">
-                    <div className="w-[10px] h-[10px] rounded-[1.5px] bg-muted/60 dark:bg-muted/30" />
-                    <div className="w-[10px] h-[10px] rounded-[1.5px] bg-amber-500/50" title="Attempted" />
-                    <div className="w-[10px] h-[10px] rounded-[1.5px] bg-emerald-500/70" title="Solved" />
+                  <div className="flex gap-[3px] items-center">
+                    <div className="w-[10px] h-[10px] rounded-[1.5px] bg-muted/60 dark:bg-muted/30" title="0 submissions" />
+                    <div className="w-[10px] h-[10px] rounded-[1.5px] bg-amber-500/70 border border-amber-500/30" title="Attempted" />
+                    <div className="w-[10px] h-[10px] rounded-[1.5px] bg-emerald-300/80 border border-emerald-300/40 dark:bg-emerald-900/80 dark:border-emerald-900/40" title="1 submission" />
+                    <div className="w-[10px] h-[10px] rounded-[1.5px] bg-emerald-400/90 border border-emerald-400/50 dark:bg-emerald-700/90 dark:border-emerald-700/50" title="2-3 submissions" />
+                    <div className="w-[10px] h-[10px] rounded-[1.5px] bg-emerald-500 border border-emerald-500/60 dark:bg-emerald-500/90 dark:border-emerald-500/60" title="4-6 submissions" />
+                    <div className="w-[10px] h-[10px] rounded-[1.5px] bg-emerald-600 border border-emerald-600/70 dark:bg-emerald-400 dark:border-emerald-400/70" title="7+ submissions" />
                   </div>
                   <span>More</span>
                 </div>
@@ -393,20 +449,42 @@ export function ProblemsDirectoryClient({
 
         {/* Card 3: Streak */}
         <Card className="shadow-sm border-border/60 relative overflow-hidden flex flex-col justify-between">
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-[0.35] text-orange-500 pointer-events-none">
-            <Flame className="w-20 h-20" />
+          <div className="absolute right-4 top-4 opacity-[0.15] text-orange-500 pointer-events-none">
+            <Flame className="w-16 h-16" />
           </div>
           <CardHeader className="pb-0 pt-4 px-5">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Current Streak</CardTitle>
           </CardHeader>
-          <CardContent className="relative z-10 pb-5 px-5">
-            <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-4xl font-bold text-orange-500">{streakStats.currentStreak}</span>
-              <span className="text-sm text-orange-500/70 font-medium">Days</span>
+          <CardContent className="relative z-10 pb-4 px-5 h-full flex flex-col justify-between">
+            <div className="mt-1">
+              <div className="flex items-baseline gap-2 mb-1">
+                <span className="text-4xl font-extrabold text-orange-500">{streakStats.currentStreak}</span>
+                <span className="text-sm text-orange-500/70 font-bold uppercase tracking-wider">Days</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground font-semibold">
+                Max Streak: <span className="text-foreground">{streakStats.maxStreak}</span>
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground font-medium">
-              Max Streak: <span className="text-foreground">{streakStats.maxStreak}</span>
-            </p>
+            
+            <div className="mt-4 flex items-center justify-between border-t border-border/40 pt-2 pb-1">
+              <span className="text-[9px] uppercase tracking-wider font-bold text-muted-foreground">Last 7 Days</span>
+              <div className="flex gap-2">
+                {activityCalendar.slice(-7).map((day, idx) => {
+                   const isSolved = day.status === "solved"
+                   const daysOfWeek = ["S", "M", "T", "W", "T", "F", "S"]
+                   const dayName = daysOfWeek[day.dayOfWeek] || ""
+                   return (
+                     <div key={idx} className="flex flex-col items-center gap-1.5">
+                       <div 
+                         className={cn("w-3.5 h-3.5 rounded-full transition-all border border-black/5 dark:border-white/5", isSolved ? "bg-gradient-to-tr from-orange-500 to-amber-400 shadow-[0_0_10px_rgba(249,115,22,0.5)] scale-110" : "bg-muted dark:bg-muted/40")}
+                         title={day.date}
+                       />
+                       <span className={cn("text-[8px] font-extrabold uppercase", isSolved ? "text-orange-500/80" : "text-muted-foreground/40")}>{dayName}</span>
+                     </div>
+                   )
+                })}
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
