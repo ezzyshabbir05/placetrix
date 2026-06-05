@@ -944,28 +944,25 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
             ) : (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-                  <ReadonlyField label="College Name" value={instituteName} />
+                  <div className="sm:col-span-2">
+                    <ReadonlyField label="College Name" value={instituteName} />
+                  </div>
                   <ReadonlyField label="College Code" value={instituteCode} />
                   <ReadonlyField label="Established Year" value={establishedYear} />
-                  <ReadonlyField label="Affiliation" value={affiliation} />
+                  <div className="sm:col-span-2">
+                    <ReadonlyField label="Affiliation" value={affiliation} />
+                  </div>
                 </div>
-                {(address || city || stateVal) && (
-                  <>
-                    <Separator />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-                      {address && (
-                        <div className="sm:col-span-2 space-y-0.5">
-                          <p className="text-xs text-muted-foreground">Address</p>
-                          <p className="text-sm font-medium">{address}</p>
-                        </div>
-                      )}
-                      <ReadonlyField label="City" value={city} />
-                      <ReadonlyField label="State" value={stateVal} />
-                      <ReadonlyField label="Pincode" value={pincode} />
-                      <ReadonlyField label="Country" value={country} />
-                    </div>
-                  </>
-                )}
+                <Separator />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                  <div className="sm:col-span-2">
+                    <ReadonlyField label="Address" value={address} />
+                  </div>
+                  <ReadonlyField label="City" value={city} />
+                  <ReadonlyField label="State" value={stateVal} />
+                  <ReadonlyField label="Pincode" value={pincode} />
+                  <ReadonlyField label="Country" value={country} />
+                </div>
               </div>
             )}
           </CardContent>
@@ -1124,7 +1121,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
             ) : (
               <div>
                 <p className="text-xs font-medium text-muted-foreground mb-3">Principal</p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4">
                   <ReadonlyField label="Name" value={principalName} />
                   <ReadonlyField label="Email" value={principalEmail} />
                   <ReadonlyField label="Phone" value={principalPhone} />

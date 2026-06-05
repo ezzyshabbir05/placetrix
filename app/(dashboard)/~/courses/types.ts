@@ -1,16 +1,10 @@
-export interface Lesson {
-  id: string
-  title: string
-  duration: string
-  type: "video" | "article" | "quiz" | "exercise"
-  completed: boolean
-}
-
 export interface Module {
   id: string
   title: string
   description?: string
-  lessons: Lesson[]
+  type: "video" | "text" | "test"
+  completed: boolean
+  duration?: string
 }
 
 export interface Course {
@@ -60,42 +54,33 @@ export const INITIAL_COURSES: Course[] = [
         id: "m1",
         title: "Complexity Analysis & Arrays",
         description: "Understand Big-O notation, space-time complexity, and basic memory allocations.",
-        lessons: [
-          { id: "l1", title: "Introduction to Big-O Notation", duration: "15 min", type: "video", completed: true },
-          { id: "l2", title: "Space vs Time Complexity Tradeoffs", duration: "25 min", type: "article", completed: true },
-          { id: "l3", title: "Two-Pointer Technique & Sliding Window", duration: "45 min", type: "exercise", completed: false },
-          { id: "l4", title: "Module Quiz: Array Foundations", duration: "20 min", type: "quiz", completed: false }
-        ]
+        type: "text",
+        completed: true,
+        duration: "45 min"
       },
       {
         id: "m2",
         title: "Linked Lists, Stacks & Queues",
         description: "Learn pointer manipulation, linear structures, and their applications.",
-        lessons: [
-          { id: "l5", title: "Singly and Doubly Linked List Operations", duration: "30 min", type: "video", completed: false },
-          { id: "l6", title: "Design a Min Stack in O(1) Time", duration: "40 min", type: "exercise", completed: false },
-          { id: "l7", title: "Queue Implementations using Stacks", duration: "35 min", type: "exercise", completed: false }
-        ]
+        type: "text",
+        completed: false,
+        duration: "50 min"
       },
       {
         id: "m3",
         title: "Trees, BSTs & Tries",
         description: "Master hierarchical data structures and search trees.",
-        lessons: [
-          { id: "l8", title: "Binary Tree Traversals (Inorder, Preorder, Postorder)", duration: "35 min", type: "video", completed: false },
-          { id: "l9", title: "Binary Search Tree Validation and Insertion", duration: "40 min", type: "exercise", completed: false },
-          { id: "l10", title: "Trie (Prefix Tree) Implementation", duration: "50 min", type: "exercise", completed: false }
-        ]
+        type: "text",
+        completed: false,
+        duration: "60 min"
       },
       {
         id: "m4",
         title: "Graph Algorithms & Traversals",
         description: "Navigate complex node structures and find shortest paths.",
-        lessons: [
-          { id: "l11", title: "BFS and DFS Implementations", duration: "45 min", type: "video", completed: false },
-          { id: "l12", title: "Cycle Detection in Directed/Undirected Graphs", duration: "40 min", type: "exercise", completed: false },
-          { id: "l13", title: "Dijkstra's Shortest Path Algorithm", duration: "60 min", type: "exercise", completed: false }
-        ]
+        type: "text",
+        completed: false,
+        duration: "45 min"
       }
     ]
   },
@@ -123,32 +108,25 @@ export const INITIAL_COURSES: Course[] = [
         id: "n-m1",
         title: "Next.js App Router Foundations",
         description: "Understand layouts, nested routing, and Server vs Client Components.",
-        lessons: [
-          { id: "n-l1", title: "Understanding React Server Components", duration: "20 min", type: "video", completed: true },
-          { id: "n-l2", title: "File-Based Routing & Dynamic Routes", duration: "18 min", type: "video", completed: true },
-          { id: "n-l3", title: "Shared Layouts and Error Handling", duration: "15 min", type: "article", completed: true },
-          { id: "n-l4", title: "RSC Data Fetching Patterns", duration: "30 min", type: "exercise", completed: false }
-        ]
+        type: "text",
+        completed: true,
+        duration: "40 min"
       },
       {
         id: "n-m2",
         title: "Database Schema & Supabase Setup",
         description: "Set up your database, migrations, and Row Level Security (RLS).",
-        lessons: [
-          { id: "n-l5", title: "Setting up your Supabase Project", duration: "12 min", type: "video", completed: true },
-          { id: "n-l6", title: "Designing Schema with PostgreSQL", duration: "25 min", type: "article", completed: false },
-          { id: "n-l7", title: "Writing Row Level Security Rules", duration: "35 min", type: "exercise", completed: false }
-        ]
+        type: "text",
+        completed: false,
+        duration: "35 min"
       },
       {
         id: "n-m3",
         title: "Authentication & Route Protection",
         description: "Secure your pages with SSR Auth and Supabase Guard Middleware.",
-        lessons: [
-          { id: "n-l8", title: "Email and OAuth Setup in Supabase", duration: "22 min", type: "video", completed: false },
-          { id: "n-l9", title: "Middleware Authentication Guards", duration: "20 min", type: "article", completed: false },
-          { id: "n-l10", title: "Creating Login/Signup Pages in Next.js", duration: "45 min", type: "exercise", completed: false }
-        ]
+        type: "text",
+        completed: false,
+        duration: "45 min"
       }
     ]
   },
@@ -176,30 +154,25 @@ export const INITIAL_COURSES: Course[] = [
         id: "b-m1",
         title: "Understanding Behavioral Interviews",
         description: "Why tech companies test behaviors and how rubrics evaluate candidates.",
-        lessons: [
-          { id: "b-l1", title: "What Interviewers Look For", duration: "15 min", type: "video", completed: true },
-          { id: "b-l2", title: "Decoding the Leadership Principles", duration: "20 min", type: "article", completed: true },
-          { id: "b-l3", title: "Quiz: Core Professional Competencies", duration: "15 min", type: "quiz", completed: true }
-        ]
+        type: "text",
+        completed: true,
+        duration: "30 min"
       },
       {
         id: "b-m2",
         title: "The STAR Method Demystified",
         description: "Situation, Task, Action, and Result formatting for maximum impact.",
-        lessons: [
-          { id: "b-l4", title: "Structuring with STAR", duration: "22 min", type: "video", completed: true },
-          { id: "b-l5", title: "Deep Dive into Actions and Quantifiable Results", duration: "18 min", type: "article", completed: true },
-          { id: "b-l6", title: "Mock Walkthrough: Technical Failure Story", duration: "30 min", type: "video", completed: true }
-        ]
+        type: "text",
+        completed: true,
+        duration: "35 min"
       },
       {
         id: "b-m3",
         title: "Crafting Your Stories",
         description: "Write and polish stories about conflict, collaboration, and learning.",
-        lessons: [
-          { id: "b-l7", title: "Conflict Resolution with Teammates", duration: "25 min", type: "exercise", completed: true },
-          { id: "b-l8", title: "Showcasing Ownership and Leadership", duration: "30 min", type: "exercise", completed: false }
-        ]
+        type: "text",
+        completed: false,
+        duration: "45 min"
       }
     ]
   },
@@ -227,21 +200,17 @@ export const INITIAL_COURSES: Course[] = [
         id: "s-m1",
         title: "Foundations of Distributed Systems",
         description: "Scale from single servers to global networks.",
-        lessons: [
-          { id: "s-l1", title: "Vertical vs Horizontal Scaling", duration: "20 min", type: "video", completed: false },
-          { id: "s-l2", title: "Load Balancers (Nginx, HAProxy, Round Robin)", duration: "30 min", type: "video", completed: false },
-          { id: "s-l3", title: "CAP Theorem and PACELC Explained", duration: "25 min", type: "article", completed: false }
-        ]
+        type: "text",
+        completed: false,
+        duration: "50 min"
       },
       {
         id: "s-m2",
         title: "Storage Systems & Caching",
         description: "Designing efficient read and write paths.",
-        lessons: [
-          { id: "s-l4", title: "Relational vs NoSQL Database Selection", duration: "35 min", type: "video", completed: false },
-          { id: "s-l5", title: "Database Sharding and Replication", duration: "45 min", type: "article", completed: false },
-          { id: "s-l6", title: "Caching Strategies: Write-Through vs Cache-Aside", duration: "30 min", type: "exercise", completed: false }
-        ]
+        type: "text",
+        completed: false,
+        duration: "45 min"
       }
     ]
   },
@@ -269,11 +238,9 @@ export const INITIAL_COURSES: Course[] = [
         id: "g1",
         title: "Introducing Data Analytics",
         description: "Understand the core processes of data analytics.",
-        lessons: [
-          { id: "gl1", title: "What is Data Analytics?", duration: "12 min", type: "video", completed: false },
-          { id: "gl2", title: "Making Data-Driven Decisions", duration: "18 min", type: "article", completed: false },
-          { id: "gl3", title: "Quiz: Intro to Data", duration: "15 min", type: "quiz", completed: false }
-        ]
+        type: "text",
+        completed: false,
+        duration: "30 min"
       }
     ]
   },
@@ -301,10 +268,9 @@ export const INITIAL_COURSES: Course[] = [
         id: "gd1",
         title: "Data and Decisions Foundations",
         description: "Learn how data is structured and stored.",
-        lessons: [
-          { id: "gdl1", title: "The Power of Data", duration: "10 min", type: "video", completed: false },
-          { id: "gdl2", title: "Standard Spreadsheets Operations", duration: "25 min", type: "exercise", completed: false }
-        ]
+        type: "text",
+        completed: false,
+        duration: "40 min"
       }
     ]
   },
@@ -332,10 +298,9 @@ export const INITIAL_COURSES: Course[] = [
         id: "py1",
         title: "Python Basics",
         description: "Understand variables, types, and mathematical operations.",
-        lessons: [
-          { id: "pyl1", title: "Installing Python & Text Editors", duration: "15 min", type: "video", completed: false },
-          { id: "pyl2", title: "Variables, Expressions, and Statements", duration: "20 min", type: "article", completed: false }
-        ]
+        type: "text",
+        completed: false,
+        duration: "30 min"
       }
     ]
   },
@@ -363,10 +328,9 @@ export const INITIAL_COURSES: Course[] = [
         id: "pye1",
         title: "Getting Started with Code",
         description: "Learn how to write your first Python statements.",
-        lessons: [
-          { id: "pyel1", title: "Why Program?", duration: "20 min", type: "video", completed: false },
-          { id: "pyel2", title: "Writing Hello World", duration: "10 min", type: "exercise", completed: false }
-        ]
+        type: "text",
+        completed: false,
+        duration: "40 min"
       }
     ]
   }

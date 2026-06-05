@@ -622,12 +622,9 @@ export function RecruiterProfileClient({ userProfile, initialData }: Props) {
                 <ReadonlyField label="Industry" value={industry} />
                 <ReadonlyField label="Company Size" value={companySize ? `${companySize} employees` : null} />
                 <ReadonlyField label="Website" value={companyWebsite} />
-                {companyDescription && (
-                  <div className="sm:col-span-2 space-y-0.5">
-                    <p className="text-xs text-muted-foreground">Description</p>
-                    <p className="text-sm font-medium">{companyDescription}</p>
-                  </div>
-                )}
+                <div className="sm:col-span-2">
+                  <ReadonlyField label="Description" value={companyDescription} />
+                </div>
               </div>
             )}
           </CardContent>
@@ -696,7 +693,7 @@ export function RecruiterProfileClient({ userProfile, initialData }: Props) {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4">
                 <ReadonlyField label="City" value={hqCity} />
                 <ReadonlyField label="State" value={hqState} />
                 <ReadonlyField label="Country" value={hqCountry} />

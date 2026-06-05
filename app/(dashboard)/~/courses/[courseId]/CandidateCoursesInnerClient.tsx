@@ -22,21 +22,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
-import { Course, Lesson, INITIAL_COURSES } from "../types"
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function getLessonIcon(type: Lesson["type"]) {
-  switch (type) {
-    case "video":
-      return <PlayCircle className="h-4 w-4 text-indigo-500 shrink-0" />
-    case "article":
-      return <FileText className="h-4 w-4 text-emerald-500 shrink-0" />
-    case "quiz":
-      return <HelpCircle className="h-4 w-4 text-amber-500 shrink-0" />
-    case "exercise":
-      return <Code className="h-4 w-4 text-rose-500 shrink-0" />
-  }
-}
+import { Course, INITIAL_COURSES } from "../types"
 
 export function CandidateCoursesInnerClient({ course: serverCourse }: { course: Course }) {
   const router = useRouter()
@@ -58,16 +44,9 @@ export function CandidateCoursesInnerClient({ course: serverCourse }: { course: 
               ...templateCourse,
               modules: templateCourse.modules.map(templateMod => {
                 const savedMod = savedCourse.modules?.find(m => m.id === templateMod.id)
-                if (!savedMod) return templateMod
                 return {
                   ...templateMod,
-                  lessons: templateMod.lessons.map(templateLesson => {
-                    const savedLesson = savedMod.lessons?.find(l => l.id === templateLesson.id)
-                    return {
-                      ...templateLesson,
-                      completed: savedLesson ? savedLesson.completed : templateLesson.completed
-                    }
-                  })
+                  completed: savedMod ? savedMod.completed : templateMod.completed
                 }
               })
             }
@@ -103,10 +82,8 @@ export function CandidateCoursesInnerClient({ course: serverCourse }: { course: 
     let completed = 0
     
     course.modules.forEach(mod => {
-      mod.lessons.forEach(l => {
-        total++
-        if (l.completed) completed++
-      })
+      total++
+      if (mod.completed) completed++
     })
     
     return {
@@ -116,48 +93,19 @@ export function CandidateCoursesInnerClient({ course: serverCourse }: { course: 
     }
   }, [course])
 
-  const handleReset = () => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("placetrix_courses_progress")
-      let parsed = saved ? JSON.parse(saved) : [...INITIAL_COURSES]
-      
-      // Reset only this course's lessons
-      parsed = (parsed as Course[]).map(c => {
-        if (c.id !== course.id) return c
-        return {
-          ...c,
-          modules: c.modules.map(m => ({
-            ...m,
-            lessons: m.lessons.map(l => ({ ...l, completed: false }))
-          }))
-        }
-      })
-      saveCourses(parsed)
-    }
-  }
-
   return (
     <div className="flex flex-col gap-6 px-4 py-8 md:px-8 animate-in fade-in-50 duration-300">
       
       {/* Navigation Breadcrumb / Back button */}
       <div className="flex items-center justify-between">
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={() => router.push("/~/courses")}
-          className="group gap-2 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+          className="group rounded-full gap-2 border-border/80 text-muted-foreground hover:text-foreground transition-all duration-200"
         >
           <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
           Back to Courses
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="xs"
-          onClick={handleReset}
-          className="text-xs text-muted-foreground hover:text-foreground hover:bg-muted"
-        >
-          Reset Progress
         </Button>
       </div>
 
@@ -192,78 +140,57 @@ export function CandidateCoursesInnerClient({ course: serverCourse }: { course: 
 
           <div className="space-y-4">
             {course.modules.map((mod, index) => {
-              const modCompleted = mod.lessons.filter(l => l.completed).length
-              const modTotal = mod.lessons.length
-              const isAllCompleted = modCompleted === modTotal
+              const isModCompleted = mod.completed
 
               return (
                 <div
                   key={mod.id}
                   onClick={() => router.push(`/~/courses/${course.id}/module/${mod.id}`)}
-                  className="group flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-5 rounded-lg border border-border/70 bg-card hover:bg-muted/30 cursor-pointer select-none transition-all"
+                  className="group flex items-center justify-between gap-4 p-5 rounded-xl border border-border/50 bg-card hover:border-primary/30 dark:hover:border-primary/20 hover:shadow-md hover:bg-muted/10 cursor-pointer select-none transition-all duration-300"
                 >
                   <div className="flex items-start gap-4 min-w-0 flex-1">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground shrink-0 mt-0.5 group-hover:bg-foreground group-hover:text-background transition-colors">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground shrink-0 mt-0.5 group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
                       {index + 1}
                     </div>
-                    <div className="space-y-1 min-w-0">
+                    <div className="space-y-1.5 min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-semibold text-sm text-foreground leading-tight">
+                        <span className="font-semibold text-sm text-foreground leading-tight group-hover:text-primary transition-colors">
                           {mod.title}
                         </span>
-                        {isAllCompleted ? (
-                          <Badge className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-800/20 text-[9px] px-1.5 py-0 font-normal">
+                        {isModCompleted ? (
+                          <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[9px] px-2 py-0.5 font-medium rounded-full">
                             Completed
                           </Badge>
-                        ) : modCompleted > 0 ? (
-                          <Badge variant="secondary" className="text-[9px] px-1.5 py-0 font-normal text-muted-foreground">
-                            In Progress
+                        ) : (
+                          <Badge variant="secondary" className="text-[9px] px-2 py-0.5 font-medium text-muted-foreground rounded-full bg-muted/60">
+                            Not Started
                           </Badge>
-                        ) : null}
+                        )}
                       </div>
                       {mod.description && (
-                        <p className="text-xs text-muted-foreground line-clamp-2">
+                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                           {mod.description}
                         </p>
                       )}
 
-                      {/* Brief list of lessons preview */}
-                      <div className="pt-2 flex flex-wrap gap-x-3 gap-y-1">
-                        {mod.lessons.slice(0, 3).map(lesson => (
-                          <span key={lesson.id} className={cn(
-                            "inline-flex items-center gap-1 text-[10px] text-muted-foreground",
-                            lesson.completed && "line-through opacity-60"
-                          )}>
-                            {getLessonIcon(lesson.type)}
-                            <span className="truncate">{lesson.title}</span>
-                          </span>
-                        ))}
-                        {mod.lessons.length > 3 && (
-                          <span className="text-[10px] text-muted-foreground italic">
-                            +{mod.lessons.length - 3} more
+                      {/* Module Details Accent Row */}
+                      <div className="pt-1 flex flex-wrap gap-x-3 gap-y-1">
+                        <span className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted/40 px-2.5 py-0.5 rounded-full border border-border/20">
+                          <FileText className="h-3 w-3 text-emerald-500 shrink-0" />
+                          <span className="capitalize">{mod.type} Module</span>
+                        </span>
+                        {mod.duration && (
+                          <span className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted/40 px-2.5 py-0.5 rounded-full border border-border/20">
+                            <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
+                            <span>{mod.duration}</span>
                           </span>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 shrink-0 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-border/50">
-                    <div className="text-left md:text-right">
-                      <span className="text-[11px] text-muted-foreground block font-medium">
-                        {modCompleted}/{modTotal} completed
-                      </span>
-                      <span className="text-[10px] text-muted-foreground/70 block">
-                        {mod.lessons.length} lessons
-                      </span>
-                    </div>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="group-hover:translate-x-1 group-hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
+                  <div className="h-8 w-8 flex items-center justify-center rounded-full bg-muted/40 border border-border/40 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary group-hover:translate-x-1 transition-all duration-300 text-muted-foreground shrink-0">
+                    <ChevronRight className="h-4 w-4" />
                   </div>
                 </div>
               )
@@ -275,17 +202,26 @@ export function CandidateCoursesInnerClient({ course: serverCourse }: { course: 
         <div className="space-y-6">
           
           {/* Minimal Progress Card */}
-          <Card className="border-border/70 bg-card">
+          <Card className="border-border/50 bg-card rounded-xl shadow-xs">
             <CardHeader className="pb-3">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Course Completion</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-muted-foreground">Completed</span>
-                <span className="font-semibold text-foreground">{stats.percentage}%</span>
+                <span className={cn(
+                  "font-semibold",
+                  stats.percentage === 100 ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"
+                )}>{stats.percentage}%</span>
               </div>
-              <Progress value={stats.percentage} className="h-1.5" />
-              <div className="pt-3 flex flex-col gap-2 border-t border-border/40 text-xs">
+              <Progress 
+                value={stats.percentage} 
+                className={cn(
+                  "h-1.5 bg-muted",
+                  stats.percentage === 100 && "[&>[data-slot=progress-indicator]]:bg-emerald-500"
+                )} 
+              />
+              <div className="pt-3.5 flex flex-col gap-2.5 border-t border-border/40 text-xs">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Category</span>
                   <span className="font-medium text-foreground">{course.category}</span>
@@ -299,7 +235,7 @@ export function CandidateCoursesInnerClient({ course: serverCourse }: { course: 
                   <span className="font-medium text-foreground">{course.duration}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total Lessons</span>
+                  <span className="text-muted-foreground">Total Modules</span>
                   <span className="font-medium text-foreground">{stats.total}</span>
                 </div>
               </div>
@@ -307,7 +243,7 @@ export function CandidateCoursesInnerClient({ course: serverCourse }: { course: 
           </Card>
 
           {/* Certificate Unlock Card */}
-          <Card className="border-border/70 bg-card">
+          <Card className="border-border/50 bg-card rounded-xl shadow-xs overflow-hidden">
             <CardHeader className="pb-3">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                 <Award className="h-3.5 w-3.5 text-muted-foreground" />
@@ -317,19 +253,19 @@ export function CandidateCoursesInnerClient({ course: serverCourse }: { course: 
             <CardContent className="space-y-3">
               {stats.percentage === 100 ? (
                 <div className="space-y-3">
-                  <div className="p-3 border border-emerald-250/20 bg-emerald-500/5 rounded-lg flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                    <span className="text-[11px] leading-relaxed text-emerald-800 dark:text-emerald-300">
+                  <div className="p-3 border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-950/20 rounded-xl flex items-center gap-2.5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-450 shrink-0" />
+                    <span className="text-[11px] leading-relaxed text-emerald-800 dark:text-emerald-300 font-medium">
                       Course completed successfully! Your certificate has been unlocked.
                     </span>
                   </div>
                   
-                  <Button size="sm" className="w-full text-xs h-8">
+                  <Button size="sm" className="w-full text-xs h-9 rounded-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white shadow-xs font-semibold">
                     Download Certificate
                   </Button>
                 </div>
               ) : (
-                <div className="p-3 bg-muted/40 border border-border/40 rounded-lg flex items-start gap-2.5">
+                <div className="p-3.5 bg-muted/40 border border-border/40 rounded-xl flex items-start gap-2.5">
                   <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
                   <span className="text-[11px] text-muted-foreground leading-relaxed">
                     Complete all curriculum modules to unlock the course certificate.
@@ -340,13 +276,13 @@ export function CandidateCoursesInnerClient({ course: serverCourse }: { course: 
           </Card>
 
           {/* Instructor Details Card */}
-          <Card className="border-border/70 bg-card">
+          <Card className="border-border/50 bg-card rounded-xl shadow-xs">
             <CardHeader className="pb-3">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Instructor</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center font-bold text-muted-foreground text-xs shrink-0 border border-border/60">
+                <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center font-bold text-muted-foreground text-xs shrink-0 border border-border/60 shadow-xs">
                   {course.instructor.avatar}
                 </div>
                 <div>

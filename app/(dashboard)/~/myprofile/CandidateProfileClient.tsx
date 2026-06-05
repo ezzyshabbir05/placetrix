@@ -932,37 +932,28 @@ export function CandidateProfileClient({ userProfile, initialData }: Props) {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4">
                   <ReadonlyField label="First Name" value={firstName} />
                   <ReadonlyField label="Middle Name" value={middleName} />
                   <ReadonlyField label="Last Name" value={lastName} />
                 </div>
                 <Separator />
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4">
                   <ReadonlyField label="Gender" value={gender} />
                   <ReadonlyField label="Contact Number" value={phoneNumber} />
                   <ReadonlyField label="Date of Birth" value={dateOfBirth ? formatDate(dateOfBirth) : null} />
                 </div>
-                {(aadhaarNumber || currentAddress || permanentAddress) && (
-                  <>
-                    <Separator />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-                      {aadhaarNumber && <ReadonlyField label="Aadhaar Number" value={aadhaarNumber.replace(/(\d{4})(\d{4})(\d{4})/, "$1 $2 $3")} />}
-                      {currentAddress && (
-                        <div className="space-y-0.5">
-                          <p className="text-xs text-muted-foreground">Current Address</p>
-                          <p className="text-sm font-medium">{currentAddress}</p>
-                        </div>
-                      )}
-                      {permanentAddress && (
-                        <div className="space-y-0.5">
-                          <p className="text-xs text-muted-foreground">Permanent Address</p>
-                          <p className="text-sm font-medium">{permanentAddress}</p>
-                        </div>
-                      )}
-                    </div>
-                  </>
-                )}
+                <Separator />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                  <ReadonlyField label="Aadhaar Number" value={aadhaarNumber ? aadhaarNumber.replace(/(.{4})(.{4})(.{4})/, "$1 $2 $3") : null} />
+                  <div className="hidden sm:block" />
+                  <div className="sm:col-span-2">
+                    <ReadonlyField label="Current Address" value={currentAddress} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <ReadonlyField label="Permanent Address" value={permanentAddress} />
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>
@@ -1191,50 +1182,42 @@ export function CandidateProfileClient({ userProfile, initialData }: Props) {
             ) : (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-                  <ReadonlyField label="Institution" value={instituteName} />
+                  <div className="sm:col-span-2">
+                    <ReadonlyField label="Institution" value={instituteName} />
+                  </div>
                   <ReadonlyField label="Branch / Course" value={courseName} />
                   <ReadonlyField label="Expected Graduation Year" value={passoutYear} />
-                  {selectedAffiliation && <ReadonlyField label="Affiliation" value={selectedAffiliation} />}
+                  <div className="sm:col-span-2">
+                    <ReadonlyField label="Affiliation" value={selectedAffiliation} />
+                  </div>
                 </div>
-                {(sscPercentage || isHsc || isDiploma) && (
-                  <>
-                    <Separator />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-                      <ReadonlyField label="SSC Percentage" value={sscPercentage ? `${sscPercentage}%` : null} />
-                      <ReadonlyField label="SSC Passing Year" value={sscPassYear} />
-                      {isHsc && (
-                        <>
-                          <ReadonlyField label="HSC Percentage" value={hscPercentage ? `${hscPercentage}%` : null} />
-                          <ReadonlyField label="HSC Passing Year" value={hscPassYear} />
-                        </>
-                      )}
-                      {isDiploma && (
-                        <>
-                          <ReadonlyField label="Diploma Percentage" value={diplomaPercentage ? `${diplomaPercentage}%` : null} />
-                          <ReadonlyField label="Diploma Passing Year" value={diplomaPassYear} />
-                        </>
-                      )}
-                    </div>
-                  </>
-                )}
-                {(universityPrn || sgpaValues.some(v => v)) && (
-                  <>
-                    <Separator />
-                    <ReadonlyField label="University PRN" value={universityPrn} />
-                    {sgpaValues.some(v => v) && (
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-2">Semester SGPA</p>
-                        <div className="flex flex-wrap gap-2">
-                          {sgpaValues.map((val, i) => val ? (
-                            <Badge key={i} variant="secondary" className="text-xs">
-                              Sem {i + 1}: {val}
-                            </Badge>
-                          ) : null)}
-                        </div>
+
+                <Separator />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                  <ReadonlyField label="SSC Percentage" value={sscPercentage ? `${sscPercentage}%` : null} />
+                  <ReadonlyField label="SSC Passing Year" value={sscPassYear} />
+                  <ReadonlyField label="HSC Percentage" value={isHsc && hscPercentage ? `${hscPercentage}%` : null} />
+                  <ReadonlyField label="HSC Passing Year" value={isHsc ? hscPassYear : null} />
+                  <ReadonlyField label="Diploma Percentage" value={isDiploma && diplomaPercentage ? `${diplomaPercentage}%` : null} />
+                  <ReadonlyField label="Diploma Passing Year" value={isDiploma ? diplomaPassYear : null} />
+                </div>
+
+                <Separator />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                  <ReadonlyField label="University PRN" value={universityPrn} />
+                </div>
+
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">Semester SGPA</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {sgpaValues.map((val, i) => (
+                      <div key={i} className="bg-secondary/40 rounded p-2 text-left border border-muted/20">
+                        <p className="text-[10px] text-muted-foreground">Sem {i + 1}</p>
+                        <p className="text-sm font-medium">{val || "—"}</p>
                       </div>
-                    )}
-                  </>
-                )}
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>
@@ -1339,42 +1322,40 @@ export function CandidateProfileClient({ userProfile, initialData }: Props) {
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">Skills</p>
                   {selectedSkills.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5">
                       {selectedSkills.map((skill) => (
-                        <Badge key={skill} variant="secondary">{skill}</Badge>
+                        <Badge key={skill} variant="secondary" className="text-xs">{skill}</Badge>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">No skills added yet.</p>
+                    <p className="text-sm text-muted-foreground">—</p>
                   )}
                 </div>
-                {(linkedinUrl || githubUrl || portfolioLinks.some(l => l.trim())) && (
-                  <>
-                    <Separator />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-                      <ReadonlyField label="LinkedIn" value={linkedinUrl} />
-                      <ReadonlyField label="GitHub" value={githubUrl} />
+                <Separator />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                  <ReadonlyField label="LinkedIn" value={linkedinUrl} />
+                  <ReadonlyField label="GitHub" value={githubUrl} />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1.5">Portfolio / Project Links</p>
+                  {portfolioLinks.filter(l => l.trim()).length > 0 ? (
+                    <div className="space-y-1">
+                      {portfolioLinks.filter(l => l.trim()).map((link, i) => (
+                        <a
+                          key={i}
+                          href={link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block text-sm text-primary hover:underline truncate max-w-md"
+                        >
+                          {link}
+                        </a>
+                      ))}
                     </div>
-                    {portfolioLinks.filter(l => l.trim()).length > 0 && (
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Portfolio / Project Links</p>
-                        <div className="space-y-1">
-                          {portfolioLinks.filter(l => l.trim()).map((link, i) => (
-                            <a
-                              key={i}
-                              href={link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block text-sm text-primary hover:underline truncate"
-                            >
-                              {link}
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
+                  ) : (
+                    <p className="text-sm text-muted-foreground font-normal">—</p>
+                  )}
+                </div>
               </div>
             )}
           </CardContent>

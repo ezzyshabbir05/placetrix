@@ -3,8 +3,8 @@
 import * as React from "react"
 import { useState, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { BookOpen, Clock, Search, Layers, X, ChevronRight } from "lucide-react"
-import { Card } from "@/components/ui/card"
+import { BookOpen, Clock, Search, Layers, X, ChevronRight, CheckCircle2 } from "lucide-react"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -123,21 +123,22 @@ interface CourseCardProps {
 
 function CourseCard({ course, stats, onSelect }: CourseCardProps) {
   const isCompleted = stats.percentage === 100
-  const isInProgress = stats.percentage > 0 && stats.percentage < 100
 
   return (
     <Card
       onClick={onSelect}
-      className="group flex flex-col justify-between overflow-hidden border border-border/60 dark:border-zinc-800 bg-card hover:border-border hover:shadow-md transition-all duration-200 cursor-pointer h-full select-none"
+      className="group flex flex-col justify-between overflow-hidden border border-border/50 dark:border-zinc-800/80 bg-card hover:border-border hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full select-none p-0 gap-0"
     >
       <div className="flex flex-col h-full">
         {/* Cover Image Area */}
         <div className="aspect-video w-full overflow-hidden bg-muted relative rounded-t-lg">
-          <CourseCover courseId={course.id} />
+          <div className="w-full h-full transform group-hover:scale-105 transition-transform duration-500 ease-out">
+            <CourseCover courseId={course.id} />
+          </div>
 
           {/* Top-Right Badge Overlay */}
           {course.badge && (
-            <span className="absolute top-2.5 right-2.5 bg-black/85 text-white dark:bg-black/90 dark:border dark:border-zinc-800 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+            <span className="absolute top-2.5 right-2.5 bg-black/75 backdrop-blur-xs text-white border border-white/10 text-[9px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider">
               {course.badge}
             </span>
           )}
@@ -145,44 +146,73 @@ function CourseCard({ course, stats, onSelect }: CourseCardProps) {
 
         {/* Info Area */}
         <div className="flex flex-col flex-1">
-          {/* Partner & Logo */}
-          <div className="flex items-center gap-1.5 px-4 pt-3.5">
-            <div className={cn("h-4 w-4 rounded flex items-center justify-center font-bold text-[9px] text-white shrink-0 shadow-xs", course.partner?.logoBg || "bg-indigo-600")}>
-              {course.partner?.logo || "C"}
+          <CardHeader className="px-4 pt-4 pb-0 gap-2">
+            {/* Partner & Logo */}
+            <div className="flex items-center gap-2">
+              <div className={cn("h-4 w-4 rounded-full flex items-center justify-center font-bold text-[9px] text-white shrink-0 shadow-xs", course.partner?.logoBg || "bg-indigo-600")}>
+                {course.partner?.logo || "C"}
+              </div>
+              <span className="text-[11px] text-muted-foreground font-medium truncate">
+                {course.partner?.name || "CS Foundation"}
+              </span>
             </div>
-            <span className="text-[11px] text-muted-foreground font-medium truncate">
-              {course.partner?.name || "CS Foundation"}
-            </span>
-          </div>
 
-          {/* Title */}
-          <h3 className="font-semibold text-sm md:text-[14px] text-foreground px-4 mt-2 mb-1.5 leading-snug line-clamp-2 min-h-[40px] group-hover:text-primary transition-colors">
-            {course.title}
-          </h3>
+            {/* Title */}
+            <CardTitle className="font-semibold text-sm md:text-[14px] text-foreground leading-snug line-clamp-2 min-h-[40px] group-hover:text-primary transition-colors duration-200">
+              {course.title}
+            </CardTitle>
 
-          {/* Course Type / Level Description */}
-          <div className="px-4 text-[11px] text-muted-foreground mb-3 flex items-center gap-1.5">
-            <span>{course.type || "Specialization"}</span>
-            <span className="text-muted-foreground/30">•</span>
-            <span className="capitalize">{course.level}</span>
-          </div>
+            {/* Course Type / Level Description */}
+            <CardDescription className="text-[11px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
+              <span className="font-medium text-foreground/80">{course.type || "Specialization"}</span>
+              <span className="text-muted-foreground/30">•</span>
+              <span className="capitalize">{course.level}</span>
+            </CardDescription>
+          </CardHeader>
 
           {/* Bottom Progress Area */}
-          <div className="mt-auto border-t border-border/40 pt-3 pb-4 px-4">
-            {stats.percentage > 0 ? (
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center text-[10px]">
-                  <span className="text-muted-foreground font-medium">
-                    {isCompleted ? "Completed" : "In Progress"}
-                  </span>
-                  <span className="font-semibold text-foreground">{stats.percentage}%</span>
+          <CardContent className="mt-auto pt-4 pb-4 px-4">
+            <div className="border-t border-border/40 pt-3.5 w-full">
+              {stats.percentage > 0 ? (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-[10px] font-medium">
+                    <span className={cn(
+                      "flex items-center gap-1",
+                      isCompleted ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-muted-foreground"
+                    )}>
+                      {isCompleted ? (
+                        <>
+                          <CheckCircle2 className="h-3 w-3 shrink-0" />
+                          Completed
+                        </>
+                      ) : (
+                        "In Progress"
+                      )}
+                    </span>
+                    <span className={cn(
+                      "font-semibold",
+                      isCompleted ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"
+                    )}>{stats.percentage}%</span>
+                  </div>
+                  <Progress 
+                    value={stats.percentage} 
+                    className={cn(
+                      "h-1.5 bg-muted",
+                      isCompleted && "[&>[data-slot=progress-indicator]]:bg-emerald-500"
+                    )} 
+                  />
                 </div>
-                <Progress value={stats.percentage} className="h-1 bg-muted animate-in fade-in-30" />
-              </div>
-            ) : (
-              <span className="text-[10px] text-muted-foreground italic">Not started</span>
-            )}
-          </div>
+              ) : (
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-muted-foreground/75 italic">Not started</span>
+                  <span className="text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-0.5">
+                    Start Course
+                    <ChevronRight className="h-3.5 w-3.5 transform group-hover:translate-x-0.5 transition-transform" />
+                  </span>
+                </div>
+              )}
+            </div>
+          </CardContent>
         </div>
       </div>
     </Card>
@@ -194,9 +224,8 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
   const router = useRouter()
   const [courses, setCourses] = useState<Course[]>(initialCourses)
   const [searchQuery, setSearchQuery] = useState("")
-  const [activeTab, setActiveTab] = useState<string>("all")
-  const [statusFilter, setStatusFilter] = useState<"all" | "in-progress" | "completed">("all")
-  const [showAll, setShowAll] = useState(false)
+  const [activeTab, setActiveTab] = useState<"all" | "in-progress" | "completed">("all")
+
 
   // Load progress from localStorage on client-side mount
   useEffect(() => {
@@ -213,16 +242,9 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
               ...templateCourse,
               modules: templateCourse.modules.map(templateMod => {
                 const savedMod = savedCourse.modules?.find(m => m.id === templateMod.id)
-                if (!savedMod) return templateMod
                 return {
                   ...templateMod,
-                  lessons: templateMod.lessons.map(templateLesson => {
-                    const savedLesson = savedMod.lessons?.find(l => l.id === templateLesson.id)
-                    return {
-                      ...templateLesson,
-                      completed: savedLesson ? savedLesson.completed : templateLesson.completed
-                    }
-                  })
+                  completed: savedMod ? savedMod.completed : templateMod.completed
                 }
               })
             }
@@ -245,10 +267,8 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
       let completed = 0
 
       course.modules.forEach(mod => {
-        mod.lessons.forEach(l => {
-          total++
-          if (l.completed) completed++
-        })
+        total++
+        if (mod.completed) completed++
       })
 
       statsMap[course.id] = {
@@ -261,44 +281,33 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
     return statsMap
   }, [courses])
 
-  // Calculate counts for tabs/categories dynamically
+  // Calculate counts for tabs/status dynamically
   const tabCounts = useMemo(() => {
-    const counts = { all: 0, "core-cs": 0, "web-dev": 0, "interview-prep": 0, "system-design": 0 }
+    const counts = { all: 0, "in-progress": 0, completed: 0 }
     courses.forEach(course => {
       counts.all++
-      if (course.category === "Core CS") counts["core-cs"]++
-      if (course.category === "Web Development") counts["web-dev"]++
-      if (course.category === "Interview Prep") counts["interview-prep"]++
-      if (course.category === "System Design") counts["system-design"]++
+      const stats = courseStats[course.id]
+      if (stats) {
+        if (stats.percentage === 100) {
+          counts.completed++
+        } else if (stats.percentage > 0) {
+          counts["in-progress"]++
+        }
+      }
     })
     return counts
-  }, [courses])
+  }, [courses, courseStats])
 
-  // Map tabs values to friendly UI categories
-  const categoriesMap: Record<string, string> = {
-    all: "All",
-    "core-cs": "Core CS",
-    "web-dev": "Web Development",
-    "interview-prep": "Interview Prep",
-    "system-design": "System Design",
-  }
-
-  // Filter courses based on search, selected tab (category), and status
+  // Filter courses based on search and selected tab (status)
   const filteredCourses = useMemo(() => {
     return courses.filter(course => {
-      // Category filter based on activeTab
+      // Status filter based on activeTab
       if (activeTab !== "all") {
-        const expectedCategory = categoriesMap[activeTab]
-        if (course.category !== expectedCategory) return false
-      }
-
-      // Status filter
-      if (statusFilter !== "all") {
         const stats = courseStats[course.id]
-        if (statusFilter === "in-progress") {
+        if (activeTab === "in-progress") {
           const isInProgress = stats && stats.percentage > 0 && stats.percentage < 100
           if (!isInProgress) return false
-        } else if (statusFilter === "completed") {
+        } else if (activeTab === "completed") {
           const isCompleted = stats && stats.percentage === 100
           if (!isCompleted) return false
         }
@@ -314,26 +323,18 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
 
       return true
     })
-  }, [courses, activeTab, statusFilter, searchQuery, courseStats])
+  }, [courses, activeTab, searchQuery, courseStats])
 
-  // Split list to only show 4 items initially if showAll is false
-  const displayedCourses = useMemo(() => {
-    if (showAll || searchQuery.trim() !== "" || activeTab !== "all" || statusFilter !== "all") {
-      return filteredCourses
-    }
-    return filteredCourses.slice(0, 4)
-  }, [filteredCourses, showAll, searchQuery, activeTab, statusFilter])
+  const displayedCourses = filteredCourses
 
   const tabConfig = [
-    { value: "all", label: "All", count: tabCounts.all },
-    { value: "core-cs", label: "Computer Science", count: tabCounts["core-cs"] },
-    { value: "web-dev", label: "Web Development", count: tabCounts["web-dev"] },
-    { value: "interview-prep", label: "Interview Prep", count: tabCounts["interview-prep"] },
-    { value: "system-design", label: "Data Science", count: tabCounts["system-design"] },
+    { value: "all" as const, label: "All", count: tabCounts.all },
+    { value: "in-progress" as const, label: "In Progress", count: tabCounts["in-progress"] },
+    { value: "completed" as const, label: "Completed", count: tabCounts.completed },
   ]
 
   return (
-    <div className="flex flex-col gap-6 px-4 py-8 md:px-8 max-w-7xl mx-auto">
+    <div className="flex flex-col gap-6 px-4 py-8 md:px-8">
       {/* Minimal Page Header */}
       <div className="flex flex-col gap-1.5">
         <h1 className="text-3xl font-bold font-cirka tracking-tight text-foreground">Course Board</h1>
@@ -342,18 +343,18 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setShowAll(false) }}>
-        <div className="space-y-6">
-          {/* Search + Filters Area */}
-          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as any) }}>
+        <div className="space-y-4">
+          {/* Search (left) + Tabs (right) */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             {/* Search Input */}
-            <div className="relative w-full xl:max-w-xs">
+            <div className="relative w-full sm:max-w-xs">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search courses..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-9 text-xs h-9"
+                className="pl-9 pr-9"
               />
               {searchQuery && (
                 <button
@@ -365,69 +366,29 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
               )}
             </div>
 
-            {/* Right side controls: Tabs list & Status Pill sub-filters */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              {/* Tabs List */}
-              <div className="overflow-x-auto shrink-0">
-                <TabsList className="inline-flex h-9 gap-0.5 rounded-lg bg-muted p-1 w-full sm:w-auto justify-start">
-                  {tabConfig.map(({ value, label, count }) => (
-                    <TabsTrigger
-                      key={value}
-                      value={value}
-                      className="gap-1.5 rounded-md px-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm"
-                    >
-                      {label}
-                      {count > 0 && (
-                        <span className={cn(
-                          "inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold tabular-nums",
-                          activeTab === value
-                            ? "bg-foreground text-background"
-                            : "bg-muted-foreground/20 text-muted-foreground"
-                        )}>
-                          {count}
-                        </span>
-                      )}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </div>
-
-              {/* Status Sub-Filters */}
-              <div className="flex gap-1 bg-muted/65 p-0.5 rounded-lg border border-border/40 shrink-0">
-                <Button
-                  variant={statusFilter === "all" ? "secondary" : "ghost"}
-                  size="xs"
-                  onClick={() => setStatusFilter("all")}
-                  className={cn(
-                    "text-[10px] h-7 px-2.5 rounded-md transition-all font-medium",
-                    statusFilter === "all" ? "bg-background shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  All
-                </Button>
-                <Button
-                  variant={statusFilter === "in-progress" ? "secondary" : "ghost"}
-                  size="xs"
-                  onClick={() => setStatusFilter("in-progress")}
-                  className={cn(
-                    "text-[10px] h-7 px-2.5 rounded-md transition-all font-medium",
-                    statusFilter === "in-progress" ? "bg-background shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  In Progress
-                </Button>
-                <Button
-                  variant={statusFilter === "completed" ? "secondary" : "ghost"}
-                  size="xs"
-                  onClick={() => setStatusFilter("completed")}
-                  className={cn(
-                    "text-[10px] h-7 px-2.5 rounded-md transition-all font-medium",
-                    statusFilter === "completed" ? "bg-background shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  Completed
-                </Button>
-              </div>
+            {/* Right side controls: Tabs list */}
+            <div className="overflow-x-auto shrink-0 w-full sm:w-auto">
+              <TabsList className="inline-flex h-9 gap-0.5 rounded-lg bg-muted p-1 w-full sm:w-auto">
+                {tabConfig.map(({ value, label, count }) => (
+                  <TabsTrigger
+                    key={value}
+                    value={value}
+                    className="gap-1.5 rounded-md px-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm w-full sm:w-auto"
+                  >
+                    {label}
+                    {count > 0 && (
+                      <span className={cn(
+                        "inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold tabular-nums",
+                        activeTab === value
+                          ? "bg-foreground text-background"
+                          : "bg-muted-foreground/20 text-muted-foreground"
+                      )}>
+                        {count}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
             </div>
           </div>
 
@@ -456,19 +417,7 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
               </div>
             )}
 
-            {/* Show All / Show Less button */}
-            {filteredCourses.length > 4 && searchQuery.trim() === "" && activeTab === "all" && statusFilter === "all" && (
-              <div className="flex justify-center pt-4">
-                <Button
-                  onClick={() => setShowAll(!showAll)}
-                  variant="outline"
-                  className="gap-1.5 text-xs font-semibold px-5 py-2 h-9 rounded-lg border-border hover:bg-muted transition-all"
-                >
-                  {showAll ? "Show Less" : `Show All (${filteredCourses.length}) Courses`}
-                  <ChevronRight className={cn("h-4 w-4 transition-transform", showAll && "rotate-90")} />
-                </Button>
-              </div>
-            )}
+
           </div>
         </div>
       </Tabs>
