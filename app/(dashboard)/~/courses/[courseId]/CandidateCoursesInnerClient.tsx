@@ -1,91 +1,72 @@
 "use client"
 
 import * as React from "react"
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import {
-  BookOpen,
-  Clock,
-  ArrowLeft,
-  CheckCircle2,
-  Lock,
-  Award,
-  ChevronRight,
-  PlayCircle,
-  FileText,
-  HelpCircle,
-  Code,
-  Layers,
+  BookOpen, Clock, ArrowLeft, CheckCircle2, Lock, Award, ChevronRight, FileText
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
-import { Course, INITIAL_COURSES } from "../types"
+import { toast } from "sonner"
+import { enrollInCourseAction } from "../actions"
 
-export function CandidateCoursesInnerClient({ course: serverCourse }: { course: Course }) {
-  const router = useRouter()
-  
-  // State for all courses loaded from localStorage
-  const [courses, setCourses] = useState<Course[]>([])
+interface Module {
+  id: string
+  title: string
+  description?: string
+  type: "video" | "text" | "test"
+  completed: boolean
+  duration?: string
+}
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("placetrix_courses_progress")
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved) as Course[]
-          // Merge parsed progress into INITIAL_COURSES template to migrate format/fields
-          const merged = INITIAL_COURSES.map(templateCourse => {
-            const savedCourse = parsed.find(c => c.id === templateCourse.id)
-            if (!savedCourse) return templateCourse
-            return {
-              ...templateCourse,
-              modules: templateCourse.modules.map(templateMod => {
-                const savedMod = savedCourse.modules?.find(m => m.id === templateMod.id)
-                return {
-                  ...templateMod,
-                  completed: savedMod ? savedMod.completed : templateMod.completed
-                }
-              })
-            }
-          })
-          setCourses(merged)
-          localStorage.setItem("placetrix_courses_progress", JSON.stringify(merged))
-        } catch (e) {
-          console.error("Failed to parse courses progress:", e)
-        }
-      } else {
-        setCourses(INITIAL_COURSES)
-        localStorage.setItem("placetrix_courses_progress", JSON.stringify(INITIAL_COURSES))
-      }
-    }
-  }, [])
-
-  // Find this specific course in our state
-  const course = useMemo(() => {
-    return courses.find(c => c.id === serverCourse.id) || serverCourse
-  }, [courses, serverCourse])
-
-  // Helper to save state
-  const saveCourses = (newCourses: Course[]) => {
-    setCourses(newCourses)
-    if (typeof window !== "undefined") {
-      localStorage.setItem("placetrix_courses_progress", JSON.stringify(newCourses))
-    }
+interface Course {
+  id: string
+  title: string
+  description: string
+  category: string
+  level: string
+  duration: string
+  type: string
+  badge?: string
+  cover_image_path?: string
+  partner: {
+    name: string
+    logo: string
+    logoBg: string
   }
+  instructor: {
+    name: string
+    role: string
+    avatar: string
+  }
+  modules: Module[]
+}
+
+interface Props {
+  course: Course
+  isEnrolled: boolean
+  certificateId: string | null
+  userProfile: any
+}
+
+export function CandidateCoursesInnerClient({ course, isEnrolled, certificateId, userProfile }: Props) {
+  const router = useRouter()
+  const [isEnrolling, setIsEnrolling] = useState(false)
 
   // Calculate statistics for this course
   const stats = useMemo(() => {
     let total = 0
     let completed = 0
-    
+
     course.modules.forEach(mod => {
       total++
       if (mod.completed) completed++
     })
-    
+
     return {
       total,
       completed,
@@ -93,9 +74,32 @@ export function CandidateCoursesInnerClient({ course: serverCourse }: { course: 
     }
   }, [course])
 
+  const handleEnroll = async () => {
+    setIsEnrolling(true)
+    try {
+      const result = await enrollInCourseAction(course.id)
+      if (result.success) {
+        toast.success("You have successfully enrolled in this course!")
+        router.refresh()
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to enroll in the course.")
+    } finally {
+      setIsEnrolling(false)
+    }
+  }
+
+  const handleModuleClick = (moduleId: string) => {
+    if (!isEnrolled) {
+      toast.error("Please enroll in the course first to access its contents.")
+      return
+    }
+    router.push(`/~/courses/${course.id}/module/${moduleId}`)
+  }
+
   return (
-    <div className="flex flex-col gap-6 px-4 py-8 md:px-8 animate-in fade-in-50 duration-300">
-      
+    <div className="flex flex-col gap-6 px-4 py-8 md:px-8 animate-in fade-in duration-300">
+
       {/* Navigation Breadcrumb / Back button */}
       <div className="flex items-center justify-between">
         <Button
@@ -119,11 +123,11 @@ export function CandidateCoursesInnerClient({ course: serverCourse }: { course: 
             {course.level}
           </Badge>
         </div>
-        
+
         <h1 className="text-2xl md:text-3xl font-bold font-cirka tracking-tight text-foreground">
           {course.title}
         </h1>
-        
+
         <p className="text-sm text-muted-foreground leading-relaxed">
           {course.description}
         </p>
@@ -131,7 +135,7 @@ export function CandidateCoursesInnerClient({ course: serverCourse }: { course: 
 
       {/* Course Details Split Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Modules List (Left & Middle) */}
         <div className="lg:col-span-2 space-y-4">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -145,25 +149,45 @@ export function CandidateCoursesInnerClient({ course: serverCourse }: { course: 
               return (
                 <div
                   key={mod.id}
-                  onClick={() => router.push(`/~/courses/${course.id}/module/${mod.id}`)}
-                  className="group flex items-center justify-between gap-4 p-5 rounded-xl border border-border/50 bg-card hover:border-primary/30 dark:hover:border-primary/20 hover:shadow-md hover:bg-muted/10 cursor-pointer select-none transition-all duration-300"
+                  onClick={() => handleModuleClick(mod.id)}
+                  className={cn(
+                    "group flex items-center justify-between gap-4 p-5 rounded-xl border border-border/50 bg-card select-none transition-all duration-300",
+                    isEnrolled
+                      ? "hover:border-primary/30 dark:hover:border-primary/20 hover:shadow-md hover:bg-muted/10 cursor-pointer"
+                      : "cursor-not-allowed opacity-80"
+                  )}
                 >
                   <div className="flex items-start gap-4 min-w-0 flex-1">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground shrink-0 mt-0.5 group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
+                    <div className={cn(
+                      "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold shrink-0 mt-0.5 transition-colors duration-300",
+                      isEnrolled
+                        ? "bg-muted text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground"
+                        : "bg-muted/40 text-muted-foreground/40"
+                    )}>
                       {index + 1}
                     </div>
                     <div className="space-y-1.5 min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-semibold text-sm text-foreground leading-tight group-hover:text-primary transition-colors">
+                        <span className={cn(
+                          "font-semibold text-sm leading-tight transition-colors",
+                          isEnrolled ? "text-foreground group-hover:text-primary" : "text-muted-foreground"
+                        )}>
                           {mod.title}
                         </span>
-                        {isModCompleted ? (
-                          <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[9px] px-2 py-0.5 font-medium rounded-full">
-                            Completed
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-[9px] px-2 py-0.5 font-medium text-muted-foreground rounded-full bg-muted/60">
-                            Not Started
+                        {isEnrolled && (
+                          isModCompleted ? (
+                            <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[9px] px-2 py-0.5 font-medium rounded-full">
+                              Completed
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[9px] px-2 py-0.5 font-medium text-muted-foreground rounded-full bg-muted/60">
+                              Not Started
+                            </Badge>
+                          )
+                        )}
+                        {!isEnrolled && (
+                          <Badge variant="outline" className="text-[9px] px-2 py-0.5 text-muted-foreground/60 rounded-full border-dashed flex items-center gap-0.5 bg-muted/10">
+                            <Lock className="h-2.5 w-2.5" /> Locked
                           </Badge>
                         )}
                       </div>
@@ -189,8 +213,17 @@ export function CandidateCoursesInnerClient({ course: serverCourse }: { course: 
                     </div>
                   </div>
 
-                  <div className="h-8 w-8 flex items-center justify-center rounded-full bg-muted/40 border border-border/40 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary group-hover:translate-x-1 transition-all duration-300 text-muted-foreground shrink-0">
-                    <ChevronRight className="h-4 w-4" />
+                  <div className={cn(
+                    "h-8 w-8 flex items-center justify-center rounded-full border shrink-0 transition-all duration-300",
+                    isEnrolled
+                      ? "bg-muted/40 border-border/40 text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary group-hover:translate-x-1"
+                      : "bg-muted/10 border-border/10 text-muted-foreground/30"
+                  )}>
+                    {isEnrolled ? (
+                      <ChevronRight className="h-4 w-4" />
+                    ) : (
+                      <Lock className="h-3.5 w-3.5" />
+                    )}
                   </div>
                 </div>
               )
@@ -200,83 +233,115 @@ export function CandidateCoursesInnerClient({ course: serverCourse }: { course: 
 
         {/* Stats, Certificate & Instructor Sidebar */}
         <div className="space-y-6">
-          
-          {/* Minimal Progress Card */}
-          <Card className="border-border/50 bg-card rounded-xl shadow-xs">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Course Completion</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-muted-foreground">Completed</span>
-                <span className={cn(
-                  "font-semibold",
-                  stats.percentage === 100 ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"
-                )}>{stats.percentage}%</span>
-              </div>
-              <Progress 
-                value={stats.percentage} 
-                className={cn(
-                  "h-1.5 bg-muted",
-                  stats.percentage === 100 && "[&>[data-slot=progress-indicator]]:bg-emerald-500"
-                )} 
-              />
-              <div className="pt-3.5 flex flex-col gap-2.5 border-t border-border/40 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Category</span>
-                  <span className="font-medium text-foreground">{course.category}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Level</span>
-                  <span className="font-medium text-foreground">{course.level}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Duration</span>
-                  <span className="font-medium text-foreground">{course.duration}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total Modules</span>
-                  <span className="font-medium text-foreground">{stats.total}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Certificate Unlock Card */}
-          <Card className="border-border/50 bg-card rounded-xl shadow-xs overflow-hidden">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <Award className="h-3.5 w-3.5 text-muted-foreground" />
-                Certificate
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {stats.percentage === 100 ? (
-                <div className="space-y-3">
-                  <div className="p-3 border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-950/20 rounded-xl flex items-center gap-2.5">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-450 shrink-0" />
-                    <span className="text-[11px] leading-relaxed text-emerald-800 dark:text-emerald-300 font-medium">
-                      Course completed successfully! Your certificate has been unlocked.
+          {/* Enrollment / Completion Card */}
+          {!isEnrolled ? (
+            <Card className="border border-primary/20 bg-primary/5 dark:bg-primary/5 rounded-xl shadow-xs overflow-hidden">
+              <CardHeader className="pb-3 bg-primary/10">
+                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                  <BookOpen className="h-3.5 w-3.5" />
+                  Start Learning
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-4 space-y-3">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Enroll in this course to gain full access to the learning curriculum, track your progress, and earn a verified completion certificate.
+                </p>
+                <Button
+                  onClick={handleEnroll}
+                  disabled={isEnrolling}
+                  size="sm"
+                  className="w-full text-xs h-9 rounded-full bg-primary hover:bg-primary/95 text-primary-foreground font-semibold shadow-md shadow-primary/10"
+                >
+                  {isEnrolling ? "Enrolling..." : "Enroll in Course"}
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border border-border/50 bg-card rounded-xl shadow-xs">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Course Completion</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-muted-foreground">Completed</span>
+                  <span className={cn(
+                    "font-semibold",
+                    stats.percentage === 100 ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"
+                  )}>{stats.percentage}%</span>
+                </div>
+                <Progress
+                  value={stats.percentage}
+                  className={cn(
+                    "h-1.5 bg-muted",
+                    stats.percentage === 100 && "[&>[data-slot=progress-indicator]]:bg-emerald-500"
+                  )}
+                />
+                <div className="pt-3.5 flex flex-col gap-2.5 border-t border-border/40 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Category</span>
+                    <span className="font-medium text-foreground">{course.category}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Level</span>
+                    <span className="font-medium text-foreground">{course.level}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Duration</span>
+                    <span className="font-medium text-foreground">{course.duration}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total Modules</span>
+                    <span className="font-medium text-foreground">{stats.total}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Certificate Card */}
+          {isEnrolled && (
+            <Card className="border border-border/50 bg-card rounded-xl shadow-xs overflow-hidden">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <Award className="h-3.5 w-3.5 text-muted-foreground" />
+                  Certificate
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {certificateId ? (
+                  <div className="space-y-3">
+                    <div className="p-3 border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-950/20 rounded-xl flex items-center gap-2.5">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-450 shrink-0" />
+                      <span className="text-[11px] leading-relaxed text-emerald-800 dark:text-emerald-300 font-medium">
+                        Course completed successfully! Your certificate has been unlocked.
+                      </span>
+                    </div>
+
+                    <Button
+                      asChild
+                      size="sm"
+                      className="w-full text-xs h-9 rounded-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white shadow-xs font-semibold"
+                    >
+                      <a href={`/api/courses/certificate/${certificateId}`} target="_blank" rel="noopener noreferrer">
+                        Download Certificate
+                      </a>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="p-3.5 bg-muted/40 border border-border/40 rounded-xl flex items-start gap-2.5">
+                    <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                    <span className="text-[11px] text-muted-foreground leading-relaxed">
+                      Complete all curriculum modules to unlock the course certificate.
                     </span>
                   </div>
-                  
-                  <Button size="sm" className="w-full text-xs h-9 rounded-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white shadow-xs font-semibold">
-                    Download Certificate
-                  </Button>
-                </div>
-              ) : (
-                <div className="p-3.5 bg-muted/40 border border-border/40 rounded-xl flex items-start gap-2.5">
-                  <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                  <span className="text-[11px] text-muted-foreground leading-relaxed">
-                    Complete all curriculum modules to unlock the course certificate.
-                  </span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Instructor Details Card */}
-          <Card className="border-border/50 bg-card rounded-xl shadow-xs">
+          <Card className="border border-border/50 bg-card rounded-xl shadow-xs">
             <CardHeader className="pb-3">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Instructor</CardTitle>
             </CardHeader>

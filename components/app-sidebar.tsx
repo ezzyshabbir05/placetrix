@@ -89,6 +89,7 @@ const NAV_MAIN: Record<AccountType, NavItem[]> = {
   admin: [
     { title: "Home", url: "/~/home", icon: IconHome },
     { title: "Users", url: "/~/users", icon: IconUsers },
+    { title: "Courses", url: "/~/courses", icon: IconBook },
     { title: "Analytics", url: "/~/analytics", icon: IconFileAnalytics },
     { title: "Support Queue", url: "/~/support", icon: IconHelp },
   ],
