@@ -17,6 +17,9 @@ interface SearchParams {
   course?: string
   sortBy?: string
   sortOrder?: string
+  ctcMin?: string
+  ctcMax?: string
+  drive?: string
 }
 
 export default async function PlacementManagementPage(props: {
@@ -36,10 +39,13 @@ export default async function PlacementManagementPage(props: {
   const courseFilter = params.course || ""
   const sortBy = params.sortBy || "name"
   const sortOrder = params.sortOrder || "asc"
+  const ctcMin = params.ctcMin || ""
+  const ctcMax = params.ctcMax || ""
+  const driveFilter = params.drive || ""
 
   const supabase = await createClient()
 
-  // ── Fetch available filter options (years + courses for this institute) ──
+  // ── Fetch available filter options (years + courses + drives for this institute) ──
   const { data: filterOptions } = await (supabase as any)
     .from("candidate_profiles")
     .select("passout_year, course_name")
@@ -56,10 +62,29 @@ export default async function PlacementManagementPage(props: {
     )
   ).sort()
 
+  // ── Fetch available drive tags for this institute's students ──
+  // We get all candidate UUIDs for this institute first
+  const { data: candidateIds } = await (supabase as any)
+    .from("candidate_profiles")
+    .select("profile_id")
+    .eq("institute_id", profile.id)
+
+  const allCandidateUuids: string[] = (candidateIds || []).map((r: any) => r.profile_id)
+
+  let availableDrives: string[] = []
+  if (allCandidateUuids.length > 0) {
+    const { data: driveData } = await (supabase as any)
+      .from("pt_mt_info")
+      .select("drive_tag")
+      .in("candidate_uuid", allCandidateUuids)
+      .not("drive_tag", "is", null)
+
+    availableDrives = Array.from(
+      new Set<string>((driveData || []).map((r: any) => r.drive_tag).filter(Boolean))
+    ).sort()
+  }
+
   // ── Build query against candidate_profiles ────────────────────────────
-  // We do NOT embed pt_mt_info here — PostgREST embedding via FK can silently
-  // return empty arrays when RLS on the embedded table is evaluated separately.
-  // Instead we fetch pt_mt_info in a second query and merge in code.
   let query = (supabase as any)
     .from("candidate_profiles")
     .select(
@@ -100,6 +125,21 @@ export default async function PlacementManagementPage(props: {
     const ids = (placedIds || []).map((r: any) => r.candidate_uuid)
     if (ids.length > 0) {
       query = query.not("profile_id", "in", `(${ids.join(",")})`)
+    }
+  }
+
+  // ── Drive filter ───────────────────────────────────────────────────────
+  if (driveFilter) {
+    const { data: driveIds } = await (supabase as any)
+      .from("pt_mt_info")
+      .select("candidate_uuid")
+      .eq("drive_tag", driveFilter)
+
+    const ids = (driveIds || []).map((r: any) => r.candidate_uuid)
+    if (ids.length === 0) {
+      query = query.eq("profile_id", "00000000-0000-0000-0000-000000000000")
+    } else {
+      query = query.in("profile_id", ids)
     }
   }
 
@@ -167,12 +207,13 @@ export default async function PlacementManagementPage(props: {
     job_role: string | null
     offer_type: string | null
     location: string | null
+    drive_tag: string | null
   }>()
 
   if (profileIds.length > 0) {
     const { data: ptData, error: ptError } = await (supabase as any)
       .from("pt_mt_info")
-      .select("candidate_uuid, company_name, ctc, offer_letter_date, job_role, offer_type, location")
+      .select("candidate_uuid, company_name, ctc, offer_letter_date, job_role, offer_type, location, drive_tag")
       .in("candidate_uuid", profileIds)
 
     if (ptError) {
@@ -187,6 +228,7 @@ export default async function PlacementManagementPage(props: {
         job_role: row.job_role ?? null,
         offer_type: row.offer_type ?? null,
         location: row.location ?? null,
+        drive_tag: row.drive_tag ?? null,
       })
     }
   }
@@ -207,11 +249,25 @@ export default async function PlacementManagementPage(props: {
       job_role: pt?.job_role ?? null,
       offer_type: pt?.offer_type ?? null,
       location: pt?.location ?? null,
+      drive_tag: pt?.drive_tag ?? null,
       profile_image_path: r.profile_image_path
         ? supabase.storage.from("avatars").getPublicUrl(r.profile_image_path).data.publicUrl
         : null,
     }
   })
+
+  // ── CTC range filter (post-merge) ──────────────────────────────────────
+  const ctcMinNum = ctcMin ? parseFloat(ctcMin) : null
+  const ctcMaxNum = ctcMax ? parseFloat(ctcMax) : null
+
+  if (ctcMinNum !== null || ctcMaxNum !== null) {
+    records = records.filter((r) => {
+      if (r.ctc === null) return false
+      if (ctcMinNum !== null && r.ctc < ctcMinNum) return false
+      if (ctcMaxNum !== null && r.ctc > ctcMaxNum) return false
+      return true
+    })
+  }
 
   // ── Sort company/ctc in code after merge ───────────────────────────────
   if (sortBy === "company") {
@@ -227,7 +283,6 @@ export default async function PlacementManagementPage(props: {
       return ascending ? av - bv : bv - av
     })
   }
-
 
   const placedCount = records.filter((r) => r.company_name).length
 
@@ -259,6 +314,10 @@ export default async function PlacementManagementPage(props: {
         initialSortDir={sortOrder as "asc" | "desc"}
         availableYears={availableYears}
         availableCourses={availableCourses}
+        initialCtcMin={ctcMin}
+        initialCtcMax={ctcMax}
+        initialDrive={driveFilter}
+        availableDrives={availableDrives}
       />
     </div>
   )

@@ -1,0 +1,105 @@
+﻿
+> placetrix@1.3.3 build
+> next build
+
+node : ΓÜá Warning: Next.js inferred your workspace root, but it may not be correct.
+At line:1 char:1
++ node "C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js" run bu ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ΓÜá Warning: Ne...not be correct.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ We detected multiple lockfiles and selected the directory of C:\Users\PUSHKAR\Desktop\360vt\package-lock.json as the 
+root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if 
+it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\PUSHKAR\Desktop\360vt\placetrix\package-lock.json
+
+Γû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local
+
+ΓÜá The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: 
+https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 6.8s
+  Running TypeScript ...
+  Collecting page data using 15 workers ...
+  Generating static pages using 15 workers (0/50) ...
+  Generating static pages using 15 workers (12/50) 
+  Generating static pages using 15 workers (24/50) 
+  Generating static pages using 15 workers (37/50) 
+Γ£ô Generating static pages using 15 workers (50/50) in 416.0ms
+  Finalizing page optimization ...
+
+Route (app)
+Γöî Γùï /
+Γö£ Γùï /_not-found
+Γö£ ╞Æ /~
+Γö£ ╞Æ /~/analytics
+Γö£ ╞Æ /~/applications
+Γö£ ╞Æ /~/candidates
+Γö£ ╞Æ /~/courses
+Γö£ ╞Æ /~/courses/[courseId]
+Γö£ ╞Æ /~/courses/[courseId]/edit
+Γö£ ╞Æ /~/courses/[courseId]/module/[moduleId]
+Γö£ ╞Æ /~/drives
+Γö£ ╞Æ /~/gethelp
+Γö£ ╞Æ /~/gethelp/[ticketId]
+Γö£ ╞Æ /~/gethelp/new
+Γö£ ╞Æ /~/groups
+Γö£ ╞Æ /~/home
+Γö£ ╞Æ /~/jobs
+Γö£ ╞Æ /~/logiclab
+Γö£ ╞Æ /~/logiclab/admin
+Γö£ ╞Æ /~/logiclab/admin/edit/[id]
+Γö£ ╞Æ /~/logiclab/playground
+Γö£ ╞Æ /~/logiclab/problems/[id]
+Γö£ ╞Æ /~/myprofile
+Γö£ ╞Æ /~/notifications
+Γö£ ╞Æ /~/placement-management
+Γö£ ╞Æ /~/postings
+Γö£ ╞Æ /~/postings/[postingId]/applications
+Γö£ ╞Æ /~/resume
+Γö£ ╞Æ /~/resume-analyzer
+Γö£ ╞Æ /~/settings
+Γö£ ╞Æ /~/students
+Γö£ ╞Æ /~/support
+Γö£ ╞Æ /~/support/[ticketId]
+Γö£ ╞Æ /~/tests
+Γö£ ╞Æ /~/tests/[testId]
+Γö£ ╞Æ /~/tests/[testId]/attempt
+Γö£ ╞Æ /~/tests/[testId]/edit
+Γö£ ╞Æ /~/tests/[testId]/result/[attemptId]
+Γö£ ╞Æ /~/users
+Γö£ ╞Æ /api/admin/maintenance
+Γö£ ╞Æ /api/courses/certificate/[certificateId]
+Γö£ ╞Æ /api/logiclab/run
+Γö£ ╞Æ /api/logiclab/seed-problems
+Γö£ ╞Æ /api/logiclab/submit
+Γö£ Γùï /auth
+Γö£ ╞Æ /auth/callback
+Γö£ Γùï /auth/change-password
+Γö£ ╞Æ /auth/confirm
+Γö£ ╞Æ /auth/error
+Γö£ Γùï /auth/login
+Γö£ Γùï /auth/mfa
+Γö£ Γùï /auth/reset-password
+Γö£ Γùï /auth/sign-up
+Γö£ Γùï /auth/sign-up-success
+Γö£ Γùï /connection-error
+Γö£ Γùï /help-center
+Γö£ Γùï /maintenance
+Γö£ Γùï /our-team
+Γö£ Γùï /pricing
+Γö£ Γùï /privacy-policy
+Γö£ Γùï /terms-of-service
+Γöö ╞Æ /verify/[certificateId]
+
+
+╞Æ Proxy (Middleware)
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+
