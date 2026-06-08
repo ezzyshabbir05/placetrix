@@ -132,6 +132,7 @@ export function ProblemsDirectoryClient({
   initialTag,
   totalCount,
   allTags,
+  tagCounts,
   globalStats,
 }: ProblemsDirectoryProps) {
   const router = useRouter()
@@ -139,6 +140,7 @@ export function ProblemsDirectoryClient({
 
   const [isPending, startTransition] = useTransition()
   const [searchInput, setSearchInput] = useState(initialSearch)
+  const [showAllTags, setShowAllTags] = useState(false)
   const isOwnUpdateRef = useRef(false)
 
   // Align cells into weeks starting on Sunday
@@ -323,36 +325,32 @@ export function ProblemsDirectoryClient({
       </div>
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Card 1: Progress & Difficulty */}
-        <Card className="shadow-sm border-border/60 flex flex-col justify-between">
+        <Card className="lg:col-span-1 shadow-sm border-border/60 flex flex-col justify-between">
           <CardHeader className="pb-0 pt-4 px-5">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Progress</CardTitle>
           </CardHeader>
           <CardContent className="pb-4 px-5 h-full flex flex-col justify-center">
             <div className="flex items-center justify-between w-full">
               <div className="flex flex-col justify-center">
-                <div className="flex items-baseline gap-1.5 mb-1">
-                  <span className="text-4xl font-extrabold">{globalStats.solved}</span>
-                  <span className="text-xs text-muted-foreground font-semibold">/ {globalStats.total}</span>
-                </div>
-                <div className="flex flex-col gap-1.5 mt-2">
+                <div className="flex flex-col gap-2 mt-1">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-emerald-500"/>
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Easy <span className="text-emerald-500 ml-1">{globalStats.easy.solved}</span></span>
+                    <span className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Easy <span className="text-emerald-500 ml-1">{globalStats.easy.solved}</span> <span className="text-muted-foreground/40 text-[10px] ml-0.5">/ {globalStats.easy.total}</span></span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-amber-500"/>
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Med <span className="text-amber-500 ml-1">{globalStats.medium.solved}</span></span>
+                    <span className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Med <span className="text-amber-500 ml-1">{globalStats.medium.solved}</span> <span className="text-muted-foreground/40 text-[10px] ml-0.5">/ {globalStats.medium.total}</span></span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-rose-500"/>
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Hard <span className="text-rose-500 ml-1">{globalStats.hard.solved}</span></span>
+                    <span className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Hard <span className="text-rose-500 ml-1">{globalStats.hard.solved}</span> <span className="text-muted-foreground/40 text-[10px] ml-0.5">/ {globalStats.hard.total}</span></span>
                   </div>
                 </div>
               </div>
               
-              <div className="relative w-[85px] h-[85px] shrink-0">
+              <div className="relative w-[90px] h-[90px] shrink-0">
                 <svg className="w-full h-full drop-shadow-md" viewBox="0 0 100 100">
                   <defs>
                     <linearGradient id="easyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -372,6 +370,9 @@ export function ProblemsDirectoryClient({
                   <ConcentricRing radius={28} value={globalStats.medium.solved} max={globalStats.medium.total} color="url(#medGrad)" trackColor="rgba(245, 158, 11, 0.15)" />
                   <ConcentricRing radius={16} value={globalStats.hard.solved} max={globalStats.hard.total} color="url(#hardGrad)" trackColor="rgba(244, 63, 94, 0.15)" />
                 </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-[22px] font-extrabold">{globalStats.solved}</span>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -379,8 +380,18 @@ export function ProblemsDirectoryClient({
 
         {/* Card 2: Activity Heat Map */}
         <Card className="shadow-sm border-border/60 flex flex-col justify-between">
-          <CardHeader className="pb-0 pt-4 px-5">
+          <CardHeader className="pb-0 pt-4 px-5 flex flex-row items-center justify-between">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Activity Graph</CardTitle>
+            <div className="flex items-center gap-3 text-sm">
+              <div className="flex items-center gap-1.5 font-medium">
+                <Flame className="w-4 h-4 text-orange-500" />
+                <span className="text-foreground">{streakStats.currentStreak} Day Streak</span>
+              </div>
+              <span className="text-muted-foreground/40">|</span>
+              <div className="text-muted-foreground font-medium text-xs">
+                Max: <span className="text-foreground">{streakStats.maxStreak}</span>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="flex items-center justify-center p-4 pt-2">
             <div className="flex gap-2 w-full overflow-x-auto scrollbar-none">
@@ -447,43 +458,42 @@ export function ProblemsDirectoryClient({
           </CardContent>
         </Card>
 
-        {/* Card 3: Streak */}
-        <Card className="shadow-sm border-border/60 relative overflow-hidden flex flex-col justify-between">
-          <div className="absolute right-4 top-4 opacity-[0.15] text-orange-500 pointer-events-none">
-            <Flame className="w-16 h-16" />
-          </div>
-          <CardHeader className="pb-0 pt-4 px-5">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Current Streak</CardTitle>
+        {/* Card 3: Topics / Tags */}
+        <Card className="shadow-sm border-border/60 flex flex-col justify-between">
+          <CardHeader className="pb-0 pt-4 px-5 flex flex-row items-center justify-between">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Topics</CardTitle>
           </CardHeader>
-          <CardContent className="relative z-10 pb-4 px-5 h-full flex flex-col justify-between">
-            <div className="mt-1">
-              <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-4xl font-extrabold text-orange-500">{streakStats.currentStreak}</span>
-                <span className="text-sm text-orange-500/70 font-bold uppercase tracking-wider">Days</span>
-              </div>
-              <p className="text-[11px] text-muted-foreground font-semibold">
-                Max Streak: <span className="text-foreground">{streakStats.maxStreak}</span>
-              </p>
-            </div>
-            
-            <div className="mt-4 flex items-center justify-between border-t border-border/40 pt-2 pb-1">
-              <span className="text-[9px] uppercase tracking-wider font-bold text-muted-foreground">Last 7 Days</span>
-              <div className="flex gap-2">
-                {activityCalendar.slice(-7).map((day, idx) => {
-                   const isSolved = day.status === "solved"
-                   const daysOfWeek = ["S", "M", "T", "W", "T", "F", "S"]
-                   const dayName = daysOfWeek[day.dayOfWeek] || ""
-                   return (
-                     <div key={idx} className="flex flex-col items-center gap-1.5">
-                       <div 
-                         className={cn("w-3.5 h-3.5 rounded-full transition-all border border-black/5 dark:border-white/5", isSolved ? "bg-gradient-to-tr from-orange-500 to-amber-400 shadow-[0_0_10px_rgba(249,115,22,0.5)] scale-110" : "bg-muted dark:bg-muted/40")}
-                         title={day.date}
-                       />
-                       <span className={cn("text-[8px] font-extrabold uppercase", isSolved ? "text-orange-500/80" : "text-muted-foreground/40")}>{dayName}</span>
-                     </div>
-                   )
-                })}
-              </div>
+          <CardContent className="p-5 pt-4 overflow-y-auto max-h-[165px] scrollbar-thin">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={initialTag === "All" ? "default" : "secondary"}
+                size="sm"
+                onClick={() => updateParams({ tag: "All", page: 1 })}
+                className="rounded-full h-7 px-3 text-[11px] font-medium"
+              >
+                All Topics
+              </Button>
+              {allTags.slice(0, showAllTags ? undefined : 14).map(tag => (
+                <Button
+                  key={tag}
+                  variant={initialTag === tag ? "default" : "secondary"}
+                  size="sm"
+                  onClick={() => updateParams({ tag, page: 1 })}
+                  className="rounded-full h-7 px-3 text-[11px] font-medium"
+                >
+                  {tag} <span className="ml-1 opacity-50 text-[9px]">{tagCounts[tag] || 0}</span>
+                </Button>
+              ))}
+              {allTags.length > 14 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAllTags(!showAllTags)}
+                  className="rounded-full h-7 px-3 text-[11px] font-medium text-muted-foreground hover:bg-muted/50"
+                >
+                  {showAllTags ? "Show Less" : `... +${allTags.length - 14} More`}
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -496,6 +506,18 @@ export function ProblemsDirectoryClient({
         <Card className="shadow-sm border-border/60 overflow-hidden">
           {/* Toolbar */}
           <div className="p-4 border-b border-border/60 bg-muted/10 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+            
+            {/* Tabs (Moved to Left) */}
+            <Tabs value={initialTab} onValueChange={(v) => updateParams({ tab: v, page: 1 })} className="w-full xl:w-auto">
+              <TabsList className="h-10 w-full xl:w-auto p-1 bg-muted/50 overflow-x-auto flex justify-start rounded-xl">
+                <TabsTrigger value="all" className="px-5 text-sm rounded-lg data-[state=active]:shadow-sm">All</TabsTrigger>
+                <TabsTrigger value="solved" className="px-5 text-sm rounded-lg data-[state=active]:shadow-sm">Solved</TabsTrigger>
+                <TabsTrigger value="attempted" className="px-5 text-sm rounded-lg data-[state=active]:shadow-sm">Attempted</TabsTrigger>
+                <TabsTrigger value="unsolved" className="px-5 text-sm rounded-lg data-[state=active]:shadow-sm">Unsolved</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            {/* Search & Difficulty (Moved to Right) */}
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
               <div className="relative w-full sm:w-80">
                 {isPending ? (
@@ -507,7 +529,7 @@ export function ProblemsDirectoryClient({
                   placeholder="Search problems..."
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  className="pl-9 pr-9 h-10 w-full bg-background text-sm"
+                  className="pl-9 pr-9 h-10 w-full bg-background text-sm rounded-lg"
                 />
                 {searchInput && (
                   <button
@@ -523,7 +545,7 @@ export function ProblemsDirectoryClient({
                 )}
               </div>
               <Select value={initialDifficulty} onValueChange={(val) => updateParams({ difficulty: val, page: 1 })}>
-                <SelectTrigger className="h-10 w-full sm:w-[160px] bg-background text-sm">
+                <SelectTrigger className="h-10 w-full sm:w-[160px] bg-background text-sm rounded-lg">
                   <div className="flex items-center gap-2">
                     <Filter className="w-4 h-4 text-muted-foreground" />
                     <SelectValue placeholder="Difficulty" />
@@ -537,15 +559,6 @@ export function ProblemsDirectoryClient({
                 </SelectContent>
               </Select>
             </div>
-
-            <Tabs value={initialTab} onValueChange={(v) => updateParams({ tab: v, page: 1 })} className="w-full xl:w-auto">
-              <TabsList className="h-10 w-full xl:w-auto p-1 bg-muted/50 overflow-x-auto flex justify-start">
-                <TabsTrigger value="all" className="px-5 text-sm">All</TabsTrigger>
-                <TabsTrigger value="solved" className="px-5 text-sm">Solved</TabsTrigger>
-                <TabsTrigger value="attempted" className="px-5 text-sm">Attempted</TabsTrigger>
-                <TabsTrigger value="unsolved" className="px-5 text-sm">Unsolved</TabsTrigger>
-              </TabsList>
-            </Tabs>
           </div>
 
           {/* Table Body */}
