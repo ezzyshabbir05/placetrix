@@ -1,7 +1,7 @@
 import { redirect, notFound } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getUserProfile } from "@/lib/supabase/profile"
-import { AdminCourseForm } from "../../AdminCourseForm"
+import { CreateCourseClient } from "./CreateCourseClient"
 
 interface PageProps {
   params: Promise<{
@@ -9,9 +9,15 @@ interface PageProps {
   }>
 }
 
-export const metadata = {
-  title: "Edit Course — Admin",
-  description: "Modify course details and syllabus modules",
+export async function generateMetadata({ params }: PageProps) {
+  const { courseId } = await params
+  const isNew = courseId === "new"
+  return {
+    title: isNew ? "Create Course — Admin" : "Edit Course — Admin",
+    description: isNew
+      ? "Form to create a new database-linked training course"
+      : "Modify course details and syllabus modules",
+  }
 }
 
 export default async function EditCoursePage({ params }: PageProps) {
@@ -19,6 +25,12 @@ export default async function EditCoursePage({ params }: PageProps) {
   const profile = await getUserProfile()
   if (!profile || profile.account_type !== "admin") {
     redirect("/~/courses")
+  }
+
+  const isNew = courseId === "new"
+
+  if (isNew) {
+    return <CreateCourseClient />
   }
 
   const supabase = await createClient()
@@ -56,11 +68,10 @@ export default async function EditCoursePage({ params }: PageProps) {
   }))
 
   return (
-    <div className="px-4 py-8 md:px-8">
-      <AdminCourseForm
-        initialCourse={course}
-        initialModules={formattedModules}
-      />
-    </div>
+    <CreateCourseClient
+      initialCourse={course}
+      initialModules={formattedModules}
+    />
   )
 }
+

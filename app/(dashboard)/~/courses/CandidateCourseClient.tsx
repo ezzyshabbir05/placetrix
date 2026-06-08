@@ -3,7 +3,10 @@
 import * as React from "react"
 import { useState, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { BookOpen, Clock, Search, Layers, X, ChevronRight, CheckCircle2 } from "lucide-react"
+import {
+  BookOpen, Clock, Search, X, ChevronRight, CheckCircle2,
+  LayoutGrid, LayoutList, TrendingUp, Flame
+} from "lucide-react"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -114,7 +117,90 @@ function CourseCover({ courseId }: { courseId: string }) {
   }
 }
 
-// ─── CourseCard Component ───────────────────────────────────────────────────
+// ─── Overall Progress Stats Banner ──────────────────────────────────────────
+interface StatsBannerProps {
+  courses: Course[]
+  courseStats: Record<string, { total: number; completed: number; percentage: number }>
+}
+
+function OverallStatsBanner({ courses, courseStats }: StatsBannerProps) {
+  const overall = useMemo(() => {
+    let totalModules = 0
+    let completedModules = 0
+    let enrolledCount = 0
+    let completedCourses = 0
+
+    courses.forEach(course => {
+      const stats = courseStats[course.id]
+      if (!stats) return
+      if (stats.percentage > 0) enrolledCount++
+      if (stats.percentage === 100) completedCourses++
+      totalModules += stats.total
+      completedModules += stats.completed
+    })
+
+    const overallPct = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
+    return { totalModules, completedModules, enrolledCount, completedCourses, overallPct }
+  }, [courses, courseStats])
+
+  if (overall.enrolledCount === 0) return null
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/8 via-primary/4 to-transparent p-5 animate-in fade-in slide-in-from-top-2 duration-500">
+      {/* Decorative blur orb */}
+      <div className="pointer-events-none absolute -right-8 -top-8 h-36 w-36 rounded-full bg-primary/10 blur-2xl" />
+
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+        {/* Left: Flame icon + headline */}
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="h-10 w-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0 border border-primary/20">
+            <TrendingUp className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-primary/80">Learning Journey</p>
+            <p className="text-xl font-bold text-foreground tabular-nums">{overall.overallPct}% complete</p>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="hidden sm:block h-10 w-px bg-border/50" />
+
+        {/* Right: Stat pills */}
+        <div className="flex flex-wrap gap-3 flex-1">
+          <div className="flex flex-col items-center justify-center bg-background/60 backdrop-blur-sm border border-border/50 rounded-xl px-4 py-2 min-w-[80px]">
+            <span className="text-lg font-bold text-foreground tabular-nums">{overall.enrolledCount}</span>
+            <span className="text-[10px] text-muted-foreground font-medium">Enrolled</span>
+          </div>
+          <div className="flex flex-col items-center justify-center bg-background/60 backdrop-blur-sm border border-border/50 rounded-xl px-4 py-2 min-w-[80px]">
+            <span className="text-lg font-bold text-foreground tabular-nums">{overall.completedModules}<span className="text-xs font-normal text-muted-foreground">/{overall.totalModules}</span></span>
+            <span className="text-[10px] text-muted-foreground font-medium">Modules Done</span>
+          </div>
+          <div className="flex flex-col items-center justify-center bg-background/60 backdrop-blur-sm border border-border/50 rounded-xl px-4 py-2 min-w-[80px]">
+            <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{overall.completedCourses}</span>
+            <span className="text-[10px] text-muted-foreground font-medium">Completed</span>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="sm:ml-auto flex flex-col gap-1.5 shrink-0 w-full sm:w-36">
+          <div className="flex justify-between text-[10px] font-medium text-muted-foreground">
+            <span>Overall</span>
+            <span className="text-foreground font-semibold">{overall.overallPct}%</span>
+          </div>
+          <Progress
+            value={overall.overallPct}
+            className={cn(
+              "h-2 bg-primary/10",
+              overall.overallPct === 100 && "[&>[data-slot=progress-indicator]]:bg-emerald-500"
+            )}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── CourseCard Component (Grid) ────────────────────────────────────────────
 interface CourseCardProps {
   course: Course
   stats: { total: number; completed: number; percentage: number }
@@ -194,12 +280,12 @@ function CourseCard({ course, stats, onSelect }: CourseCardProps) {
                       isCompleted ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"
                     )}>{stats.percentage}%</span>
                   </div>
-                  <Progress 
-                    value={stats.percentage} 
+                  <Progress
+                    value={stats.percentage}
                     className={cn(
                       "h-1.5 bg-muted",
                       isCompleted && "[&>[data-slot=progress-indicator]]:bg-emerald-500"
-                    )} 
+                    )}
                   />
                 </div>
               ) : (
@@ -219,13 +305,150 @@ function CourseCard({ course, stats, onSelect }: CourseCardProps) {
   )
 }
 
-// ─── Main Component ─────────────────────────────────────────────────────────
+// ─── CourseRow Component (List View) ────────────────────────────────────────
+function CourseRow({ course, stats, onSelect }: CourseCardProps) {
+  const isCompleted = stats.percentage === 100
+
+  return (
+    <div
+      onClick={onSelect}
+      className="group flex items-center gap-4 p-4 rounded-xl border border-border/50 bg-card hover:border-primary/30 hover:shadow-md hover:bg-muted/10 cursor-pointer select-none transition-all duration-200"
+    >
+      {/* Thumbnail */}
+      <div className="h-16 w-24 shrink-0 rounded-lg overflow-hidden bg-muted">
+        <CourseCover courseId={course.id} />
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0 space-y-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{course.category}</span>
+          <span className="text-muted-foreground/30 text-[10px]">•</span>
+          <span className="text-[10px] text-muted-foreground capitalize">{course.level}</span>
+          {course.badge && (
+            <span className="bg-primary/10 text-primary text-[9px] px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wider border border-primary/15">
+              {course.badge}
+            </span>
+          )}
+        </div>
+        <p className="font-semibold text-sm text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+          {course.title}
+        </p>
+        <p className="text-xs text-muted-foreground line-clamp-1">{course.description}</p>
+        <div className="flex items-center gap-3 pt-0.5">
+          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+            <Clock className="h-3 w-3" />
+            {course.duration}
+          </span>
+          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+            <BookOpen className="h-3 w-3" />
+            {course.modules.length} {course.modules.length === 1 ? "module" : "modules"}
+          </span>
+        </div>
+      </div>
+
+      {/* Progress */}
+      <div className="hidden sm:flex flex-col items-end gap-2 shrink-0 w-28">
+        {stats.percentage > 0 ? (
+          <>
+            <span className={cn(
+              "text-xs font-semibold tabular-nums",
+              isCompleted ? "text-emerald-500" : "text-foreground"
+            )}>
+              {stats.percentage}%
+            </span>
+            <Progress
+              value={stats.percentage}
+              className={cn(
+                "h-1.5 w-full bg-muted",
+                isCompleted && "[&>[data-slot=progress-indicator]]:bg-emerald-500"
+              )}
+            />
+            <span className={cn(
+              "text-[10px]",
+              isCompleted ? "text-emerald-500 font-semibold" : "text-muted-foreground"
+            )}>
+              {isCompleted ? "Completed" : "In Progress"}
+            </span>
+          </>
+        ) : (
+          <span className="text-[11px] text-muted-foreground italic">Not started</span>
+        )}
+      </div>
+
+      <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary shrink-0 transition-colors" />
+    </div>
+  )
+}
+
+// ─── Filter Chips ────────────────────────────────────────────────────────────
+interface FilterChipsProps<T extends string> {
+  label: string
+  options: T[]
+  value: T | "all"
+  onChange: (v: T | "all") => void
+  colorMap?: Record<string, string>
+}
+
+function FilterChips<T extends string>({ label, options, value, onChange, colorMap }: FilterChipsProps<T>) {
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground shrink-0">{label}</span>
+      <button
+        onClick={() => onChange("all")}
+        className={cn(
+          "text-[11px] px-3 py-1 rounded-full border font-medium transition-all duration-150",
+          value === "all"
+            ? "bg-foreground text-background border-foreground"
+            : "bg-muted/50 border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
+        )}
+      >
+        All
+      </button>
+      {options.map(opt => (
+        <button
+          key={opt}
+          onClick={() => onChange(opt === value ? "all" : opt)}
+          className={cn(
+            "text-[11px] px-3 py-1 rounded-full border font-medium transition-all duration-150",
+            value === opt
+              ? colorMap?.[opt] || "bg-primary text-primary-foreground border-primary"
+              : "bg-muted/50 border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
+          )}
+        >
+          {opt}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+const LEVEL_OPTIONS: Array<"Beginner" | "Intermediate" | "Advanced"> = ["Beginner", "Intermediate", "Advanced"]
+const LEVEL_COLOR_MAP: Record<string, string> = {
+  Beginner: "bg-emerald-600 text-white border-emerald-600",
+  Intermediate: "bg-amber-500 text-white border-amber-500",
+  Advanced: "bg-rose-600 text-white border-rose-600",
+}
+
+const CATEGORY_OPTIONS: Array<"Core CS" | "Web Development" | "Interview Prep" | "System Design"> = [
+  "Core CS", "Web Development", "Interview Prep", "System Design"
+]
+const CATEGORY_COLOR_MAP: Record<string, string> = {
+  "Core CS": "bg-indigo-600 text-white border-indigo-600",
+  "Web Development": "bg-teal-600 text-white border-teal-600",
+  "Interview Prep": "bg-amber-600 text-white border-amber-600",
+  "System Design": "bg-purple-600 text-white border-purple-600",
+}
+
+// ─── Main Component ──────────────────────────────────────────────────────────
 export function CandidateCourseClient({ initialCourses }: { initialCourses: Course[] }) {
   const router = useRouter()
   const [courses, setCourses] = useState<Course[]>(initialCourses)
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState<"all" | "in-progress" | "completed">("all")
-
+  const [levelFilter, setLevelFilter] = useState<"Beginner" | "Intermediate" | "Advanced" | "all">("all")
+  const [categoryFilter, setCategoryFilter] = useState<"Core CS" | "Web Development" | "Interview Prep" | "System Design" | "all">("all")
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
 
   // Load progress from localStorage on client-side mount
   useEffect(() => {
@@ -234,7 +457,6 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
       if (saved) {
         try {
           const parsed = JSON.parse(saved) as Course[]
-          // Merge parsed progress into INITIAL_COURSES template to migrate format/fields
           const merged = initialCourses.map(templateCourse => {
             const savedCourse = parsed.find(c => c.id === templateCourse.id)
             if (!savedCourse) return templateCourse
@@ -255,29 +477,33 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
           console.error("Failed to parse courses progress:", e)
         }
       }
+      // Restore view mode preference
+      const savedView = localStorage.getItem("placetrix_courses_view")
+      if (savedView === "list" || savedView === "grid") setViewMode(savedView)
     }
   }, [initialCourses])
+
+  const handleViewToggle = (mode: "grid" | "list") => {
+    setViewMode(mode)
+    localStorage.setItem("placetrix_courses_view", mode)
+  }
 
   // Calculate statistics for each course
   const courseStats = useMemo(() => {
     const statsMap: Record<string, { total: number; completed: number; percentage: number }> = {}
-
     courses.forEach(course => {
       let total = 0
       let completed = 0
-
       course.modules.forEach(mod => {
         total++
         if (mod.completed) completed++
       })
-
       statsMap[course.id] = {
         total,
         completed,
         percentage: total > 0 ? Math.round((completed / total) * 100) : 0
       }
     })
-
     return statsMap
   }, [courses])
 
@@ -288,20 +514,17 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
       counts.all++
       const stats = courseStats[course.id]
       if (stats) {
-        if (stats.percentage === 100) {
-          counts.completed++
-        } else if (stats.percentage > 0) {
-          counts["in-progress"]++
-        }
+        if (stats.percentage === 100) counts.completed++
+        else if (stats.percentage > 0) counts["in-progress"]++
       }
     })
     return counts
   }, [courses, courseStats])
 
-  // Filter courses based on search and selected tab (status)
+  // Filter courses based on search, tab, level, and category
   const filteredCourses = useMemo(() => {
     return courses.filter(course => {
-      // Status filter based on activeTab
+      // Status filter
       if (activeTab !== "all") {
         const stats = courseStats[course.id]
         if (activeTab === "in-progress") {
@@ -313,6 +536,12 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
         }
       }
 
+      // Level filter
+      if (levelFilter !== "all" && course.level !== levelFilter) return false
+
+      // Category filter
+      if (categoryFilter !== "all" && course.category !== categoryFilter) return false
+
       // Search filter
       if (searchQuery.trim() !== "") {
         const query = searchQuery.toLowerCase()
@@ -323,15 +552,21 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
 
       return true
     })
-  }, [courses, activeTab, searchQuery, courseStats])
-
-  const displayedCourses = filteredCourses
+  }, [courses, activeTab, searchQuery, courseStats, levelFilter, categoryFilter])
 
   const tabConfig = [
     { value: "all" as const, label: "All", count: tabCounts.all },
     { value: "in-progress" as const, label: "In Progress", count: tabCounts["in-progress"] },
     { value: "completed" as const, label: "Completed", count: tabCounts.completed },
   ]
+
+  const hasActiveFilters = levelFilter !== "all" || categoryFilter !== "all" || searchQuery.trim() !== ""
+
+  const clearAllFilters = () => {
+    setLevelFilter("all")
+    setCategoryFilter("all")
+    setSearchQuery("")
+  }
 
   return (
     <div className="flex flex-col gap-6 px-4 py-8 md:px-8">
@@ -343,9 +578,12 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
         </p>
       </div>
 
+      {/* Overall Progress Stats Banner */}
+      <OverallStatsBanner courses={courses} courseStats={courseStats} />
+
       <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as any) }}>
         <div className="space-y-4">
-          {/* Search (left) + Tabs (right) */}
+          {/* Search (left) + View Toggle + Tabs (right) */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             {/* Search Input */}
             <div className="relative w-full sm:max-w-xs">
@@ -366,35 +604,98 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
               )}
             </div>
 
-            {/* Right side controls: Tabs list */}
-            <div className="overflow-x-auto shrink-0 w-full sm:w-auto">
-              <TabsList className="inline-flex h-9 gap-0.5 rounded-lg bg-muted p-1 w-full sm:w-auto">
-                {tabConfig.map(({ value, label, count }) => (
-                  <TabsTrigger
-                    key={value}
-                    value={value}
-                    className="gap-1.5 rounded-md px-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm w-full sm:w-auto"
-                  >
-                    {label}
-                    {count > 0 && (
-                      <span className={cn(
-                        "inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold tabular-nums",
-                        activeTab === value
-                          ? "bg-foreground text-background"
-                          : "bg-muted-foreground/20 text-muted-foreground"
-                      )}>
-                        {count}
-                      </span>
-                    )}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+            {/* Right side: view toggle + tabs */}
+            <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-between sm:justify-end">
+              {/* Grid / List toggle */}
+              <div className="flex items-center bg-muted rounded-lg p-1 gap-0.5 h-9">
+                <button
+                  onClick={() => handleViewToggle("grid")}
+                  className={cn(
+                    "h-7 w-7 flex items-center justify-center rounded-md transition-all duration-150",
+                    viewMode === "grid"
+                      ? "bg-background shadow-sm text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  title="Grid view"
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={() => handleViewToggle("list")}
+                  className={cn(
+                    "h-7 w-7 flex items-center justify-center rounded-md transition-all duration-150",
+                    viewMode === "list"
+                      ? "bg-background shadow-sm text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  title="List view"
+                >
+                  <LayoutList className="h-3.5 w-3.5" />
+                </button>
+              </div>
+
+              {/* Tabs list */}
+              <div className="overflow-x-auto shrink-0">
+                <TabsList className="inline-flex h-9 gap-0.5 rounded-lg bg-muted p-1">
+                  {tabConfig.map(({ value, label, count }) => (
+                    <TabsTrigger
+                      key={value}
+                      value={value}
+                      className="gap-1.5 rounded-md px-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                    >
+                      {label}
+                      {count > 0 && (
+                        <span className={cn(
+                          "inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold tabular-nums",
+                          activeTab === value
+                            ? "bg-foreground text-background"
+                            : "bg-muted-foreground/20 text-muted-foreground"
+                        )}>
+                          {count}
+                        </span>
+                      )}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
             </div>
           </div>
 
-          {/* Courses Grid */}
+          {/* Filter chips row */}
+          <div className="flex flex-col gap-2.5">
+            <FilterChips
+              label="Level"
+              options={LEVEL_OPTIONS}
+              value={levelFilter}
+              onChange={v => setLevelFilter(v as any)}
+              colorMap={LEVEL_COLOR_MAP}
+            />
+            <FilterChips
+              label="Category"
+              options={CATEGORY_OPTIONS}
+              value={categoryFilter}
+              onChange={v => setCategoryFilter(v as any)}
+              colorMap={CATEGORY_COLOR_MAP}
+            />
+            {hasActiveFilters && (
+              <div className="flex items-center gap-2 pt-0.5">
+                <span className="text-[11px] text-muted-foreground">
+                  {filteredCourses.length} of {courses.length} courses
+                </span>
+                <button
+                  onClick={clearAllFilters}
+                  className="text-[11px] text-primary hover:underline font-medium flex items-center gap-0.5"
+                >
+                  <X className="h-3 w-3" />
+                  Clear all filters
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Courses Grid / List */}
           <div className="space-y-6">
-            {displayedCourses.length === 0 ? (
+            {filteredCourses.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-24 text-center gap-3 border border-dashed border-border/60 rounded-xl bg-card/50">
                 <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
                   <BookOpen className="h-5 w-5 text-muted-foreground/60" />
@@ -403,10 +704,15 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
                   <p className="text-sm font-medium">No courses found</p>
                   <p className="text-xs text-muted-foreground">Adjust your filters or search query to find courses</p>
                 </div>
+                {hasActiveFilters && (
+                  <button onClick={clearAllFilters} className="text-xs text-primary hover:underline font-medium">
+                    Clear all filters
+                  </button>
+                )}
               </div>
-            ) : (
+            ) : viewMode === "grid" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in duration-300">
-                {displayedCourses.map((course) => (
+                {filteredCourses.map((course) => (
                   <CourseCard
                     key={course.id}
                     course={course}
@@ -415,9 +721,18 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
                   />
                 ))}
               </div>
+            ) : (
+              <div className="flex flex-col gap-3 animate-in fade-in duration-300">
+                {filteredCourses.map((course) => (
+                  <CourseRow
+                    key={course.id}
+                    course={course}
+                    stats={courseStats[course.id]}
+                    onSelect={() => router.push(`/~/courses/${course.id}`)}
+                  />
+                ))}
+              </div>
             )}
-
-
           </div>
         </div>
       </Tabs>

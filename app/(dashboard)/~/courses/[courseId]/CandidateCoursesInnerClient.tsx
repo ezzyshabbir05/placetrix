@@ -1,10 +1,10 @@
 "use client"
 
 import * as React from "react"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import {
-  BookOpen, Clock, ArrowLeft, CheckCircle2, Lock, Award, ChevronRight, FileText
+  BookOpen, Clock, ArrowLeft, CheckCircle2, Lock, Award, ChevronRight, FileText, PlayCircle, Zap
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -53,26 +53,61 @@ interface Props {
   userProfile: any
 }
 
+// ─── Local-storage key helper ─────────────────────────────────────────────────
+const storageKey = (courseId: string) => `placetrix_module_progress_${courseId}`
+
 export function CandidateCoursesInnerClient({ course, isEnrolled, certificateId, userProfile }: Props) {
   const router = useRouter()
   const [isEnrolling, setIsEnrolling] = useState(false)
+
+  // Local completion state that overrides server state for instant UX
+  const [localCompleted, setLocalCompleted] = useState<Record<string, boolean>>(() => {
+    // Will be hydrated from localStorage in useEffect
+    return {}
+  })
+  const [hydrated, setHydrated] = useState(false)
+
+  // Hydrate from localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    try {
+      const raw = localStorage.getItem(storageKey(course.id))
+      if (raw) {
+        setLocalCompleted(JSON.parse(raw))
+      }
+    } catch (_) {}
+    setHydrated(true)
+  }, [course.id])
+
+  // Merge server state with local overrides
+  const modules: Module[] = useMemo(() => {
+    return course.modules.map(mod => ({
+      ...mod,
+      completed: hydrated
+        ? (localCompleted[mod.id] !== undefined ? localCompleted[mod.id] : mod.completed)
+        : mod.completed
+    }))
+  }, [course.modules, localCompleted, hydrated])
 
   // Calculate statistics for this course
   const stats = useMemo(() => {
     let total = 0
     let completed = 0
-
-    course.modules.forEach(mod => {
+    modules.forEach(mod => {
       total++
       if (mod.completed) completed++
     })
-
     return {
       total,
       completed,
       percentage: total > 0 ? Math.round((completed / total) * 100) : 0
     }
-  }, [course])
+  }, [modules])
+
+  // The next incomplete module for "continue" banner
+  const nextModule = useMemo(() => {
+    return modules.find(m => !m.completed) ?? null
+  }, [modules])
 
   const handleEnroll = async () => {
     setIsEnrolling(true)
@@ -97,6 +132,38 @@ export function CandidateCoursesInnerClient({ course, isEnrolled, certificateId,
     router.push(`/~/courses/${course.id}/module/${moduleId}`)
   }
 
+  // Quick-toggle a module's completion status (local + localStorage)
+  const handleToggleModuleComplete = (e: React.MouseEvent, moduleId: string) => {
+    e.stopPropagation()
+    if (!isEnrolled) return
+
+    const current = localCompleted[moduleId] !== undefined
+      ? localCompleted[moduleId]
+      : (course.modules.find(m => m.id === moduleId)?.completed ?? false)
+
+    const updated = { ...localCompleted, [moduleId]: !current }
+    setLocalCompleted(updated)
+
+    try {
+      localStorage.setItem(storageKey(course.id), JSON.stringify(updated))
+
+      // Also sync the global courses progress store so the list page reflects changes
+      const globalRaw = localStorage.getItem("placetrix_courses_progress")
+      if (globalRaw) {
+        const global = JSON.parse(globalRaw)
+        const idx = global.findIndex((c: any) => c.id === course.id)
+        if (idx !== -1) {
+          global[idx].modules = global[idx].modules.map((m: any) =>
+            m.id === moduleId ? { ...m, completed: !current } : m
+          )
+          localStorage.setItem("placetrix_courses_progress", JSON.stringify(global))
+        }
+      }
+    } catch (_) {}
+
+    toast.success(!current ? "Module marked as complete!" : "Module marked as incomplete.")
+  }
+
   return (
     <div className="flex flex-col gap-6 px-4 py-8 md:px-8 animate-in fade-in duration-300">
 
@@ -112,6 +179,73 @@ export function CandidateCoursesInnerClient({ course, isEnrolled, certificateId,
           Back to Courses
         </Button>
       </div>
+
+      {/* "Continue Where You Left Off" Banner */}
+      {isEnrolled && nextModule && stats.percentage > 0 && stats.percentage < 100 && (
+        <div
+          className="relative overflow-hidden flex items-center justify-between gap-4 rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-4 animate-in fade-in slide-in-from-top-2 duration-500 cursor-pointer group"
+          onClick={() => handleModuleClick(nextModule.id)}
+        >
+          <div className="pointer-events-none absolute -left-6 -bottom-6 h-24 w-24 rounded-full bg-primary/10 blur-2xl" />
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-9 w-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0 border border-primary/25 group-hover:bg-primary/25 transition-colors">
+              <Zap className="h-4.5 w-4.5 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-primary/80">Continue Learning</p>
+              <p className="text-sm font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+                {nextModule.title}
+              </p>
+              {nextModule.duration && (
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                  <Clock className="h-3 w-3" />
+                  {nextModule.duration} · Module {course.modules.findIndex(m => m.id === nextModule.id) + 1} of {course.modules.length}
+                </p>
+              )}
+            </div>
+          </div>
+          <Button
+            size="sm"
+            className="shrink-0 rounded-full text-xs font-semibold shadow-md shadow-primary/15 gap-1.5"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleModuleClick(nextModule.id)
+            }}
+          >
+            <PlayCircle className="h-3.5 w-3.5" />
+            Resume
+          </Button>
+        </div>
+      )}
+
+      {/* Start learning banner for enrolled but 0 progress */}
+      {isEnrolled && nextModule && stats.percentage === 0 && (
+        <div
+          className="relative overflow-hidden flex items-center justify-between gap-4 rounded-2xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/8 via-emerald-500/4 to-transparent p-4 animate-in fade-in duration-500 cursor-pointer group"
+          onClick={() => handleModuleClick(nextModule.id)}
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-9 w-9 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0 border border-emerald-500/25">
+              <PlayCircle className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-600/80 dark:text-emerald-400/80">Ready to Start?</p>
+              <p className="text-sm font-semibold text-foreground">Begin with: {nextModule.title}</p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            className="shrink-0 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/15 gap-1.5"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleModuleClick(nextModule.id)
+            }}
+          >
+            <PlayCircle className="h-3.5 w-3.5" />
+            Start Course
+          </Button>
+        </div>
+      )}
 
       {/* Selected Course Minimal Header */}
       <div className="flex flex-col gap-2 border-b pb-4 border-border/60">
@@ -138,12 +272,19 @@ export function CandidateCoursesInnerClient({ course, isEnrolled, certificateId,
 
         {/* Modules List (Left & Middle) */}
         <div className="lg:col-span-2 space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Course Syllabus
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Course Syllabus
+            </h2>
+            {isEnrolled && (
+              <span className="text-[11px] text-muted-foreground">
+                <span className="font-semibold text-foreground">{stats.completed}</span>/{stats.total} complete
+              </span>
+            )}
+          </div>
 
-          <div className="space-y-4">
-            {course.modules.map((mod, index) => {
+          <div className="space-y-3">
+            {modules.map((mod, index) => {
               const isModCompleted = mod.completed
 
               return (
@@ -213,17 +354,35 @@ export function CandidateCoursesInnerClient({ course, isEnrolled, certificateId,
                     </div>
                   </div>
 
-                  <div className={cn(
-                    "h-8 w-8 flex items-center justify-center rounded-full border shrink-0 transition-all duration-300",
-                    isEnrolled
-                      ? "bg-muted/40 border-border/40 text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary group-hover:translate-x-1"
-                      : "bg-muted/10 border-border/10 text-muted-foreground/30"
-                  )}>
-                    {isEnrolled ? (
-                      <ChevronRight className="h-4 w-4" />
-                    ) : (
-                      <Lock className="h-3.5 w-3.5" />
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* Quick-completion toggle */}
+                    {isEnrolled && (
+                      <button
+                        onClick={(e) => handleToggleModuleComplete(e, mod.id)}
+                        title={isModCompleted ? "Mark as incomplete" : "Mark as complete"}
+                        className={cn(
+                          "h-7 w-7 flex items-center justify-center rounded-full border-2 transition-all duration-200 shrink-0",
+                          isModCompleted
+                            ? "bg-emerald-500 border-emerald-500 text-white hover:bg-emerald-600 hover:border-emerald-600"
+                            : "border-border/50 bg-transparent text-transparent hover:border-emerald-400 hover:text-emerald-400"
+                        )}
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                      </button>
                     )}
+
+                    <div className={cn(
+                      "h-8 w-8 flex items-center justify-center rounded-full border shrink-0 transition-all duration-300",
+                      isEnrolled
+                        ? "bg-muted/40 border-border/40 text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary group-hover:translate-x-1"
+                        : "bg-muted/10 border-border/10 text-muted-foreground/30"
+                    )}>
+                      {isEnrolled ? (
+                        <ChevronRight className="h-4 w-4" />
+                      ) : (
+                        <Lock className="h-3.5 w-3.5" />
+                      )}
+                    </div>
                   </div>
                 </div>
               )

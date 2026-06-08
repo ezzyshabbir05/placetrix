@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { toggleModuleCompletionAction } from "../../../actions"
+import { LatexRenderer } from "@/components/ui/latex-renderer"
 
 interface Module {
   id: string
@@ -42,105 +43,7 @@ interface Props {
   module: Module
 }
 
-// Inline Markdown inline-parser
-function parseInline(text: string) {
-  const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g)
-  return parts.map((part, idx) => {
-    if (part.startsWith("**") && part.endsWith("**")) {
-      return <strong key={idx} className="font-bold text-foreground">{part.slice(2, -2)}</strong>
-    }
-    if (part.startsWith("`") && part.endsWith("`")) {
-      return <code key={idx} className="bg-muted border px-1.5 py-0.5 rounded text-[11px] font-mono text-emerald-600 dark:text-emerald-400">{part.slice(1, -1)}</code>
-    }
-    return part
-  })
-}
-
-// Reusable Markdown Renderer for Course Module Content
-function CourseMarkdownContent({ content }: { content?: string }) {
-  if (!content) {
-    return (
-      <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
-        <p>No content provided for this module.</p>
-      </div>
-    )
-  }
-
-  const blocks = content.split(/(```[\s\S]*?```)/g)
-
-  return (
-    <div className="text-foreground/80 leading-relaxed text-sm space-y-4 font-sans">
-      {blocks.map((block, idx) => {
-        if (block.startsWith("```")) {
-          const match = block.match(/```(\w*)\n([\s\S]*?)```/)
-          const lang = match ? match[1] : ""
-          const codeText = match ? match[2] : block.slice(3, -3)
-          return (
-            <div key={idx} className="bg-muted/50 border border-border/50 rounded-lg overflow-hidden my-3 font-mono text-xs">
-              {lang && (
-                <div className="bg-muted px-3 py-1 border-b border-border text-[9px] text-muted-foreground uppercase tracking-widest font-bold">
-                  {lang}
-                </div>
-              )}
-              <pre className="p-3 overflow-x-auto text-foreground/80 whitespace-pre scrollbar-thin">{codeText.trim()}</pre>
-            </div>
-          )
-        }
-
-        const lines = block.split("\n")
-        return (
-          <div key={idx} className="space-y-2">
-            {lines.map((line, lIdx) => {
-              const trimmed = line.trim()
-              if (!trimmed) return <div key={lIdx} className="h-1.5" />
-
-              if (trimmed.startsWith("### ")) {
-                return <h3 key={lIdx} className="text-xs font-bold text-foreground uppercase tracking-wider mt-5 mb-2 border-l-2 border-primary pl-2">{parseInline(trimmed.slice(4))}</h3>
-              }
-              if (trimmed.startsWith("## ")) {
-                return <h2 key={lIdx} className="text-sm font-bold text-foreground uppercase tracking-wider mt-6 mb-2 border-b pb-1">{parseInline(trimmed.slice(3))}</h2>
-              }
-              if (trimmed.startsWith("# ")) {
-                return <h1 key={lIdx} className="text-base font-bold text-foreground uppercase tracking-wider mt-7 mb-3 border-b pb-1">{parseInline(trimmed.slice(2))}</h1>
-              }
-
-              if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
-                return (
-                  <ul key={lIdx} className="list-disc pl-5 space-y-1 text-muted-foreground">
-                    <li>{parseInline(trimmed.slice(2))}</li>
-                  </ul>
-                )
-              }
-
-              const numMatch = trimmed.match(/^(\d+)\.\s(.*)/)
-              if (numMatch) {
-                return (
-                  <ol key={lIdx} className="list-decimal pl-5 space-y-1 text-muted-foreground">
-                    <li value={parseInt(numMatch[1])}>{parseInline(numMatch[2])}</li>
-                  </ol>
-                )
-              }
-
-              if (trimmed.startsWith("> ")) {
-                return (
-                  <blockquote key={lIdx} className="border-l-2 border-emerald-500 bg-muted/30 px-3.5 py-2 rounded-r text-muted-foreground text-xs italic my-2">
-                    {parseInline(trimmed.slice(2))}
-                  </blockquote>
-                )
-              }
-
-              if (trimmed === "---" || trimmed === "***") {
-                return <hr key={lIdx} className="border-border my-4" />
-              }
-
-              return <p key={lIdx} className="text-foreground/85 leading-relaxed">{parseInline(line)}</p>
-            })}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
+// LaTeX Renderer used directly inside CandidateModuleClient
 
 export function CandidateModuleClient({ course, module }: Props) {
   const router = useRouter()
@@ -252,7 +155,7 @@ export function CandidateModuleClient({ course, module }: Props) {
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6 pb-6">
-              <CourseMarkdownContent content={currentModule.content} />
+              <LatexRenderer content={currentModule.content} />
             </CardContent>
           </Card>
 
