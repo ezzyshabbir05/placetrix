@@ -90,7 +90,6 @@ export default async function ModuleDetailPage({ params }: PageProps) {
     id: course.id,
     title: course.title,
     description: course.description,
-    category: course.category as any,
     level: course.level as any,
     duration: course.duration,
     type: course.type as any,

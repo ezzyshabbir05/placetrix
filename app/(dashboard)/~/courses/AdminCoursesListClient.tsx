@@ -21,7 +21,6 @@ interface CourseListItem {
   id: string
   title: string
   description: string
-  category: string
   level: string
   duration: string
   type: string
@@ -46,12 +45,11 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "most-enrolled", label: "Most Enrolled" },
   { value: "most-modules", label: "Most Modules" },
   { value: "a-z", label: "A → Z" },
-]
-
-// ─── Course Cover (by category) ─────────────────────────────────────────────
-function CourseCover({ category }: { category: string }) {
-  switch (category) {
-    case "Core CS":
+]// ─── Course Cover (by ID / Level fallback) ─────────────────────────────────
+function CourseCover({ courseId }: { courseId: string }) {
+  switch (courseId) {
+    case "algo-ds-masterclass":
+    case "python-for-everybody":
       return (
         <svg className="w-full h-full object-cover" viewBox="0 0 320 180" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect width="100%" height="100%" fill="url(#adm-bg-cs)" />
@@ -73,7 +71,8 @@ function CourseCover({ category }: { category: string }) {
           <text x="160" y="105" fill="#ffffff" opacity="0.08" fontSize="24" fontWeight="bold" textAnchor="middle" letterSpacing="2">CORE CS</text>
         </svg>
       )
-    case "Web Development":
+    case "nextjs-supabase-dev":
+    case "programming-for-everybody":
       return (
         <svg className="w-full h-full object-cover" viewBox="0 0 320 180" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect width="100%" height="100%" fill="url(#adm-bg-web)" />
@@ -94,7 +93,8 @@ function CourseCover({ category }: { category: string }) {
           <text x="160" y="95" fill="#ffffff" opacity="0.08" fontSize="22" fontWeight="bold" textAnchor="middle" letterSpacing="1">WEB DEV</text>
         </svg>
       )
-    case "Interview Prep":
+    case "behavioral-interviews-soft-skills":
+    case "foundations-data-everywhere":
       return (
         <svg className="w-full h-full object-cover" viewBox="0 0 320 180" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect width="100%" height="100%" fill="url(#adm-bg-int)" />
@@ -115,7 +115,8 @@ function CourseCover({ category }: { category: string }) {
           <text x="160" y="95" fill="#ffffff" opacity="0.08" fontSize="20" fontWeight="bold" textAnchor="middle" letterSpacing="2">INTERVIEW</text>
         </svg>
       )
-    case "System Design":
+    case "system-design-scale":
+    case "google-data-analytics":
     default:
       return (
         <svg className="w-full h-full object-cover" viewBox="0 0 320 180" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -445,7 +446,7 @@ export function AdminCoursesListClient({ courses: initialCourses }: Props) {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <CourseCover category={course.category} />
+                            <CourseCover courseId={course.id} />
                           )}
                         </div>
 

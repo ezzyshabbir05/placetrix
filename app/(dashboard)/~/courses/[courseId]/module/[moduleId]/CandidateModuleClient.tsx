@@ -29,7 +29,6 @@ interface Course {
   id: string
   title: string
   description: string
-  category: string
   level: string
   duration: string
   type: string

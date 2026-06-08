@@ -129,72 +129,85 @@ function OverallStatsBanner({ courses, courseStats }: StatsBannerProps) {
     let completedModules = 0
     let enrolledCount = 0
     let completedCourses = 0
+    let inProgressCount = 0
 
     courses.forEach(course => {
+      const isEnrolled = (course as any).isEnrolled
+      if (isEnrolled) {
+        enrolledCount++
+        const stats = courseStats[course.id]
+        if (stats) {
+          if (stats.percentage === 100) {
+            completedCourses++
+          } else {
+            inProgressCount++
+          }
+        }
+      }
       const stats = courseStats[course.id]
       if (!stats) return
-      if (stats.percentage > 0) enrolledCount++
-      if (stats.percentage === 100) completedCourses++
       totalModules += stats.total
       completedModules += stats.completed
     })
 
     const overallPct = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
-    return { totalModules, completedModules, enrolledCount, completedCourses, overallPct }
+    return { totalModules, completedModules, enrolledCount, completedCourses, inProgressCount, overallPct }
   }, [courses, courseStats])
 
-  if (overall.enrolledCount === 0) return null
+  const bannerConfig = useMemo(() => {
+    // Case 1: No courses enrolled at all
+    if (overall.enrolledCount === 0) {
+      return {
+        title: "Explore Courses",
+        description: "Browse our course catalog to start your learning journey!",
+        showProgress: false
+      }
+    }
+
+    // Case 2: All enrolled courses completed (no active course in progress)
+    if (overall.inProgressCount === 0 && overall.completedCourses > 0) {
+      return {
+        title: "Explore Courses",
+        description: "You've completed all enrolled courses! Find your next challenge today.",
+        showProgress: true
+      }
+    }
+
+    // Case 3: In-progress courses exist
+    return {
+      title: "Continue Learning",
+      description: `You are ${overall.overallPct}% through your learning journey. Keep going!`,
+      showProgress: true
+    }
+  }, [overall])
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/8 via-primary/4 to-transparent p-5 animate-in fade-in slide-in-from-top-2 duration-500">
+    <div className="relative overflow-hidden rounded-xl border border-primary/10 bg-gradient-to-r from-primary/8 via-primary/3 to-transparent px-4 py-2.5 animate-in fade-in slide-in-from-top-2 duration-500">
       {/* Decorative blur orb */}
-      <div className="pointer-events-none absolute -right-8 -top-8 h-36 w-36 rounded-full bg-primary/10 blur-2xl" />
+      <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-primary/5 blur-xl" />
 
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-        {/* Left: Flame icon + headline */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="h-10 w-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0 border border-primary/20">
-            <TrendingUp className="h-5 w-5 text-primary" />
+      <div className="flex items-center justify-between gap-4">
+        {/* Left side: Icon + Dynamic Title + Description */}
+        <div className="flex items-center gap-2">
+          <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 border border-primary/15">
+            <TrendingUp className="h-3.5 w-3.5 text-primary" />
           </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary/80">Learning Journey</p>
-            <p className="text-xl font-bold text-foreground tabular-nums">{overall.overallPct}% complete</p>
+          <div className="text-xs font-semibold text-foreground leading-snug">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mr-1.5">{bannerConfig.title}</span>
+            {bannerConfig.description}
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="hidden sm:block h-10 w-px bg-border/50" />
-
-        {/* Right: Stat pills */}
-        <div className="flex flex-wrap gap-3 flex-1">
-          <div className="flex flex-col items-center justify-center bg-background/60 backdrop-blur-sm border border-border/50 rounded-xl px-4 py-2 min-w-[80px]">
-            <span className="text-lg font-bold text-foreground tabular-nums">{overall.enrolledCount}</span>
-            <span className="text-[10px] text-muted-foreground font-medium">Enrolled</span>
-          </div>
-          <div className="flex flex-col items-center justify-center bg-background/60 backdrop-blur-sm border border-border/50 rounded-xl px-4 py-2 min-w-[80px]">
-            <span className="text-lg font-bold text-foreground tabular-nums">{overall.completedModules}<span className="text-xs font-normal text-muted-foreground">/{overall.totalModules}</span></span>
-            <span className="text-[10px] text-muted-foreground font-medium">Modules Done</span>
-          </div>
-          <div className="flex flex-col items-center justify-center bg-background/60 backdrop-blur-sm border border-border/50 rounded-xl px-4 py-2 min-w-[80px]">
-            <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{overall.completedCourses}</span>
-            <span className="text-[10px] text-muted-foreground font-medium">Completed</span>
-          </div>
-        </div>
-
-        {/* Progress bar */}
-        <div className="sm:ml-auto flex flex-col gap-1.5 shrink-0 w-full sm:w-36">
-          <div className="flex justify-between text-[10px] font-medium text-muted-foreground">
-            <span>Overall</span>
-            <span className="text-foreground font-semibold">{overall.overallPct}%</span>
-          </div>
+        {/* Right side: Compact progress bar */}
+        {bannerConfig.showProgress && (
           <Progress
             value={overall.overallPct}
             className={cn(
-              "h-2 bg-primary/10",
+              "h-1.5 w-32 sm:w-48 bg-primary/10 shrink-0",
               overall.overallPct === 100 && "[&>[data-slot=progress-indicator]]:bg-emerald-500"
             )}
           />
-        </div>
+        )}
       </div>
     </div>
   )
@@ -322,8 +335,6 @@ function CourseRow({ course, stats, onSelect }: CourseCardProps) {
       {/* Info */}
       <div className="flex-1 min-w-0 space-y-1">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{course.category}</span>
-          <span className="text-muted-foreground/30 text-[10px]">•</span>
           <span className="text-[10px] text-muted-foreground capitalize">{course.level}</span>
           {course.badge && (
             <span className="bg-primary/10 text-primary text-[9px] px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wider border border-primary/15">
@@ -430,15 +441,6 @@ const LEVEL_COLOR_MAP: Record<string, string> = {
   Advanced: "bg-rose-600 text-white border-rose-600",
 }
 
-const CATEGORY_OPTIONS: Array<"Core CS" | "Web Development" | "Interview Prep" | "System Design"> = [
-  "Core CS", "Web Development", "Interview Prep", "System Design"
-]
-const CATEGORY_COLOR_MAP: Record<string, string> = {
-  "Core CS": "bg-indigo-600 text-white border-indigo-600",
-  "Web Development": "bg-teal-600 text-white border-teal-600",
-  "Interview Prep": "bg-amber-600 text-white border-amber-600",
-  "System Design": "bg-purple-600 text-white border-purple-600",
-}
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 export function CandidateCourseClient({ initialCourses }: { initialCourses: Course[] }) {
@@ -447,7 +449,6 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState<"all" | "in-progress" | "completed">("all")
   const [levelFilter, setLevelFilter] = useState<"Beginner" | "Intermediate" | "Advanced" | "all">("all")
-  const [categoryFilter, setCategoryFilter] = useState<"Core CS" | "Web Development" | "Interview Prep" | "System Design" | "all">("all")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
 
   // Load progress from localStorage on client-side mount
@@ -539,8 +540,6 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
       // Level filter
       if (levelFilter !== "all" && course.level !== levelFilter) return false
 
-      // Category filter
-      if (categoryFilter !== "all" && course.category !== categoryFilter) return false
 
       // Search filter
       if (searchQuery.trim() !== "") {
@@ -552,7 +551,7 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
 
       return true
     })
-  }, [courses, activeTab, searchQuery, courseStats, levelFilter, categoryFilter])
+  }, [courses, activeTab, searchQuery, courseStats, levelFilter])
 
   const tabConfig = [
     { value: "all" as const, label: "All", count: tabCounts.all },
@@ -560,11 +559,10 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
     { value: "completed" as const, label: "Completed", count: tabCounts.completed },
   ]
 
-  const hasActiveFilters = levelFilter !== "all" || categoryFilter !== "all" || searchQuery.trim() !== ""
+  const hasActiveFilters = levelFilter !== "all" || searchQuery.trim() !== ""
 
   const clearAllFilters = () => {
     setLevelFilter("all")
-    setCategoryFilter("all")
     setSearchQuery("")
   }
 
@@ -670,13 +668,7 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
               onChange={v => setLevelFilter(v as any)}
               colorMap={LEVEL_COLOR_MAP}
             />
-            <FilterChips
-              label="Category"
-              options={CATEGORY_OPTIONS}
-              value={categoryFilter}
-              onChange={v => setCategoryFilter(v as any)}
-              colorMap={CATEGORY_COLOR_MAP}
-            />
+
             {hasActiveFilters && (
               <div className="flex items-center gap-2 pt-0.5">
                 <span className="text-[11px] text-muted-foreground">

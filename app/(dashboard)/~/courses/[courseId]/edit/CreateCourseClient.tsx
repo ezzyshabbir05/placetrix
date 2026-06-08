@@ -29,7 +29,6 @@ interface Props {
     id: string
     title: string
     description: string
-    category: string
     level: string
     duration: string
     type: string
@@ -54,7 +53,6 @@ export function CreateCourseClient({ initialCourse, initialModules = [] }: Props
   // ── Course form state ────────────────────────────────────────────────────────
   const [title, setTitle] = useState(initialCourse?.title ?? "")
   const [description, setDescription] = useState(initialCourse?.description ?? "")
-  const [category, setCategory] = useState(initialCourse?.category ?? "Core CS")
   const [level, setLevel] = useState(initialCourse?.level ?? "Beginner")
   const [duration, setDuration] = useState(initialCourse?.duration ?? "")
   const [courseType, setCourseType] = useState(initialCourse?.type ?? "Course")
@@ -188,7 +186,6 @@ export function CreateCourseClient({ initialCourse, initialModules = [] }: Props
       const courseData: AdminCourseInput = {
         title,
         description,
-        category,
         level,
         duration,
         type: courseType,
@@ -320,22 +317,7 @@ export function CreateCourseClient({ initialCourse, initialModules = [] }: Props
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="course-category">Category</Label>
-                    <Select value={category} onValueChange={setCategory}>
-                      <SelectTrigger id="course-category">
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Core CS">Core CS</SelectItem>
-                        <SelectItem value="Web Development">Web Development</SelectItem>
-                        <SelectItem value="Interview Prep">Interview Prep</SelectItem>
-                        <SelectItem value="System Design">System Design</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="course-level">Level</Label>
                     <Select value={level} onValueChange={setLevel}>

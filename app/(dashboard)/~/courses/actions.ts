@@ -17,7 +17,6 @@ export interface AdminModuleInput {
 export interface AdminCourseInput {
   title: string
   description: string
-  category: string
   level: string
   duration: string
   type: string

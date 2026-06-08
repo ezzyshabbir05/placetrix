@@ -46,7 +46,6 @@ interface AdminCourseDetail {
   id: string
   title: string
   description: string
-  category: string
   level: string
   duration: string
   type: string
@@ -242,9 +241,6 @@ export function AdminCourseDetailClient({ course, students }: Props) {
       {/* Course identity header */}
       <div className="flex flex-col gap-2 border-b pb-5 border-border/60">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline" className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-            {course.category}
-          </Badge>
           <Badge variant="outline" className="text-[10px] text-muted-foreground">
             {course.level}
           </Badge>
@@ -524,7 +520,6 @@ export function AdminCourseDetailClient({ course, students }: Props) {
             <CardContent className="space-y-0 divide-y divide-border/40 text-xs">
               {[
                 { label: "Type", value: course.type },
-                { label: "Category", value: course.category },
                 { label: "Level", value: course.level },
                 { label: "Duration", value: course.duration },
                 { label: "Instructor", value: course.instructor_name },

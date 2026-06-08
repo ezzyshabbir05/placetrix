@@ -11,7 +11,6 @@ export interface Course {
   id: string
   title: string
   description: string
-  category: "Core CS" | "Web Development" | "Interview Prep" | "System Design"
   level: "Beginner" | "Intermediate" | "Advanced"
   duration: string
   type: "Specialization" | "Professional Certificate" | "Course"
@@ -34,7 +33,6 @@ export const INITIAL_COURSES: Course[] = [
     id: "algo-ds-masterclass",
     title: "Algorithms & Data Structures Masterclass",
     description: "Master complex algorithms and data structures to ace your technical interviews. Covers trees, graphs, dynamic programming, and system design basics.",
-    category: "Core CS",
     level: "Advanced",
     duration: "24h 15m",
     type: "Specialization",
@@ -88,7 +86,6 @@ export const INITIAL_COURSES: Course[] = [
     id: "nextjs-supabase-dev",
     title: "Full-Stack Development with Next.js & Supabase",
     description: "Build modern, scalable web applications using Next.js App Router, Tailwind CSS, and Supabase for database and authentication.",
-    category: "Web Development",
     level: "Intermediate",
     duration: "18h 30m",
     type: "Professional Certificate",
@@ -134,7 +131,6 @@ export const INITIAL_COURSES: Course[] = [
     id: "behavioral-interviews-soft-skills",
     title: "Behavioral Interviewing & Soft Skills for Tech",
     description: "Learn how to structure your answers using the STAR method, answer tricky behavioral questions, and showcase leadership.",
-    category: "Interview Prep",
     level: "Beginner",
     duration: "6h 45m",
     type: "Course",
@@ -180,7 +176,6 @@ export const INITIAL_COURSES: Course[] = [
     id: "system-design-scale",
     title: "System Design at Scale",
     description: "Learn how to design highly scalable, fault-tolerant distributed systems. Covers caching, load balancing, sharding, and real-world system architecture.",
-    category: "System Design",
     level: "Advanced",
     duration: "14h 20m",
     type: "Specialization",
@@ -218,7 +213,6 @@ export const INITIAL_COURSES: Course[] = [
     id: "google-data-analytics",
     title: "Google Data Analytics Professional Certificate",
     description: "Gain in-demand skills that will prepare you for an entry-level job. Learn how to process and analyze data.",
-    category: "System Design",
     level: "Beginner",
     duration: "32h 45m",
     type: "Professional Certificate",
@@ -248,7 +242,6 @@ export const INITIAL_COURSES: Course[] = [
     id: "foundations-data-everywhere",
     title: "Foundations: Data, Data, Everywhere",
     description: "This is the first course in the Google Data Analytics Professional Certificate. You will be introduced to data analytics.",
-    category: "System Design",
     level: "Beginner",
     duration: "8h 12m",
     type: "Course",
@@ -278,7 +271,6 @@ export const INITIAL_COURSES: Course[] = [
     id: "python-for-everybody",
     title: "Python for Everybody Specialization",
     description: "Learn to program and analyze data with Python. Develop programs to clean, analyze, and visualize data.",
-    category: "Core CS",
     level: "Beginner",
     duration: "10h 15m",
     type: "Specialization",
@@ -308,7 +300,6 @@ export const INITIAL_COURSES: Course[] = [
     id: "programming-for-everybody",
     title: "Programming for Everybody (Getting Started with Python)",
     description: "This course teaches the basics of programming computers using Python, covering fundamental variables and loops.",
-    category: "Core CS",
     level: "Beginner",
     duration: "6h 20m",
     type: "Course",

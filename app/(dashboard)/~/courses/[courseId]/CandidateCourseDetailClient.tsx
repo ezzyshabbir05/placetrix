@@ -27,7 +27,6 @@ interface Course {
   id: string
   title: string
   description: string
-  category: string
   level: string
   duration: string
   type: string
@@ -53,41 +52,13 @@ interface Props {
   userProfile: any
 }
 
-// ─── Local-storage key helper ─────────────────────────────────────────────────
-const storageKey = (courseId: string) => `placetrix_module_progress_${courseId}`
+
 
 export function CandidateCourseDetailClient({ course, isEnrolled, certificateId, userProfile }: Props) {
   const router = useRouter()
   const [isEnrolling, setIsEnrolling] = useState(false)
 
-  // Local completion state that overrides server state for instant UX
-  const [localCompleted, setLocalCompleted] = useState<Record<string, boolean>>(() => {
-    // Will be hydrated from localStorage in useEffect
-    return {}
-  })
-  const [hydrated, setHydrated] = useState(false)
-
-  // Hydrate from localStorage
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    try {
-      const raw = localStorage.getItem(storageKey(course.id))
-      if (raw) {
-        setLocalCompleted(JSON.parse(raw))
-      }
-    } catch (_) {}
-    setHydrated(true)
-  }, [course.id])
-
-  // Merge server state with local overrides
-  const modules: Module[] = useMemo(() => {
-    return course.modules.map(mod => ({
-      ...mod,
-      completed: hydrated
-        ? (localCompleted[mod.id] !== undefined ? localCompleted[mod.id] : mod.completed)
-        : mod.completed
-    }))
-  }, [course.modules, localCompleted, hydrated])
+  const modules = course.modules
 
   // Calculate statistics for this course
   const stats = useMemo(() => {
@@ -132,37 +103,7 @@ export function CandidateCourseDetailClient({ course, isEnrolled, certificateId,
     router.push(`/~/courses/${course.id}/module/${moduleId}`)
   }
 
-  // Quick-toggle a module's completion status (local + localStorage)
-  const handleToggleModuleComplete = (e: React.MouseEvent, moduleId: string) => {
-    e.stopPropagation()
-    if (!isEnrolled) return
 
-    const current = localCompleted[moduleId] !== undefined
-      ? localCompleted[moduleId]
-      : (course.modules.find(m => m.id === moduleId)?.completed ?? false)
-
-    const updated = { ...localCompleted, [moduleId]: !current }
-    setLocalCompleted(updated)
-
-    try {
-      localStorage.setItem(storageKey(course.id), JSON.stringify(updated))
-
-      // Also sync the global courses progress store so the list page reflects changes
-      const globalRaw = localStorage.getItem("placetrix_courses_progress")
-      if (globalRaw) {
-        const global = JSON.parse(globalRaw)
-        const idx = global.findIndex((c: any) => c.id === course.id)
-        if (idx !== -1) {
-          global[idx].modules = global[idx].modules.map((m: any) =>
-            m.id === moduleId ? { ...m, completed: !current } : m
-          )
-          localStorage.setItem("placetrix_courses_progress", JSON.stringify(global))
-        }
-      }
-    } catch (_) {}
-
-    toast.success(!current ? "Module marked as complete!" : "Module marked as incomplete.")
-  }
 
   return (
     <div className="flex flex-col gap-6 px-4 py-8 md:px-8 animate-in fade-in duration-300">
@@ -250,9 +191,6 @@ export function CandidateCourseDetailClient({ course, isEnrolled, certificateId,
       {/* Selected Course Minimal Header */}
       <div className="flex flex-col gap-2 border-b pb-4 border-border/60">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline" className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-            {course.category}
-          </Badge>
           <Badge variant="outline" className="text-[10px] text-muted-foreground">
             {course.level}
           </Badge>
@@ -355,21 +293,7 @@ export function CandidateCourseDetailClient({ course, isEnrolled, certificateId,
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    {/* Quick-completion toggle */}
-                    {isEnrolled && (
-                      <button
-                        onClick={(e) => handleToggleModuleComplete(e, mod.id)}
-                        title={isModCompleted ? "Mark as incomplete" : "Mark as complete"}
-                        className={cn(
-                          "h-7 w-7 flex items-center justify-center rounded-full border-2 transition-all duration-200 shrink-0",
-                          isModCompleted
-                            ? "bg-emerald-500 border-emerald-500 text-white hover:bg-emerald-600 hover:border-emerald-600"
-                            : "border-border/50 bg-transparent text-transparent hover:border-emerald-400 hover:text-emerald-400"
-                        )}
-                      >
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                      </button>
-                    )}
+
 
                     <div className={cn(
                       "h-8 w-8 flex items-center justify-center rounded-full border shrink-0 transition-all duration-300",
@@ -437,10 +361,6 @@ export function CandidateCourseDetailClient({ course, isEnrolled, certificateId,
                   )}
                 />
                 <div className="pt-3.5 flex flex-col gap-2.5 border-t border-border/40 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Category</span>
-                    <span className="font-medium text-foreground">{course.category}</span>
-                  </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Level</span>
                     <span className="font-medium text-foreground">{course.level}</span>

@@ -553,7 +553,6 @@ export type Database = {
       courses: {
         Row: {
           badge: string | null
-          category: string
           cover_image_path: string | null
           created_at: string
           created_by: string | null
@@ -569,7 +568,6 @@ export type Database = {
         }
         Insert: {
           badge?: string | null
-          category?: string
           cover_image_path?: string | null
           created_at?: string
           created_by?: string | null
@@ -585,7 +583,6 @@ export type Database = {
         }
         Update: {
           badge?: string | null
-          category?: string
           cover_image_path?: string | null
           created_at?: string
           created_by?: string | null
