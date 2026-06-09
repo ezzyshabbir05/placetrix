@@ -17,6 +17,8 @@ import {
   Flame,
   BookOpen,
   ChevronLeft,
+  ChevronUp,
+  ChevronDown,
   ChevronsLeft,
   ChevronsRight,
   Loader2,
@@ -141,6 +143,7 @@ export function ProblemsDirectoryClient({
   const [isPending, startTransition] = useTransition()
   const [searchInput, setSearchInput] = useState(initialSearch)
   const [showAllTags, setShowAllTags] = useState(false)
+  const [showMetrics, setShowMetrics] = useState(true)
   const isOwnUpdateRef = useRef(false)
 
   // Align cells into weeks starting on Sunday
@@ -307,6 +310,10 @@ export function ProblemsDirectoryClient({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3">
+          <Button variant="outline" className="gap-2 h-10 px-4 text-muted-foreground hover:text-foreground transition-colors" onClick={() => setShowMetrics(!showMetrics)}>
+            {showMetrics ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            {showMetrics ? "Hide Dashboard" : "Show Dashboard"}
+          </Button>
           <Button asChild variant="outline" className="gap-2 h-10 px-5">
             <Link href="/~/logiclab/playground">
               <Terminal className="h-4 w-4" />
@@ -325,13 +332,14 @@ export function ProblemsDirectoryClient({
       </div>
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {showMetrics && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-2 duration-300">
         {/* Card 1: Progress & Difficulty */}
         <Card className="lg:col-span-1 shadow-sm border-border/60 flex flex-col justify-between">
-          <CardHeader className="pb-0 pt-4 px-5">
+          <CardHeader className="pb-0 pt-3 px-5">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Progress</CardTitle>
           </CardHeader>
-          <CardContent className="pb-4 px-5 h-full flex flex-col justify-center">
+          <CardContent className="pb-3 px-5 h-full flex flex-col justify-center">
             <div className="flex items-center justify-between w-full">
               <div className="flex flex-col justify-center">
                 <div className="flex flex-col gap-2 mt-1">
@@ -380,7 +388,7 @@ export function ProblemsDirectoryClient({
 
         {/* Card 2: Activity Heat Map */}
         <Card className="shadow-sm border-border/60 flex flex-col justify-between">
-          <CardHeader className="pb-0 pt-4 px-5 flex flex-row items-center justify-between">
+          <CardHeader className="pb-0 pt-3 px-5 flex flex-row items-center justify-between">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Activity Graph</CardTitle>
             <div className="flex items-center gap-3 text-sm">
               <div className="flex items-center gap-1.5 font-medium">
@@ -393,7 +401,7 @@ export function ProblemsDirectoryClient({
               </div>
             </div>
           </CardHeader>
-          <CardContent className="flex items-center justify-center p-4 pt-2">
+          <CardContent className="flex items-center justify-center p-3 pt-2">
             <div className="flex gap-2 w-full overflow-x-auto scrollbar-none">
               
               {/* Day Labels */}
@@ -460,10 +468,10 @@ export function ProblemsDirectoryClient({
 
         {/* Card 3: Topics / Tags */}
         <Card className="shadow-sm border-border/60 flex flex-col justify-between">
-          <CardHeader className="pb-0 pt-4 px-5 flex flex-row items-center justify-between">
+          <CardHeader className="pb-0 pt-3 px-5 flex flex-row items-center justify-between">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Topics</CardTitle>
           </CardHeader>
-          <CardContent className="p-5 pt-4 overflow-y-auto max-h-[165px] scrollbar-thin">
+          <CardContent className="p-3 pt-2 overflow-y-auto max-h-[165px] scrollbar-thin">
             <div className="flex flex-wrap gap-2">
               <Button
                 variant={initialTag === "All" ? "default" : "secondary"}
@@ -498,6 +506,7 @@ export function ProblemsDirectoryClient({
           </CardContent>
         </Card>
       </div>
+      )}
 
       {/* Main Content Area */}
       <div className="flex flex-col gap-4 min-w-0 w-full">
@@ -591,7 +600,7 @@ export function ProblemsDirectoryClient({
               ) : (
                 <div className="w-full overflow-x-auto">
                   <Table className="min-w-[800px]">
-                    <TableHeader className="bg-muted/10 h-12">
+                    <TableHeader className="bg-muted/10 h-10">
                       <TableRow className="hover:bg-transparent border-b-border/60">
                         <TableHead className="w-[80px] pl-6 text-sm font-medium">Status</TableHead>
                         <TableHead className="text-sm font-medium">Title</TableHead>
@@ -606,7 +615,7 @@ export function ProblemsDirectoryClient({
                         <TableRow
                           key={problem.id}
                           onClick={() => router.push(`/~/logiclab/problems/${problem.id}`)}
-                          className="group cursor-pointer hover:bg-muted/40 transition-colors h-16 border-b-border/60"
+                          className="group cursor-pointer hover:bg-muted/40 transition-colors h-12 border-b-border/60"
                         >
                           {/* Status */}
                           <TableCell className="pl-6">
@@ -731,7 +740,7 @@ export function ProblemsDirectoryClient({
                           <SelectValue placeholder={initialPageSize.toString()} />
                         </SelectTrigger>
                         <SelectContent>
-                          {[5, 10, 20, 50].map((s) => (
+                          {[20, 50, 100].map((s) => (
                             <SelectItem key={s} value={s.toString()} className="text-sm">{s}</SelectItem>
                           ))}
                         </SelectContent>
