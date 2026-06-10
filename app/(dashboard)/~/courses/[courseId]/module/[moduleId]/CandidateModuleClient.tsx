@@ -4,7 +4,7 @@ import * as React from "react"
 import { useState, useMemo, useTransition, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import {
-  BookOpen, ArrowLeft, Check, RotateCcw, Clock
+  BookOpen, ArrowLeft, Check, RotateCcw, Clock, ArrowRight
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -16,29 +16,29 @@ import { toggleModuleCompletionAction } from "../../../actions"
 import { LatexRenderer } from "@/components/ui/latex-renderer"
 
 interface Module {
-  id: string
-  title: string
-  description?: string
-  type: "video" | "text" | "test"
-  completed: boolean
-  duration?: string
-  content?: string
+  id: string;
+  title: string;
+  description?: string;
+  type: "video" | "text" | "test";
+  completed: boolean;
+  duration?: string;
+  content?: string;
 }
 
 interface Course {
-  id: string
-  title: string
-  description: string
-  level: string
-  duration: string
-  type: string
-  cover_image_path?: string
-  modules: Module[]
+  id: string;
+  title: string;
+  description: string;
+  level: string;
+  duration: string;
+  type: string;
+  cover_image_path?: string;
+  modules: Module[];
 }
 
 interface Props {
-  course: Course
-  module: Module
+  course: Course;
+  module: Module;
 }
 
 export function CandidateModuleClient({ course, module }: Props) {
@@ -100,6 +100,55 @@ export function CandidateModuleClient({ course, module }: Props) {
 
   // Current module index for display
   const currentIndex = currentCourse.modules.findIndex(m => m.id === currentModule.id)
+
+  const nextModule = useMemo(() => {
+    return currentCourse.modules[currentIndex + 1] ?? null
+  }, [currentCourse, currentIndex])
+
+  const handleNextClick = async () => {
+    if (!currentModule.completed) {
+      startTransition(async () => {
+        try {
+          const result = await toggleModuleCompletionAction(currentCourse.id, currentModule.id, true)
+          if (result.success) {
+            // Update client-side state
+            const updatedModules = currentCourse.modules.map(m => {
+              if (m.id !== currentModule.id) return m
+              return { ...m, completed: true }
+            })
+            setCurrentCourse({ ...currentCourse, modules: updatedModules })
+
+            const isNowFinished = updatedModules.length > 0 && updatedModules.every(m => m.completed)
+
+            if (isNowFinished) {
+              toast.success("Congratulations! You have completed all modules. Go to the course page to generate your certificate!", {
+                duration: 6000,
+              })
+            } else {
+              toast.success("Module marked as completed.")
+            }
+
+            // Navigate to next page or course page
+            if (nextModule) {
+              router.push(`/~/courses/${currentCourse.id}/module/${nextModule.id}`)
+            } else {
+              router.push(`/~/courses/${currentCourse.id}`)
+            }
+            router.refresh()
+          }
+        } catch (err: any) {
+          toast.error(err.message || "Failed to update module completion.")
+        }
+      })
+    } else {
+      // Just navigate if already completed
+      if (nextModule) {
+        router.push(`/~/courses/${currentCourse.id}/module/${nextModule.id}`)
+      } else {
+        router.push(`/~/courses/${currentCourse.id}`)
+      }
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6 px-4 py-6 md:px-8 md:py-8 animate-in fade-in duration-300">
@@ -170,32 +219,27 @@ export function CandidateModuleClient({ course, module }: Props) {
             </CardContent>
           </Card>
 
-          {/* Completion Button */}
+          {/* Next Module / Finish Course Button */}
           <div className="flex items-center">
-            {isCompleted ? (
-              <Button
-                onClick={() => toggleModuleCompletion(currentModule.id, false)}
-                variant="outline"
-                className="w-full md:w-auto border-rose-200 bg-rose-50/50 hover:bg-rose-100 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400 gap-2 h-10 px-6 rounded-full font-semibold text-xs transition-all duration-200"
-                disabled={isPending}
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                Completed — Mark as Incomplete
-              </Button>
-            ) : (
-              <Button
-                onClick={() => toggleModuleCompletion(currentModule.id, true)}
-                className="w-full md:w-auto gap-2 h-10 px-6 rounded-full font-semibold text-xs shadow-md shadow-primary/15 hover:shadow-lg hover:shadow-primary/25 transition-all duration-200"
-                disabled={isPending}
-              >
-                {isPending ? (
-                  <div className="h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                ) : (
+            <Button
+              onClick={handleNextClick}
+              className="group w-full md:w-auto gap-2 h-10 px-6 rounded-full font-semibold text-xs shadow-md shadow-primary/15 hover:shadow-lg hover:shadow-primary/25 transition-all duration-200"
+              disabled={isPending}
+            >
+              {isPending ? (
+                <div className="h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              ) : nextModule ? (
+                <>
+                  <span>Next Module</span>
+                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                </>
+              ) : (
+                <>
                   <Check className="h-3.5 w-3.5" />
-                )}
-                Mark Module as Completed
-              </Button>
-            )}
+                  <span>Finish Course</span>
+                </>
+              )}
+            </Button>
           </div>
         </div>
 

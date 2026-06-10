@@ -231,8 +231,8 @@ export function CandidateCourseDetailClient({ course, isEnrolled, certificateId,
       )}
 
       {/* Course Header */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-center border-b pb-5 border-border/60">
-        <div className="md:col-span-3 flex flex-col gap-2 order-2 md:order-1">
+      <div className="flex flex-col-reverse md:flex-row items-start justify-between gap-6 border-b pb-5 border-border/60">
+        <div className="flex-1 flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline" className="text-[10px] text-muted-foreground">
               {course.level}
@@ -262,7 +262,7 @@ export function CandidateCourseDetailClient({ course, isEnrolled, certificateId,
           </div>
         </div>
 
-        <div className="w-full max-w-sm md:max-w-none mx-auto order-1 md:order-2">
+        <div className="w-32 md:w-40 shrink-0 mx-auto md:mr-0">
           <div className="aspect-video w-full overflow-hidden rounded-xl border border-border/50 dark:border-zinc-800/80 relative shadow-xs">
             <CourseCover coverImagePath={course.cover_image_path} title={course.title} />
           </div>
