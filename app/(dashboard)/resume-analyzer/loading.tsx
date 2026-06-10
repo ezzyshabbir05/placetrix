@@ -1,4 +1,4 @@
-// app/(dashboard)/~/resume-analyzer/loading.tsx
+// app/(dashboard)/resume-analyzer/loading.tsx
 
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"

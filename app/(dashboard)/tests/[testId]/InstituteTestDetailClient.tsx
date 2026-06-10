@@ -1,7 +1,7 @@
 "use client"
 
 // ─────────────────────────────────────────────────────────────────────────────
-// app/~/tests/[id]/InstituteTestDetailClient.tsx
+// app/tests/[id]/InstituteTestDetailClient.tsx
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useState, useCallback, useEffect, useMemo, useRef, type ReactNode } from "react"
@@ -542,7 +542,7 @@ const MobileAttemptRow = React.memo(function MobileAttemptRow({
 
           <div className="flex gap-2">
             <Button asChild size="lg" className="flex-1 font-bold gap-2 text-sm shadow-md">
-              <Link href={`/~/tests/${testId}/result/${attempt.id}`} target="_blank" rel="noopener noreferrer">
+              <Link href={`/tests/${testId}/result/${attempt.id}`} target="_blank" rel="noopener noreferrer">
                 <Eye className="h-4.5 w-4.5" />
                 View Full Result
                 <ExternalLink className="ml-auto h-3.5 w-3.5 opacity-50" />
@@ -622,7 +622,7 @@ const DesktopAttemptRow = React.memo(function DesktopAttemptRow({
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-1">
           <Button asChild size="sm" variant="ghost" className="h-8 gap-1.5">
-            <Link href={`/~/tests/${testId}/result/${attempt.id}`} target="_blank" rel="noopener noreferrer">
+            <Link href={`/tests/${testId}/result/${attempt.id}`} target="_blank" rel="noopener noreferrer">
               <Eye className="h-3.5 w-3.5" />
               <span className="sr-only sm:not-sr-only">View</span>
             </Link>
@@ -1682,7 +1682,7 @@ export function InstituteTestDetailClient({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem
-                onClick={() => router.push(`/~/tests/${test.id}/edit`)}
+                onClick={() => router.push(`/tests/${test.id}/edit`)}
                 disabled={anyLoading}
               >
                 <Pencil className="mr-2 h-3.5 w-3.5" />

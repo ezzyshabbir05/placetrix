@@ -34,10 +34,10 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
-  const next = searchParams.get("next") ?? "/~";
+  const next = searchParams.get("next") ?? "/home";
 
   // Validate redirect target.
-  const safeNext = next.startsWith("/") ? next : "/~";
+  const safeNext = next.startsWith("/") ? next : "/home";
 
   // Explicitly define your base URL using an environment variable or request url.
   // This bypasses the Docker 0.0.0.0 internal binding issue entirely.

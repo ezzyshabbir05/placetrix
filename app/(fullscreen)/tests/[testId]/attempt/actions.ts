@@ -1,7 +1,7 @@
 "use server"
 
 // ─────────────────────────────────────────────────────────────────────────────
-// app/(fullscreen)/~/tests/[testId]/attempt/actions.ts
+// app/(fullscreen)/tests/[testId]/attempt/actions.ts
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { redirect } from "next/navigation"
@@ -282,7 +282,7 @@ export async function submitAttemptAction(
     throw new Error(typedResult.error)
   }
 
-  return typedResult.test_id ? `/~/tests/${typedResult.test_id}` : "/~/tests"
+  return typedResult.test_id ? `/tests/${typedResult.test_id}` : "/tests"
 }
 
 

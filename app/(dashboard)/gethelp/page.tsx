@@ -81,7 +81,7 @@ export default async function GetHelpPage(props: {
   }
 
   if (profile.account_type === "admin") {
-    redirect("/~/support");
+    redirect("/support");
   }
 
   const params = await props.searchParams;

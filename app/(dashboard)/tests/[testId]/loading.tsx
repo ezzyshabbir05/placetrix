@@ -1,4 +1,4 @@
-// app/~/tests/[id]/loading.tsx
+// app/tests/[id]/loading.tsx
 
 import { Skeleton } from "@/components/ui/skeleton"
 import { Separator } from "@/components/ui/separator"

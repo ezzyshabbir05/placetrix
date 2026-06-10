@@ -89,7 +89,7 @@ export async function createCourseAction(
     }
   }
 
-  revalidatePath("/~/courses")
+  revalidatePath("/courses")
   return { success: true, courseId: course.id }
 }
 
@@ -151,8 +151,8 @@ export async function updateCourseAction(
     }
   }
 
-  revalidatePath(`/~/courses/${courseId}`)
-  revalidatePath("/~/courses")
+  revalidatePath(`/courses/${courseId}`)
+  revalidatePath("/courses")
   return { success: true }
 }
 
@@ -173,7 +173,7 @@ export async function deleteCourseAction(courseId: string) {
     throw new Error(error.message || "Failed to delete course.")
   }
 
-  revalidatePath("/~/courses")
+  revalidatePath("/courses")
   return { success: true }
 }
 
@@ -204,8 +204,8 @@ export async function enrollInCourseAction(courseId: string) {
     throw new Error(error.message || "Failed to enroll in course.")
   }
 
-  revalidatePath(`/~/courses/${courseId}`)
-  revalidatePath("/~/courses")
+  revalidatePath(`/courses/${courseId}`)
+  revalidatePath("/courses")
   return { success: true }
 }
 
@@ -257,9 +257,9 @@ export async function toggleModuleCompletionAction(
     throw new Error(upsertError.message || "Failed to save module progress.")
   }
 
-  revalidatePath(`/~/courses/${courseId}`)
-  revalidatePath(`/~/courses/${courseId}/module/${moduleId}`)
-  revalidatePath("/~/courses")
+  revalidatePath(`/courses/${courseId}`)
+  revalidatePath(`/courses/${courseId}/module/${moduleId}`)
+  revalidatePath("/courses")
   return { success: true }
 }
 
@@ -319,8 +319,8 @@ export async function generateCertificateAction(courseId: string) {
     throw new Error(certError?.message || "Failed to generate certificate.")
   }
 
-  revalidatePath(`/~/courses/${courseId}`)
-  revalidatePath("/~/courses")
+  revalidatePath(`/courses/${courseId}`)
+  revalidatePath("/courses")
   return { success: true, certificateId: newCert.id }
 }
 

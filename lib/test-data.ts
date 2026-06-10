@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
-import type { AttemptQuestion } from "@/app/(fullscreen)/~/tests/[testId]/attempt/_types"
+import type { AttemptQuestion } from "@/app/(fullscreen)/tests/[testId]/attempt/_types"
 
 /**
  * Fetches the questions for a test.

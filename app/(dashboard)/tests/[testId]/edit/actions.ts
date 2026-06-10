@@ -187,7 +187,7 @@ export async function saveDraftAction(
 ): Promise<void> {
   const userSub = await requireAuth()
   await saveTestToDb(testId, userSub, settings, questions, "draft")
-  revalidatePath("/~/tests")
+  revalidatePath("/tests")
 }
 
 export async function publishTestAction(
@@ -200,8 +200,8 @@ export async function publishTestAction(
   if (questions.length === 0) throw new Error("Add at least one question.")
 
   await saveTestToDb(testId, userSub, settings, questions, "published")
-  revalidatePath("/~/tests")
-  redirect(`/~/tests/${testId}`)
+  revalidatePath("/tests")
+  redirect(`/tests/${testId}`)
 }
 
 // ─── AI Question Generation ───────────────────────────────────────────────────

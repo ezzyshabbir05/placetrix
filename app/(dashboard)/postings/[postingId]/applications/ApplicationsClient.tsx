@@ -186,7 +186,7 @@ export function ApplicationsClient({ applications, postingId, jobTitle }: { appl
         {/* Page Header */}
         <div className="flex flex-col gap-1.5">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-            <button onClick={() => router.push(`/~/postings`)} className="hover:text-foreground flex items-center gap-1 transition-colors">
+            <button onClick={() => router.push(`/postings`)} className="hover:text-foreground flex items-center gap-1 transition-colors">
               <ArrowLeft className="h-3 w-3" />
               BACK TO POSTINGS
             </button>

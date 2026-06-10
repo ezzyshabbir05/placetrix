@@ -24,7 +24,7 @@ export default async function EditCoursePage({ params }: PageProps) {
   const { courseId } = await params
   const profile = await getUserProfile()
   if (!profile || profile.account_type !== "admin") {
-    redirect("/~/courses")
+    redirect("/courses")
   }
 
   const isNew = courseId === "new"

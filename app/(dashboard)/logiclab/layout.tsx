@@ -10,7 +10,7 @@ export default async function LogicLabLayout({
   if (!profile) redirect("/auth/login")
 
   if (profile.account_type === "institute") {
-    redirect("/~/home")
+    redirect("/home")
   }
 
   return <>{children}</>

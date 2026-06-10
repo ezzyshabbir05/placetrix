@@ -318,14 +318,14 @@ export function ProblemsDirectoryClient({
             </div>
           </Button>
           <Button asChild variant="outline" className="gap-2 h-10 px-5">
-            <Link href="/~/logiclab/playground">
+            <Link href="/logiclab/playground">
               <Terminal className="h-4 w-4" />
               Playground
             </Link>
           </Button>
           {isAdmin && (
             <Button asChild className="gap-2 h-10 px-5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
-              <Link href="/~/logiclab/admin">
+              <Link href="/logiclab/admin">
                 <Plus className="h-4 w-4" />
                 Create Problem
               </Link>
@@ -617,7 +617,7 @@ export function ProblemsDirectoryClient({
                       {problems.map((problem, idx) => (
                         <TableRow
                           key={problem.id}
-                          onClick={() => router.push(`/~/logiclab/problems/${problem.id}`)}
+                          onClick={() => router.push(`/logiclab/problems/${problem.id}`)}
                           className="group cursor-pointer hover:bg-muted/40 transition-colors h-12 border-b-border/60"
                         >
                           {/* Status */}
@@ -695,7 +695,7 @@ export function ProblemsDirectoryClient({
                             <TableCell className="text-right pr-6" onClick={(e) => e.stopPropagation()}>
                               <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Link
-                                  href={`/~/logiclab/admin/edit/${problem.id}`}
+                                  href={`/logiclab/admin/edit/${problem.id}`}
                                   className="p-2 hover:bg-background rounded-md text-muted-foreground hover:text-emerald-500 transition-all cursor-pointer shadow-sm border border-transparent hover:border-border/60"
                                   title="Edit Problem"
                                 >

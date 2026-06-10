@@ -189,7 +189,7 @@ export function CandidateCourseDetailClient({ course, isEnrolled, certificateId,
       toast.error("Please enroll in the course first to access its contents.")
       return
     }
-    router.push(`/~/courses/${course.id}/module/${moduleId}`)
+    router.push(`/courses/${course.id}/module/${moduleId}`)
   }
 
   return (
@@ -200,7 +200,7 @@ export function CandidateCourseDetailClient({ course, isEnrolled, certificateId,
         <Button
           variant="outline"
           size="sm"
-          onClick={() => router.push("/~/courses")}
+          onClick={() => router.push("/courses")}
           className="group rounded-full gap-2 border-border/80 text-muted-foreground hover:text-foreground transition-all duration-200"
         >
           <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />

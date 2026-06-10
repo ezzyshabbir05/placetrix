@@ -1,4 +1,4 @@
-// app/~/tests/page.tsx
+// app/tests/page.tsx
 
 import { createClient } from "@/lib/supabase/server"
 import { getUserProfile } from "@/lib/supabase/profile"

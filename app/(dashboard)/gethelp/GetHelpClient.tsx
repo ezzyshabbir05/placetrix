@@ -144,7 +144,7 @@ function TicketCard({ ticket }: { ticket: any }) {
       <div className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:gap-4 md:p-5">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <Link href={`/~/gethelp/${ticket.id}`} className="hover:underline underline-offset-2 block">
+            <Link href={`/gethelp/${ticket.id}`} className="hover:underline underline-offset-2 block">
               <h3 className="min-w-0 text-sm md:text-base font-semibold leading-tight text-foreground font-sans">
                 {ticket.title}
               </h3>
@@ -175,7 +175,7 @@ function TicketCard({ ticket }: { ticket: any }) {
             size="sm"
             className="w-full md:w-auto h-8 text-xs font-semibold gap-1 rounded-lg shadow-sm"
           >
-            <Link href={`/~/gethelp/${ticket.id}`} className="group inline-flex items-center justify-center">
+            <Link href={`/gethelp/${ticket.id}`} className="group inline-flex items-center justify-center">
               View Ticket
             </Link>
           </Button>
@@ -274,7 +274,7 @@ export default function GetHelpClient({
         </div>
         <Button
           size="sm"
-          onClick={() => router.push("/~/gethelp/new")}
+          onClick={() => router.push("/gethelp/new")}
           className="gap-1.5 shrink-0"
         >
           <Plus className="h-3.5 w-3.5" />

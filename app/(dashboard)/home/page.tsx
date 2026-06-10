@@ -143,7 +143,7 @@ export default async function HomePage() {
                 <p className="text-sm font-medium">Your profile isn't complete yet</p>
                 <p className="text-xs text-muted-foreground">{profileSubtitle}</p>
               </div>
-              <Link href="/~/myprofile" className="shrink-0">
+              <Link href="/myprofile" className="shrink-0">
                 <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs">
                   Complete Profile
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -155,7 +155,7 @@ export default async function HomePage() {
           {/* ── Test Stats ───────────────────────────────────────────────── */}
           {cp?.institute_id && stats && (
             <div className="space-y-3">
-              <SectionHeader title="Tests Overview" href="/~/tests" />
+              <SectionHeader title="Tests Overview" href="/tests" />
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <StatCard
                   icon={<BookOpen className="h-4 w-4" />}
@@ -193,7 +193,7 @@ export default async function HomePage() {
                   Browse available assessments assigned to you.
                 </p>
               </div>
-              <Link href="/~/tests" className="shrink-0">
+              <Link href="/tests" className="shrink-0">
                 <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs">
                   View Tests
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -243,7 +243,7 @@ export default async function HomePage() {
                 <p className="text-sm font-medium">Your institution profile isn't complete yet</p>
                 <p className="text-xs text-muted-foreground">{profileSubtitle}</p>
               </div>
-              <Link href="/~/myprofile" className="shrink-0">
+              <Link href="/myprofile" className="shrink-0">
                 <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs">
                   Complete Profile
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -255,7 +255,7 @@ export default async function HomePage() {
           {/* ── Test Stats ───────────────────────────────────────────────── */}
           {stats && (
             <div className="space-y-3">
-              <SectionHeader title="Tests Overview" href="/~/tests" />
+              <SectionHeader title="Tests Overview" href="/tests" />
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                 <StatCard
                   icon={<ListCheck className="h-4 w-4" />}
@@ -362,7 +362,7 @@ export default async function HomePage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold tracking-tight text-foreground">Recent Support Tickets</h2>
-              <Link href="/~/support" className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+              <Link href="/support" className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
                 Go to Support Queue
                 <ArrowRight className="h-3 w-3" />
               </Link>
@@ -403,7 +403,7 @@ export default async function HomePage() {
                   Fill in your company details to unlock all recruiter features.
                 </p>
               </div>
-              <Link href="/~/myprofile" className="shrink-0">
+              <Link href="/myprofile" className="shrink-0">
                 <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs">
                   Complete Profile
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -416,5 +416,5 @@ export default async function HomePage() {
     );
   }
 
-  redirect("/~/home");
+  redirect("/home");
 }

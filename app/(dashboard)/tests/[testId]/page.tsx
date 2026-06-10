@@ -1,4 +1,4 @@
-// app/~/tests/[testId]/page.tsx
+// app/tests/[testId]/page.tsx
 
 import { notFound, redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
@@ -301,7 +301,7 @@ export default async function TestDetailPage({
   const { testId } = await params
 
   // ── Redirect "new" to tests list ──────────────────────────────────────────
-  if (testId === "new") redirect("/~/tests")
+  if (testId === "new") redirect("/tests")
 
   const profile = await getUserProfile()
   if (!profile) redirect("/auth/login")
@@ -329,6 +329,6 @@ export default async function TestDetailPage({
   }
 
   // Recruiter / admin / other — not supported for test detail
-  redirect("/~/tests")
+  redirect("/tests")
 }
 

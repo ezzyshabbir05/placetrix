@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// app/(fullscreen)/~/tests/[testId]/attempt/_types.ts
+// app/(fullscreen)/tests/[testId]/attempt/_types.ts
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface AttemptTest {

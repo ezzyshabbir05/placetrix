@@ -205,7 +205,7 @@ function PostingCard({
           variant={posting.application_count > 0 ? "default" : "outline"}
           size="sm" 
           className="gap-1.5"
-          onClick={() => router.push(`/~/postings/${posting.id}/applications`)}
+          onClick={() => router.push(`/postings/${posting.id}/applications`)}
         >
           View Candidates
         </Button>

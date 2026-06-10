@@ -455,7 +455,7 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
               key={course.id}
               course={course}
               stats={courseStats[course.id]}
-              onSelect={() => router.push(`/~/courses/${course.id}`)}
+              onSelect={() => router.push(`/courses/${course.id}`)}
             />
           ))}
         </div>
@@ -466,7 +466,7 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
               key={course.id}
               course={course}
               stats={courseStats[course.id]}
-              onSelect={() => router.push(`/~/courses/${course.id}`)}
+              onSelect={() => router.push(`/courses/${course.id}`)}
             />
           ))}
         </div>

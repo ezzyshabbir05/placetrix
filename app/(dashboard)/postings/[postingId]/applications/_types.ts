@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// app/~/postings/[postingId]/applications/_types.ts
+// app/postings/[postingId]/applications/_types.ts
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type JobApplicationStatus = "applied" | "reviewing" | "shortlisted" | "rejected" | "hired"

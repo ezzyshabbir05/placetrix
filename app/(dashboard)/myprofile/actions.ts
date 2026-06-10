@@ -39,6 +39,6 @@ export async function updateCandidatePersonalDetails(payload: any) {
     throw new Error(error.message);
   }
 
-  revalidatePath("/~/myprofile");
+  revalidatePath("/myprofile");
   return { success: true };
 }

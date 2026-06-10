@@ -1,4 +1,4 @@
-// app/(dashboard)/~/notifications/loading.tsx
+// app/(dashboard)/notifications/loading.tsx
 
 import { Skeleton } from "@/components/ui/skeleton"
 

@@ -36,7 +36,7 @@ interface GoogleOneTapProps {
   next?: string;
 }
 
-export function GoogleOneTap({ next = "/~" }: GoogleOneTapProps) {
+export function GoogleOneTap({ next = "/home" }: GoogleOneTapProps) {
   const initialized = useRef(false);
   const isMounted = useRef(true);
 

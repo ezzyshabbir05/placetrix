@@ -11,7 +11,31 @@ import { NextResponse, type NextRequest } from "next/server";
 // ─── Route rules ──────────────────────────────────────────────────────────────
 
 /** Routes that require an authenticated session. */
-const PROTECTED_PATHS = ["/~"] as const;
+const PROTECTED_PATHS = [
+  "/home",
+  "/courses",
+  "/jobs",
+  "/applications",
+  "/tests",
+  "/events",
+  "/logiclab",
+  "/resume",
+  "/resume-analyzer",
+  "/students",
+  "/placement-management",
+  "/drives",
+  "/recruiters",
+  "/users",
+  "/analytics",
+  "/support",
+  "/postings",
+  "/candidates",
+  "/notifications",
+  "/settings",
+  "/gethelp",
+  "/groups",
+  "/myprofile",
+] as const;
 
 /** Routes that should NOT be visited while authenticated. */
 const AUTH_PATHS = ["/auth"] as const;
@@ -160,7 +184,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   //     Exception: flow pages like /auth/callback, /auth/confirm, /auth/mfa are always allowed.
   if (isAuthPage(pathname) && !isAuthFlowPage(pathname) && user) {
     const homeUrl = request.nextUrl.clone();
-    homeUrl.pathname = "/~";
+    homeUrl.pathname = "/home";
     homeUrl.search = "";
     const redirectRes = NextResponse.redirect(homeUrl);
     redirectRes.headers.set("Cache-Control", "no-store, max-age=0");

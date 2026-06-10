@@ -141,7 +141,7 @@ export default function SignUpPage() {
       });
       if (error) throw error;
 
-      router.push("/~");
+      router.push("/home");
       router.refresh();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Invalid or expired code");
@@ -273,7 +273,7 @@ export default function SignUpPage() {
   return (
     <>
       {/* One Tap shown only on the sign-up form step */}
-      <GoogleOneTap next="/~" />
+      <GoogleOneTap next="/home" />
 
       <div className="mx-auto space-y-4 sm:w-sm">
         <div className="flex flex-col space-y-1">

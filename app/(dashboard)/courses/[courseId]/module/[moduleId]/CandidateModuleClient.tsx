@@ -130,9 +130,9 @@ export function CandidateModuleClient({ course, module }: Props) {
 
             // Navigate to next page or course page
             if (nextModule) {
-              router.push(`/~/courses/${currentCourse.id}/module/${nextModule.id}`)
+              router.push(`/courses/${currentCourse.id}/module/${nextModule.id}`)
             } else {
-              router.push(`/~/courses/${currentCourse.id}`)
+              router.push(`/courses/${currentCourse.id}`)
             }
             router.refresh()
           }
@@ -143,9 +143,9 @@ export function CandidateModuleClient({ course, module }: Props) {
     } else {
       // Just navigate if already completed
       if (nextModule) {
-        router.push(`/~/courses/${currentCourse.id}/module/${nextModule.id}`)
+        router.push(`/courses/${currentCourse.id}/module/${nextModule.id}`)
       } else {
-        router.push(`/~/courses/${currentCourse.id}`)
+        router.push(`/courses/${currentCourse.id}`)
       }
     }
   }
@@ -158,7 +158,7 @@ export function CandidateModuleClient({ course, module }: Props) {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => router.push(`/~/courses/${course.id}`)}
+          onClick={() => router.push(`/courses/${course.id}`)}
           className="group rounded-full gap-2 border-border/80 text-muted-foreground hover:text-foreground transition-all duration-200 shrink-0"
           disabled={isPending}
         >
@@ -318,7 +318,7 @@ export function CandidateModuleClient({ course, module }: Props) {
                       <div
                         onClick={() => {
                           if (otherMod.id !== currentModule.id) {
-                            router.push(`/~/courses/${course.id}/module/${otherMod.id}`)
+                            router.push(`/courses/${course.id}/module/${otherMod.id}`)
                           }
                         }}
                         className="flex items-center gap-1.5 min-w-0 flex-1 cursor-pointer"

@@ -29,5 +29,5 @@ export async function toggleStudentVerification(studentId: string, verified: boo
     throw new Error("Action failed. Student profile not found or already in sync.")
   }
 
-  revalidatePath("/~/students")
+  revalidatePath("/students")
 }

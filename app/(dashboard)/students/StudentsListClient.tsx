@@ -353,7 +353,7 @@ export function StudentsListClient({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
-                            <Link href={`/~/students/${student.profile_id}`} className="cursor-pointer">
+                            <Link href={`/students/${student.profile_id}`} className="cursor-pointer">
                               View Profile
                             </Link>
                           </DropdownMenuItem>
@@ -412,7 +412,7 @@ export function StudentsListClient({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem asChild>
-                        <Link href={`/~/students/${student.profile_id}`} className="cursor-pointer">
+                        <Link href={`/students/${student.profile_id}`} className="cursor-pointer">
                           View Profile
                         </Link>
                       </DropdownMenuItem>

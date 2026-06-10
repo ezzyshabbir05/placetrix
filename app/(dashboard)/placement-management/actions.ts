@@ -71,7 +71,7 @@ export async function upsertPlacementInfo(input: UpsertPlacementInfoInput) {
     throw new Error(error.message)
   }
 
-  revalidatePath("/~/placement-management")
+  revalidatePath("/placement-management")
 }
 
 // ─── Bulk set placement status ─────────────────────────────────────────────────
@@ -122,7 +122,7 @@ export async function bulkSetPlacementStatus(
   }
   // "placed" — no bulk data to set; individual edit is used via the side panel
 
-  revalidatePath("/~/placement-management")
+  revalidatePath("/placement-management")
 }
 
 // ─── Export placement data ─────────────────────────────────────────────────────

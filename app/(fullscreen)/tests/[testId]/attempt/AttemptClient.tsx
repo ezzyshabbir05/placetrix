@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation"
 
 // ─────────────────────────────────────────────────────────────────────────────
-// app/~/tests/[testId]/attempt/AttemptClient.tsx
+// app/tests/[testId]/attempt/AttemptClient.tsx
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
@@ -1584,7 +1584,7 @@ export function AttemptClient({
                     setSubmitReason("auto")
                 } else {
                     setSubmitReason("manual")
-                    setSubmitRedirectPath(redirectPath ?? `/~/tests/${test.id}`)
+                    setSubmitRedirectPath(redirectPath ?? `/tests/${test.id}`)
                 }
                 setPhase("submitted")
             } catch (err: any) {
@@ -1725,7 +1725,7 @@ export function AttemptClient({
                 reason={submitReason}
                 attemptId={attemptInfo?.id ?? null}
                 onViewResults={() => {
-                    router.push(submitRedirectPath ?? `/~/tests/${test.id}`)
+                    router.push(submitRedirectPath ?? `/tests/${test.id}`)
                 }}
                 onSubmitFeedback={onSubmitFeedback}
             />

@@ -35,7 +35,7 @@ export default async function ModuleDetailPage({ params }: PageProps) {
       .maybeSingle()
 
     if (!enrollment) {
-      redirect(`/~/courses/${courseId}`)
+      redirect(`/courses/${courseId}`)
     }
   }
 

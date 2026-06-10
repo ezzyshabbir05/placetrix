@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { createTicketAction } from "@/app/(dashboard)/~/gethelp/actions";
+import { createTicketAction } from "@/app/(dashboard)/gethelp/actions";
 import type { UserProfile } from "@/lib/supabase/profile";
 
 interface CreateTicketClientProps {
@@ -41,7 +41,7 @@ export function CreateTicketClient({ userProfile }: CreateTicketClientProps) {
         description: description.trim(),
       });
       toast.success("Support ticket created successfully!");
-      router.push(`/~/gethelp/${ticket.id}`);
+      router.push(`/gethelp/${ticket.id}`);
     } catch (err: any) {
       toast.error(err.message || "Failed to create ticket");
       setIsSubmitting(false);
@@ -66,7 +66,7 @@ export function CreateTicketClient({ userProfile }: CreateTicketClientProps) {
               variant="outline"
               size="sm"
               disabled={isSubmitting}
-              onClick={() => router.push("/~/gethelp")}
+              onClick={() => router.push("/gethelp")}
             >
               Cancel
             </Button>

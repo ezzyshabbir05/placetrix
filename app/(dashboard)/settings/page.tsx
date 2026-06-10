@@ -66,6 +66,6 @@ export default async function SettingsPage() {
     )
   }
 
-  redirect("/~/home")
+  redirect("/home")
 }
 

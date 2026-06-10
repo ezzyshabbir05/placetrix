@@ -9,7 +9,7 @@ export default async function CreateTicketPage() {
   }
 
   if (profile.account_type === "admin") {
-    redirect("/~/support");
+    redirect("/support");
   }
 
   return <CreateTicketClient userProfile={profile} />;

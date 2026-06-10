@@ -1,7 +1,7 @@
 "use server"
 
 // ─────────────────────────────────────────────────────────────────────────────
-// app/~/tests/[testId]/actions.ts
+// app/tests/[testId]/actions.ts
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { redirect } from "next/navigation"
@@ -57,7 +57,7 @@ export async function toggleResultsAction(testId: string): Promise<void> {
     .eq("id", testId)
 
   if (error) throw new Error("Failed to toggle results: " + error.message)
-  revalidatePath(`/~/tests/${testId}`)
+  revalidatePath(`/tests/${testId}`)
 }
 
 
@@ -86,8 +86,8 @@ export async function togglePublishAction(testId: string): Promise<void> {
     .eq("id", testId)
 
   if (error) throw new Error("Failed to update status: " + error.message)
-  revalidatePath(`/~/tests/${testId}`)
-  revalidatePath("/~/tests")
+  revalidatePath(`/tests/${testId}`)
+  revalidatePath("/tests")
 }
 
 
@@ -106,8 +106,8 @@ export async function deleteTestAction(testId: string): Promise<void> {
 
   if (error) throw new Error("Failed to delete test: " + error.message)
 
-  revalidatePath("/~/tests")
-  redirect("/~/tests")
+  revalidatePath("/tests")
+  redirect("/tests")
 }
 
 
@@ -127,5 +127,5 @@ export async function deleteAttemptAction(testId: string, attemptId: string): Pr
 
   if (error) throw new Error("Failed to delete attempt: " + error.message)
 
-  revalidatePath(`/~/tests/${testId}`)
+  revalidatePath(`/tests/${testId}`)
 }

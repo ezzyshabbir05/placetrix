@@ -32,7 +32,7 @@ export default async function LogicLabPage(props: {
   if (!profile) redirect("/auth/login")
 
   const isAdmin = profile.account_type === "admin"
-  if (isAdmin) redirect("/~/logiclab/admin")
+  if (isAdmin) redirect("/logiclab/admin")
 
   const params = await props.searchParams
   const page = Math.max(1, parseInt(params.page || "1", 10))

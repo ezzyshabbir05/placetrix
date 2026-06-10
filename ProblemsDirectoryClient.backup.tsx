@@ -260,7 +260,7 @@ export function ProblemsDirectoryClient({
           {/* Admin CTA */}
           {isAdmin && (
             <Button asChild size="sm" className="w-fit gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-500/20">
-              <Link href="/~/logiclab/admin">
+              <Link href="/logiclab/admin">
                 <Plus className="h-4 w-4" />
                 Create Problem
               </Link>
@@ -433,7 +433,7 @@ export function ProblemsDirectoryClient({
                 </div>
               </div>
               <Button asChild size="sm" variant="outline" className="h-7 w-full text-[10px] gap-1.5">
-                <Link href="/~/logiclab/playground">
+                <Link href="/logiclab/playground">
                   <Terminal className="h-3 w-3" />
                   Playground
                 </Link>
@@ -542,7 +542,7 @@ export function ProblemsDirectoryClient({
             {filtered.map((problem, idx) => (
               <div
                 key={problem.id}
-                onClick={() => router.push(`/~/logiclab/problems/${problem.id}`)}
+                onClick={() => router.push(`/logiclab/problems/${problem.id}`)}
                 className="grid grid-cols-12 gap-2 items-center px-4 py-3 hover:bg-muted/30 transition-colors group cursor-pointer"
               >
                 {/* Status */}
@@ -618,7 +618,7 @@ export function ProblemsDirectoryClient({
                 {isAdmin && (
                   <div className="col-span-2 flex items-center justify-end gap-1">
                     <Link
-                      href={`/~/logiclab/admin/edit/${problem.id}`}
+                      href={`/logiclab/admin/edit/${problem.id}`}
                       onClick={(e) => e.stopPropagation()}
                       className="p-1.5 hover:bg-muted rounded text-muted-foreground hover:text-emerald-400 transition-all inline-flex items-center justify-center cursor-pointer"
                       title="Edit Problem"
@@ -655,7 +655,7 @@ export function ProblemsDirectoryClient({
               </p>
               {isAdmin && problems.length === 0 ? (
                 <Link
-                  href="/~/logiclab/admin"
+                  href="/logiclab/admin"
                   className="text-xs text-emerald-500 hover:text-emerald-400 font-semibold"
                 >
                   Create your first problem →

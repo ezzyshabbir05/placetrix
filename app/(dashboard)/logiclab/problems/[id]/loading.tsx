@@ -1,4 +1,4 @@
-// app/(dashboard)/~/logiclab/problems/[id]/loading.tsx
+// app/(dashboard)/logiclab/problems/[id]/loading.tsx
 
 import { Skeleton } from "@/components/ui/skeleton"
 

@@ -5,10 +5,10 @@ export async function GET(request: NextRequest) {
   // 1. Remove 'origin' from here. We will define it explicitly below.
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/~";
+  const next = searchParams.get("next") ?? "/home";
 
   // Validate redirect target — only allow relative paths to prevent open redirects.
-  const safeNext = next.startsWith("/") ? next : "/~";
+  const safeNext = next.startsWith("/") ? next : "/home";
 
   // 2. Explicitly define your base URL using an environment variable or request url.
   // This bypasses the Docker 0.0.0.0 internal binding issue entirely.

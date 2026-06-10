@@ -256,7 +256,7 @@ function MobileNav({
                   </div>
                 ) : user ? (
                   <Link
-                    href="/dashboard"
+                    href="/home"
                     onClick={closeMenu}
                     className="mb-3 flex items-center gap-3 rounded-xl border border-black/10 bg-black/[0.03] p-3 dark:border-white/10 dark:bg-white/[0.04]"
                   >
@@ -353,7 +353,7 @@ function HeaderVisual({ user, isLoading }: HeaderVisualProps) {
             )}
           >
             <Link
-              href="/"
+              href={user ? "/landing" : "/"}
               className="flex items-center gap-2 font-bold tracking-[0.05em]"
             >
               <Logo />

@@ -13,7 +13,7 @@ export default async function AdminPage() {
   if (!profile) redirect("/auth/login")
 
   const isAdmin = profile.account_type === "admin"
-  if (!isAdmin) redirect("/~/logiclab")
+  if (!isAdmin) redirect("/logiclab")
 
   const supabase = (await createClient()) as any
 

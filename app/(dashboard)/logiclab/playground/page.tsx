@@ -185,7 +185,7 @@ export default function PlaygroundPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-card/60 border border-border rounded-xl px-4 py-3 backdrop-blur shrink-0">
         <div className="flex items-center gap-3">
           <Link
-            href="/~/logiclab"
+            href="/logiclab"
             className="h-9 w-9 rounded-lg bg-muted border border-border flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors"
           >
             <IconArrowLeft className="h-4 w-4 text-muted-foreground" />

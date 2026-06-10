@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { updateTicketStatusAction } from "@/app/(dashboard)/~/gethelp/actions"
+import { updateTicketStatusAction } from "@/app/(dashboard)/gethelp/actions"
 
 type TicketStatus = "open" | "in_progress" | "resolved" | "closed"
 
@@ -146,7 +146,7 @@ export function RecentSupportTickets({ initialTickets }: RecentSupportTicketsPro
           <div className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:gap-4 md:p-5">
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <Link href={`/~/support/${ticket.id}`} className="hover:underline underline-offset-2 block">
+                <Link href={`/support/${ticket.id}`} className="hover:underline underline-offset-2 block">
                   <h3 className="min-w-0 text-sm md:text-base font-semibold leading-tight text-foreground">
                     {ticket.title}
                   </h3>
@@ -198,7 +198,7 @@ export function RecentSupportTickets({ initialTickets }: RecentSupportTicketsPro
                 size="sm"
                 className="w-full md:w-auto h-8 text-xs font-semibold gap-1 rounded-lg shadow-sm"
               >
-                <Link href={`/~/support/${ticket.id}`} className="group inline-flex items-center justify-center">
+                <Link href={`/support/${ticket.id}`} className="group inline-flex items-center justify-center">
                   View Ticket
                 </Link>
               </Button>

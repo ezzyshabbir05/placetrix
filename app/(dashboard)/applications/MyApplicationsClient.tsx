@@ -119,7 +119,7 @@ function ApplicationCard({ app }: { app: MyJobApplication }) {
         {/* Actions */}
         <div className="mt-auto">
           <Button asChild variant="outline" size="sm">
-            <Link href="/~/jobs">
+            <Link href="/jobs">
               View Job <ExternalLink className="h-3.5 w-3.5 ml-1" />
             </Link>
           </Button>
@@ -160,7 +160,7 @@ export function MyApplicationsClient({ applications }: { applications: MyJobAppl
           </p>
         </div>
         <Button asChild variant="outline" size="sm">
-          <Link href="/~/jobs">Find jobs</Link>
+          <Link href="/jobs">Find jobs</Link>
         </Button>
       </div>
 

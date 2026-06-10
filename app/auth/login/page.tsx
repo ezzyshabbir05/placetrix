@@ -73,7 +73,7 @@ export default function LoginPage() {
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/~";
+  const next = searchParams.get("next") ?? "/home";
 
   const [pageState, setPageState] = useState<PageState>("login-form");
   const [email, setEmail] = useState("");

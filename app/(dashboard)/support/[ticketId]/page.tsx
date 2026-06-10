@@ -1,4 +1,4 @@
-import { getTicketAction } from "@/app/(dashboard)/~/gethelp/actions";
+import { getTicketAction } from "@/app/(dashboard)/gethelp/actions";
 import TicketDetailClient from "../../gethelp/[ticketId]/TicketDetailClient";
 import { notFound, redirect } from "next/navigation";
 import { getUserProfile } from "@/lib/supabase/profile";
@@ -9,7 +9,7 @@ export default async function SupportTicketDetailPage(props: { params: Promise<{
   // Validate user is logged in and is admin
   const profile = await getUserProfile();
   if (!profile || profile.account_type !== "admin") {
-    redirect("/~/home");
+    redirect("/home");
   }
 
   // Validate ticketId is a UUID to prevent malformed requests

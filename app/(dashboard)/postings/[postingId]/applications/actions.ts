@@ -24,5 +24,5 @@ export async function updateApplicationStatusAction(applicationId: string, posti
     throw new Error("Failed to update status")
   }
 
-  revalidatePath(`/~/postings/${postingId}/applications`)
+  revalidatePath(`/postings/${postingId}/applications`)
 }

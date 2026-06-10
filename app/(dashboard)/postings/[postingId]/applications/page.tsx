@@ -8,7 +8,7 @@ export default async function ApplicationsPage({ params }: { params: Promise<{ p
   const { postingId } = await params
   const profile = await getUserProfile()
   if (!profile || profile.account_type !== "recruiter") {
-    redirect("/~/home")
+    redirect("/home")
   }
 
   const supabase = await createClient()
@@ -23,7 +23,7 @@ export default async function ApplicationsPage({ params }: { params: Promise<{ p
 
   const postingData = posting as any;
   if (postingError || !postingData || postingData.recruiter_id !== profile.id) {
-    redirect("/~/postings")
+    redirect("/postings")
   }
 
   // Fetch applications

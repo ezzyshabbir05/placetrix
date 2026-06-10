@@ -9,7 +9,7 @@ export default async function JobsPage() {
   if (!profile) redirect("/auth/login")
 
   if (profile.account_type !== "candidate") {
-    redirect("/~/home")
+    redirect("/home")
   }
 
   const supabase = await createClient()

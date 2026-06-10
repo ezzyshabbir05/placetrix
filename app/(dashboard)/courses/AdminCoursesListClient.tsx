@@ -162,7 +162,7 @@ export function AdminCoursesListClient({ courses: initialCourses }: Props) {
   const [courseToDelete, setCourseToDelete] = useState<CourseListItem | null>(null)
 
   const handleCreate = () => {
-    router.push("/~/courses/new/edit")
+    router.push("/courses/new/edit")
   }
 
   const handleDelete = (course: CourseListItem) => {
@@ -427,7 +427,7 @@ export function AdminCoursesListClient({ courses: initialCourses }: Props) {
                                 size="sm"
                                 className="flex-1 text-xs rounded-full h-8"
                               >
-                                <Link href={`/~/courses/${course.id}`}>
+                                <Link href={`/courses/${course.id}`}>
                                   <Eye className="h-3.5 w-3.5 mr-1" />
                                   View
                                 </Link>
@@ -438,7 +438,7 @@ export function AdminCoursesListClient({ courses: initialCourses }: Props) {
                                 size="sm"
                                 className="flex-1 text-xs rounded-full h-8"
                               >
-                                <Link href={`/~/courses/${course.id}/edit`}>
+                                <Link href={`/courses/${course.id}/edit`}>
                                   <PenLine className="h-3.5 w-3.5 mr-1" />
                                   Edit
                                 </Link>

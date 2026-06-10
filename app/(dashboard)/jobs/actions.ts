@@ -34,5 +34,5 @@ export async function applyForJobAction(jobId: string, coverLetter?: string) {
   }
 
   // Revalidate so the application count updates and UI reflects the "applied" state
-  revalidatePath("/~/jobs")
+  revalidatePath("/jobs")
 }

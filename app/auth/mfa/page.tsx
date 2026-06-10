@@ -35,7 +35,7 @@ export default function MfaPage() {
 function MfaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/~";
+  const next = searchParams.get("next") ?? "/home";
 
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +43,7 @@ function MfaContent() {
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   // Validate the redirect target — only allow relative paths
-  const safeNext = next.startsWith("/") ? next : "/~";
+  const safeNext = next.startsWith("/") ? next : "/home";
 
   // Guard: if the user somehow lands here without needing MFA, push them through
   useEffect(() => {

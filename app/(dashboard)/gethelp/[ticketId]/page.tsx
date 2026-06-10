@@ -1,4 +1,4 @@
-import { getTicketAction } from "@/app/(dashboard)/~/gethelp/actions";
+import { getTicketAction } from "@/app/(dashboard)/gethelp/actions";
 import TicketDetailClient from "./TicketDetailClient";
 import { notFound, redirect } from "next/navigation";
 import { getUserProfile } from "@/lib/supabase/profile";
@@ -14,7 +14,7 @@ export default async function GetHelpTicketDetailPage(props: { params: Promise<{
 
   // Redirect admin to support route
   if (profile.account_type === "admin") {
-    redirect(`/~/support/${params.ticketId}`);
+    redirect(`/support/${params.ticketId}`);
   }
 
   // Validate ticketId is a UUID to prevent malformed requests

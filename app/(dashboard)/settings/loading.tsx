@@ -1,4 +1,4 @@
-// app/~/settings/loading.tsx
+// app/settings/loading.tsx
 
 import { Skeleton } from "@/components/ui/skeleton"
 

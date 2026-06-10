@@ -47,7 +47,7 @@ import {
   addTicketMessageAction,
   getTicketAction,
   updateTicketStatusAction,
-} from "@/app/(dashboard)/~/gethelp/actions";
+} from "@/app/(dashboard)/gethelp/actions";
 import type { UserProfile } from "@/lib/supabase/profile";
 
 // ─── Meta Item ────────────────────────────────────────────────────────────────

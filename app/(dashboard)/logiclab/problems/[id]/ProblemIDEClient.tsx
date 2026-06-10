@@ -711,7 +711,7 @@ export function ProblemIDEClient({
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
           <Link 
-            href="/~/logiclab"
+            href="/logiclab"
             className="flex items-center justify-center h-8 w-8 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-all shrink-0"
             title="Back to Problems"
           >
@@ -729,12 +729,12 @@ export function ProblemIDEClient({
         <div className="h-4 w-px bg-border mx-1" />
         <div className="flex items-center gap-1">
           {prevProblemId ? (
-            <Link href={`/~/logiclab/problems/${prevProblemId}`} className="p-1 hover:bg-muted rounded text-muted-foreground transition-colors" title="Previous"><IconChevronLeft className="h-4 w-4" /></Link>
+            <Link href={`/logiclab/problems/${prevProblemId}`} className="p-1 hover:bg-muted rounded text-muted-foreground transition-colors" title="Previous"><IconChevronLeft className="h-4 w-4" /></Link>
           ) : (
             <div className="p-1 text-muted-foreground/30"><IconChevronLeft className="h-4 w-4" /></div>
           )}
           {nextProblemId ? (
-            <Link href={`/~/logiclab/problems/${nextProblemId}`} className="p-1 hover:bg-muted rounded text-muted-foreground transition-colors" title="Next"><IconChevronRight className="h-4 w-4" /></Link>
+            <Link href={`/logiclab/problems/${nextProblemId}`} className="p-1 hover:bg-muted rounded text-muted-foreground transition-colors" title="Next"><IconChevronRight className="h-4 w-4" /></Link>
           ) : (
             <div className="p-1 text-muted-foreground/30"><IconChevronRight className="h-4 w-4" /></div>
           )}
@@ -1856,7 +1856,7 @@ export function ProblemIDEClient({
             ) : filteredProblems.length > 0 ? (
               filteredProblems.map(p => (
                 <Link 
-                  href={`/~/logiclab/problems/${p.id}`}
+                  href={`/logiclab/problems/${p.id}`}
                   key={p.id}
                   onClick={() => setIsProblemListOpen(false)}
                   className={`flex items-center justify-between px-4 py-2.5 hover:bg-muted/60 transition-colors ${p.id === problem.id ? 'bg-muted border-l-2 border-emerald-500' : ''}`}

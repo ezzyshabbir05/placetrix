@@ -1,7 +1,7 @@
 "use client"
 
 // ─────────────────────────────────────────────────────────────────────────────
-// app/~/tests/[testId]/result/[attemptId]/TestResultClient.tsx
+// app/tests/[testId]/result/[attemptId]/TestResultClient.tsx
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { type ReactNode, useMemo, useCallback, useEffect } from "react"

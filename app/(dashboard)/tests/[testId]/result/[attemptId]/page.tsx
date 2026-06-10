@@ -1,4 +1,4 @@
-// app/~/tests/[testId]/result/[attemptId]/page.tsx
+// app/tests/[testId]/result/[attemptId]/page.tsx
 
 import { notFound, redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"

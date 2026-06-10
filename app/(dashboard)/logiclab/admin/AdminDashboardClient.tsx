@@ -1043,7 +1043,7 @@ export function AdminDashboardClient({
                             <TableCell className="px-4 py-3 text-right">
                               <div className="flex items-center justify-end gap-1.5">
                                 <Button asChild variant="outline" size="icon" className="h-8 w-8 rounded-lg border-muted-foreground/20 text-muted-foreground/75 hover:text-emerald-500 hover:bg-secondary/50">
-                                  <Link href={`/~/logiclab/admin/edit/${problem.id}`} title="Edit Problem">
+                                  <Link href={`/logiclab/admin/edit/${problem.id}`} title="Edit Problem">
                                     <Edit className="h-3.5 w-3.5" />
                                   </Link>
                                 </Button>

@@ -218,7 +218,7 @@ function JobDetailDialog({
         <div className="p-4 border-t bg-background flex justify-end gap-2">
           {job.description && (
             <Button variant="secondary" asChild>
-              <Link href={`/~/resume-analyzer?job_id=${job.id}`}>
+              <Link href={`/resume-analyzer?job_id=${job.id}`}>
                 <Sparkles className="h-4 w-4 mr-1.5" /> Analyze Resume
               </Link>
             </Button>

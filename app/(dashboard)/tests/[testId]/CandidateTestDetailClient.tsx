@@ -1,7 +1,7 @@
 "use client"
 
 // ─────────────────────────────────────────────────────────────────────────────
-// app/~/tests/[id]/CandidateTestDetailClient.tsx
+// app/tests/[id]/CandidateTestDetailClient.tsx
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { type ReactNode, useMemo, useCallback } from "react"
@@ -454,7 +454,7 @@ export function CandidateTestDetailClient({ test, attempt, serverNow }: Props) {
             {test.results_available && (
               <div className="pt-2">
                 <Button asChild variant="default" className="w-full sm:w-auto">
-                  <Link href={`/~/tests/${test.id}/result/${attempt?.id}`}>
+                  <Link href={`/tests/${test.id}/result/${attempt?.id}`}>
                     View Detailed Report
                   </Link>
                 </Button>

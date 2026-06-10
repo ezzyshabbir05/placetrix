@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// app/(fullscreen)/~/tests/[testId]/attempt/page.tsx
+// app/(fullscreen)/tests/[testId]/attempt/page.tsx
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { redirect } from "next/navigation"
@@ -39,8 +39,8 @@ export default async function AttemptPage({
   }
 
   if (initResult.error) {
-    if (initResult.error === "Profile incomplete") redirect("/~/settings")
-    redirect("/~/tests")
+    if (initResult.error === "Profile incomplete") redirect("/settings")
+    redirect("/tests")
   }
 
   // Capture the server timestamp immediately after the RPC returns so that
@@ -48,7 +48,7 @@ export default async function AttemptPage({
   const serverNow = new Date()
 
   if (initResult.status === "expired") {
-    redirect(`/~/tests/${testId}`)
+    redirect(`/tests/${testId}`)
   }
 
   // ── 2. Data Preparation ─────────────────────────────────────────────────────

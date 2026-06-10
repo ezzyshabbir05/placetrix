@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// app/~/postings/page.tsx
+// app/postings/page.tsx
 // Server Component — fetches job postings for the recruiter
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -15,7 +15,7 @@ export default async function PostingsPage() {
 
   // Only recruiters should access this page
   if (profile.account_type !== "recruiter") {
-    redirect("/~/home")
+    redirect("/home")
   }
 
   const supabase = await createClient()

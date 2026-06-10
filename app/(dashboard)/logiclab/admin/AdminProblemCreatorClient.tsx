@@ -465,7 +465,7 @@ export function AdminProblemCreatorClient({
       }
 
       toast.success(`Problem ${isEdit ? "updated" : "created"} successfully!`)
-      router.push("/~/logiclab/admin")
+      router.push("/logiclab/admin")
     } catch (err: any) {
       console.error("Save error:", err)
       toast.error(err?.message || "Failed to save problem.")
@@ -508,7 +508,7 @@ export function AdminProblemCreatorClient({
       }
 
       toast.success(`Successfully imported ${insertedProblems.length} problems!`)
-      router.push("/~/logiclab/admin")
+      router.push("/logiclab/admin")
     } catch (err: any) {
       console.error("Bulk Import Error:", err)
       toast.error(err?.message || "Failed during bulk import.")
@@ -523,7 +523,7 @@ export function AdminProblemCreatorClient({
       <div className="flex items-center justify-between gap-4 shrink-0">
         <div className="flex items-center gap-3">
           <Link
-            href="/~/logiclab/admin"
+            href="/logiclab/admin"
             className="h-9 w-9 rounded-lg bg-muted border border-border flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors"
           >
             <IconArrowLeft className="h-4 w-4 text-muted-foreground" />

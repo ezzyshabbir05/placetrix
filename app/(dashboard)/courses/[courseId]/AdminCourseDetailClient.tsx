@@ -221,7 +221,7 @@ export function AdminCourseDetailClient({ course, students }: Props) {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => router.push("/~/courses")}
+          onClick={() => router.push("/courses")}
           className="group rounded-full gap-2 border-border/80 text-muted-foreground hover:text-foreground transition-all duration-200"
         >
           <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
@@ -229,7 +229,7 @@ export function AdminCourseDetailClient({ course, students }: Props) {
         </Button>
 
         <Button asChild size="sm" className="gap-1.5 rounded-full shadow-md shadow-primary/10">
-          <Link href={`/~/courses/${course.id}/edit`}>
+          <Link href={`/courses/${course.id}/edit`}>
             <PenLine className="h-3.5 w-3.5" />
             Edit Course
           </Link>

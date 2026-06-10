@@ -59,55 +59,55 @@ const VALID_ACCOUNT_TYPES: AccountType[] = ["candidate", "institute", "admin", "
 
 const NAV_MAIN: Record<AccountType, NavItem[]> = {
   candidate: [
-    { title: "Home", url: "/~/home", icon: IconHome },
-    { title: "Job Search", url: "/~/jobs", icon: IconSearch },
-    { title: "My Applications", url: "/~/applications", icon: IconClipboardList },
-    { title: "Tests", url: "/~/tests", icon: IconChartBar },
-    { title: "Events", url: "/~/events", icon: IconCalendarEvent },
-    { title: "Courses", url: "/~/courses", icon: IconBook, badge: "Upcoming" },
-    { title: "Logic Lab", url: "/~/logiclab", icon: IconCode, badge: "Beta" },
+    { title: "Home", url: "/home", icon: IconHome },
+    { title: "Job Search", url: "/jobs", icon: IconSearch },
+    { title: "My Applications", url: "/applications", icon: IconClipboardList },
+    { title: "Tests", url: "/tests", icon: IconChartBar },
+    { title: "Events", url: "/events", icon: IconCalendarEvent },
+    { title: "Courses", url: "/courses", icon: IconBook, badge: "Upcoming" },
+    { title: "Logic Lab", url: "/logiclab", icon: IconCode, badge: "Beta" },
     {
       title: "Tools",
       url: "#",
       icon: IconTools,
       items: [
-        { title: "Resume Generator", url: "/~/resume" },
-        { title: "Resume Analyzer", url: "/~/resume-analyzer" },
+        { title: "Resume Generator", url: "/resume" },
+        { title: "Resume Analyzer", url: "/resume-analyzer" },
       ],
     },
   ],
   institute: [
-    { title: "Home", url: "/~/home", icon: IconHome },
-    { title: "Students", url: "/~/students", icon: IconSchool },
-    { title: "Placement", url: "/~/placement-management", icon: IconTrophy },
-    { title: "Drives", url: "/~/drives", icon: IconFolder },
-    { title: "Tests", url: "/~/tests", icon: IconChartBar },
-    { title: "Events", url: "/~/events", icon: IconCalendarEvent },
-    { title: "Recruiters", url: "/~/recruiters", icon: IconBriefcase },
+    { title: "Home", url: "/home", icon: IconHome },
+    { title: "Students", url: "/students", icon: IconSchool },
+    { title: "Placement", url: "/placement-management", icon: IconTrophy },
+    { title: "Drives", url: "/drives", icon: IconFolder },
+    { title: "Tests", url: "/tests", icon: IconChartBar },
+    { title: "Events", url: "/events", icon: IconCalendarEvent },
+    { title: "Recruiters", url: "/recruiters", icon: IconBriefcase },
   ],
   admin: [
-    { title: "Home", url: "/~/home", icon: IconHome },
-    { title: "Users", url: "/~/users", icon: IconUsers },
-    { title: "Courses", url: "/~/courses", icon: IconBook },
-    { title: "LogicLab", url: "/~/logiclab/admin", icon: IconCode, badge: "Beta" },
-    { title: "Analytics", url: "/~/analytics", icon: IconFileAnalytics },
-    { title: "Support Queue", url: "/~/support", icon: IconHelp },
+    { title: "Home", url: "/home", icon: IconHome },
+    { title: "Users", url: "/users", icon: IconUsers },
+    { title: "Courses", url: "/courses", icon: IconBook },
+    { title: "LogicLab", url: "/logiclab/admin", icon: IconCode, badge: "Beta" },
+    { title: "Analytics", url: "/analytics", icon: IconFileAnalytics },
+    { title: "Support Queue", url: "/support", icon: IconHelp },
   ],
   recruiter: [
-    { title: "Home", url: "/~/home", icon: IconHome },
-    { title: "Job Postings", url: "/~/postings", icon: IconBriefcase2 },
-    { title: "Candidates", url: "/~/candidates", icon: IconTargetArrow },
-    { title: "Drives", url: "/~/drives", icon: IconFolder },
-    { title: "Tests", url: "/~/tests", icon: IconChartBar },
-    { title: "LogicLab", url: "/~/logiclab", icon: IconCode, badge: "Beta" },
+    { title: "Home", url: "/home", icon: IconHome },
+    { title: "Job Postings", url: "/postings", icon: IconBriefcase2 },
+    { title: "Candidates", url: "/candidates", icon: IconTargetArrow },
+    { title: "Drives", url: "/drives", icon: IconFolder },
+    { title: "Tests", url: "/tests", icon: IconChartBar },
+    { title: "LogicLab", url: "/logiclab", icon: IconCode, badge: "Beta" },
   ],
 }
 
 
 const NAV_SECONDARY: NavItem[] = [
-  { title: "Notifications", url: "/~/notifications", icon: IconBell },
-  { title: "Settings", url: "/~/settings", icon: IconSettings },
-  { title: "Get Help", url: "/~/gethelp", icon: IconHelp },
+  { title: "Notifications", url: "/notifications", icon: IconBell },
+  { title: "Settings", url: "/settings", icon: IconSettings },
+  { title: "Get Help", url: "/gethelp", icon: IconHelp },
 ]
 
 
@@ -256,7 +256,7 @@ export function NavUser({ user }: { user: UserProfile | null }) {
 
               <DropdownMenuGroup>
                 <DropdownMenuItem asChild className="cursor-pointer">
-                  <Link href="/~/myprofile">
+                  <Link href="/myprofile">
                     <IconUserCircle className="size-4 shrink-0" />
                     <span>My Profile</span>
                   </Link>
@@ -497,7 +497,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
               asChild
               className="group/logo cursor-pointer hover:bg-transparent hover:text-current active:bg-transparent focus:bg-transparent group-data-[collapsible=icon]/sidebar-wrapper:p-1.5!"
             >
-              <Link href="/">
+              <Link href={user ? "/landing" : "/"}>
                 <Logo />
                 <div className="flex flex-1 items-center gap-1.5 overflow-hidden">
                   <span className="text-base font-bold transition-all duration-300 group-hover/logo:tracking-wider truncate">

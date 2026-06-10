@@ -77,6 +77,6 @@ export default async function MyProfilePage() {
     )
   }
 
-  redirect("/~/home")
+  redirect("/home")
 }
 

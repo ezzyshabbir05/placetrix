@@ -1,7 +1,7 @@
 "use client"
 
 // ─────────────────────────────────────────────────────────────────────────────
-// app/~/tests/InstituteTestsClient.tsx
+// app/tests/InstituteTestsClient.tsx
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useMemo, useCallback, useEffect, useTransition, useRef } from "react"

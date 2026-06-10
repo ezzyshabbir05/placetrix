@@ -77,7 +77,7 @@ export default async function SupportQueuePage(props: {
 }) {
   const profile = await getUserProfile()
   if (!profile || profile.account_type !== "admin") {
-    redirect("/~/home")
+    redirect("/home")
   }
 
   const params = await props.searchParams

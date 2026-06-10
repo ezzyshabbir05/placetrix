@@ -10,7 +10,7 @@ export default async function ApplicationsPage() {
   }
 
   if (profile.account_type === "recruiter") {
-    redirect("/~/postings")
+    redirect("/postings")
   }
 
   const supabase = await createClient()

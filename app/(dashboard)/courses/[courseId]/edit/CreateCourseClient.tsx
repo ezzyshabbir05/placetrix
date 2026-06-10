@@ -206,13 +206,13 @@ export function CreateCourseClient({ initialCourse, initialModules = [], adminPr
           const result = await updateCourseAction(initialCourse.id, courseData, modules)
           if (result.success) {
             toast.success("Course updated successfully!")
-            router.push("/~/courses")
+            router.push("/courses")
           }
         } else {
           const result = await createCourseAction(courseData, modules)
           if (result.success) {
             toast.success("Course created successfully!")
-            router.push("/~/courses")
+            router.push("/courses")
           }
         }
       } catch (err: any) {
@@ -247,7 +247,7 @@ export function CreateCourseClient({ initialCourse, initialModules = [], adminPr
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => router.push("/~/courses")}
+              onClick={() => router.push("/courses")}
               disabled={isPending}
               className="rounded-full"
             >

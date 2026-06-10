@@ -1,4 +1,4 @@
-// app/(dashboard)/~/tests/[testId]/edit/loading.tsx
+// app/(dashboard)/tests/[testId]/edit/loading.tsx
 
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"

@@ -1,4 +1,4 @@
-// app/~/tests/loading.tsx
+// app/tests/loading.tsx
 
 import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"

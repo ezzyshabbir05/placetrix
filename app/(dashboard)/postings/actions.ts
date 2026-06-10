@@ -1,7 +1,7 @@
 "use server"
 
 // ─────────────────────────────────────────────────────────────────────────────
-// app/~/postings/actions.ts
+// app/postings/actions.ts
 // Server Actions for Job Postings CRUD
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -66,7 +66,7 @@ export async function createPostingAction(
 
   const newPosting = data as any;
   if (error) throw new Error("Failed to create posting: " + error.message)
-  revalidatePath("/~/postings")
+  revalidatePath("/postings")
   return { id: newPosting.id }
 }
 
@@ -100,7 +100,7 @@ export async function updatePostingAction(
     .eq("id", postingId)
 
   if (error) throw new Error("Failed to update posting: " + error.message)
-  revalidatePath("/~/postings")
+  revalidatePath("/postings")
 }
 
 // ─── Toggle Status ────────────────────────────────────────────────────────────
@@ -119,7 +119,7 @@ export async function togglePostingStatusAction(
     .eq("id", postingId)
 
   if (error) throw new Error("Failed to update status: " + error.message)
-  revalidatePath("/~/postings")
+  revalidatePath("/postings")
 }
 
 // ─── Delete ───────────────────────────────────────────────────────────────────
@@ -135,5 +135,5 @@ export async function deletePostingAction(postingId: string): Promise<void> {
     .eq("id", postingId)
 
   if (error) throw new Error("Failed to delete posting: " + error.message)
-  revalidatePath("/~/postings")
+  revalidatePath("/postings")
 }
