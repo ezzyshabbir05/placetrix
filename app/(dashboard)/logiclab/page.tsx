@@ -19,12 +19,9 @@ interface SearchParams {
   tag?: string
 }
 
-// Helper to format Date to local YYYY-MM-DD
+// Helper to format Date to UTC YYYY-MM-DD
 function toLocalYYYYMMDD(date: Date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  return date.toISOString().split("T")[0]
 }
 
 const getCachedPotd = unstable_cache(
@@ -141,11 +138,11 @@ export default async function LogicLabPage(props: {
   let maxStreak = 0
   
   const today = new Date()
-  const todayStr = toLocalYYYYMMDD(today)
+  const todayStr = today.toISOString().split("T")[0]
   
-  const yesterday = new Date()
-  yesterday.setDate(today.getDate() - 1)
-  const yesterdayStr = toLocalYYYYMMDD(yesterday)
+  const yesterday = new Date(today)
+  yesterday.setUTCDate(today.getUTCDate() - 1)
+  const yesterdayStr = yesterday.toISOString().split("T")[0]
 
   const hasActiveStreak = uniqueDatesWithStatus.has(todayStr) || uniqueDatesWithStatus.has(yesterdayStr)
 
@@ -160,7 +157,7 @@ export default async function LogicLabPage(props: {
         tempStreak = 1
       } else {
         const diffTime = Math.abs(currentDate.getTime() - prevDate.getTime())
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24))
         if (diffDays <= 1) {
           tempStreak++
         } else {
@@ -174,12 +171,12 @@ export default async function LogicLabPage(props: {
 
     if (hasActiveStreak) {
       const checkDate = uniqueDatesWithStatus.has(todayStr) ? new Date(today) : new Date(yesterday)
-      let checkStr = toLocalYYYYMMDD(checkDate)
+      let checkStr = checkDate.toISOString().split("T")[0]
       
       while (uniqueDatesWithStatus.has(checkStr)) {
         currentStreak++
-        checkDate.setDate(checkDate.getDate() - 1)
-        checkStr = toLocalYYYYMMDD(checkDate)
+        checkDate.setUTCDate(checkDate.getUTCDate() - 1)
+        checkStr = checkDate.toISOString().split("T")[0]
       }
     }
   }
@@ -190,15 +187,15 @@ export default async function LogicLabPage(props: {
   const activityCalendar: any[] = []
   const daysToGenerate = 182 // 26 weeks * 7 days
   for (let i = daysToGenerate - 1; i >= 0; i--) {
-    const d = new Date()
-    d.setDate(today.getDate() - i)
-    const dateStr = toLocalYYYYMMDD(d)
+    const d = new Date(today)
+    d.setUTCDate(today.getUTCDate() - i)
+    const dateStr = d.toISOString().split("T")[0]
     const activity = uniqueDatesWithStatus.get(dateStr)
     activityCalendar.push({
       date: dateStr,
       count: activity?.count || 0,
       status: activity?.solved ? "solved" : activity?.attempted ? "attempted" : "none",
-      dayOfWeek: d.getDay()
+      dayOfWeek: d.getUTCDay()
     })
   }
 
@@ -265,6 +262,7 @@ export default async function LogicLabPage(props: {
 
   // Fetch initial POTD directly from aggressively cached function
   let initialPotd = await getCachedPotd(todayStr);
+  const fullPotdProblem = initialPotd ? enrichedProblems.find((p: any) => p.id === initialPotd.problem_id) : null;
 
   return (
     <ProblemsDirectoryClient
@@ -284,6 +282,7 @@ export default async function LogicLabPage(props: {
       tagCounts={tagCounts}
       globalStats={globalStats}
       initialPotd={initialPotd}
+      fullPotdProblem={fullPotdProblem}
     />
   )
 }

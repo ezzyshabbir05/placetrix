@@ -97,6 +97,7 @@ interface ProblemsDirectoryProps {
     hard: { total: number; solved: number }
   }
   initialPotd?: any
+  fullPotdProblem?: any
 }
 
 const DIFFICULTY_COLORS: Record<string, string> = {
@@ -142,6 +143,7 @@ export function ProblemsDirectoryClient({
   tagCounts,
   globalStats,
   initialPotd,
+  fullPotdProblem,
 }: ProblemsDirectoryProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -687,8 +689,8 @@ export function ProblemsDirectoryClient({
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {potd && (() => {
-                        const potdProblem = problems.find(p => p.id === potd.problem_id);
+                      {potd && fullPotdProblem && (() => {
+                        const potdProblem = fullPotdProblem;
                         const todayDateStr = new Date().toISOString().split("T")[0];
                         const todayActivity = activityCalendar.find(c => c.date === todayDateStr);
                         const isPotdSolved = potdProblem?.solved_status === "Accepted" || todayActivity?.status === "solved";
@@ -772,7 +774,7 @@ export function ProblemsDirectoryClient({
                             <TableCell className="py-2">
                               <div className="flex flex-col gap-1.5">
                                 <div className="flex flex-wrap gap-1.5">
-                                  {(potdProblem?.tags || []).slice(0, 2).map((tag) => (
+                                  {(potdProblem?.tags || []).slice(0, 2).map((tag: string) => (
                                     <Badge
                                       key={tag}
                                       variant="secondary"
