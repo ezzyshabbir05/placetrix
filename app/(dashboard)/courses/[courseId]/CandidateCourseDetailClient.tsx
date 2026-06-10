@@ -381,7 +381,7 @@ export function CandidateCourseDetailClient({ course, isEnrolled, certificateId,
           {/* Enrollment / Progress Card */}
           {!isEnrolled ? (
             <Card className="border border-border/50 bg-card rounded-xl shadow-xs">
-              <CardHeader className="pb-3">
+              <CardHeader className="">
                 <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                   <BookOpen className="h-3.5 w-3.5" />
                   Start Learning
@@ -403,7 +403,7 @@ export function CandidateCourseDetailClient({ course, isEnrolled, certificateId,
             </Card>
           ) : (
             <Card className="border border-border/50 bg-card rounded-xl shadow-xs">
-              <CardHeader className="pb-3">
+              <CardHeader className="">
                 <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Course Progress
                 </CardTitle>
@@ -442,7 +442,7 @@ export function CandidateCourseDetailClient({ course, isEnrolled, certificateId,
           {/* Certificate Card */}
           {isEnrolled && (
             <Card className="border border-border/50 bg-card rounded-xl shadow-xs">
-              <CardHeader className="pb-3">
+              <CardHeader className="">
                 <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                   <Award className="h-3.5 w-3.5" />
                   Certificate
@@ -498,7 +498,7 @@ export function CandidateCourseDetailClient({ course, isEnrolled, certificateId,
 
           {/* Instructor Card */}
           <Card className="border border-border/50 bg-card rounded-xl shadow-xs">
-            <CardHeader className="pb-3">
+            <CardHeader className="">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Instructor
               </CardTitle>

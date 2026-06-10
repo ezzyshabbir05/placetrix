@@ -332,6 +332,7 @@ export function NavMain({ items }: { items: NavItem[] }) {
               return (
                 <Collapsible
                   key={item.title}
+                  id={`sidebar-collapsible-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                   asChild
                   defaultOpen={item.items.some(
                     (subItem) =>
