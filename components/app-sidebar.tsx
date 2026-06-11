@@ -228,7 +228,7 @@ export function NavUser({ user }: { user: UserProfile | null }) {
               <div className="flex items-center gap-2 w-full" suppressHydrationWarning>
                 {user ? (
                   <>
-                    <Avatar className="h-8 w-8 rounded-lg shrink-0">
+                    <Avatar className="h-8 w-8 rounded-lg shrink-0 group-hover/user:ring-2 group-hover/user:ring-sidebar-accent-foreground group-data-[state=open]/user:ring-2 group-data-[state=open]/user:ring-sidebar-accent-foreground">
                       <AvatarImage src={avatarUrl ?? undefined} alt={displayName} className="object-cover" />
                       <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
                     </Avatar>
