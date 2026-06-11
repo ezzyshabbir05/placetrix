@@ -163,37 +163,10 @@ export function ProblemsDirectoryClient({
   const [showAllTags, setShowAllTags] = useState(false)
   const [showMetrics, setShowMetrics] = useState(true)
   const isOwnUpdateRef = useRef(false)
-  const cellRadiusClass = "rounded-[calc(var(--radius)*0.25)] sm:rounded-[calc(var(--radius)*0.2)]"
+  const cellRadiusClass = "rounded-[18%]"
 
-  const [potd, setPotd] = useState<any>(initialPotd)
+  const potd = initialPotd
   const [timeLeft, setTimeLeft] = useState<string>("")
-
-  const [activityData, setActivityData] = useState({
-    streakStats: streakStats || { currentStreak: 0, maxStreak: 0 },
-    activityCalendar: activityCalendar || []
-  })
-
-  useEffect(() => {
-    fetch("/api/logiclab/activity")
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setActivityData({ streakStats: data.streakStats, activityCalendar: data.activityCalendar })
-        }
-      })
-      .catch(console.error)
-  }, [])
-
-  useEffect(() => {
-    if (!potd) {
-      fetch("/api/logiclab/potd")
-        .then(res => res.json())
-        .then(data => {
-          if (data.success && data.potd) setPotd(data.potd)
-        })
-        .catch(console.error)
-    }
-  }, [potd])
 
   // UTC Midnight Countdown Timer
   useEffect(() => {
@@ -256,14 +229,14 @@ export function ProblemsDirectoryClient({
     const result: CalendarCell[][] = []
     let currentWeek: CalendarCell[] = []
 
-    if (!activityData.activityCalendar || activityData.activityCalendar.length === 0) return result
+    if (!activityCalendar || activityCalendar.length === 0) return result
 
-    const firstDay = activityData.activityCalendar[0].dayOfWeek
+    const firstDay = activityCalendar[0].dayOfWeek
     for (let i = 0; i < firstDay; i++) {
       currentWeek.push({ date: "", count: 0, status: "none", dayOfWeek: i })
     }
 
-    activityData.activityCalendar.forEach((cell) => {
+    activityCalendar.forEach((cell) => {
       currentWeek.push(cell)
       if (cell.dayOfWeek === 6) {
         result.push(currentWeek)
@@ -280,7 +253,7 @@ export function ProblemsDirectoryClient({
     }
 
     return result.slice(-20)
-  }, [activityData.activityCalendar])
+  }, [activityCalendar])
 
   const { displayColumns, visibleMonthLabels } = useMemo(() => {
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -680,11 +653,11 @@ export function ProblemsDirectoryClient({
               <div className="flex items-center gap-2.5 shrink-0 text-sm font-semibold">
                 <div className="flex items-center gap-1.5 text-foreground">
                   <Flame className="w-4 h-4 text-orange-500 fill-orange-500/10 shrink-0" />
-                  <span>{activityData.streakStats.currentStreak} day streak</span>
+                  <span>{streakStats.currentStreak} day streak</span>
                 </div>
                 <span className="text-muted-foreground/30">|</span>
                 <span className="text-xs text-muted-foreground font-medium">
-                  Max: <span className="text-foreground font-semibold">{activityData.streakStats.maxStreak}</span>
+                  Max: <span className="text-foreground font-semibold">{streakStats.maxStreak}</span>
                 </span>
               </div>
             </div>
