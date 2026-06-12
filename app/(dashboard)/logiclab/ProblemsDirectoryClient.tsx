@@ -28,6 +28,8 @@ import {
   SlidersHorizontal,
   ChevronsUp,
   ChevronsDown,
+  CircleDashed,
+  ListTodo,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
@@ -1207,16 +1209,18 @@ export function ProblemsDirectoryClient({
             )}
           </SheetHeader>
 
-          <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-8">
+          <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-6">
             {/* Status */}
             <div className="flex flex-col gap-3">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Status</p>
-              <div className="flex flex-col gap-2">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                <ListTodo className="size-3.5" /> Status
+              </p>
+              <div className="grid grid-cols-2 gap-2.5">
                 {[
-                  { value: "all", label: "All Problems" },
-                  { value: "solved", label: "Solved" },
-                  { value: "attempted", label: "Attempted" },
-                  { value: "unsolved", label: "Unsolved" }
+                  { value: "all", label: "All", icon: <ListTodo className="size-3.5" /> },
+                  { value: "solved", label: "Solved", icon: <CircleCheck className="size-3.5 text-emerald-500" /> },
+                  { value: "attempted", label: "Attempted", icon: <CircleDot className="size-3.5 text-amber-500" /> },
+                  { value: "unsolved", label: "Unsolved", icon: <CircleDashed className="size-3.5 text-muted-foreground" /> }
                 ].map(opt => {
                   const isActive = initialTab === opt.value
                   return (
@@ -1224,13 +1228,14 @@ export function ProblemsDirectoryClient({
                       key={opt.value}
                       onClick={() => updateParams({ tab: opt.value, page: 1 })}
                       className={cn(
-                        "text-sm px-4 py-2 rounded-full border font-medium transition-all duration-150 w-full text-left",
+                        "flex items-center justify-center gap-2 p-1.5 rounded-lg border transition-all duration-200 select-none",
                         isActive
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-muted/50 border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
+                          ? "bg-primary/5 border-primary text-primary shadow-sm ring-1 ring-primary/20"
+                          : "bg-muted/30 border-border/60 text-muted-foreground hover:bg-muted/80 hover:text-foreground hover:border-border"
                       )}
                     >
-                      {opt.label}
+                      {opt.icon}
+                      <span className="text-[11px] font-semibold">{opt.label}</span>
                     </button>
                   )
                 })}
@@ -1239,13 +1244,15 @@ export function ProblemsDirectoryClient({
 
             {/* Difficulty */}
             <div className="flex flex-col gap-3">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Difficulty</p>
-              <div className="flex flex-col gap-2">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                <Flame className="size-3.5" /> Difficulty
+              </p>
+              <div className="grid grid-cols-2 gap-2">
                 {[
-                  { value: "All", label: "All Difficulties", color: "bg-muted-foreground/30" },
-                  { value: "Easy", label: "Easy", color: "bg-emerald-500" },
-                  { value: "Medium", label: "Medium", color: "bg-amber-500" },
-                  { value: "Hard", label: "Hard", color: "bg-rose-500" }
+                  { value: "All", label: "All Levels", color: "bg-muted-foreground", text: "text-muted-foreground", border: "border-muted-foreground/30", bg: "bg-muted-foreground/10" },
+                  { value: "Easy", label: "Easy", color: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400", border: "border-emerald-500/30", bg: "bg-emerald-500/10" },
+                  { value: "Medium", label: "Medium", color: "bg-amber-500", text: "text-amber-600 dark:text-amber-400", border: "border-amber-500/30", bg: "bg-amber-500/10" },
+                  { value: "Hard", label: "Hard", color: "bg-rose-500", text: "text-rose-600 dark:text-rose-400", border: "border-rose-500/30", bg: "bg-rose-500/10" }
                 ].map(opt => {
                   const isActive = initialDifficulty === opt.value
                   return (
@@ -1253,16 +1260,14 @@ export function ProblemsDirectoryClient({
                       key={opt.value}
                       onClick={() => updateParams({ difficulty: opt.value, page: 1 })}
                       className={cn(
-                        "text-sm px-4 py-2 rounded-full border font-medium transition-all duration-150 w-full text-left flex items-center justify-between",
+                        "text-[11px] px-2 py-1.5 rounded-lg border font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 select-none",
                         isActive
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-muted/50 border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
+                          ? `${opt.bg} ${opt.border} ${opt.text} shadow-sm ring-1 ring-${opt.border.split('-')[1]}`
+                          : "bg-muted/30 border-border/60 text-muted-foreground hover:bg-muted/80 hover:text-foreground hover:border-border"
                       )}
                     >
-                      <span className="flex items-center gap-2">
-                        <span className={cn("size-2 rounded-full", opt.color)} />
-                        {opt.label}
-                      </span>
+                      <span className={cn("size-1.5 rounded-full shadow-sm", opt.color)} />
+                      {opt.label}
                     </button>
                   )
                 })}
@@ -1323,11 +1328,12 @@ export function ProblemsDirectoryClient({
             )}
           </div>
 
-          <div className="px-6 py-5 border-t border-border/50">
+          <div className="px-6 py-5 border-t border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <Button
-              className="w-full rounded-full font-semibold"
+              className="w-full rounded-xl font-semibold h-11 shadow-md bg-primary hover:bg-primary/90 transition-all text-sm gap-2"
               onClick={() => setFilterSheetOpen(false)}
             >
+              <CircleCheck className="size-4 opacity-70" />
               Show {totalCount} problem{totalCount !== 1 ? "s" : ""}
             </Button>
           </div>
