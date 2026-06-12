@@ -1,8 +1,8 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Bookmark, CheckCircle2, ChevronRight, PlayCircle, ChevronLeft } from "lucide-react"
+import { Bookmark, CheckCircle2, ChevronRight, PlayCircle, ChevronLeft, Clock, Timer, ArrowRight, BookOpen } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -20,6 +20,7 @@ interface PotdHistoryItem {
 
 interface PotdPageClientProps {
   history: PotdHistoryItem[]
+  currentPotd: PotdHistoryItem | null
   totalPotds: number
   solvedPotds: number
 }
@@ -30,10 +31,27 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   Hard: "text-rose-500",
 }
 
-export function PotdPageClient({ history, totalPotds, solvedPotds }: PotdPageClientProps) {
+export function PotdPageClient({ history, currentPotd, totalPotds, solvedPotds }: PotdPageClientProps) {
   const router = useRouter()
   const [page, setPage] = useState(1)
+  const [timeLeft, setTimeLeft] = useState("")
   const pageSize = 15
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date()
+      const midnight = new Date()
+      midnight.setHours(24, 0, 0, 0)
+      const diff = midnight.getTime() - now.getTime()
+      
+      const h = Math.floor(diff / (1000 * 60 * 60))
+      const m = Math.floor((diff / (1000 * 60)) % 60)
+      const s = Math.floor((diff / 1000) % 60)
+      
+      setTimeLeft(`${h.toString().padStart(2, '0')}h ${m.toString().padStart(2, '0')}m ${s.toString().padStart(2, '0')}s`)
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [])
 
   const progressPercentage = totalPotds > 0 ? (solvedPotds / totalPotds) * 100 : 0
 
@@ -80,6 +98,81 @@ export function PotdPageClient({ history, totalPotds, solvedPotds }: PotdPageCli
             <Progress value={progressPercentage} className="h-3 rounded-full bg-muted/60 [&>div]:bg-orange-500" />
           </div>
         </Card>
+      </div>
+
+      {/* Current POTD Banner */}
+      <div className="flex flex-col gap-4">
+        <h2 className="text-xl font-bold font-cirka text-foreground flex items-center gap-2">
+          <BookOpen className="w-5 h-5 text-orange-500" /> Today's Challenge
+        </h2>
+        
+        {currentPotd ? (
+          <Card className="relative overflow-hidden border-orange-500/30 bg-gradient-to-br from-orange-500/5 to-transparent p-1 shadow-sm">
+            <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
+              <BookOpen className="w-32 h-32" />
+            </div>
+            
+            <div className="relative bg-card/80 backdrop-blur-sm border border-border/40 rounded-lg p-6 sm:p-8 flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
+              <div className="flex flex-col gap-3 max-w-xl">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-semibold bg-orange-500/10 text-orange-600 dark:text-orange-400 px-2.5 py-1 rounded-md">
+                    {formatDate(currentPotd.date)}
+                  </span>
+                  <span className={cn("text-sm font-bold tracking-wide uppercase", DIFFICULTY_COLORS[currentPotd.difficulty])}>
+                    {currentPotd.difficulty}
+                  </span>
+                  {currentPotd.solved_status === "Accepted" && (
+                    <span className="flex items-center gap-1 text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-md">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Solved
+                    </span>
+                  )}
+                </div>
+                
+                <h3 className="text-2xl sm:text-3xl font-bold text-foreground">
+                  {currentPotd.title}
+                </h3>
+                
+                <div className="flex items-center gap-4 text-sm font-medium text-muted-foreground mt-1">
+                  <span className="flex items-center gap-1.5">
+                    <Timer className="w-4 h-4" /> {formatNumber(currentPotd.total_submissions)} Submissions
+                  </span>
+                  <span className="text-muted-foreground/30">•</span>
+                  <span>{currentPotd.acceptance_rate.toFixed(1)}% Acceptance</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-start md:items-end gap-4 shrink-0 w-full md:w-auto mt-2 md:mt-0">
+                <div className="flex flex-col items-start md:items-end gap-1 text-sm font-medium text-muted-foreground bg-background/50 px-4 py-2 rounded-lg border border-border/40">
+                  <span className="flex items-center gap-1.5 uppercase text-[10px] font-bold tracking-wider">
+                    <Clock className="w-3 h-3 text-orange-500" /> Time Remaining
+                  </span>
+                  <span className="text-lg font-mono text-foreground">{timeLeft || "Calculating..."}</span>
+                </div>
+                
+                <Button 
+                  onClick={() => router.push(`/logiclab/problems/${currentPotd.problem_id}`)}
+                  className="w-full md:w-auto h-12 px-8 text-base font-semibold bg-orange-600 hover:bg-orange-700 text-white gap-2 group shadow-md"
+                >
+                  {currentPotd.solved_status === "Accepted" ? "Review Challenge" : "Solve Challenge"}
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </div>
+            </div>
+          </Card>
+        ) : (
+          <Card className="p-8 border-dashed flex flex-col items-center justify-center text-center gap-3">
+            <BookOpen className="w-10 h-10 text-muted-foreground/30" />
+            <div className="flex flex-col gap-1">
+              <span className="text-base font-semibold">No Daily Challenge Available</span>
+              <span className="text-sm text-muted-foreground">The challenge for today hasn't been posted yet. Check back later!</span>
+            </div>
+          </Card>
+        )}
+      </div>
+
+      {/* History Section Header */}
+      <div className="flex items-center justify-between mt-4">
+        <h2 className="text-xl font-bold font-cirka text-foreground">Past Challenges</h2>
       </div>
 
       {/* History List */}

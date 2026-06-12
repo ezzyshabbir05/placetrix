@@ -74,7 +74,7 @@ export default async function LogicLabPage(props: {
 
   const params = await props.searchParams
   const page = Math.max(1, parseInt(params.page || "1", 10))
-  const size = Math.max(1, parseInt(params.size || "10", 10))
+  const size = Math.max(20, parseInt(params.size || "20", 10))
   const search = params.search || ""
   const tab = params.tab || "all"
   const difficulty = params.difficulty || "All"

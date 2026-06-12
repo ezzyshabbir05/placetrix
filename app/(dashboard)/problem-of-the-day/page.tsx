@@ -74,9 +74,15 @@ export default async function PotdHistoryPage() {
   const totalPotds = enrichedHistory.length
   const solvedPotds = enrichedHistory.filter((h: any) => h.solved_status === "Accepted").length
 
+  const today = new Date()
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
+  const currentPotd = enrichedHistory.find((h: any) => h.date === todayStr) || null
+  const pastHistory = enrichedHistory.filter((h: any) => h.date !== todayStr)
+
   return (
     <PotdPageClient
-      history={enrichedHistory}
+      history={pastHistory}
+      currentPotd={currentPotd}
       totalPotds={totalPotds}
       solvedPotds={solvedPotds}
     />

@@ -26,6 +26,10 @@ import {
   CalendarDays,
   Trophy,
   SlidersHorizontal,
+  ChevronsUp,
+  ChevronsDown,
+  CircleDashed,
+  ListTodo,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
@@ -42,6 +46,14 @@ import {
   SelectGroup,
 } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { Progress } from "@/components/ui/progress"
 import {
   AlertDialog,
@@ -375,6 +387,7 @@ export function ProblemsDirectoryClient({
   const [isDeleting, setIsDeleting] = useState(false)
 
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
+  const [showDashboardCards, setShowDashboardCards] = useState(true)
 
   const activeFilterCount = useMemo(() => {
     let count = 0
@@ -479,7 +492,19 @@ export function ProblemsDirectoryClient({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2 sm:gap-3">
-          <Button asChild variant="outline" className="gap-2 shrink-0" title="Playground">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowDashboardCards(!showDashboardCards)}
+            className="text-muted-foreground hover:text-foreground gap-1.5 shrink-0 px-2.5 bg-muted/30 hover:bg-muted/60"
+            title={showDashboardCards ? "Collapse Dashboard" : "Expand Dashboard"}
+          >
+            {showDashboardCards ? <ChevronsUp className="size-4" /> : <ChevronsDown className="size-4" />}
+            <span className="text-xs font-semibold hidden sm:inline">
+              {showDashboardCards ? "Collapse" : "Expand"}
+            </span>
+          </Button>
+          <Button asChild variant="outline" size="sm" className="gap-2 shrink-0" title="Playground">
             <Link href="/logiclab/playground" className="flex items-center justify-center gap-2">
               <Terminal className="size-4" />
               <span>Playground</span>
@@ -496,7 +521,8 @@ export function ProblemsDirectoryClient({
       </div>
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-2 duration-300 min-w-0">
+      {showDashboardCards && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-2 duration-300 min-w-0">
         {/* Card 1: Progress & Difficulty */}
         <Card className="min-w-0 flex flex-col relative transition-all hover:border-border/80 py-0">
           <CardHeader className="flex flex-row items-center justify-between pt-4 pb-1">
@@ -780,9 +806,11 @@ export function ProblemsDirectoryClient({
         {/* Card 3: POTD Card */}
         <Card className="group/potd transition-all hover:border-border/80 min-w-0 flex flex-col relative py-0">
           <CardHeader className="flex flex-row items-center justify-between pt-4 pb-1">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Daily Challenge
-            </CardTitle>
+            <Link href="/problem-of-the-day" className="hover:opacity-80 transition-opacity cursor-pointer">
+              <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1 hover:text-orange-500 transition-colors">
+                Problem of the Day <ChevronRight className="size-3" />
+              </CardTitle>
+            </Link>
             {timeLeft && (
               <CardAction className="text-xs text-muted-foreground/80 flex items-center gap-1 font-medium select-none">
                 <Clock className="size-3.5" />
@@ -870,6 +898,7 @@ export function ProblemsDirectoryClient({
           </CardContent>
         </Card>
       </div>
+      )}
 
       {/* Main Directory Layout */}
       <div className="flex flex-col gap-6 min-w-0">
@@ -948,214 +977,218 @@ export function ProblemsDirectoryClient({
           </div>
         )}
 
-        {/* Problems List Container */}
-        <div className="relative border border-border/60 rounded-xl overflow-hidden shadow-sm">
-          <div className="relative">
-            {isPending && (
-              <div className="absolute inset-0 z-50 bg-background/50 backdrop-blur-[1px] flex items-center justify-center min-h-[200px]">
-                <div className="flex flex-col items-center gap-3 rounded-xl border bg-card px-6 py-5 shadow-lg">
-                  <Loader2 className="size-8 text-primary animate-spin" />
-                  <span className="text-sm font-medium text-muted-foreground">Loading problems...</span>
-                </div>
+              {/* Table */}
+      <div className="rounded-xl border border-border/60 overflow-hidden">
+        <div className="relative">
+          {isPending && (
+            <div className="absolute inset-0 z-50 bg-background/50 backdrop-blur-[1px] flex items-center justify-center min-h-[200px]">
+              <div className="flex flex-col items-center gap-3 rounded-xl border bg-card px-6 py-5 shadow-lg">
+                <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                <span className="text-sm font-medium text-muted-foreground">Loading problems...</span>
               </div>
-            )}
+            </div>
+          )}
 
-            <div className={cn("transition-opacity duration-200", isPending && "opacity-40 pointer-events-none")}>
-              {totalCount === 0 ? (
-                <Empty className="py-24 border-0">
-                  <EmptyHeader>
-                    <EmptyMedia variant="icon">
-                      <BookOpen />
-                    </EmptyMedia>
-                    <EmptyTitle>No problems found</EmptyTitle>
-                    <EmptyDescription>
-                      We couldn't find any problems matching your current filters. Try adjusting your search or removing some tags.
-                    </EmptyDescription>
-                  </EmptyHeader>
-                  <EmptyContent>
-                    <Button variant="outline" onClick={() => updateParams({ search: "All", tag: "All", difficulty: "All", tab: "all", page: 1 })}>
-                      Clear all filters
-                    </Button>
-                  </EmptyContent>
-                </Empty>
-              ) : (
-                <div className="flex flex-col divide-y divide-border/40">
-                  {problems.map((problem, idx) => (
-                    <div
-                      key={problem.id}
-                      onClick={() => router.push(`/logiclab/problems/${problem.id}`)}
-                      className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-3 hover:bg-muted/40 transition-colors cursor-pointer"
-                    >
-                      {/* Left: Status, Index, Title, Difficulty Badge, and Tags */}
-                      <div className="flex items-start gap-3.5 min-w-0">
-                        {/* Status Indicator */}
-                        <div className="pt-0.5 shrink-0">
+          <div className={cn("transition-opacity duration-200", isPending && "opacity-40 pointer-events-none")}>
+            {totalCount === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
+                <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center">
+                  <BookOpen className="h-8 w-8 text-muted-foreground/60" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-lg font-semibold text-foreground">No problems found</p>
+                  <p className="text-sm text-muted-foreground max-w-sm">
+                    We couldn't find any problems matching your current filters. Try adjusting your search or removing some tags.
+                  </p>
+                </div>
+                <Button variant="outline" onClick={() => updateParams({ search: "All", tag: "All", difficulty: "All", tab: "all", page: 1 })} className="mt-2">
+                  Clear all filters
+                </Button>
+              </div>
+            ) : (
+              <div className="w-full overflow-x-auto">
+                <Table className="min-w-[800px]">
+                  <TableHeader className="bg-muted/10 h-10">
+                    <TableRow className="hover:bg-transparent border-b-border/60">
+                      <TableHead className="w-[80px] pl-6 text-sm font-medium">Status</TableHead>
+                      <TableHead className="text-sm font-medium">Title</TableHead>
+                      <TableHead className="w-[140px] text-sm font-medium">Difficulty</TableHead>
+                      <TableHead className="w-[180px] text-sm font-medium">Acceptance</TableHead>
+                      <TableHead className="w-[200px] text-sm font-medium">Tags</TableHead>
+                      {isAdmin && <TableHead className="text-right pr-6 w-[120px] text-sm font-medium">Actions</TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {problems.map((problem, idx) => (
+                      <TableRow
+                        key={problem.id}
+                        onClick={() => router.push(`/logiclab/problems/${problem.id}`)}
+                        className="group cursor-pointer hover:bg-muted/40 transition-colors h-12 border-b-border/60"
+                      >
+                        {/* Status */}
+                        <TableCell className="pl-6">
                           {problem.solved_status === "Accepted" ? (
-                            <CircleCheck className="size-5 text-emerald-500 fill-emerald-50 dark:fill-emerald-950/20" />
+                            <CircleCheck className="h-5 w-5 text-emerald-500 fill-emerald-50 dark:fill-emerald-950/20" />
                           ) : problem.solved_status ? (
-                            <CircleDot className="size-5 text-amber-500 fill-amber-50 dark:fill-amber-950/20" />
+                            <CircleDot className="h-5 w-5 text-amber-500 fill-amber-50 dark:fill-amber-950/20" />
                           ) : (
-                            <div className="size-4 ml-0.5 mt-0.5 rounded-full border-2 border-muted-foreground/30" />
+                            <div className="h-4 w-4 ml-0.5 rounded-full border-2 border-muted-foreground/30" />
                           )}
-                        </div>
+                        </TableCell>
 
-                        <div className="flex flex-col gap-1.5 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {/* Index & Title */}
-                            <span className="text-sm font-mono text-muted-foreground/60">
-                              #{idx + 1 + (activePage - 1) * initialPageSize}
+                        {/* Title */}
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm text-muted-foreground/60 font-mono w-6 shrink-0">
+                              {idx + 1 + (activePage - 1) * initialPageSize}.
                             </span>
-                            <h4 className="font-semibold text-foreground/90 group-hover:text-primary transition-colors text-base truncate">
+                            <span className="text-base font-medium text-foreground/90 group-hover:text-foreground transition-colors">
                               {problem.title}
-                            </h4>
-
-                            {/* Difficulty */}
-                            <Badge
-                              variant="secondary"
-                              className={cn(
-                                "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md shrink-0 scale-90",
-                                DIFFICULTY_COLORS[problem.difficulty]
-                              )}
-                            >
-                              {problem.difficulty}
-                            </Badge>
+                            </span>
                           </div>
+                        </TableCell>
 
-                          {/* Tags list */}
-                          <div className="flex flex-wrap gap-1.5">
-                            {(problem.tags || []).slice(0, 3).map((tag) => (
-                              <span
-                                key={tag}
-                                className="text-[10px] px-2 py-0.5 rounded bg-muted/60 text-muted-foreground font-medium"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                            {(problem.tags || []).length > 3 && (
-                              <span className="text-[10px] px-2 py-0.5 rounded bg-muted/30 text-muted-foreground/60 font-medium">
-                                +{(problem.tags || []).length - 3}
+                        {/* Difficulty */}
+                        <TableCell>
+                          <Badge
+                            variant="secondary"
+                            className={cn("text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md", DIFFICULTY_COLORS[problem.difficulty])}
+                          >
+                            {problem.difficulty}
+                          </Badge>
+                        </TableCell>
+
+                        {/* Acceptance Rate */}
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-foreground/80">
+                              {problem.acceptance_rate !== null ? `${problem.acceptance_rate}%` : "—"}
+                            </span>
+                            {problem.total_submissions > 0 && (
+                              <span className="text-xs text-muted-foreground/60">
+                                ({problem.total_submissions})
                               </span>
                             )}
                           </div>
-                        </div>
-                      </div>
+                        </TableCell>
 
-                      {/* Right: Stats and Navigation / Actions */}
-                      <div className="flex items-center justify-between sm:justify-end gap-6 shrink-0 ml-8 sm:ml-0">
-                        {/* Acceptance Rate & Submissions */}
-                        <div className="flex flex-col items-start sm:items-end gap-0.5 text-xs text-muted-foreground">
-                          {problem.total_submissions > 0 ? (
-                            <>
-                              <span className="font-medium text-foreground/80">
-                                {problem.acceptance_rate !== null ? `${problem.acceptance_rate}% acceptance` : "0% acceptance"}
-                              </span>
-                              <span>
-                                {problem.total_submissions.toLocaleString()} submissions
-                              </span>
-                            </>
-                          ) : (
-                            <span className="font-medium text-muted-foreground/60 italic">
-                              No submissions
-                            </span>
-                          )}
-                        </div>
+                        {/* Tags */}
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1.5">
+                            {(problem.tags || []).slice(0, 2).map((tag) => (
+                              <Badge
+                                key={tag}
+                                variant="secondary"
+                                className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted/80 text-muted-foreground/80 hover:bg-muted border-transparent"
+                              >
+                                {tag}
+                              </Badge>
+                            ))}
+                            {(problem.tags || []).length > 2 && (
+                              <Badge
+                                variant="secondary"
+                                className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted/40 text-muted-foreground/60 hover:bg-muted/50 border-transparent"
+                              >
+                                +{(problem.tags || []).length - 2}
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
 
-                        {/* Navigation Indicator or Admin Actions */}
-                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          {isAdmin ? (
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {/* Admin actions */}
+                        {isAdmin && (
+                          <TableCell className="text-right pr-6" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               <Link
                                 href={`/logiclab/admin/edit/${problem.id}`}
-                                className="p-1.5 hover:bg-background rounded-md text-muted-foreground hover:text-emerald-500 transition-all border border-transparent hover:border-border/60"
+                                className="p-2 hover:bg-background rounded-md text-muted-foreground hover:text-emerald-500 transition-all cursor-pointer shadow-sm border border-transparent hover:border-border/60"
                                 title="Edit Problem"
                               >
-                                <Pencil className="size-4" />
+                                <Pencil className="h-4 w-4" />
                               </Link>
                               <button
                                 onClick={() => setDeletingProblemId(problem.id)}
-                                className="p-1.5 hover:bg-background rounded-md text-muted-foreground/70 hover:text-rose-500 transition-all border border-transparent hover:border-border/60"
+                                className="p-2 hover:bg-background rounded-md text-muted-foreground/70 hover:text-rose-500 transition-all cursor-pointer shadow-sm border border-transparent hover:border-border/60"
                                 title="Delete Problem"
                               >
-                                <Trash2 className="size-4" />
+                                <Trash2 className="h-4 w-4" />
                               </button>
                             </div>
-                          ) : (
-                            <ChevronRight className="size-5 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
 
-              {/* Pagination Footer */}
-              {totalCount > 0 && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-border/60 bg-muted/5">
-                  <div className="text-sm text-muted-foreground">
-                    Showing{" "}
-                    <span className="font-medium text-foreground">
-                      {totalCount === 0 ? 0 : Math.min(totalCount, (activePage - 1) * initialPageSize + 1)}
-                    </span>
-                    {" "}to{" "}
-                    <span className="font-medium text-foreground">{Math.min(totalCount, activePage * initialPageSize)}</span>
-                    {" "}of{" "}
-                    <span className="font-medium text-foreground">{totalCount}</span> problems
+            {/* Pagination Footer */}
+            {totalCount > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-border/60 bg-muted/5">
+                <div className="text-sm text-muted-foreground">
+                  Showing{" "}
+                  <span className="font-medium text-foreground">
+                    {totalCount === 0 ? 0 : Math.min(totalCount, (activePage - 1) * initialPageSize + 1)}
+                  </span>
+                  {" "}to{" "}
+                  <span className="font-medium text-foreground">{Math.min(totalCount, activePage * initialPageSize)}</span>
+                  {" "}of{" "}
+                  <span className="font-medium text-foreground">{totalCount}</span> problems
+                </div>
+
+                <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">Rows per page</span>
+                    <Select
+                      value={initialPageSize.toString()}
+                      onValueChange={(val) => updateParams({ size: val, page: 1 })}
+                    >
+                      <SelectTrigger className="h-9 w-[80px] bg-background text-sm">
+                        <SelectValue placeholder={initialPageSize.toString()} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[20, 50, 100].map((s) => (
+                          <SelectItem key={s} value={s.toString()} className="text-sm">{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground whitespace-nowrap">Rows per page</span>
-                      <Select
-                        value={initialPageSize.toString()}
-                        onValueChange={(val) => updateParams({ size: val, page: 1 })}
-                      >
-                        <SelectTrigger className="h-9 w-[80px] bg-background text-sm">
-                          <SelectValue placeholder={initialPageSize.toString()} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            {[10, 20, 50, 100].map((s) => (
-                              <SelectItem key={s} value={s.toString()} className="text-sm">{s}</SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="icon" className="bg-background"
+                      onClick={() => updateParams({ page: 1 })} disabled={activePage === 1}>
+                      <ChevronsLeft />
+                      <span className="sr-only">First page</span>
+                    </Button>
+                    <Button variant="outline" size="icon" className="bg-background"
+                      onClick={() => updateParams({ page: Math.max(1, activePage - 1) })} disabled={activePage === 1}>
+                      <ChevronLeft />
+                      <span className="sr-only">Previous page</span>
+                    </Button>
+                    <div className="flex items-center justify-center text-sm font-medium min-w-[100px] text-muted-foreground">
+                      Page <span className="text-foreground mx-1">{activePage}</span> of {totalPages}
                     </div>
-
-                    <div className="flex items-center gap-1">
-                      <Button variant="outline" size="icon" className="bg-background"
-                        onClick={() => updateParams({ page: 1 })} disabled={activePage === 1}>
-                        <ChevronsLeft />
-                        <span className="sr-only">First page</span>
-                      </Button>
-                      <Button variant="outline" size="icon" className="bg-background"
-                        onClick={() => updateParams({ page: Math.max(1, activePage - 1) })} disabled={activePage === 1}>
-                        <ChevronLeft />
-                        <span className="sr-only">Previous page</span>
-                      </Button>
-                      <div className="flex items-center justify-center text-sm font-medium min-w-[100px] text-muted-foreground">
-                        Page <span className="text-foreground mx-1">{activePage}</span> of {totalPages}
-                      </div>
-                      <Button variant="outline" size="icon" className="bg-background"
-                        onClick={() => updateParams({ page: Math.min(totalPages, activePage + 1) })}
-                        disabled={activePage === totalPages || totalPages === 0}>
-                        <ChevronRight />
-                        <span className="sr-only">Next page</span>
-                      </Button>
-                      <Button variant="outline" size="icon" className="bg-background"
-                        onClick={() => updateParams({ page: totalPages })}
-                        disabled={activePage === totalPages || totalPages === 0}>
-                        <ChevronsRight />
-                        <span className="sr-only">Last page</span>
-                      </Button>
-                    </div>
+                    <Button variant="outline" size="icon" className="bg-background"
+                      onClick={() => updateParams({ page: Math.min(totalPages, activePage + 1) })}
+                      disabled={activePage === totalPages || totalPages === 0}>
+                      <ChevronRight />
+                      <span className="sr-only">Next page</span>
+                    </Button>
+                    <Button variant="outline" size="icon" className="bg-background"
+                      onClick={() => updateParams({ page: totalPages })}
+                      disabled={activePage === totalPages || totalPages === 0}>
+                      <ChevronsRight />
+                      <span className="sr-only">Last page</span>
+                    </Button>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
+      </div>
+
       </div>
 
       {/* ── Filter Sheet ── */}
@@ -1176,16 +1209,18 @@ export function ProblemsDirectoryClient({
             )}
           </SheetHeader>
 
-          <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-8">
+          <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-6">
             {/* Status */}
             <div className="flex flex-col gap-3">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Status</p>
-              <div className="flex flex-col gap-2">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                <ListTodo className="size-3.5" /> Status
+              </p>
+              <div className="grid grid-cols-2 gap-2.5">
                 {[
-                  { value: "all", label: "All Problems" },
-                  { value: "solved", label: "Solved" },
-                  { value: "attempted", label: "Attempted" },
-                  { value: "unsolved", label: "Unsolved" }
+                  { value: "all", label: "All", icon: <ListTodo className="size-3.5" /> },
+                  { value: "solved", label: "Solved", icon: <CircleCheck className="size-3.5 text-emerald-500" /> },
+                  { value: "attempted", label: "Attempted", icon: <CircleDot className="size-3.5 text-amber-500" /> },
+                  { value: "unsolved", label: "Unsolved", icon: <CircleDashed className="size-3.5 text-muted-foreground" /> }
                 ].map(opt => {
                   const isActive = initialTab === opt.value
                   return (
@@ -1193,13 +1228,14 @@ export function ProblemsDirectoryClient({
                       key={opt.value}
                       onClick={() => updateParams({ tab: opt.value, page: 1 })}
                       className={cn(
-                        "text-sm px-4 py-2 rounded-full border font-medium transition-all duration-150 w-full text-left",
+                        "flex items-center justify-center gap-2 p-1.5 rounded-lg border transition-all duration-200 select-none",
                         isActive
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-muted/50 border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
+                          ? "bg-primary/5 border-primary text-primary shadow-sm ring-1 ring-primary/20"
+                          : "bg-muted/30 border-border/60 text-muted-foreground hover:bg-muted/80 hover:text-foreground hover:border-border"
                       )}
                     >
-                      {opt.label}
+                      {opt.icon}
+                      <span className="text-[11px] font-semibold">{opt.label}</span>
                     </button>
                   )
                 })}
@@ -1208,13 +1244,15 @@ export function ProblemsDirectoryClient({
 
             {/* Difficulty */}
             <div className="flex flex-col gap-3">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Difficulty</p>
-              <div className="flex flex-col gap-2">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                <Flame className="size-3.5" /> Difficulty
+              </p>
+              <div className="grid grid-cols-2 gap-2">
                 {[
-                  { value: "All", label: "All Difficulties", color: "bg-muted-foreground/30" },
-                  { value: "Easy", label: "Easy", color: "bg-emerald-500" },
-                  { value: "Medium", label: "Medium", color: "bg-amber-500" },
-                  { value: "Hard", label: "Hard", color: "bg-rose-500" }
+                  { value: "All", label: "All Levels", color: "bg-muted-foreground", text: "text-muted-foreground", border: "border-muted-foreground/30", bg: "bg-muted-foreground/10" },
+                  { value: "Easy", label: "Easy", color: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400", border: "border-emerald-500/30", bg: "bg-emerald-500/10" },
+                  { value: "Medium", label: "Medium", color: "bg-amber-500", text: "text-amber-600 dark:text-amber-400", border: "border-amber-500/30", bg: "bg-amber-500/10" },
+                  { value: "Hard", label: "Hard", color: "bg-rose-500", text: "text-rose-600 dark:text-rose-400", border: "border-rose-500/30", bg: "bg-rose-500/10" }
                 ].map(opt => {
                   const isActive = initialDifficulty === opt.value
                   return (
@@ -1222,16 +1260,14 @@ export function ProblemsDirectoryClient({
                       key={opt.value}
                       onClick={() => updateParams({ difficulty: opt.value, page: 1 })}
                       className={cn(
-                        "text-sm px-4 py-2 rounded-full border font-medium transition-all duration-150 w-full text-left flex items-center justify-between",
+                        "text-[11px] px-2 py-1.5 rounded-lg border font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 select-none",
                         isActive
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-muted/50 border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
+                          ? `${opt.bg} ${opt.border} ${opt.text} shadow-sm ring-1 ring-${opt.border.split('-')[1]}`
+                          : "bg-muted/30 border-border/60 text-muted-foreground hover:bg-muted/80 hover:text-foreground hover:border-border"
                       )}
                     >
-                      <span className="flex items-center gap-2">
-                        <span className={cn("size-2 rounded-full", opt.color)} />
-                        {opt.label}
-                      </span>
+                      <span className={cn("size-1.5 rounded-full shadow-sm", opt.color)} />
+                      {opt.label}
                     </button>
                   )
                 })}
@@ -1292,11 +1328,12 @@ export function ProblemsDirectoryClient({
             )}
           </div>
 
-          <div className="px-6 py-5 border-t border-border/50">
+          <div className="px-6 py-5 border-t border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <Button
-              className="w-full rounded-full font-semibold"
+              className="w-full rounded-xl font-semibold h-11 shadow-md bg-primary hover:bg-primary/90 transition-all text-sm gap-2"
               onClick={() => setFilterSheetOpen(false)}
             >
+              <CircleCheck className="size-4 opacity-70" />
               Show {totalCount} problem{totalCount !== 1 ? "s" : ""}
             </Button>
           </div>
