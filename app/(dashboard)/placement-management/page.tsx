@@ -30,10 +30,7 @@ export default async function PlacementManagementPage(props: {
     redirect("/home")
   }
 
-  // TPO users use their parent institute's ID; primary uses their own
-  const instituteId = profile.account_subtype === "tpo"
-    ? (profile.associated_institute_id ?? profile.id)
-    : profile.id
+  const instituteId = profile.institute_id
 
   const params = await props.searchParams
   const page = Math.max(1, parseInt(params.page || "1", 10))

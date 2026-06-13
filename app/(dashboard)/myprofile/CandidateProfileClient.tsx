@@ -66,7 +66,7 @@ type SectionId = "account" | "personal" | "education" | "professional";
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid" | "unchanged";
 
 interface InstituteOption {
-  profile_id: string;
+  id: string;
   institute_name: string;
   courses: string[] | null;
   affiliation: string | null;
@@ -331,13 +331,13 @@ export function CandidateProfileClient({ userProfile, initialData }: Props) {
   useEffect(() => {
     (async () => {
       const { data } = await (supabase as any)
-        .from("institute_profiles")
-        .select("profile_id, institute_name, courses, affiliation")
+        .from("institutes")
+        .select("id, institute_name, courses, affiliation")
         .order("institute_name");
       if (data) {
         setInstitutes(data);
         if (initialData?.institute_id) {
-          const found = data.find((i: any) => i.profile_id === initialData.institute_id);
+          const found = data.find((i: any) => i.id === initialData.institute_id);
           if (found) {
             setInstituteName(found.institute_name);
             setAvailableCourses(found.courses ?? []);
@@ -349,7 +349,7 @@ export function CandidateProfileClient({ userProfile, initialData }: Props) {
   }, []);
 
   useEffect(() => {
-    const found = institutes.find((i) => i.profile_id === instituteId);
+    const found = institutes.find((i) => i.id === instituteId);
     if (found) {
       setAvailableCourses(found.courses ?? []);
       setSelectedAffiliation(found.affiliation ?? null);
@@ -488,7 +488,7 @@ export function CandidateProfileClient({ userProfile, initialData }: Props) {
     }
     const found = institutes.find((i) => i.institute_name === name);
     if (found) {
-      setInstituteId(found.profile_id);
+      setInstituteId(found.id);
       setInstituteName(found.institute_name);
       setAvailableCourses(found.courses ?? []);
       setSelectedAffiliation(found.affiliation ?? null);

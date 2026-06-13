@@ -288,7 +288,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
   const { refresh } = useRouter()
   const [isPending, startTransition] = useTransition()
 
-  const isFirstTime = !initialData?.profile_updated
+  const isFirstTime = !initialData?.institute_name
   const [state, dispatch] = useReducer(profileReducer, null, () =>
     createInitialState(userProfile, initialData, isFirstTime, supabase)
   )
@@ -535,7 +535,6 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
 
         else if (section === "basic") {
           const payload = {
-            profile_id: userProfile.id,
             institute_name: instituteName.trim(),
             institute_code: instituteCode.trim() || null,
             established_year: establishedYear ? Number(establishedYear) : null,
@@ -545,12 +544,30 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
             state: stateVal || null,
             pincode: pincode.trim() || null,
             country: country || null,
-            profile_updated: true,
           }
-          const { error } = await (supabase as any)
-            .from("institute_profiles")
-            .upsert(payload, { onConflict: "profile_id" })
-          if (error) throw error
+          
+          let instId = initialData?.id;
+          if (instId) {
+            const { error } = await (supabase as any)
+              .from("institutes")
+              .update(payload)
+              .eq("id", instId)
+            if (error) throw error
+          } else {
+            const { data: newInst, error } = await (supabase as any)
+              .from("institutes")
+              .insert(payload)
+              .select("id")
+              .single()
+            if (error) throw error
+            instId = newInst.id
+
+            const { error: linkErr } = await (supabase as any)
+              .from("institute_profiles")
+              .upsert({ profile_id: userProfile.id, institute_id: instId, profile_updated: true }, { onConflict: "profile_id" })
+            if (linkErr) throw linkErr
+          }
+
           const newDisplayName = instituteName.trim() || userProfile.display_name
           await (supabase as any).from("profiles").update({ display_name: newDisplayName }).eq("id", userProfile.id)
           await supabase.auth.updateUser({ data: { display_name: newDisplayName } })
@@ -558,75 +575,53 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
         }
 
         else if (section === "contact") {
+          if (!initialData?.id) { toast.error("Please save Basic Information first."); return }
           const { error } = await (supabase as any)
-            .from("institute_profiles")
+            .from("institutes")
             .update({
               phone_number: instPhone.trim() || null,
               email: instEmail.trim() || null,
               website_url: websiteUrl.trim() || null,
-              profile_updated: true,
             })
-            .eq("profile_id", userProfile.id)
-          if (error) {
-            if (error.code === "PGRST116") {
-              toast.error("Please save Basic Information first.")
-              return
-            }
-            throw error
-          }
+            .eq("id", initialData.id)
+          if (error) throw error
           toast.success("Contact information saved!")
         }
 
         else if (section === "admin") {
+          if (!initialData?.id) { toast.error("Please save Basic Information first."); return }
           const { error } = await (supabase as any)
-            .from("institute_profiles")
+            .from("institutes")
             .update({
               principal_name: principalName.trim() || null,
               principal_email: principalEmail.trim() || null,
               principal_phone: principalPhone.trim() || null,
-              profile_updated: true,
             })
-            .eq("profile_id", userProfile.id)
-          if (error) {
-            if (error.code === "PGRST116") {
-              toast.error("Please save Basic Information first.")
-              return
-            }
-            throw error
-          }
+            .eq("id", initialData.id)
+          if (error) throw error
           toast.success("Administrative contacts saved!")
         }
 
 
         else if (section === "courses") {
           const filteredCourses = courses.map((c) => c.value.trim()).filter(Boolean)
+          if (!initialData?.id) { toast.error("Please save Basic Information first."); return }
           const { error } = await (supabase as any)
-            .from("institute_profiles")
-            .update({ courses: filteredCourses, profile_updated: true })
-            .eq("profile_id", userProfile.id)
-          if (error) {
-            if (error.code === "PGRST116" || filteredCourses.length === 0) {
-              toast.error("Please save Basic Information first before adding courses.")
-              return
-            }
-            throw error
-          }
+            .from("institutes")
+            .update({ courses: filteredCourses })
+            .eq("id", initialData.id)
+          if (error) throw error
           toast.success("Courses updated!")
         }
 
         else if (section === "social") {
           const filteredLinks = socialLinks.map((l) => l.value.trim()).filter(Boolean)
+          if (!initialData?.id) { toast.error("Please save Basic Information first."); return }
           const { error } = await (supabase as any)
-            .from("institute_profiles")
-            .update({ social_links: filteredLinks, profile_updated: true })
-            .eq("profile_id", userProfile.id)
-          if (error) {
-            if (error.code === "PGRST116") {
-              toast.error("Please save Basic Information first before adding social links.")
-              return
-            }
-            throw error
-          }
+            .from("institutes")
+            .update({ social_links: filteredLinks })
+            .eq("id", initialData.id)
+          if (error) throw error
           toast.success("Social links updated!")
         }
 
@@ -676,10 +671,14 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
         .from("avatars")
         .upload(newPath, croppedFile, { upsert: false, contentType: croppedFile.type })
       if (uploadError) throw uploadError
+      if (!initialData?.id) {
+        toast.error("Please save Basic Information first.")
+        return
+      }
       const { error: dbError } = await (supabase as any)
-        .from("institute_profiles")
+        .from("institutes")
         .update({ logo_path: newPath })
-        .eq("profile_id", userProfile.id)
+        .eq("id", initialData.id)
       if (dbError) throw dbError
       await (supabase as any).from("profiles").update({ avatar_path: newPath }).eq("id", userProfile.id)
       await supabase.auth.updateUser({ data: { avatar_path: newPath } })

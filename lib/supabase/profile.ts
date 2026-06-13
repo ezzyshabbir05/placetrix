@@ -20,7 +20,7 @@ export interface UserProfile {
   username: string | null;
   account_type: AccountType;
   account_subtype: InstituteSubtype | null;
-  associated_institute_id: string | null;
+  institute_id: string | null;
   signature_path?: string | null;
 }
 
@@ -98,7 +98,7 @@ function profileFromClaims(
     username: (meta.username as string) ?? null,
     account_type: account_type as AccountType,
     account_subtype: (meta.account_subtype as InstituteSubtype) ?? null,
-    associated_institute_id: (meta.associated_institute_id as string) ?? null,
+    institute_id: (meta.institute_id as string) ?? null,
     signature_path: (meta.signature_path as string) ?? null,
   };
 }
@@ -133,7 +133,7 @@ function profileFromAuthUser(
     username: (meta.username as string) ?? null,
     account_type: (account_type ?? "candidate") as AccountType,
     account_subtype: (meta.account_subtype as InstituteSubtype) ?? null,
-    associated_institute_id: (meta.associated_institute_id as string) ?? null,
+    institute_id: (meta.institute_id as string) ?? null,
     signature_path: (meta.signature_path as string) ?? null,
     // Internal flag: if true, caller should resolve account_type from DB.
     _account_type_missing: account_type === null,
@@ -230,7 +230,8 @@ export const getUserProfile = cache(async (): Promise<UserProfile | null> => {
           username, display_name, avatar_path, account_type, account_subtype, signature_path,
           candidate_profiles!candidate_profiles_profile_id_fkey (institute_id),
           staff_profiles!staff_profiles_profile_id_fkey (institute_id),
-          tpo_profiles!tpo_profiles_profile_id_fkey (institute_id)
+          tpo_profiles!tpo_profiles_profile_id_fkey (institute_id),
+          institute_profiles!institute_profiles_profile_id_fkey (institute_id)
         `)
         .eq("id", built.id)
         .maybeSingle();
@@ -250,8 +251,9 @@ export const getUserProfile = cache(async (): Promise<UserProfile | null> => {
         if (built.account_type === 'candidate') fetchedInstituteId = dbProfile.candidate_profiles?.[0]?.institute_id;
         else if (built.account_subtype === 'staff') fetchedInstituteId = dbProfile.staff_profiles?.[0]?.institute_id;
         else if (built.account_subtype === 'tpo') fetchedInstituteId = dbProfile.tpo_profiles?.[0]?.institute_id;
+        else if (built.account_type === 'institute') fetchedInstituteId = dbProfile.institute_profiles?.[0]?.institute_id;
         
-        built.associated_institute_id = fetchedInstituteId || null;
+        built.institute_id = fetchedInstituteId || null;
         
         if (dbProfile.signature_path !== undefined) built.signature_path = dbProfile.signature_path;
         built._account_type_missing = false;

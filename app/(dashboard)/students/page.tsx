@@ -51,7 +51,7 @@ export default async function StudentsPage(props: {
         email
       )
     `, { count: "exact" })
-    .eq("institute_id", profile.id)
+    .eq("institute_id", profile.institute_id)
 
   // Status Filter
   if (status === "verified") {

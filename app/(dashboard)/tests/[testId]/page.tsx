@@ -46,7 +46,7 @@ async function fetchCandidateView(
         id, title, description, instructions, time_limit_seconds, 
         available_from, available_until, results_available, status, institute_id,
         shuffle_questions, shuffle_options,
-        institute:institute_profiles(institute_name, logo_path),
+        institute:institutes(institute_name, logo_path),
         questions (
           id, question_text, marks, explanation, order_index,
           options (id, option_text, is_correct, order_index),
@@ -193,7 +193,7 @@ async function fetchInstituteView(
     .select(`
       id, title, description, instructions, time_limit_seconds, 
       available_from, available_until, status, results_available, institute_id,
-      institute:institute_profiles(institute_name),
+      institute:institutes(institute_name),
       questions (
         id, question_text, question_type, marks, order_index, explanation, 
         options (id, option_text, is_correct, order_index),
@@ -314,7 +314,8 @@ export default async function TestDetailPage({
   }
 
   if (profile.account_type === "institute" && profile.account_subtype === "staff") {
-    const instituteId = profile.associated_institute_id ?? profile.id
+    const instituteId = profile.institute_id
+    if (!instituteId) redirect("/home")
     const test = await fetchInstituteView(testId, instituteId)
     return (
       <InstituteTestDetailClient

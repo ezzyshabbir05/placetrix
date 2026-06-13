@@ -43,12 +43,16 @@ export default async function SettingsPage() {
     }
 
     // Primary institute view
-    const instituteProfileId = profile.associated_institute_id ?? profile.id
-    const { data: instituteProfile } = await (supabase as any)
-      .from("institute_profiles")
-      .select("*")
-      .eq("profile_id", instituteProfileId)
-      .maybeSingle() // Fix: prevents throwing if 0 rows exist
+    const instituteId = profile.institute_id
+    let instituteProfile = null
+    if (instituteId) {
+      const { data } = await (supabase as any)
+        .from("institutes")
+        .select("*")
+        .eq("id", instituteId)
+        .maybeSingle()
+      instituteProfile = data
+    }
 
     return (
       <InstituteSettingsClient

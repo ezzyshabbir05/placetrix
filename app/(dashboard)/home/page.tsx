@@ -209,7 +209,7 @@ export default async function HomePage() {
   // ── Institute ──────────────────────────────────────────────────────────────
   if (profile.account_type === "institute") {
     // Staff and TPO users resolve their parent institute's ID
-    const instituteId = profile.associated_institute_id ?? profile.id
+    const instituteId = profile.institute_id
 
     const { data } = await (supabase as any).rpc("get_institute_home_stats" as any, {
       p_profile_id: instituteId,

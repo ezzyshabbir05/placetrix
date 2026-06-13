@@ -37,11 +37,11 @@ export async function getStaffMembers(): Promise<StaffMember[]> {
     (supabase as any)
       .from("staff_profiles")
       .select("institute_id, profiles!inner(id, email, display_name, account_subtype, is_active, created_at)")
-      .eq("institute_id", profile.id),
+      .eq("institute_id", profile.institute_id),
     (supabase as any)
       .from("tpo_profiles")
       .select("institute_id, profiles!inner(id, email, display_name, account_subtype, is_active, created_at)")
-      .eq("institute_id", profile.id),
+      .eq("institute_id", profile.institute_id),
   ])
 
   const allStaff = [
@@ -117,7 +117,7 @@ export async function createStaffAccount(input: CreateStaffInput): Promise<{ suc
   const table = input.subtype === "staff" ? "staff_profiles" : "tpo_profiles";
   const { error: insertError } = await (adminSupabase as any)
     .from(table)
-    .insert({ profile_id: newUserId, institute_id: profile.id })
+    .insert({ profile_id: newUserId, institute_id: profile.institute_id })
 
   if (insertError) {
     console.error("Error creating staff role profile:", insertError)
@@ -143,8 +143,8 @@ export async function updateStaffRole(
 
   // Verify the staff member belongs to this institute
   const [{ data: isStaff }, { data: isTpo }] = await Promise.all([
-    (supabase as any).from("staff_profiles").select("profile_id").eq("profile_id", staffId).eq("institute_id", profile.id).maybeSingle(),
-    (supabase as any).from("tpo_profiles").select("profile_id").eq("profile_id", staffId).eq("institute_id", profile.id).maybeSingle()
+    (supabase as any).from("staff_profiles").select("profile_id").eq("profile_id", staffId).eq("institute_id", profile.institute_id).maybeSingle(),
+    (supabase as any).from("tpo_profiles").select("profile_id").eq("profile_id", staffId).eq("institute_id", profile.institute_id).maybeSingle()
   ])
 
   if (!isStaff && !isTpo) {
@@ -164,7 +164,7 @@ export async function updateStaffRole(
 
   // Insert to new table
   const newTable = newSubtype === "staff" ? "staff_profiles" : "tpo_profiles";
-  await (adminSupabase as any).from(newTable).insert({ profile_id: staffId, institute_id: profile.id })
+  await (adminSupabase as any).from(newTable).insert({ profile_id: staffId, institute_id: profile.institute_id })
 
   const { error } = await (adminSupabase as any)
     .from("profiles")
@@ -195,8 +195,8 @@ export async function toggleStaffActive(
 
   // Verify the staff member belongs to this institute
   const [{ data: isStaff }, { data: isTpo }] = await Promise.all([
-    (supabase as any).from("staff_profiles").select("profile_id").eq("profile_id", staffId).eq("institute_id", profile.id).maybeSingle(),
-    (supabase as any).from("tpo_profiles").select("profile_id").eq("profile_id", staffId).eq("institute_id", profile.id).maybeSingle()
+    (supabase as any).from("staff_profiles").select("profile_id").eq("profile_id", staffId).eq("institute_id", profile.institute_id).maybeSingle(),
+    (supabase as any).from("tpo_profiles").select("profile_id").eq("profile_id", staffId).eq("institute_id", profile.institute_id).maybeSingle()
   ])
 
   if (!isStaff && !isTpo) {

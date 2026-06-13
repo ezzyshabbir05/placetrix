@@ -283,6 +283,12 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "candidate_profiles_institute_id_fkey"
+            columns: ["institute_id"]
+            referencedRelation: "institutes"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "candidate_profiles_profile_id_fkey"
             columns: ["profile_id"]
             referencedRelation: "profiles"
@@ -300,7 +306,7 @@ export type Database = {
           driver_codes: Json
           id: string
           memory_limit: number | null
-          number: number | null
+          number: number
           tags: string[] | null
           test_cases: Json
           time_limit: number | null
@@ -316,7 +322,7 @@ export type Database = {
           driver_codes?: Json
           id?: string
           memory_limit?: number | null
-          number?: number | null
+          number?: number
           tags?: string[] | null
           test_cases?: Json
           time_limit?: number | null
@@ -332,7 +338,7 @@ export type Database = {
           driver_codes?: Json
           id?: string
           memory_limit?: number | null
-          number?: number | null
+          number?: number
           tags?: string[] | null
           test_cases?: Json
           time_limit?: number | null
@@ -608,19 +614,82 @@ export type Database = {
             columns: ["instructor_id"]
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
+          },
+        ]
+      }
+      daily_challenges: {
+        Row: {
+          created_at: string
+          date: string
+          problem_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          problem_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          problem_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_challenges_problem_id_fkey"
+            columns: ["problem_id"]
+            referencedRelation: "coding_problems"
+            referencedColumns: ["id"]
+          },
         ]
       }
       institute_profiles: {
+        Row: {
+          created_at: string
+          institute_id: string | null
+          profile_id: string
+          profile_updated: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          institute_id?: string | null
+          profile_id: string
+          profile_updated?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          institute_id?: string | null
+          profile_id?: string
+          profile_updated?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "institute_profiles_institute_id_fkey"
+            columns: ["institute_id"]
+            referencedRelation: "institutes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "institute_profiles_profile_id_fkey"
+            columns: ["profile_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      institutes: {
         Row: {
           address: string | null
           affiliation: string | null
           city: string | null
           country: string | null
           courses: string[] | null
-          created_at: string
+          created_at: string | null
           email: string | null
           established_year: number | null
+          id: string
           institute_code: string | null
           institute_name: string
           logo_path: string | null
@@ -629,12 +698,9 @@ export type Database = {
           principal_email: string | null
           principal_name: string | null
           principal_phone: string | null
-          profile_complete: boolean | null
-          profile_id: string
-          profile_updated: boolean
           social_links: string[] | null
           state: string | null
-          updated_at: string
+          updated_at: string | null
           website_url: string | null
         }
         Insert: {
@@ -643,9 +709,10 @@ export type Database = {
           city?: string | null
           country?: string | null
           courses?: string[] | null
-          created_at?: string
+          created_at?: string | null
           email?: string | null
           established_year?: number | null
+          id?: string
           institute_code?: string | null
           institute_name: string
           logo_path?: string | null
@@ -654,12 +721,9 @@ export type Database = {
           principal_email?: string | null
           principal_name?: string | null
           principal_phone?: string | null
-          profile_complete?: boolean | null
-          profile_id: string
-          profile_updated?: boolean
           social_links?: string[] | null
           state?: string | null
-          updated_at?: string
+          updated_at?: string | null
           website_url?: string | null
         }
         Update: {
@@ -668,9 +732,10 @@ export type Database = {
           city?: string | null
           country?: string | null
           courses?: string[] | null
-          created_at?: string
+          created_at?: string | null
           email?: string | null
           established_year?: number | null
+          id?: string
           institute_code?: string | null
           institute_name?: string
           logo_path?: string | null
@@ -679,22 +744,12 @@ export type Database = {
           principal_email?: string | null
           principal_name?: string | null
           principal_phone?: string | null
-          profile_complete?: boolean | null
-          profile_id?: string
-          profile_updated?: boolean
           social_links?: string[] | null
           state?: string | null
-          updated_at?: string
+          updated_at?: string | null
           website_url?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "institute_profiles_profile_id_fkey"
-            columns: ["profile_id"]
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       job_applications: {
         Row: {
@@ -849,16 +904,55 @@ export type Database = {
           },
         ]
       }
+      potd_completions: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          problem_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          problem_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          problem_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "potd_completions_problem_id_fkey"
+            columns: ["problem_id"]
+            referencedRelation: "coding_problems"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "potd_completions_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           account_subtype: string | null
           account_type: string
           avatar_path: string | null
           created_at: string
+          current_potd_streak: number | null
           display_name: string | null
           email: string
           id: string
           is_active: boolean
+          max_potd_streak: number | null
           signature_path: string | null
           updated_at: string
           username: string | null
@@ -868,10 +962,12 @@ export type Database = {
           account_type?: string
           avatar_path?: string | null
           created_at?: string
+          current_potd_streak?: number | null
           display_name?: string | null
           email: string
           id: string
           is_active?: boolean
+          max_potd_streak?: number | null
           signature_path?: string | null
           updated_at?: string
           username?: string | null
@@ -881,10 +977,12 @@ export type Database = {
           account_type?: string
           avatar_path?: string | null
           created_at?: string
+          current_potd_streak?: number | null
           display_name?: string | null
           email?: string
           id?: string
           is_active?: boolean
+          max_potd_streak?: number | null
           signature_path?: string | null
           updated_at?: string
           username?: string | null
@@ -897,7 +995,12 @@ export type Database = {
           company_name: string | null
           created_at: string
           ctc: number | null
+          drive_tag: string | null
           id: string
+          job_role: string | null
+          location: string | null
+          offer_letter_date: string | null
+          offer_type: string | null
           updated_at: string
         }
         Insert: {
@@ -905,7 +1008,12 @@ export type Database = {
           company_name?: string | null
           created_at?: string
           ctc?: number | null
+          drive_tag?: string | null
           id?: string
+          job_role?: string | null
+          location?: string | null
+          offer_letter_date?: string | null
+          offer_type?: string | null
           updated_at?: string
         }
         Update: {
@@ -913,7 +1021,12 @@ export type Database = {
           company_name?: string | null
           created_at?: string
           ctc?: number | null
+          drive_tag?: string | null
           id?: string
+          job_role?: string | null
+          location?: string | null
+          offer_letter_date?: string | null
+          offer_type?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1096,6 +1209,55 @@ export type Database = {
           },
         ]
       }
+      staff_profiles: {
+        Row: {
+          created_at: string
+          department: string | null
+          designation: string | null
+          employee_id: string | null
+          institute_id: string | null
+          linkedin_url: string | null
+          profile_id: string
+          profile_updated: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          designation?: string | null
+          employee_id?: string | null
+          institute_id?: string | null
+          linkedin_url?: string | null
+          profile_id: string
+          profile_updated?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          designation?: string | null
+          employee_id?: string | null
+          institute_id?: string | null
+          linkedin_url?: string | null
+          profile_id?: string
+          profile_updated?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_profiles_institute_id_fkey"
+            columns: ["institute_id"]
+            referencedRelation: "institutes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_profiles_profile_id_fkey"
+            columns: ["profile_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tags: {
         Row: {
           created_at: string
@@ -1118,36 +1280,36 @@ export type Database = {
         Row: {
           attempt_id: string
           bugs_issues: string | null
+          candidate_id: string
           created_at: string
           difficulty_felt: string | null
           id: string
           overall_comment: string | null
           rating: number
-          student_id: string
           suggestions: string | null
           test_id: string
         }
         Insert: {
           attempt_id: string
           bugs_issues?: string | null
+          candidate_id: string
           created_at?: string
           difficulty_felt?: string | null
           id?: string
           overall_comment?: string | null
           rating: number
-          student_id: string
           suggestions?: string | null
           test_id: string
         }
         Update: {
           attempt_id?: string
           bugs_issues?: string | null
+          candidate_id?: string
           created_at?: string
           difficulty_felt?: string | null
           id?: string
           overall_comment?: string | null
           rating?: number
-          student_id?: string
           suggestions?: string | null
           test_id?: string
         }
@@ -1187,6 +1349,7 @@ export type Database = {
       test_attempts: {
         Row: {
           attempt_number: number
+          candidate_id: string
           created_at: string
           expires_at: string | null
           id: string
@@ -1196,7 +1359,6 @@ export type Database = {
           score: number | null
           started_at: string
           status: Database["public"]["Enums"]["attempt_status"]
-          student_id: string
           submitted_at: string | null
           tab_switch_count: number
           test_id: string
@@ -1207,6 +1369,7 @@ export type Database = {
         }
         Insert: {
           attempt_number?: number
+          candidate_id: string
           created_at?: string
           expires_at?: string | null
           id?: string
@@ -1216,7 +1379,6 @@ export type Database = {
           score?: number | null
           started_at?: string
           status?: Database["public"]["Enums"]["attempt_status"]
-          student_id: string
           submitted_at?: string | null
           tab_switch_count?: number
           test_id: string
@@ -1227,6 +1389,7 @@ export type Database = {
         }
         Update: {
           attempt_number?: number
+          candidate_id?: string
           created_at?: string
           expires_at?: string | null
           id?: string
@@ -1236,7 +1399,6 @@ export type Database = {
           score?: number | null
           started_at?: string
           status?: Database["public"]["Enums"]["attempt_status"]
-          student_id?: string
           submitted_at?: string | null
           tab_switch_count?: number
           test_id?: string
@@ -1247,8 +1409,8 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "test_attempts_student_id_fkey"
-            columns: ["student_id"]
+            foreignKeyName: "test_attempts_candidate_id_fkey"
+            columns: ["candidate_id"]
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1328,8 +1490,8 @@ export type Database = {
           {
             foreignKeyName: "tests_institute_id_fkey"
             columns: ["institute_id"]
-            referencedRelation: "institute_profiles"
-            referencedColumns: ["profile_id"]
+            referencedRelation: "institutes"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1416,6 +1578,55 @@ export type Database = {
           },
         ]
       }
+      tpo_profiles: {
+        Row: {
+          created_at: string
+          department: string | null
+          designation: string | null
+          employee_id: string | null
+          institute_id: string | null
+          linkedin_url: string | null
+          profile_id: string
+          profile_updated: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          designation?: string | null
+          employee_id?: string | null
+          institute_id?: string | null
+          linkedin_url?: string | null
+          profile_id: string
+          profile_updated?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          designation?: string | null
+          employee_id?: string | null
+          institute_id?: string | null
+          linkedin_url?: string | null
+          profile_id?: string
+          profile_updated?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tpo_profiles_institute_id_fkey"
+            columns: ["institute_id"]
+            referencedRelation: "institutes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tpo_profiles_profile_id_fkey"
+            columns: ["profile_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_sessions: {
         Row: {
           created_at: string | null
@@ -1456,59 +1667,6 @@ export type Database = {
           },
         ]
       }
-      daily_challenges: {
-        Row: {
-          id: string
-          date: string
-          problem_id: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          date: string
-          problem_id: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          date?: string
-          problem_id?: string
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "daily_challenges_problem_id_fkey"
-            columns: ["problem_id"]
-            referencedRelation: "coding_problems"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      problem_global_stats: {
-        Row: {
-          problem_id: string
-          total_submissions: number
-          accepted_submissions: number
-        }
-        Insert: {
-          problem_id: string
-          total_submissions?: number
-          accepted_submissions?: number
-        }
-        Update: {
-          problem_id?: string
-          total_submissions?: number
-          accepted_submissions?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "problem_global_stats_problem_id_fkey"
-            columns: ["problem_id"]
-            referencedRelation: "coding_problems"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
     }
     Views: {
       attempt_details: {
@@ -1531,7 +1689,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "test_attempts_student_id_fkey"
+            foreignKeyName: "test_attempts_candidate_id_fkey"
             columns: ["student_id"]
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1562,9 +1720,30 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "candidate_profiles_institute_id_fkey"
+            columns: ["institute_id"]
+            referencedRelation: "institutes"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "candidate_profiles_profile_id_fkey"
             columns: ["profile_id"]
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      problem_global_stats: {
+        Row: {
+          accepted_submissions: number | null
+          problem_id: string | null
+          total_submissions: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coding_submissions_problem_id_fkey"
+            columns: ["problem_id"]
+            referencedRelation: "coding_problems"
             referencedColumns: ["id"]
           },
         ]
@@ -1581,7 +1760,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "test_attempts_student_id_fkey"
+            foreignKeyName: "test_attempts_candidate_id_fkey"
             columns: ["student_id"]
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1599,6 +1778,15 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_daily_activity: {
+        Row: {
+          activity_date: string | null
+          solved_count: number | null
+          submission_count: number | null
+          user_id: string | null
+        }
+        Relationships: []
       }
       view_question_analysis: {
         Row: {
@@ -1648,7 +1836,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "test_attempts_student_id_fkey"
+            foreignKeyName: "test_attempts_candidate_id_fkey"
             columns: ["student_id"]
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1690,8 +1878,8 @@ export type Database = {
           {
             foreignKeyName: "tests_institute_id_fkey"
             columns: ["institute_id"]
-            referencedRelation: "institute_profiles"
-            referencedColumns: ["profile_id"]
+            referencedRelation: "institutes"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1705,6 +1893,7 @@ export type Database = {
         Args: { p_user_id: string; p_username: string }
         Returns: boolean
       }
+      generate_daily_potd: { Args: never; Returns: undefined }
       get_candidate_home_stats: {
         Args: { p_profile_id: string }
         Returns: Json

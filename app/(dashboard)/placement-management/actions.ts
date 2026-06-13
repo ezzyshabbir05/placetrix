@@ -36,9 +36,7 @@ export async function upsertPlacementInfo(input: UpsertPlacementInfoInput) {
     throw new Error("Unauthorized")
   }
 
-  const instituteId = profile.account_subtype === "tpo"
-    ? (profile.associated_institute_id ?? profile.id)
-    : profile.id
+  const instituteId = profile.institute_id
 
   const supabase = await createClient()
 
@@ -91,9 +89,7 @@ export async function bulkSetPlacementStatus(
     throw new Error("Unauthorized")
   }
 
-  const instituteId = profile.account_subtype === "tpo"
-    ? (profile.associated_institute_id ?? profile.id)
-    : profile.id
+  const instituteId = profile.institute_id
 
   const supabase = await createClient()
 
@@ -141,9 +137,7 @@ export async function exportPlacementData(filters: ExportFilters): Promise<Recor
     throw new Error("Unauthorized")
   }
 
-  const instituteId = profile.account_subtype === "tpo"
-    ? (profile.associated_institute_id ?? profile.id)
-    : profile.id
+  const instituteId = profile.institute_id
 
   const supabase = await createClient()
 

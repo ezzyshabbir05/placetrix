@@ -26,7 +26,7 @@ async function fetchResultData(
       id, title, description, instructions, time_limit_seconds, 
       available_from, available_until, results_available, status, institute_id,
       shuffle_questions, shuffle_options,
-      institute:institute_profiles(institute_name, logo_path),
+      institute:institutes(institute_name, logo_path),
       questions (
         id, question_text, marks, explanation, order_index,
         options (id, option_text, is_correct, order_index),
@@ -157,10 +157,7 @@ export default async function TestResultPage({
 
   if (!profile) redirect("/auth/login")
 
-  const userIdToCheck =
-    profile.account_type === "institute" && profile.account_subtype === "staff"
-      ? (profile.associated_institute_id ?? profile.id)
-      : profile.id;
+  const userIdToCheck = profile.institute_id ?? profile.id;
 
   const { test, attempt } = await fetchResultData(
     testId,

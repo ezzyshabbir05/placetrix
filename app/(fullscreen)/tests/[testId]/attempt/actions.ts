@@ -34,7 +34,7 @@ async function requireAuth() {
 // If an in-progress attempt already exists it is returned as-is (idempotent).
 //
 // Race condition mitigation: the INSERT uses a unique constraint on
-// (test_id, student_id, attempt_number) rather than a client-side check so
+// (test_id, candidate_id, attempt_number) rather than a client-side check so
 // that two simultaneous clicks produce one attempt row, not two.
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -124,7 +124,7 @@ export async function startAttemptAction(testId: string): Promise<AttemptInfo> {
     ? new Date(Date.now() + test.time_limit_seconds * 1000).toISOString()
     : null
 
-  // The unique constraint on (test_id, student_id, attempt_number) turns a
+  // The unique constraint on (test_id, candidate_id, attempt_number) turns a
   // concurrent duplicate INSERT into a conflict that we surface as a clear
   // error rather than silently creating two rows.
   const { data: newAttempt, error: insertError } = await (supabase as any)

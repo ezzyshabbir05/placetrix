@@ -67,11 +67,16 @@ export default async function MyProfilePage() {
       return <TpoProfileClient userProfile={profile} initialData={tpoProfile ?? null} />
     }
 
-    const { data: instituteProfile } = await (supabase as any)
-      .from("institute_profiles")
-      .select("*")
-      .eq("profile_id", profile.id)
-      .maybeSingle() // Fix: prevents throwing if 0 rows exist
+    const instituteId = profile.institute_id
+    let instituteProfile = null
+    if (instituteId) {
+      const { data } = await (supabase as any)
+        .from("institutes")
+        .select("*")
+        .eq("id", instituteId)
+        .maybeSingle()
+      instituteProfile = data
+    }
 
     return (
       <InstituteProfileClient
