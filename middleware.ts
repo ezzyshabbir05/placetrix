@@ -79,7 +79,7 @@ async function getSystemStatus(): Promise<SystemStatus> {
 }
 
 // Paths that bypass ALL middleware logic — no status check, no auth guard.
-const BYPASS_PREFIXES = ["/_next", "/favicon"];
+const BYPASS_PREFIXES = ["/_next", "/favicon", "/api"];
 
 // Paths that get the status check but skip updateSession.
 // They must NOT be in BYPASS_PREFIXES so a refresh can detect recovery

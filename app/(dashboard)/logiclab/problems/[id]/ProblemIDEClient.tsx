@@ -41,6 +41,10 @@ import {
   IconFilter,
   IconFileDescription,
   IconDeviceLaptop,
+  IconAlignLeft,
+  IconZoomIn,
+  IconZoomOut,
+  IconAdjustments,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
@@ -55,6 +59,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { IdeSettingsModal, IdeSettings, DEFAULT_IDE_SETTINGS } from "./IdeSettingsModal";
 import {
   Sheet,
   SheetContent,
@@ -364,6 +369,8 @@ export function ProblemIDEClient({
   }, []);
   const submitRef = React.useRef<any>(null);
   const runRef = React.useRef<any>(null);
+  const editorRef = React.useRef<any>(null);
+  const monacoRef = React.useRef<any>(null);
 
   const handleNavigate = async (targetId: string) => {
     setIsTransitioning(true);
@@ -504,7 +511,84 @@ export function ProblemIDEClient({
   }, [problem.boilerplates]);
 
   const [selectedLang, setSelectedLang] = useState(LANGUAGES[0]);
+  const selectedLangRef = React.useRef(LANGUAGES[0]);
+  
+  useEffect(() => {
+    selectedLangRef.current = selectedLang;
+  }, [selectedLang]);
+
   const [code, setCode] = useState("");
+  
+  // Settings State
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [ideSettings, setIdeSettings] = useState<IdeSettings>(DEFAULT_IDE_SETTINGS);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("logiclab-ide-settings");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setIdeSettings({ ...DEFAULT_IDE_SETTINGS, ...parsed });
+      }
+    } catch (e) {}
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("logiclab-ide-settings", JSON.stringify(ideSettings));
+  }, [ideSettings]);
+
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.updateOptions({ 
+        fontSize: ideSettings.fontSize,
+        wordWrap: ideSettings.wordWrap 
+      });
+    }
+  }, [ideSettings.fontSize, ideSettings.wordWrap]);
+
+  const handleFormatCode = async () => {
+    const editor = editorRef.current;
+    const monaco = monacoRef.current;
+    const currentCode = editor ? editor.getValue() : code;
+    const currentLang = selectedLangRef.current.value;
+    if (!currentCode || !currentLang) return;
+    try {
+      const res = await fetch('/api/logiclab/format', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: currentCode, language: currentLang })
+      });
+      const data = await res.json();
+      if (data.warning) {
+        toast.warning(data.warning);
+      } else if (data.error) {
+        toast.error(data.error);
+      } else if (data.code) {
+        if (editor && editor.getModel() && monaco) {
+          const model = editor.getModel();
+          // Register a temporary formatter for this language
+          const provider = monaco.languages.registerDocumentFormattingEditProvider(currentLang, {
+            provideDocumentFormattingEdits(model: any) {
+              return [{
+                range: model.getFullModelRange(),
+                text: data.code
+              }];
+            }
+          });
+          // Run the native format document action
+          // Monaco's internal formatter handles the diffing automatically so it doesn't flash white
+          await editor.getAction('editor.action.formatDocument').run();
+          // Cleanup the temporary formatter
+          provider.dispose();
+        } else {
+          setCode(data.code);
+        }
+      }
+    } catch (err) {
+      console.error("Format error", err);
+      toast.error("Failed to format code. See console.");
+    }
+  };
   const [activeTab, setActiveTab] = useState<
     "description" | "submissions" | "submission_result"
   >("description");
@@ -1045,39 +1129,41 @@ export function ProblemIDEClient({
         </div>
       </div>
 
-      {/* Center section: Run & Submit */}
-      <div className={cn('absolute', 'left-1/2', '-translate-x-1/2')}>
-        <ButtonGroup>
-          <Button
-            variant="outline"
-            onClick={handleRunCode}
-            disabled={running || submitting}
-            title="Run Code (Ctrl + ')"
-            className={cn('h-8', 'px-3', 'text-xs', 'font-semibold', 'bg-background', 'hover:bg-accent', 'flex', 'items-center', 'gap-1.5', 'group')}
-          >
-            {running ? (
-              <div className={cn('h-3.5', 'w-3.5', 'border', 'border-current', 'border-t-transparent', 'rounded-full', 'animate-spin')} />
-            ) : (
-              <IconPlayerPlay className={cn('h-3.5', 'w-3.5', 'text-emerald-600', 'dark:text-emerald-400', 'fill-emerald-500/20')} />
-            )}
-            <span>{running ? "Running" : "Run"}</span>
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setShowSubmitConfirm(true)}
-            disabled={running || submitting}
-            title="Submit Code (Ctrl + Enter)"
-            className={cn('h-8', 'px-3', 'text-xs', 'font-semibold', 'bg-background', 'hover:bg-accent', 'flex', 'items-center', 'gap-1.5', 'group')}
-          >
-            {submitting ? (
-              <div className={cn('h-3.5', 'w-3.5', 'border', 'border-current', 'border-t-transparent', 'rounded-full', 'animate-spin')} />
-            ) : (
-              <IconSend className={cn('h-3.5', 'w-3.5', 'text-sky-600', 'dark:text-sky-400', 'fill-sky-500/20')} />
-            )}
-            <span>{submitting ? "Judging" : "Submit"}</span>
-          </Button>
-        </ButtonGroup>
-      </div>
+      {/* Center section: Run & Submit (Only if buttonPosition === 'toolbar') */}
+      {ideSettings.buttonPosition === "toolbar" && (
+        <div className={cn('absolute', 'left-1/2', '-translate-x-1/2')}>
+          <ButtonGroup>
+            <Button
+              variant="outline"
+              onClick={handleRunCode}
+              disabled={running || submitting}
+              title="Run Code (Ctrl + ')"
+              className={cn('h-8', 'px-3', 'text-xs', 'font-semibold', 'bg-background', 'hover:bg-accent', 'flex', 'items-center', 'gap-1.5', 'group')}
+            >
+              {running ? (
+                <div className={cn('h-3.5', 'w-3.5', 'border', 'border-current', 'border-t-transparent', 'rounded-full', 'animate-spin')} />
+              ) : (
+                <IconPlayerPlay className={cn('h-3.5', 'w-3.5', 'text-emerald-600', 'dark:text-emerald-400', 'fill-emerald-500/20')} />
+              )}
+              <span>{running ? "Running" : "Run"}</span>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowSubmitConfirm(true)}
+              disabled={running || submitting}
+              title="Submit Code (Ctrl + Enter)"
+              className={cn('h-8', 'px-3', 'text-xs', 'font-semibold', 'bg-background', 'hover:bg-accent', 'flex', 'items-center', 'gap-1.5', 'group')}
+            >
+              {submitting ? (
+                <div className={cn('h-3.5', 'w-3.5', 'border', 'border-current', 'border-t-transparent', 'rounded-full', 'animate-spin')} />
+              ) : (
+                <IconSend className={cn('h-3.5', 'w-3.5', 'text-sky-600', 'dark:text-sky-400', 'fill-sky-500/20')} />
+              )}
+              <span>{submitting ? "Judging" : "Submit"}</span>
+            </Button>
+          </ButtonGroup>
+        </div>
+      )}
 
       {/* Right section: Settings, Language, Toggle */}
       <div className={cn('flex', 'items-center', 'gap-1')}>
@@ -2125,22 +2211,65 @@ export function ProblemIDEClient({
             </SelectContent>
           </Select>
         </div>
-        {/* Reset Code Button */}
-        <Popover open={isResetOpen} onOpenChange={setIsResetOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={running || submitting}
-              title="Reset code to boilerplate"
-              className={cn('h-7', 'px-2', 'text-xs', 'font-semibold', 'text-zinc-600 dark:text-muted-foreground', 'hover:text-foreground', 'bg-background', 'flex', 'items-center', 'gap-1.5', 'shrink-0')}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={(e) => e.currentTarget.blur()}
-            >
-              <IconRefresh className={cn('h-3.5', 'w-3.5')} />
-              Reset
-            </Button>
-          </PopoverTrigger>
+        {/* Format & Reset & Settings Buttons */}
+        <div className={cn('flex', 'items-center', 'gap-1', 'pr-2')}>
+          <IdeSettingsModal
+            open={isSettingsOpen}
+            onOpenChange={setIsSettingsOpen}
+            settings={ideSettings}
+            onSettingsChange={setIdeSettings}
+            onPreviewFontSize={(size) => {
+              if (editorRef.current) {
+                editorRef.current.updateOptions({ fontSize: size });
+              }
+            }}
+            trigger={
+              <Button
+                variant="ghost"
+                size="icon"
+                title="Editor Settings"
+                className={cn('h-7', 'w-7', 'text-zinc-500 dark:text-muted-foreground', 'hover:text-foreground', 'shrink-0')}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={(e) => {
+                  e.currentTarget.blur();
+                  setIsSettingsOpen(true);
+                }}
+              >
+                <IconAdjustments className={cn('h-4', 'w-4')} />
+              </Button>
+            }
+          />
+
+          {/* Format Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            disabled={running || submitting}
+            title="Format Code (Shift+Alt+F)"
+            className={cn('h-7', 'w-7', 'text-zinc-500 dark:text-muted-foreground', 'hover:text-foreground', 'shrink-0')}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={(e) => {
+              e.currentTarget.blur();
+              handleFormatCode();
+            }}
+          >
+            <IconAlignLeft className={cn('h-4', 'w-4')} />
+          </Button>
+
+          <Popover open={isResetOpen} onOpenChange={setIsResetOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={running || submitting}
+                title="Reset code to boilerplate"
+                className={cn('h-7', 'w-7', 'text-zinc-500 dark:text-muted-foreground', 'hover:text-foreground', 'shrink-0')}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={(e) => e.currentTarget.blur()}
+              >
+                <IconRefresh className={cn('h-4', 'w-4')} />
+              </Button>
+            </PopoverTrigger>
           <PopoverContent
             className={cn('w-64', 'p-3', 'z-[9999]')}
             side="bottom"
@@ -2171,7 +2300,6 @@ export function ProblemIDEClient({
                       parsedBoilerplates[String(selectedLang.id)] ||
                       `// Write your ${selectedLang.name} solution here\n`;
                     setCode(boilerplate);
-                    toast.success("Code reset to boilerplate");
                     setIsResetOpen(false);
                   }}
                 >
@@ -2181,6 +2309,7 @@ export function ProblemIDEClient({
             </div>
           </PopoverContent>
         </Popover>
+        </div>
       </div>
       <div className={cn('flex-1', 'min-h-0', 'relative')}>
         {isTransitioning ? (
@@ -2215,15 +2344,33 @@ export function ProblemIDEClient({
           onChange={(v) => setCode(v || "")}
           theme={monacoTheme}
           options={{
-            fontSize: 13,
+            fontSize: ideSettings.fontSize,
             minimap: { enabled: false },
             scrollBeyondLastLine: false,
-            wordWrap: "on",
+            wordWrap: ideSettings.wordWrap,
             automaticLayout: true,
             padding: { top: 10, bottom: 10 },
             lineNumbersMinChars: 3,
           }}
           onMount={(editor, monaco) => {
+            editorRef.current = editor;
+            monacoRef.current = monaco;
+            
+            // Bind Ctrl + Equal (=) and NumpadAdd to Zoom In
+            const zoomIn = () => setIdeSettings(prev => ({ ...prev, fontSize: Math.min(24, prev.fontSize + 1) }));
+            editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Equal, zoomIn);
+            editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.NumpadAdd, zoomIn);
+            
+            // Bind Ctrl + Minus (-) and NumpadSubtract to Zoom Out
+            const zoomOut = () => setIdeSettings(prev => ({ ...prev, fontSize: Math.max(10, prev.fontSize - 1) }));
+            editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Minus, zoomOut);
+            editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.NumpadSubtract, zoomOut);
+
+            // Bind Shift+Alt+F to Format Code
+            editor.addCommand(monaco.KeyMod.Shift | monaco.KeyMod.Alt | monaco.KeyCode.KeyF, () => {
+              handleFormatCode();
+            });
+
             // Bind Ctrl/Cmd + Enter to Submit Code
             editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
               if (submitRef.current) submitRef.current();
@@ -2257,6 +2404,42 @@ export function ProblemIDEClient({
             </div>
           }
         />
+
+        {/* Conditionally rendered bottom bar for Code Editor layout */}
+        {ideSettings.buttonPosition === "bottom" && (
+          <div className={cn('absolute', 'bottom-4', 'right-6', 'z-10')}>
+            <ButtonGroup>
+              <Button
+                variant="outline"
+                onClick={handleRunCode}
+                disabled={running || submitting}
+                title="Run Code (Ctrl + ')"
+                className={cn('h-8', 'px-3', 'text-xs', 'font-semibold', 'bg-zinc-900/90', 'hover:bg-zinc-800', 'border-zinc-700', 'text-zinc-300', 'hover:text-zinc-100', 'backdrop-blur-md', 'flex', 'items-center', 'gap-1.5', 'group', 'shadow-lg')}
+              >
+                {running ? (
+                  <div className={cn('h-3.5', 'w-3.5', 'border', 'border-current', 'border-t-transparent', 'rounded-full', 'animate-spin')} />
+                ) : (
+                  <IconPlayerPlay className={cn('h-3.5', 'w-3.5', 'text-emerald-500', 'group-hover:text-emerald-400', 'transition-colors')} />
+                )}
+                <span>{running ? "Running" : "Run"}</span>
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowSubmitConfirm(true)}
+                disabled={running || submitting}
+                title="Submit Code (Ctrl + Enter)"
+                className={cn('h-8', 'px-3', 'text-xs', 'font-semibold', 'bg-zinc-900/90', 'hover:bg-zinc-800', 'border-zinc-700', 'text-zinc-300', 'hover:text-zinc-100', 'backdrop-blur-md', 'flex', 'items-center', 'gap-1.5', 'group', 'shadow-lg')}
+              >
+                {submitting ? (
+                  <div className={cn('h-3.5', 'w-3.5', 'border', 'border-current', 'border-t-transparent', 'rounded-full', 'animate-spin')} />
+                ) : (
+                  <IconSend className={cn('h-3.5', 'w-3.5', 'text-sky-500', 'group-hover:text-sky-400', 'transition-colors')} />
+                )}
+                <span>{submitting ? "Submitting" : "Submit"}</span>
+              </Button>
+            </ButtonGroup>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2383,7 +2566,7 @@ export function ProblemIDEClient({
                     {renderInputParams(
                       customInputs[activeTestcaseIndex] || "",
                       getParamNames(),
-                      true,
+                      activeTestcaseIndex >= sampleTestCases.length,
                       (lineIdx, newVal) => {
                         setCustomInputs((prev) => {
                           const next = [...prev];
@@ -3000,6 +3183,5 @@ export function ProblemIDEClient({
         </AlertDialogContent>
       </AlertDialog>
     </div>
-
   );
 }
