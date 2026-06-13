@@ -293,7 +293,10 @@ export async function POST(req: NextRequest) {
     // --- POTD STREAK LOGIC ---
     if (overallStatus === "Accepted") {
       try {
-        const todayUtc = new Date().toISOString().split("T")[0];
+        const now = new Date();
+        const istOffset = 5.5 * 60 * 60 * 1000;
+        const todayIst = new Date(now.getTime() + istOffset);
+        const todayStr = todayIst.toISOString().split("T")[0];
         
         // Use service role to bypass RLS for streaks
         const { createClient: createSupabaseClient } = await import("@supabase/supabase-js");
@@ -302,11 +305,11 @@ export async function POST(req: NextRequest) {
           process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
 
-        // Check if this problem is today's POTD
+        // Check if this problem is today's POTD (IST Date)
         const { data: potd } = await adminSupabase
           .from("daily_challenges")
           .select("date")
-          .eq("date", todayUtc)
+          .eq("date", todayStr)
           .eq("problem_id", problem_id)
           .single();
 
@@ -314,7 +317,7 @@ export async function POST(req: NextRequest) {
           // Attempt to insert completion. If it fails, they already got credit today.
           const { error: completionError } = await adminSupabase
             .from("potd_completions")
-            .insert({ user_id, problem_id, date: todayUtc });
+            .insert({ user_id, problem_id, date: todayStr });
 
           if (!completionError) {
             // First time solving today's POTD! Update streak.
@@ -325,9 +328,8 @@ export async function POST(req: NextRequest) {
               .single();
 
             if (profile) {
-              const yesterday = new Date();
-              yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-              const yesterdayStr = yesterday.toISOString().split("T")[0];
+              const yesterdayIst = new Date(todayIst.getTime() - 24 * 60 * 60 * 1000);
+              const yesterdayStr = yesterdayIst.toISOString().split("T")[0];
 
               // Check if they solved yesterday's POTD
               const { data: yesterdaySolve } = await adminSupabase

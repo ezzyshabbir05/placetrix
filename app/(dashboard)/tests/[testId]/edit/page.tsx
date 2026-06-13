@@ -28,7 +28,7 @@ export default async function TestEditorPage({ params }: Props) {
     .eq("id", user.sub)
     .single()
 
-  if (profile?.account_type !== "institute" || profile?.account_subtype !== "staff") redirect("/tests")
+  if (profile?.account_type !== "institute" || (profile?.account_subtype !== "staff" && profile?.account_subtype !== "tpo" && profile?.account_subtype !== "primary")) redirect("/tests")
 
   // ── Parallel fetches: tags + test data are independent of each other ─────────
   const isNew = testId === "new"

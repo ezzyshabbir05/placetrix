@@ -384,8 +384,8 @@ export default async function TestsPage(props: {
     )
   }
 
-  if (profile.account_type === "institute" && profile.account_subtype === "staff") {
-    // Staff users query tests by their parent institute's profile id
+  if (profile.account_type === "institute" && (profile.account_subtype === "staff" || profile.account_subtype === "tpo" || profile.account_subtype === "primary")) {
+    // Staff/TPO/Primary users query tests by their parent institute's profile id
     const instituteId = profile.institute_id
     if (!instituteId) return null
     const { tests, count, tabCounts } = await fetchInstituteTests(

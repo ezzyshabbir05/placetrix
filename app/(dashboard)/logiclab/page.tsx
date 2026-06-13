@@ -19,9 +19,12 @@ interface SearchParams {
   tag?: string
 }
 
-// Helper to format Date to UTC YYYY-MM-DD
-function toLocalYYYYMMDD(date: Date) {
-  return date.toISOString().split("T")[0]
+// Helper to format Date/String to IST YYYY-MM-DD
+function toIstYYYYMMDD(dateInput: Date | string) {
+  const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput
+  const istOffset = 5.5 * 60 * 60 * 1000
+  const istDate = new Date(date.getTime() + istOffset)
+  return istDate.toISOString().split("T")[0]
 }
 
 const getCachedPotd = unstable_cache(
@@ -114,36 +117,7 @@ export default async function LogicLabPage(props: {
       : null,
     total_submissions: statsMap[p.id]?.total || 0,
   }))
-  // Fetch user's submissions with status and created_at ordered by created_at for streak & activity graph
-  const { data: userSubmissions } = await (supabase as any)
-    .from("coding_submissions")
-    .select("status, created_at")
-    .eq("user_id", profile.id)
-    .order("created_at", { ascending: true })
-
-  const uniqueDatesWithStatus = new Map<string, { solved: boolean; attempted: boolean; count: number }>()
-
-  for (const sub of userSubmissions ?? []) {
-    if (!sub.created_at) continue
-    const localDate = new Date(sub.created_at)
-    const dateStr = toLocalYYYYMMDD(localDate)
-    const isAccepted = sub.status === "Accepted"
-    
-    const existing = uniqueDatesWithStatus.get(dateStr) || { solved: false, attempted: false, count: 0 }
-    existing.count++
-    if (isAccepted) {
-      existing.solved = true
-    } else {
-      existing.attempted = true
-    }
-    uniqueDatesWithStatus.set(dateStr, existing)
-  }
-
-  const sortedDates = Array.from(uniqueDatesWithStatus.keys()).sort((a, b) => b.localeCompare(a))
-  
-  let currentStreak = 0
-  let maxStreak = 0
-  // Force POTD to use IST (+5.5 hours)
+  // Force POTD & Streaks to use IST (+5.5 hours)
   const istOffset = 5.5 * 60 * 60 * 1000
   const today = new Date()
   const istDate = new Date(today.getTime() + istOffset)
@@ -151,6 +125,34 @@ export default async function LogicLabPage(props: {
   
   const yesterdayDate = new Date(istDate.getTime() - (24 * 60 * 60 * 1000))
   const yesterdayStr = yesterdayDate.toISOString().split("T")[0]
+
+  const cutOffDate = new Date(istDate.getTime() - (365 * 24 * 60 * 60 * 1000))
+  const cutOffStr = cutOffDate.toISOString().split("T")[0]
+
+  // Fetch aggregated daily activity from user_daily_coding_activity view (Aggregated and grouped by IST Date)
+  const { data: activityRows } = await (supabase as any)
+    .from("user_daily_coding_activity")
+    .select("activity_date, submission_count, solved")
+    .eq("user_id", profile.id)
+    .gte("activity_date", cutOffStr)
+    .order("activity_date", { ascending: true })
+
+  const uniqueDatesWithStatus = new Map<string, { solved: boolean; attempted: boolean; count: number }>()
+
+  for (const row of activityRows ?? []) {
+    if (!row.activity_date) continue
+    const dateStr = row.activity_date
+    uniqueDatesWithStatus.set(dateStr, {
+      solved: !!row.solved,
+      attempted: !row.solved && row.submission_count > 0,
+      count: Number(row.submission_count)
+    })
+  }
+
+  const sortedDates = Array.from(uniqueDatesWithStatus.keys()).sort((a, b) => b.localeCompare(a))
+  
+  let currentStreak = 0
+  let maxStreak = 0
 
   const hasActiveStreak = uniqueDatesWithStatus.has(todayStr) || uniqueDatesWithStatus.has(yesterdayStr)
 

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { getUserProfile } from "@/lib/supabase/profile"
 import OpenAI from "openai"
 
 // --- Shared types ---
@@ -120,8 +121,10 @@ export async function loadTestAction(
   testId: string,
   userId: string
 ): Promise<InitialTestData | null> {
-  const authUserId = await requireAuth()
-  if (authUserId !== userId) throw new Error("Unauthorized")
+  const profile = await getUserProfile()
+  if (!profile || profile.id !== userId || profile.account_type !== "institute") {
+    throw new Error("Unauthorized")
+  }
   const supabase = await createClient()
 
   const { data: test } = await (supabase as any)
@@ -137,7 +140,7 @@ export async function loadTestAction(
       )
     `)
     .eq("id", testId)
-    .eq("institute_id", userId)
+    .eq("institute_id", profile.institute_id)
     .single()
 
   if (!test) return null

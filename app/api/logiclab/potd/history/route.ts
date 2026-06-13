@@ -10,12 +10,15 @@ export async function GET() {
     const supabase = (await createClient()) as any
 
     // Fetch the last 30 POTDs (excluding today since today is on the main dashboard)
-    const today = new Date().toISOString().split("T")[0]
+    const now = new Date()
+    const istOffset = 5.5 * 60 * 60 * 1000
+    const todayIst = new Date(now.getTime() + istOffset)
+    const todayStr = todayIst.toISOString().split("T")[0]
     
     const { data: historyData, error } = await supabase
       .from("daily_challenges")
       .select("date, problem_id, coding_problems ( id, title, difficulty )")
-      .lt("date", today)
+      .lt("date", todayStr)
       .order("date", { ascending: false })
       .limit(30)
 

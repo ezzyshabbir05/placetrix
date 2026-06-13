@@ -7,6 +7,7 @@
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { getUserProfile } from "@/lib/supabase/profile"
 
 
 // ─── Guard helper ─────────────────────────────────────────────────────────────
@@ -21,7 +22,11 @@ async function requireAuth(): Promise<string> {
 }
 
 async function assertOwner(testId: string): Promise<string> {
-  const userSub = await requireAuth()
+  const profile = await getUserProfile()
+  if (!profile || profile.account_type !== "institute") {
+    throw new Error("Forbidden")
+  }
+
   const supabase = await createClient()
 
   const { data: test, error } = await (supabase as any)
@@ -31,9 +36,9 @@ async function assertOwner(testId: string): Promise<string> {
     .single()
 
   if (error || !test) throw new Error("Test not found")
-  if (test.institute_id !== userSub) throw new Error("Forbidden")
+  if (test.institute_id !== profile.institute_id) throw new Error("Forbidden")
 
-  return userSub
+  return profile.id
 }
 
 

@@ -313,7 +313,7 @@ export default async function TestDetailPage({
     return <CandidateTestDetailClient test={test} attempt={attempt} serverNow={serverNow} />
   }
 
-  if (profile.account_type === "institute" && profile.account_subtype === "staff") {
+  if (profile.account_type === "institute" && (profile.account_subtype === "staff" || profile.account_subtype === "tpo" || profile.account_subtype === "primary")) {
     const instituteId = profile.institute_id
     if (!instituteId) redirect("/home")
     const test = await fetchInstituteView(testId, instituteId)

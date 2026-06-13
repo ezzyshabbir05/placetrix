@@ -19,7 +19,7 @@ export async function toggleStudentVerification(studentId: string, verified: boo
     .eq("profile_id", studentId)
     .single();
 
-  if (candidateProfile?.institute_id !== profile.id) {
+  if (candidateProfile?.institute_id !== profile.institute_id) {
     throw new Error("Student does not belong to your institute");
   }
 

@@ -247,11 +247,17 @@ export const getUserProfile = cache(async (): Promise<UserProfile | null> => {
         if (dbProfile.account_type !== undefined) built.account_type = dbProfile.account_type as AccountType;
         if (dbProfile.account_subtype !== undefined) built.account_subtype = dbProfile.account_subtype as InstituteSubtype | null;
         
+        const getInstituteId = (val: any) => {
+          if (!val) return null;
+          if (Array.isArray(val)) return val[0]?.institute_id || null;
+          return val.institute_id || null;
+        };
+
         let fetchedInstituteId = null;
-        if (built.account_type === 'candidate') fetchedInstituteId = dbProfile.candidate_profiles?.[0]?.institute_id;
-        else if (built.account_subtype === 'staff') fetchedInstituteId = dbProfile.staff_profiles?.[0]?.institute_id;
-        else if (built.account_subtype === 'tpo') fetchedInstituteId = dbProfile.tpo_profiles?.[0]?.institute_id;
-        else if (built.account_type === 'institute') fetchedInstituteId = dbProfile.institute_profiles?.[0]?.institute_id;
+        if (built.account_type === 'candidate') fetchedInstituteId = getInstituteId(dbProfile.candidate_profiles);
+        else if (built.account_subtype === 'staff') fetchedInstituteId = getInstituteId(dbProfile.staff_profiles);
+        else if (built.account_subtype === 'tpo') fetchedInstituteId = getInstituteId(dbProfile.tpo_profiles);
+        else if (built.account_type === 'institute') fetchedInstituteId = getInstituteId(dbProfile.institute_profiles);
         
         built.institute_id = fetchedInstituteId || null;
         
