@@ -76,9 +76,9 @@ export default async function PlacementManagementPage(props: {
   let availableDrives: string[] = []
   if (allCandidateUuids.length > 0) {
     const { data: driveData } = await (supabase as any)
-      .from("pt_mt_info")
+      .from("placement_records")
       .select("drive_tag")
-      .in("candidate_uuid", allCandidateUuids)
+      .in("candidate_id", allCandidateUuids)
       .not("drive_tag", "is", null)
 
     availableDrives = Array.from(
@@ -108,11 +108,11 @@ export default async function PlacementManagementPage(props: {
   // ── Placed filter ──────────────────────────────────────────────────────
   if (placedFilter === "placed") {
     const { data: placedIds } = await (supabase as any)
-      .from("pt_mt_info")
-      .select("candidate_uuid")
+      .from("placement_records")
+      .select("candidate_id")
       .not("company_name", "is", null)
 
-    const ids = (placedIds || []).map((r: any) => r.candidate_uuid)
+    const ids = (placedIds || []).map((r: any) => r.candidate_id)
     if (ids.length === 0) {
       query = query.eq("profile_id", "00000000-0000-0000-0000-000000000000")
     } else {
@@ -120,11 +120,11 @@ export default async function PlacementManagementPage(props: {
     }
   } else if (placedFilter === "not_placed") {
     const { data: placedIds } = await (supabase as any)
-      .from("pt_mt_info")
-      .select("candidate_uuid")
+      .from("placement_records")
+      .select("candidate_id")
       .not("company_name", "is", null)
 
-    const ids = (placedIds || []).map((r: any) => r.candidate_uuid)
+    const ids = (placedIds || []).map((r: any) => r.candidate_id)
     if (ids.length > 0) {
       query = query.not("profile_id", "in", `(${ids.join(",")})`)
     }
@@ -133,11 +133,11 @@ export default async function PlacementManagementPage(props: {
   // ── Drive filter ───────────────────────────────────────────────────────
   if (driveFilter) {
     const { data: driveIds } = await (supabase as any)
-      .from("pt_mt_info")
-      .select("candidate_uuid")
+      .from("placement_records")
+      .select("candidate_id")
       .eq("drive_tag", driveFilter)
 
-    const ids = (driveIds || []).map((r: any) => r.candidate_uuid)
+    const ids = (driveIds || []).map((r: any) => r.candidate_id)
     if (ids.length === 0) {
       query = query.eq("profile_id", "00000000-0000-0000-0000-000000000000")
     } else {
@@ -199,7 +199,7 @@ export default async function PlacementManagementPage(props: {
     console.error("Error fetching placement records:", error)
   }
 
-  // ── Fetch pt_mt_info separately for the returned profile IDs ───────────
+  // ── Fetch placement_records separately for the returned profile IDs ───────────
   const profileIds: string[] = (rawData || []).map((r: any) => r.profile_id)
 
   const ptMap = new Map<string, {
@@ -214,16 +214,16 @@ export default async function PlacementManagementPage(props: {
 
   if (profileIds.length > 0) {
     const { data: ptData, error: ptError } = await (supabase as any)
-      .from("pt_mt_info")
-      .select("candidate_uuid, company_name, ctc, offer_letter_date, job_role, offer_type, location, drive_tag")
-      .in("candidate_uuid", profileIds)
+      .from("placement_records")
+      .select("candidate_id, company_name, ctc, offer_letter_date, job_role, offer_type, location, drive_tag")
+      .in("candidate_id", profileIds)
 
     if (ptError) {
-      console.error("Error fetching pt_mt_info:", ptError)
+      console.error("Error fetching placement_records:", ptError)
     }
 
     for (const row of ptData || []) {
-      ptMap.set(row.candidate_uuid, {
+      ptMap.set(row.candidate_id, {
         company_name: row.company_name ?? null,
         ctc: row.ctc ?? null,
         offer_letter_date: row.offer_letter_date ?? null,

@@ -53,10 +53,10 @@ export async function upsertPlacementInfo(input: UpsertPlacementInfoInput) {
   }
 
   const { error } = await (supabase as any)
-    .from("pt_mt_info")
+    .from("placement_records")
     .upsert(
       {
-        candidate_uuid: input.candidateUuid,
+        candidate_id: input.candidateUuid,
         company_name: input.companyName || null,
         ctc: input.ctc ?? null,
         offer_letter_date: input.offerLetterDate || null,
@@ -65,7 +65,7 @@ export async function upsertPlacementInfo(input: UpsertPlacementInfoInput) {
         location: input.location?.trim() || null,
         drive_tag: input.driveTag?.trim() || null,
       },
-      { onConflict: "candidate_uuid" }
+      { onConflict: "candidate_id" }
     )
 
   if (error) {
@@ -110,7 +110,7 @@ export async function bulkSetPlacementStatus(
   if (status === "not_placed") {
     // Clear company_name, ctc, offer fields — student is marked not placed
     const rows = validIds.map((uuid) => ({
-      candidate_uuid: uuid,
+      candidate_id: uuid,
       company_name: null,
       ctc: null,
       offer_letter_date: null,
@@ -120,8 +120,8 @@ export async function bulkSetPlacementStatus(
       drive_tag: null,
     }))
     const { error } = await (supabase as any)
-      .from("pt_mt_info")
-      .upsert(rows, { onConflict: "candidate_uuid" })
+      .from("placement_records")
+      .upsert(rows, { onConflict: "candidate_id" })
     if (error) throw new Error(error.message)
   }
   // "placed" — no bulk data to set; individual edit is used via the side panel
@@ -161,18 +161,18 @@ export async function exportPlacementData(filters: ExportFilters): Promise<Recor
   // ── Placed filter ──
   if (filters.placedFilter === "placed") {
     const { data: placedIds } = await (supabase as any)
-      .from("pt_mt_info")
-      .select("candidate_uuid")
+      .from("placement_records")
+      .select("candidate_id")
       .not("company_name", "is", null)
-    const ids = (placedIds || []).map((r: any) => r.candidate_uuid)
+    const ids = (placedIds || []).map((r: any) => r.candidate_id)
     if (ids.length === 0) return []
     query = query.in("profile_id", ids)
   } else if (filters.placedFilter === "not_placed") {
     const { data: placedIds } = await (supabase as any)
-      .from("pt_mt_info")
-      .select("candidate_uuid")
+      .from("placement_records")
+      .select("candidate_id")
       .not("company_name", "is", null)
-    const ids = (placedIds || []).map((r: any) => r.candidate_uuid)
+    const ids = (placedIds || []).map((r: any) => r.candidate_id)
     if (ids.length > 0) {
       query = query.not("profile_id", "in", `(${ids.join(",")})`)
     }
@@ -203,15 +203,15 @@ export async function exportPlacementData(filters: ExportFilters): Promise<Recor
   const profileIds: string[] = (rawData || []).map((r: any) => r.profile_id)
   if (profileIds.length === 0) return []
 
-  // ── Fetch pt_mt_info ──
+  // ── Fetch placement_records ──
   const { data: ptData } = await (supabase as any)
-    .from("pt_mt_info")
-    .select("candidate_uuid, company_name, ctc, offer_letter_date, job_role, offer_type, location, drive_tag")
-    .in("candidate_uuid", profileIds)
+    .from("placement_records")
+    .select("candidate_id, company_name, ctc, offer_letter_date, job_role, offer_type, location, drive_tag")
+    .in("candidate_id", profileIds)
 
   const ptMap = new Map<string, any>()
   for (const row of ptData || []) {
-    ptMap.set(row.candidate_uuid, row)
+    ptMap.set(row.candidate_id, row)
   }
 
   // ── Merge and filter by CTC / drive ──

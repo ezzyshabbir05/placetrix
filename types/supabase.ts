@@ -904,6 +904,61 @@ export type Database = {
           },
         ]
       }
+      placement_records: {
+        Row: {
+          candidate_id: string
+          company_name: string | null
+          created_at: string
+          ctc: number | null
+          drive_tag: string | null
+          id: string
+          job_role: string | null
+          location: string | null
+          offer_letter_date: string | null
+          offer_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          candidate_id: string
+          company_name?: string | null
+          created_at?: string
+          ctc?: number | null
+          drive_tag?: string | null
+          id?: string
+          job_role?: string | null
+          location?: string | null
+          offer_letter_date?: string | null
+          offer_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          candidate_id?: string
+          company_name?: string | null
+          created_at?: string
+          ctc?: number | null
+          drive_tag?: string | null
+          id?: string
+          job_role?: string | null
+          location?: string | null
+          offer_letter_date?: string | null
+          offer_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "placement_records_candidate_id_fkey"
+            columns: ["candidate_id"]
+            referencedRelation: "candidate_profiles"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "placement_records_candidate_id_fkey"
+            columns: ["candidate_id"]
+            referencedRelation: "placement_management_view"
+            referencedColumns: ["profile_id"]
+          },
+        ]
+      }
       potd_completions: {
         Row: {
           created_at: string
@@ -988,61 +1043,6 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
-      }
-      pt_mt_info: {
-        Row: {
-          candidate_uuid: string
-          company_name: string | null
-          created_at: string
-          ctc: number | null
-          drive_tag: string | null
-          id: string
-          job_role: string | null
-          location: string | null
-          offer_letter_date: string | null
-          offer_type: string | null
-          updated_at: string
-        }
-        Insert: {
-          candidate_uuid: string
-          company_name?: string | null
-          created_at?: string
-          ctc?: number | null
-          drive_tag?: string | null
-          id?: string
-          job_role?: string | null
-          location?: string | null
-          offer_letter_date?: string | null
-          offer_type?: string | null
-          updated_at?: string
-        }
-        Update: {
-          candidate_uuid?: string
-          company_name?: string | null
-          created_at?: string
-          ctc?: number | null
-          drive_tag?: string | null
-          id?: string
-          job_role?: string | null
-          location?: string | null
-          offer_letter_date?: string | null
-          offer_type?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pt_mt_info_candidate_uuid_fkey"
-            columns: ["candidate_uuid"]
-            referencedRelation: "candidate_profiles"
-            referencedColumns: ["profile_id"]
-          },
-          {
-            foreignKeyName: "pt_mt_info_candidate_uuid_fkey"
-            columns: ["candidate_uuid"]
-            referencedRelation: "placement_management_view"
-            referencedColumns: ["profile_id"]
-          },
-        ]
       }
       question_tags: {
         Row: {
