@@ -300,6 +300,7 @@ export type Database = {
           driver_codes: Json
           id: string
           memory_limit: number | null
+          number: number | null
           tags: string[] | null
           test_cases: Json
           time_limit: number | null
@@ -315,6 +316,7 @@ export type Database = {
           driver_codes?: Json
           id?: string
           memory_limit?: number | null
+          number?: number | null
           tags?: string[] | null
           test_cases?: Json
           time_limit?: number | null
@@ -330,6 +332,7 @@ export type Database = {
           driver_codes?: Json
           id?: string
           memory_limit?: number | null
+          number?: number | null
           tags?: string[] | null
           test_cases?: Json
           time_limit?: number | null
@@ -1451,6 +1454,59 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      daily_challenges: {
+        Row: {
+          id: string
+          date: string
+          problem_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          date: string
+          problem_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          date?: string
+          problem_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_challenges_problem_id_fkey"
+            columns: ["problem_id"]
+            referencedRelation: "coding_problems"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      problem_global_stats: {
+        Row: {
+          problem_id: string
+          total_submissions: number
+          accepted_submissions: number
+        }
+        Insert: {
+          problem_id: string
+          total_submissions?: number
+          accepted_submissions?: number
+        }
+        Update: {
+          problem_id?: string
+          total_submissions?: number
+          accepted_submissions?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "problem_global_stats_problem_id_fkey"
+            columns: ["problem_id"]
+            referencedRelation: "coding_problems"
+            referencedColumns: ["id"]
+          }
         ]
       }
     }
