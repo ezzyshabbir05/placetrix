@@ -27,22 +27,12 @@ function toIstYYYYMMDD(dateInput: Date | string) {
 }
 
 
-export default async function LogicLabPage(props: {
-  searchParams: Promise<SearchParams>
-}) {
+export default async function LogicLabPage() {
   const profile = await getUserProfile()
   if (!profile) redirect("/auth/login")
 
   const isAdmin = profile.account_type === "admin"
   if (isAdmin) redirect("/logiclab/admin")
-
-  const params = await props.searchParams
-  const page = Math.max(1, parseInt(params.page || "1", 10))
-  const size = Math.max(20, parseInt(params.size || "20", 10))
-  const search = params.search || ""
-  const tab = params.tab || "all"
-  const difficulty = params.difficulty || "All"
-  const tag = params.tag || "All"
 
   // 1. Fetch cached global data (0ms, no database load)
   const { problems, stats: globalStatsRaw } = await getCachedGlobalProblems()
@@ -222,56 +212,25 @@ export default async function LogicLabPage(props: {
   }
   const allTags = Array.from(allTagsSet).sort((a, b) => a.localeCompare(b))
 
-  // Filter problems based on query params
-  const filteredProblems = enrichedProblems.filter((p: any) => {
-    const matchesSearch = !search || p.title.toLowerCase().includes(search.toLowerCase()) ||
-      p.tags?.some((t: string) => t.toLowerCase().includes(search.toLowerCase()))
-    const matchesDifficulty = difficulty === "All" || p.difficulty === difficulty
-    const matchesTag = tag === "All" || (p.tags || []).includes(tag)
-    return matchesSearch && matchesDifficulty && matchesTag
-  })
-
-  // Compute tab counts based on filtered subset (excluding tab filter itself)
-  const tabCounts = {
-    all: filteredProblems.length,
-    solved: filteredProblems.filter((p: any) => p.solved_status === "Accepted").length,
-    attempted: filteredProblems.filter((p: any) => p.solved_status && p.solved_status !== "Accepted").length,
-    unsolved: filteredProblems.filter((p: any) => !p.solved_status).length,
-  }
-
-  // Apply active tab filtering
-  const activeTab = ["all", "solved", "attempted", "unsolved"].includes(tab) ? tab : "all"
-  const finalFiltered = filteredProblems.filter((p: any) => {
-    if (activeTab === "solved") return p.solved_status === "Accepted"
-    if (activeTab === "attempted") return p.solved_status && p.solved_status !== "Accepted"
-    if (activeTab === "unsolved") return !p.solved_status
-    return true
-  })
-
-  // Paginate list
-  const totalCount = finalFiltered.length
-  const from = (page - 1) * size
-  const to = page * size
-  const paginatedProblems = finalFiltered.slice(from, to)
-
   const globalStats = {
     total: enrichedProblems.length,
-    solved: enrichedProblems.filter((p: any) => p.solved_status === "Accepted").length,
+    solved: enrichedProblems.filter((p) => p.solved_status === "Accepted").length,
     easy: {
-      total: enrichedProblems.filter((p: any) => p.difficulty === "Easy").length,
-      solved: enrichedProblems.filter((p: any) => p.difficulty === "Easy" && p.solved_status === "Accepted").length,
+      total: enrichedProblems.filter((p) => p.difficulty === "Easy").length,
+      solved: enrichedProblems.filter((p) => p.difficulty === "Easy" && p.solved_status === "Accepted").length,
     },
     medium: {
-      total: enrichedProblems.filter((p: any) => p.difficulty === "Medium").length,
-      solved: enrichedProblems.filter((p: any) => p.difficulty === "Medium" && p.solved_status === "Accepted").length,
+      total: enrichedProblems.filter((p) => p.difficulty === "Medium").length,
+      solved: enrichedProblems.filter((p) => p.difficulty === "Medium" && p.solved_status === "Accepted").length,
     },
     hard: {
-      total: enrichedProblems.filter((p: any) => p.difficulty === "Hard").length,
-      solved: enrichedProblems.filter((p: any) => p.difficulty === "Hard" && p.solved_status === "Accepted").length,
+      total: enrichedProblems.filter((p) => p.difficulty === "Hard").length,
+      solved: enrichedProblems.filter((p) => p.difficulty === "Hard" && p.solved_status === "Accepted").length,
     },
   }
 
-
+  const initialProblems = enrichedProblems.slice(0, 20)
+  const initialHasMore = enrichedProblems.length > 20
 
   // Fetch initial POTD directly from aggressively cached function
   let initialPotd = await getCachedPotd(todayStr);
@@ -294,23 +253,17 @@ export default async function LogicLabPage(props: {
 
   return (
     <LogicLabDashboardClient
-      problems={paginatedProblems}
+      initialProblems={initialProblems}
+      initialHasMore={initialHasMore}
       isAdmin={isAdmin}
       streakStats={streakStats}
       activityCalendar={activityCalendar}
-      initialPage={page}
-      initialPageSize={size}
-      initialSearch={search}
-      initialTab={activeTab}
-      initialDifficulty={difficulty}
-      initialTag={tag}
-      totalCount={totalCount}
-      tabCounts={tabCounts}
       allTags={allTags}
       tagCounts={tagCounts}
       globalStats={globalStats}
       initialPotd={initialPotd}
       fullPotdProblem={fullPotdProblem}
+      userId={profile.id}
     />
   )
 }

@@ -1,6 +1,20 @@
 import { getUserProfile } from "@/lib/supabase/profile"
 import { redirect } from "next/navigation"
 import LandingPageClient from "./LandingPageClient"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  robots: {
+    index: true,
+    follow: true,
+    noimageindex: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      noimageindex: true,
+    },
+  },
+}
 
 export default async function RootPage() {
   const profile = await getUserProfile()
@@ -10,16 +24,41 @@ export default async function RootPage() {
   }
 
   const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Organization',
-    name: 'Placetrix',
-    url: 'https://placetrix.app',
-    description: 'Educational Assessment Platform for mock tests and study groups.',
-    sameAs: [
-      'https://www.linkedin.com/company/360-view-tech/',
-      'https://www.instagram.com/360viewtech/',
-      'https://github.com/360viewtech',
-    ],
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://placetrix.app/#website",
+        "url": "https://placetrix.app",
+        "name": "Placetrix",
+        "description": "Educational Assessment Platform for mock tests and study groups.",
+        "publisher": {
+          "@id": "https://placetrix.app/#organization"
+        },
+        "inLanguage": "en-US"
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://placetrix.app/#organization",
+        "name": "Placetrix",
+        "url": "https://placetrix.app",
+        "logo": {
+          "@type": "ImageObject",
+          "@id": "https://placetrix.app/#logo",
+          "url": "https://placetrix.app/placetrix.svg",
+          "caption": "Placetrix Logo"
+        },
+        "image": {
+          "@id": "https://placetrix.app/#logo"
+        },
+        "description": "Educational Assessment Platform for mock tests and study groups.",
+        "sameAs": [
+          "https://www.linkedin.com/company/360-view-tech/",
+          "https://www.instagram.com/360viewtech/",
+          "https://github.com/360viewtech"
+        ]
+      }
+    ]
   }
 
   return (

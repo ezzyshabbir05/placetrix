@@ -245,3 +245,125 @@ export async function fetchDailyChallengesInfinite({
   return { challenges: page, hasMore }
 }
 
+// Infinite scroll pagination for problems list
+export async function fetchProblemsInfinite({
+  userId,
+  offset = 0,
+  limit = 20,
+  search = "",
+  tab = "all",
+  difficulty = "All",
+  tag = "All",
+  sortBy = "number-asc",
+}: {
+  userId: string
+  offset?: number
+  limit?: number
+  search?: string
+  tab?: string
+  difficulty?: string
+  tag?: string
+  sortBy?: string
+}): Promise<{ problems: any[]; hasMore: boolean; totalCount: number }> {
+  const { problems, stats: globalStatsRaw } = await getCachedGlobalProblems()
+
+  const supabase = (await createServerClient()) as any
+  const { data: submissions } = await supabase
+    .from("logiclab_problem_submissions")
+    .select("problem_id, status")
+    .eq("user_id", userId)
+
+  // Build a map: problem_id -> best status
+  const solvedMap: Record<string, string> = {}
+  for (const sub of submissions ?? []) {
+    if (!solvedMap[sub.problem_id] || sub.status === "Accepted") {
+      solvedMap[sub.problem_id] = sub.status
+    }
+  }
+
+  // Build a map for stats
+  const statsMap: Record<string, { total: number; accepted: number }> = {}
+  for (const row of globalStatsRaw as any[]) {
+    statsMap[row.problem_id] = { 
+      total: Number(row.total_submissions), 
+      accepted: Number(row.accepted_submissions) 
+    }
+  }
+
+  // Enrich
+  let enriched = (problems ?? []).map((p: any) => ({
+    id: p.id,
+    number: p.number,
+    title: p.title,
+    difficulty: p.difficulty as "Easy" | "Medium" | "Hard",
+    tags: (p.tags || []) as string[],
+    created_at: p.created_at,
+    solved_status: solvedMap[p.id] || null,
+    acceptance_rate: statsMap[p.id]
+      ? Math.round((statsMap[p.id].accepted / statsMap[p.id].total) * 100)
+      : null,
+    total_submissions: statsMap[p.id]?.total || 0,
+  }))
+
+  // Apply filters
+  if (search) {
+    const q = search.toLowerCase()
+    enriched = enriched.filter(
+      (p: any) =>
+        p.title.toLowerCase().includes(q) ||
+        p.tags?.some((t: string) => t.toLowerCase().includes(q))
+    )
+  }
+  if (difficulty !== "All") {
+    enriched = enriched.filter((p: any) => p.difficulty === difficulty)
+  }
+  if (tag !== "All") {
+    enriched = enriched.filter((p: any) => (p.tags || []).includes(tag))
+  }
+  if (tab === "solved") {
+    enriched = enriched.filter((p: any) => p.solved_status === "Accepted")
+  } else if (tab === "attempted") {
+    enriched = enriched.filter((p: any) => p.solved_status && p.solved_status !== "Accepted")
+  } else if (tab === "unsolved") {
+    enriched = enriched.filter((p: any) => !p.solved_status)
+  }
+
+  // Apply sorting
+  if (sortBy === "number-asc") {
+    enriched.sort((a: any, b: any) => (a.number || 0) - (b.number || 0))
+  } else if (sortBy === "number-desc") {
+    enriched.sort((a: any, b: any) => (b.number || 0) - (a.number || 0))
+  } else if (sortBy === "difficulty-asc") {
+    const rank: Record<string, number> = { Easy: 1, Medium: 2, Hard: 3 }
+    enriched.sort((a: any, b: any) => (rank[a.difficulty] || 0) - (rank[b.difficulty] || 0) || (a.number || 0) - (b.number || 0))
+  } else if (sortBy === "difficulty-desc") {
+    const rank: Record<string, number> = { Easy: 1, Medium: 2, Hard: 3 }
+    enriched.sort((a: any, b: any) => (rank[b.difficulty] || 0) - (rank[a.difficulty] || 0) || (a.number || 0) - (b.number || 0))
+  } else if (sortBy === "title-asc") {
+    enriched.sort((a: any, b: any) => a.title.localeCompare(b.title))
+  } else if (sortBy === "title-desc") {
+    enriched.sort((a: any, b: any) => b.title.localeCompare(a.title))
+  } else if (sortBy === "acceptance-desc") {
+    enriched.sort((a: any, b: any) => {
+      const rateA = a.acceptance_rate !== null ? a.acceptance_rate : -1
+      const rateB = b.acceptance_rate !== null ? b.acceptance_rate : -1
+      return rateB - rateA || (a.number || 0) - (b.number || 0)
+    })
+  } else if (sortBy === "acceptance-asc") {
+    enriched.sort((a: any, b: any) => {
+      const rateA = a.acceptance_rate !== null ? a.acceptance_rate : 999
+      const rateB = b.acceptance_rate !== null ? b.acceptance_rate : 999
+      return rateA - rateB || (a.number || 0) - (b.number || 0)
+    })
+  } else if (sortBy === "submissions-desc") {
+    enriched.sort((a: any, b: any) => (b.total_submissions || 0) - (a.total_submissions || 0) || (a.number || 0) - (b.number || 0))
+  } else if (sortBy === "submissions-asc") {
+    enriched.sort((a: any, b: any) => (a.total_submissions || 0) - (b.total_submissions || 0) || (a.number || 0) - (b.number || 0))
+  }
+
+  const page = enriched.slice(offset, offset + limit)
+  const hasMore = offset + limit < enriched.length
+
+  return { problems: page, hasMore, totalCount: enriched.length }
+}
+

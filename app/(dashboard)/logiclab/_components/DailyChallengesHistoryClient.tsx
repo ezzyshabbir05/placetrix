@@ -543,7 +543,7 @@ export function DailyChallengesHistoryClient({
                         <Card
                           key={challenge.id}
                           onClick={() => router.push(`/logiclab/dailychallenges/${challenge.id}`)}
-                          className="group cursor-pointer hover:bg-muted/30 transition-colors duration-150 border-border/50 hover:border-border/80 py-0"
+                          className="rounded-sm group cursor-pointer hover:bg-muted/30 transition-colors duration-150 border-border/50 hover:border-border/80 py-0"
                         >
                           <CardContent className="flex items-center gap-3 px-4 py-2.5">
                             {/* Status icon */}
@@ -553,20 +553,16 @@ export function DailyChallengesHistoryClient({
                               ) : isAttempted ? (
                                 <CircleDot className="size-4 text-amber-500" />
                               ) : (
-                                <div className="size-3.5 rounded-full border-2 border-muted-foreground/25" />
+                                <div className="size-3.5 rounded-full border-2 border-muted-foreground/45" />
                               )}
                             </div>
 
-                            {/* Date */}
-                            <div className="shrink-0 w-[72px]">
-                              <span className="text-xs font-semibold text-muted-foreground leading-tight">
+                            {/* Date & Title */}
+                            <div className="flex-1 min-w-0 flex items-center gap-6">
+                              <span className="text-sm font-bold text-muted-foreground leading-tight shrink-0">
                                 {formatDateShort(challenge.date)}
                               </span>
-                            </div>
-
-                            {/* Title */}
-                            <div className="flex-1 min-w-0">
-                              <span className="text-sm font-medium text-foreground/85 group-hover:text-foreground transition-colors truncate block leading-snug">
+                              <span className="text-sm font-medium text-foreground group-hover:text-foreground transition-colors truncate block leading-snug">
                                 {challenge.number ? `${challenge.number}. ` : ""}{challenge.title}
                               </span>
                             </div>
@@ -581,7 +577,7 @@ export function DailyChallengesHistoryClient({
                                 {challenge.difficulty}
                               </span>
                               {challenge.tags?.slice(0, 1).map((tag) => (
-                                <span key={tag} className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground/60">
+                                <span key={tag} className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground/85">
                                   {tag}
                                 </span>
                               ))}
@@ -592,7 +588,7 @@ export function DailyChallengesHistoryClient({
                               {isSolved ? (
                                 <CircleCheck className="size-4 text-emerald-500/70" />
                               ) : (
-                                <ChevronRight className="size-4 text-muted-foreground/30 group-hover:text-muted-foreground/60 group-hover:translate-x-0.5 transition-all" />
+                                <ChevronRight className="size-4 text-muted-foreground/50 group-hover:text-muted-foreground/80 group-hover:translate-x-0.5 transition-all" />
                               )}
                             </div>
                           </CardContent>
@@ -678,7 +674,7 @@ export function DailyChallengesHistoryClient({
 
                 {/* Accordion 1: Status */}
                 <AccordionItem value="status" className="px-6 border-b border-border/30">
-                  <AccordionTrigger className="py-3.5 hover:no-underline text-xs font-bold uppercase tracking-wider text-muted-foreground/85">
+                  <AccordionTrigger className="py-3.5 hover:no-underline text-xs font-bold uppercase tracking-wider text-foreground">
                     <span className="flex items-center gap-2">
                       <ListTodo className="size-3.5" />
                       Status
@@ -687,10 +683,10 @@ export function DailyChallengesHistoryClient({
                   <AccordionContent className="pb-4 pt-1 flex flex-col gap-2">
                     <div className="grid grid-cols-2 gap-2">
                       {[
-                        { value: "all", label: "All Status", icon: <ListTodo className="size-3.5 text-muted-foreground/70" /> },
+                        { value: "all", label: "All Status", icon: <ListTodo className="size-3.5 text-foreground/70" /> },
                         { value: "solved", label: "Solved Only", icon: <CircleCheck className="size-3.5 text-emerald-500" /> },
                         { value: "attempted", label: "Attempting", icon: <CircleDot className="size-3.5 text-amber-500" /> },
-                        { value: "unsolved", label: "Unsolved", icon: <CircleDashed className="size-3.5 text-muted-foreground/60" /> },
+                        { value: "unsolved", label: "Unsolved", icon: <CircleDashed className="size-3.5 text-foreground/60" /> },
                       ].map((opt) => (
                         <button
                           key={opt.value}
@@ -699,7 +695,7 @@ export function DailyChallengesHistoryClient({
                             "flex items-center gap-2.5 p-2 rounded-lg border text-left transition-all select-none cursor-pointer text-xs font-medium",
                             activeTab === opt.value
                               ? "bg-primary/5 border-primary text-primary font-semibold shadow-xs"
-                              : "bg-muted/20 border-border/40 text-muted-foreground hover:bg-muted/50 hover:text-foreground hover:border-border/80"
+                              : "bg-muted/20 border-border/40 text-foreground/80 hover:bg-muted/50 hover:text-foreground hover:border-border/80"
                           )}
                         >
                           {opt.icon}
@@ -712,7 +708,7 @@ export function DailyChallengesHistoryClient({
 
                 {/* Accordion 2: Difficulty */}
                 <AccordionItem value="difficulty" className="px-6 border-b border-border/30">
-                  <AccordionTrigger className="py-3.5 hover:no-underline text-xs font-bold uppercase tracking-wider text-muted-foreground/85">
+                  <AccordionTrigger className="py-3.5 hover:no-underline text-xs font-bold uppercase tracking-wider text-foreground">
                     <span className="flex items-center gap-2">
                       <Flame className="size-3.5" />
                       Difficulty
@@ -721,7 +717,7 @@ export function DailyChallengesHistoryClient({
                   <AccordionContent className="pb-4 pt-1 flex flex-col gap-2">
                     <div className="grid grid-cols-2 gap-2">
                       {[
-                        { value: "All", label: "All Levels", color: "bg-muted-foreground", text: "text-muted-foreground", border: "border-muted-foreground/20", bg: "bg-muted-foreground/5", desc: "No restriction" },
+                        { value: "All", label: "All Levels", color: "bg-foreground/50", text: "text-foreground/80", border: "border-border/40", bg: "bg-muted/20", desc: "No restriction" },
                         { value: "Easy", label: "Easy Level", color: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400", border: "border-emerald-500/25", bg: "bg-emerald-500/10", desc: "Beginner level" },
                         { value: "Medium", label: "Medium Level", color: "bg-amber-500", text: "text-amber-600 dark:text-amber-400", border: "border-amber-500/25", bg: "bg-amber-500/10", desc: "Standard practice" },
                         { value: "Hard", label: "Hard Level", color: "bg-rose-500", text: "text-rose-600 dark:text-rose-400", border: "border-rose-500/25", bg: "bg-rose-500/10", desc: "Complex problems" },
@@ -733,14 +729,14 @@ export function DailyChallengesHistoryClient({
                             "flex flex-col items-start gap-0.5 p-2 rounded-lg border text-left transition-all select-none cursor-pointer",
                             activeDifficulty === opt.value
                               ? `${opt.bg} ${opt.border} ${opt.text} font-semibold shadow-xs`
-                              : "bg-muted/20 border-border/40 text-muted-foreground hover:bg-muted/50 hover:text-foreground hover:border-border/80"
+                              : "bg-muted/20 border-border/40 text-foreground/80 hover:bg-muted/50 hover:text-foreground hover:border-border/80"
                           )}
                         >
                           <div className="flex items-center gap-1.5 text-xs font-semibold">
                             <span className={cn("size-2 rounded-full", opt.color)} />
                             <span>{opt.label}</span>
                           </div>
-                          <span className="text-[10px] text-muted-foreground/70 font-normal">{opt.desc}</span>
+                          <span className="text-[10px] text-foreground/65 font-normal">{opt.desc}</span>
                         </button>
                       ))}
                     </div>
@@ -749,7 +745,7 @@ export function DailyChallengesHistoryClient({
 
                 {/* Accordion 3: Topic Tags */}
                 <AccordionItem value="tags" className="px-6 border-none">
-                  <AccordionTrigger className="py-3.5 hover:no-underline text-xs font-bold uppercase tracking-wider text-muted-foreground/85">
+                  <AccordionTrigger className="py-3.5 hover:no-underline text-xs font-bold uppercase tracking-wider text-foreground">
                     <span className="flex items-center gap-2">
                       <BookOpen className="size-3.5" />
                       Topic Tags
@@ -759,13 +755,13 @@ export function DailyChallengesHistoryClient({
                     {/* Tag Search Input */}
                     <InputGroup className="bg-muted/25 border-border/40 h-8 rounded-md">
                       <InputGroupAddon align="inline-start">
-                        <Search className="size-3.5 text-muted-foreground/50" />
+                        <Search className="size-3.5 text-foreground/50" />
                       </InputGroupAddon>
                       <InputGroupInput
                         placeholder="Search tags..."
                         value={tagSearchInput}
                         onChange={(e) => setTagSearchInput(e.target.value)}
-                        className="text-xs h-full placeholder:text-muted-foreground/40"
+                        className="text-xs h-full placeholder:text-foreground/45"
                       />
                       {tagSearchInput && (
                         <InputGroupAddon align="inline-end">
@@ -773,7 +769,7 @@ export function DailyChallengesHistoryClient({
                             onClick={() => setTagSearchInput("")}
                             variant="ghost"
                             size="icon-xs"
-                            className="text-muted-foreground/60 hover:text-foreground"
+                            className="text-foreground/70 hover:text-foreground"
                           >
                             <X className="size-3" />
                           </InputGroupButton>
@@ -794,13 +790,13 @@ export function DailyChallengesHistoryClient({
                                 "flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer select-none",
                                 isSelected
                                   ? "bg-primary text-primary-foreground border-primary shadow-xs"
-                                  : "bg-muted/30 hover:bg-muted/80 text-muted-foreground hover:text-foreground border-border/50"
+                                  : "bg-muted/30 hover:bg-muted/80 text-foreground/80 hover:text-foreground border-border/50"
                               )}
                             >
                               <span>{t}</span>
                               <span className={cn(
                                 "text-[9px] px-1 rounded-sm font-semibold",
-                                isSelected ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground/75"
+                                isSelected ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-foreground/70"
                               )}>
                                 {count}
                               </span>
@@ -809,7 +805,7 @@ export function DailyChallengesHistoryClient({
                         })}
                       </div>
                     ) : (
-                      <p className="text-xs text-muted-foreground/50 italic py-2 text-center">No tags match search query</p>
+                      <p className="text-xs text-foreground/50 italic py-2 text-center">No tags match search query</p>
                     )}
 
                     {allTags.length > 8 && !tagSearchInput && (
@@ -817,7 +813,7 @@ export function DailyChallengesHistoryClient({
                         variant="ghost"
                         size="xs"
                         onClick={() => setShowAllTags(!showAllTags)}
-                        className="w-full text-xs text-muted-foreground/70 hover:text-foreground border border-dashed border-border/30 rounded-md py-1 mt-1"
+                        className="w-full text-xs text-foreground/80 hover:text-foreground border border-dashed border-border/30 rounded-md py-1 mt-1"
                       >
                         {showAllTags ? "Show Less" : `Show All Topic Tags (${allTags.length})`}
                       </Button>
@@ -851,14 +847,14 @@ export function DailyChallengesHistoryClient({
                         "flex items-center justify-between p-3.5 rounded-xl border transition-all cursor-pointer select-none",
                         isSelected
                           ? "bg-primary/5 border-primary text-primary shadow-xs ring-1 ring-primary/20"
-                          : "bg-muted/15 border-border/50 text-muted-foreground hover:bg-muted/40 hover:text-foreground hover:border-border/80"
+                          : "bg-muted/15 border-border/50 text-foreground/80 hover:bg-muted/40 hover:text-foreground hover:border-border/80"
                       )}
                     >
                       <div className="flex flex-col gap-0.5 flex-1 min-w-0 pr-3">
-                        <Label className={cn("text-xs font-semibold cursor-pointer block truncate", isSelected ? "text-primary" : "text-foreground/90")}>
+                        <Label className={cn("text-xs font-semibold cursor-pointer block truncate", isSelected ? "text-primary" : "text-foreground")}>
                           {opt.title}
                         </Label>
-                        <span className="text-[10px] text-muted-foreground/75 leading-tight">{opt.desc}</span>
+                        <span className="text-[10px] text-foreground/65 leading-tight">{opt.desc}</span>
                       </div>
                       <RadioGroupItem value={opt.value} className="size-4 shrink-0 pointer-events-none" />
                     </div>

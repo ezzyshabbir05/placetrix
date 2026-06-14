@@ -176,7 +176,7 @@ async function fetchCandidateTests(
   } else {
     // "all" tab
     query = query
-      .order("available_from", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false, nullsFirst: false })
       .order("title", { ascending: true })
   }
 
@@ -292,7 +292,9 @@ async function fetchInstituteTests(
       .order("created_at", { ascending: false, nullsFirst: false })
       .order("title", { ascending: true })
   } else if (activeTab === "drafts") {
-    query = query.order("title", { ascending: true })
+    query = query
+      .order("created_at", { ascending: false, nullsFirst: false })
+      .order("title", { ascending: true })
   } else if (activeTab === "live") {
     query = query
       .order("available_until", { ascending: true, nullsFirst: false })

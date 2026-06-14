@@ -45,15 +45,12 @@ import {
   SelectValue,
   SelectGroup,
 } from "@/components/ui/select"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
+import { fetchProblemsInfinite } from "../actions"
 import { Progress } from "@/components/ui/progress"
 import {
   AlertDialog,
@@ -96,21 +93,14 @@ interface CalendarCell {
 }
 
 interface LogicLabDashboardProps {
-  problems: Problem[]
+  initialProblems: Problem[]
+  initialHasMore: boolean
   isAdmin: boolean
   streakStats: {
     currentStreak: number
     maxStreak: number
   }
   activityCalendar: CalendarCell[]
-  initialPage: number
-  initialPageSize: number
-  initialSearch: string
-  initialTab: string
-  initialDifficulty: string
-  initialTag: string
-  totalCount: number
-  tabCounts: { all: number; solved: number; attempted: number; unsolved: number }
   allTags: string[]
   tagCounts: Record<string, number>
   globalStats: {
@@ -122,6 +112,7 @@ interface LogicLabDashboardProps {
   }
   initialPotd?: any
   fullPotdProblem?: any
+  userId: string
 }
 
 const DIFFICULTY_COLORS: Record<string, string> = {
@@ -200,37 +191,56 @@ function ConcentricRing({
 }
 
 export function LogicLabDashboardClient({
-  problems,
+  initialProblems,
+  initialHasMore,
   isAdmin,
   streakStats,
   activityCalendar,
-  initialPage,
-  initialPageSize,
-  initialSearch,
-  initialTab,
-  initialDifficulty,
-  initialTag,
-  totalCount,
   allTags,
   tagCounts,
   globalStats,
   initialPotd,
   fullPotdProblem,
+  userId,
 }: LogicLabDashboardProps) {
   const router = useRouter()
   const pathname = usePathname()
 
-  const [activeDifficulty, setActiveDifficulty] = useState<"Easy" | "Medium" | "Hard" | null>(null)
-  const [isPending, startTransition] = useTransition()
-  const [searchInput, setSearchInput] = useState(initialSearch)
+  // ── Hover states & layout config ──
+  const [hoverDifficulty, setHoverDifficulty] = useState<"Easy" | "Medium" | "Hard" | null>(null)
   const [showAllTags, setShowAllTags] = useState(false)
-  const visibleTags = useMemo(() => {
-    if (showAllTags) return allTags
-    const sortedTags = [...allTags].sort((a, b) => (tagCounts[b] || 0) - (tagCounts[a] || 0))
-    return sortedTags.slice(0, 8)
-  }, [allTags, tagCounts, showAllTags])
-  const isOwnUpdateRef = useRef(false)
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false)
+  const [showDashboardCards, setShowDashboardCards] = useState(true)
   const cellRadiusClass = "rounded-[18%]"
+
+  // ── Infinite scroll & Filter state ──
+  const [problems, setProblems] = useState<Problem[]>(initialProblems)
+  const [hasMore, setHasMore] = useState(initialHasMore)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [isPending, setIsPending] = useState(false)
+  const [offset, setOffset] = useState(initialProblems.length)
+  const [totalCount, setTotalCount] = useState(globalStats.total)
+
+  const [searchInput, setSearchInput] = useState("")
+  const [activeTab, setActiveTab] = useState("all")
+  const [activeDifficulty, setActiveDifficulty] = useState("All")
+  const [activeTag, setActiveTag] = useState("All")
+  const [activeSort, setActiveSort] = useState("number-asc")
+  const [tagSearchInput, setTagSearchInput] = useState("")
+
+  const sentinelRef = useRef<HTMLDivElement>(null)
+  const isFiltering = useRef(false)
+
+  const visibleTags = useMemo(() => {
+    let list = allTags
+    if (tagSearchInput.trim() !== "") {
+      const q = tagSearchInput.toLowerCase()
+      list = allTags.filter((t) => t.toLowerCase().includes(q))
+    }
+    if (showAllTags || tagSearchInput.trim() !== "") return list
+    const sortedTags = [...list].sort((a, b) => (tagCounts[b] || 0) - (tagCounts[a] || 0))
+    return sortedTags.slice(0, 8)
+  }, [allTags, tagCounts, showAllTags, tagSearchInput])
 
   const potd = initialPotd
 
@@ -418,62 +428,115 @@ export function LogicLabDashboardClient({
   const [deletingProblemId, setDeletingProblemId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const [filterSheetOpen, setFilterSheetOpen] = useState(false)
-  const [showDashboardCards, setShowDashboardCards] = useState(true)
+  const resetAndFetch = useCallback(
+    async (search: string, tab: string, difficulty: string, tag: string, sortBy: string) => {
+      isFiltering.current = true
+      setIsPending(true)
+      setProblems([])
+      setHasMore(false)
+      setOffset(0)
+
+      try {
+        const { problems: fresh, hasMore: more, totalCount: count } = await fetchProblemsInfinite({
+          userId,
+          offset: 0,
+          limit: 20,
+          search,
+          tab,
+          difficulty,
+          tag,
+          sortBy,
+        })
+        setProblems(fresh)
+        setHasMore(more)
+        setOffset(fresh.length)
+        setTotalCount(count)
+      } finally {
+        setIsPending(false)
+        isFiltering.current = false
+      }
+    },
+    [userId]
+  )
+
+  const loadMore = useCallback(async () => {
+    if (isLoadingMore || !hasMore || isFiltering.current) return
+    setIsLoadingMore(true)
+    try {
+      const { problems: next, hasMore: more } = await fetchProblemsInfinite({
+        userId,
+        offset,
+        limit: 20,
+        search: searchInput,
+        tab: activeTab,
+        difficulty: activeDifficulty,
+        tag: activeTag,
+        sortBy: activeSort,
+      })
+      setProblems((prev) => [...prev, ...next])
+      setHasMore(more)
+      setOffset((prev) => prev + next.length)
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }, [isLoadingMore, hasMore, userId, offset, searchInput, activeTab, activeDifficulty, activeTag, activeSort])
+
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMore()
+      },
+      { rootMargin: "200px" }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [loadMore])
+
+  const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const handleSearchChange = (val: string) => {
+    setSearchInput(val)
+    if (searchDebounce.current) clearTimeout(searchDebounce.current)
+    searchDebounce.current = setTimeout(() => {
+      resetAndFetch(val, activeTab, activeDifficulty, activeTag, activeSort)
+    }, 400)
+  }
+
+  const applyFilter = (key: "tab" | "difficulty" | "tag" | "sortBy", val: string) => {
+    const next = {
+      tab: key === "tab" ? val : activeTab,
+      difficulty: key === "difficulty" ? val : activeDifficulty,
+      tag: key === "tag" ? val : activeTag,
+      sortBy: key === "sortBy" ? val : activeSort,
+    }
+    if (key === "tab") setActiveTab(val)
+    if (key === "difficulty") setActiveDifficulty(val)
+    if (key === "tag") setActiveTag(val)
+    if (key === "sortBy") setActiveSort(val)
+    resetAndFetch(searchInput, next.tab, next.difficulty, next.tag, next.sortBy)
+  }
+
+  const clearAllFilters = () => {
+    setSearchInput("")
+    setActiveTab("all")
+    setActiveDifficulty("All")
+    setActiveTag("All")
+    setActiveSort("number-asc")
+    setTagSearchInput("")
+    resetAndFetch("", "all", "All", "All", "number-asc")
+  }
 
   const activeFilterCount = useMemo(() => {
     let count = 0
-    if (initialTab && initialTab !== "all") count++
-    if (initialDifficulty && initialDifficulty !== "All") count++
-    if (initialTag && initialTag !== "All") count++
+    if (activeTab && activeTab !== "all") count++
+    if (activeDifficulty && activeDifficulty !== "All") count++
+    if (activeTag && activeTag !== "All") count++
+    if (activeSort && activeSort !== "number-asc") count++
     return count
-  }, [initialTab, initialDifficulty, initialTag])
+  }, [activeTab, activeDifficulty, activeTag, activeSort])
 
-  const hasActiveFilters = activeFilterCount > 0 || (initialSearch && initialSearch.trim() !== "")
-
-  // Sync search input only on external navigation
-  useEffect(() => {
-    if (isOwnUpdateRef.current) {
-      isOwnUpdateRef.current = false
-      return
-    }
-    setSearchInput(initialSearch)
-  }, [initialSearch])
-
-  // Helper to push updated params to url
-  const updateParams = useCallback(
-    (newParams: Partial<Record<string, string | number>>) => {
-      const params = new URLSearchParams(window.location.search)
-      Object.entries(newParams).forEach(([key, val]) => {
-        if (val === undefined || val === "" || val === null || val === "All" || val === "all") {
-          params.delete(key)
-        } else {
-          params.set(key, String(val))
-        }
-      })
-      startTransition(() => {
-        router.push(`${pathname}?${params.toString()}`)
-      })
-    },
-    [pathname, router]
-  )
-
-  const clearAllFilters = useCallback(() => {
-    isOwnUpdateRef.current = true
-    setSearchInput("")
-    updateParams({ search: "", tag: "All", difficulty: "All", tab: "all", page: 1 })
-  }, [updateParams])
-
-  // Debounce search input
-  useEffect(() => {
-    if (searchInput === initialSearch) return
-
-    const timer = setTimeout(() => {
-      isOwnUpdateRef.current = true
-      updateParams({ search: searchInput, page: 1 })
-    }, 400)
-    return () => clearTimeout(timer)
-  }, [searchInput, initialSearch, updateParams])
+  const hasActiveFilters = activeFilterCount > 0 || searchInput.trim() !== ""
 
   const handleConfirmDelete = async () => {
     if (!deletingProblemId) return
@@ -507,9 +570,6 @@ export function LogicLabDashboardClient({
       setIsDeleting(false)
     }
   }
-
-  const totalPages = Math.ceil(totalCount / initialPageSize)
-  const activePage = Math.min(initialPage, Math.max(1, totalPages))
 
   return (
     <div className="flex flex-col gap-6 px-4 py-6 md:px-8 md:py-8">
@@ -575,10 +635,10 @@ export function LogicLabDashboardClient({
                   <div
                     className={cn(
                       "flex items-center justify-between text-sm cursor-pointer transition-all duration-200 px-2 py-1 rounded-md",
-                      activeDifficulty === "Easy" ? "bg-emerald-500/10 dark:bg-emerald-500/20" : "hover:bg-muted/40"
+                      hoverDifficulty === "Easy" ? "bg-emerald-500/10 dark:bg-emerald-500/20" : "hover:bg-muted/40"
                     )}
-                    onMouseEnter={() => setActiveDifficulty("Easy")}
-                    onMouseLeave={() => setActiveDifficulty(null)}
+                    onMouseEnter={() => setHoverDifficulty("Easy")}
+                    onMouseLeave={() => setHoverDifficulty(null)}
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
@@ -594,10 +654,10 @@ export function LogicLabDashboardClient({
                   <div
                     className={cn(
                       "flex items-center justify-between text-sm cursor-pointer transition-all duration-200 px-2 py-1 rounded-md",
-                      activeDifficulty === "Medium" ? "bg-amber-500/10 dark:bg-amber-500/20" : "hover:bg-muted/40"
+                      hoverDifficulty === "Medium" ? "bg-amber-500/10 dark:bg-amber-500/20" : "hover:bg-muted/40"
                     )}
-                    onMouseEnter={() => setActiveDifficulty("Medium")}
-                    onMouseLeave={() => setActiveDifficulty(null)}
+                    onMouseEnter={() => setHoverDifficulty("Medium")}
+                    onMouseLeave={() => setHoverDifficulty(null)}
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="size-2 rounded-full bg-amber-500 shrink-0" />
@@ -613,10 +673,10 @@ export function LogicLabDashboardClient({
                   <div
                     className={cn(
                       "flex items-center justify-between text-sm cursor-pointer transition-all duration-200 px-2 py-1 rounded-md",
-                      activeDifficulty === "Hard" ? "bg-rose-500/10 dark:bg-rose-500/20" : "hover:bg-muted/40"
+                      hoverDifficulty === "Hard" ? "bg-rose-500/10 dark:bg-rose-500/20" : "hover:bg-muted/40"
                     )}
-                    onMouseEnter={() => setActiveDifficulty("Hard")}
-                    onMouseLeave={() => setActiveDifficulty(null)}
+                    onMouseEnter={() => setHoverDifficulty("Hard")}
+                    onMouseLeave={() => setHoverDifficulty(null)}
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="size-2 rounded-full bg-rose-500 shrink-0" />
@@ -652,10 +712,10 @@ export function LogicLabDashboardClient({
                       max={globalStats.easy.total}
                       color="url(#easyGrad)"
                       trackColor="rgba(16, 185, 129, 0.15)"
-                      isActive={activeDifficulty === "Easy"}
-                      isDimmed={activeDifficulty !== null && activeDifficulty !== "Easy"}
-                      onMouseEnter={() => setActiveDifficulty("Easy")}
-                      onMouseLeave={() => setActiveDifficulty(null)}
+                      isActive={hoverDifficulty === "Easy"}
+                      isDimmed={hoverDifficulty !== null && hoverDifficulty !== "Easy"}
+                      onMouseEnter={() => setHoverDifficulty("Easy")}
+                      onMouseLeave={() => setHoverDifficulty(null)}
                     />
                     <ConcentricRing
                       radius={31}
@@ -663,10 +723,10 @@ export function LogicLabDashboardClient({
                       max={globalStats.medium.total}
                       color="url(#medGrad)"
                       trackColor="rgba(245, 158, 11, 0.15)"
-                      isActive={activeDifficulty === "Medium"}
-                      isDimmed={activeDifficulty !== null && activeDifficulty !== "Medium"}
-                      onMouseEnter={() => setActiveDifficulty("Medium")}
-                      onMouseLeave={() => setActiveDifficulty(null)}
+                      isActive={hoverDifficulty === "Medium"}
+                      isDimmed={hoverDifficulty !== null && hoverDifficulty !== "Medium"}
+                      onMouseEnter={() => setHoverDifficulty("Medium")}
+                      onMouseLeave={() => setHoverDifficulty(null)}
                     />
                     <ConcentricRing
                       radius={18}
@@ -674,10 +734,10 @@ export function LogicLabDashboardClient({
                       max={globalStats.hard.total}
                       color="url(#hardGrad)"
                       trackColor="rgba(244, 63, 94, 0.15)"
-                      isActive={activeDifficulty === "Hard"}
-                      isDimmed={activeDifficulty !== null && activeDifficulty !== "Hard"}
-                      onMouseEnter={() => setActiveDifficulty("Hard")}
-                      onMouseLeave={() => setActiveDifficulty(null)}
+                      isActive={hoverDifficulty === "Hard"}
+                      isDimmed={hoverDifficulty !== null && hoverDifficulty !== "Hard"}
+                      onMouseEnter={() => setHoverDifficulty("Hard")}
+                      onMouseLeave={() => setHoverDifficulty(null)}
                     />
                   </svg>
                 </div>
@@ -840,7 +900,7 @@ export function LogicLabDashboardClient({
             <CardHeader className="flex flex-row items-center justify-between pt-4 pb-1">
               <Link href="/logiclab/dailychallenges" className="hover:opacity-80 transition-opacity cursor-pointer">
                 <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1 hover:text-orange-500 transition-colors">
-                  Problem of the Day <ChevronRight className="size-3" />
+                  Daily Challenge<ChevronRight className="size-3" />
                 </CardTitle>
               </Link>
               {timeLeft && (
@@ -955,17 +1015,13 @@ export function LogicLabDashboardClient({
             <InputGroupInput
               placeholder="Search problems..."
               value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="h-full"
             />
             {searchInput && (
               <InputGroupAddon align="inline-end">
                 <InputGroupButton
-                  onClick={() => {
-                    isOwnUpdateRef.current = true
-                    setSearchInput("")
-                    updateParams({ search: "", page: 1 })
-                  }}
+                  onClick={() => handleSearchChange("")}
                   variant="ghost"
                   size="icon-xs"
                   className="text-muted-foreground hover:text-foreground"
@@ -1017,215 +1073,149 @@ export function LogicLabDashboardClient({
           </div>
         )}
 
-        {/* Table */}
-        <div className="rounded-xl border border-border/60 overflow-hidden">
-          <div className="relative">
-            {isPending && (
-              <div className="absolute inset-0 z-50 bg-background/50 backdrop-blur-[1px] flex items-center justify-center min-h-[200px]">
-                <div className="flex flex-col items-center gap-3 rounded-xl border bg-card px-6 py-5 shadow-lg">
-                  <Loader2 className="h-8 w-8 text-primary animate-spin" />
-                  <span className="text-sm font-medium text-muted-foreground">Loading problems...</span>
+        {/* Card List & Infinite Scroll */}
+        <div className="relative min-h-[300px]">
+          {isPending && problems.length === 0 && (
+            <div className="absolute inset-0 z-50 bg-background/50 backdrop-blur-[1px] flex items-center justify-center min-h-[200px]">
+              <div className="flex flex-col items-center gap-3 rounded-xl border bg-card px-6 py-5 shadow-lg">
+                <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                <span className="text-sm font-medium text-muted-foreground">Loading problems...</span>
+              </div>
+            </div>
+          )}
+
+          <div className={cn("transition-opacity duration-200 flex flex-col gap-2.5", isPending && problems.length === 0 && "opacity-40 pointer-events-none")}>
+            {problems.length === 0 && !isPending ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center gap-4 rounded-xl border border-dashed border-border/60">
+                <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center">
+                  <BookOpen className="h-8 w-8 text-muted-foreground/60" />
                 </div>
+                <div className="space-y-1">
+                  <p className="text-lg font-semibold text-foreground">No problems found</p>
+                  <p className="text-sm text-muted-foreground max-w-sm">
+                    We couldn't find any problems matching your current filters. Try adjusting your search or removing some tags.
+                  </p>
+                </div>
+                {hasActiveFilters && (
+                  <Button variant="outline" onClick={clearAllFilters} className="mt-2">
+                    Clear all filters
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {problems.map((problem, idx) => {
+                  const isSolved = problem.solved_status === "Accepted"
+                  const isAttempted = !!(problem.solved_status && problem.solved_status !== "Accepted")
+
+                  return (
+                    <Card
+                      key={problem.id}
+                      onClick={() => router.push(`/logiclab/problems/${problem.id}`)}
+                      className="rounded-sm group cursor-pointer hover:bg-muted/30 transition-colors duration-150 border-border/50 hover:border-border/80 py-0"
+                    >
+                      <CardContent className="flex items-center gap-3 px-4 py-2.5">
+                        {/* Status icon */}
+                        <div className="shrink-0 flex items-center justify-center w-5">
+                          {isSolved ? (
+                            <CircleCheck className="size-4 text-emerald-500" />
+                          ) : isAttempted ? (
+                            <CircleDot className="size-4 text-amber-500" />
+                          ) : (
+                            <div className="size-3.5 rounded-full border-2 border-muted-foreground/45" />
+                          )}
+                        </div>
+
+                        {/* Number & Title */}
+                        <div className="flex-1 min-w-0 flex items-center gap-2">
+                          <span className="text-xs font-mono font-semibold text-muted-foreground/80 shrink-0">
+                            #{problem.number || idx + 1}
+                          </span>
+                          <span className="text-sm font-medium text-foreground group-hover:text-foreground transition-colors truncate block leading-snug">
+                            {problem.title}
+                          </span>
+                        </div>
+
+                        {/* Acceptance Rate (visible on desktop) */}
+                        <div className="hidden md:flex items-center gap-1 text-xs text-muted-foreground/85 w-[140px] shrink-0">
+                          <span>{problem.acceptance_rate !== null ? `${problem.acceptance_rate}% acceptance` : "—"}</span>
+                          {problem.total_submissions > 0 && (
+                            <span className="text-[10px] text-muted-foreground/60">
+                              ({problem.total_submissions})
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Difficulty + Tags */}
+                        <div className="hidden sm:flex items-center gap-2 shrink-0">
+                          <span className={cn(
+                            "text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded",
+                            problem.difficulty === "Easy" ? "text-emerald-600 bg-emerald-100/80 dark:text-emerald-400 dark:bg-emerald-500/15" :
+                              problem.difficulty === "Medium" ? "text-amber-600 bg-amber-100/80 dark:text-amber-400 dark:bg-amber-500/15" :
+                                "text-rose-600 bg-rose-100/80 dark:text-rose-400 dark:bg-rose-500/15",
+                          )}>
+                            {problem.difficulty}
+                          </span>
+                          {problem.tags?.slice(0, 2).map((tag) => (
+                            <span key={tag} className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground/85">
+                              {tag}
+                            </span>
+                          ))}
+                          {problem.tags?.length > 2 && (
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground/60">
+                              +{problem.tags.length - 2}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Admin actions (Edit / Delete) */}
+                        {isAdmin && (
+                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                            <Link
+                              href={`/logiclab/admin/edit/${problem.id}`}
+                              className="p-1.5 hover:bg-background rounded-md text-muted-foreground hover:text-emerald-500 transition-all cursor-pointer shadow-sm border border-transparent hover:border-border/60"
+                              title="Edit Problem"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Link>
+                            <button
+                              onClick={() => setDeletingProblemId(problem.id)}
+                              className="p-1.5 hover:bg-background rounded-md text-muted-foreground/70 hover:text-rose-500 transition-all cursor-pointer shadow-sm border border-transparent hover:border-border/60"
+                              title="Delete Problem"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Chevron indicator */}
+                        <div className="shrink-0 ml-1">
+                          <ChevronRight className="size-4 text-muted-foreground/50 group-hover:text-muted-foreground/80 group-hover:translate-x-0.5 transition-all" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
               </div>
             )}
 
-            <div className={cn("transition-opacity duration-200", isPending && "opacity-40 pointer-events-none")}>
-              {totalCount === 0 ? (
-                <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
-                  <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center">
-                    <BookOpen className="h-8 w-8 text-muted-foreground/60" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-lg font-semibold text-foreground">No problems found</p>
-                    <p className="text-sm text-muted-foreground max-w-sm">
-                      We couldn't find any problems matching your current filters. Try adjusting your search or removing some tags.
-                    </p>
-                  </div>
-                  <Button variant="outline" onClick={() => updateParams({ search: "All", tag: "All", difficulty: "All", tab: "all", page: 1 })} className="mt-2">
-                    Clear all filters
-                  </Button>
-                </div>
-              ) : (
-                <div className="w-full overflow-x-auto">
-                  <Table className="min-w-[800px]">
-                    <TableHeader className="bg-muted/10 h-10">
-                      <TableRow className="hover:bg-transparent border-b-border/60">
-                        <TableHead className="w-[80px] pl-6 text-sm font-medium">Status</TableHead>
-                        <TableHead className="text-sm font-medium">Title</TableHead>
-                        <TableHead className="w-[140px] text-sm font-medium">Difficulty</TableHead>
-                        <TableHead className="w-[180px] text-sm font-medium">Acceptance</TableHead>
-                        <TableHead className="w-[200px] text-sm font-medium">Tags</TableHead>
-                        {isAdmin && <TableHead className="text-right pr-6 w-[120px] text-sm font-medium">Actions</TableHead>}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {problems.map((problem, idx) => (
-                        <TableRow
-                          key={problem.id}
-                          onClick={() => router.push(`/logiclab/problems/${problem.id}`)}
-                          className="group cursor-pointer hover:bg-muted/40 transition-colors h-12 border-b-border/60"
-                        >
-                          {/* Status */}
-                          <TableCell className="pl-6">
-                            {problem.solved_status === "Accepted" ? (
-                              <CircleCheck className="h-5 w-5 text-emerald-500 fill-emerald-50 dark:fill-emerald-950/20" />
-                            ) : problem.solved_status ? (
-                              <CircleDot className="h-5 w-5 text-amber-500 fill-amber-50 dark:fill-amber-950/20" />
-                            ) : (
-                              <div className="h-4 w-4 ml-0.5 rounded-full border-2 border-muted-foreground/30" />
-                            )}
-                          </TableCell>
+            {/* Sentinel for IntersectionObserver */}
+            <div ref={sentinelRef} className="h-4" />
 
-                          {/* Title */}
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm text-muted-foreground/60 font-mono w-6 shrink-0">
-                                {idx + 1 + (activePage - 1) * initialPageSize}.
-                              </span>
-                              <span className="text-base font-medium text-foreground/90 group-hover:text-foreground transition-colors">
-                                {problem.title}
-                              </span>
-                            </div>
-                          </TableCell>
+            {/* Loading more spinner */}
+            {isLoadingMore && (
+              <div className="flex items-center justify-center py-4 gap-2 text-sm text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" />
+                Loading more...
+              </div>
+            )}
 
-                          {/* Difficulty */}
-                          <TableCell>
-                            <Badge
-                              variant="secondary"
-                              className={cn("text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md", DIFFICULTY_COLORS[problem.difficulty])}
-                            >
-                              {problem.difficulty}
-                            </Badge>
-                          </TableCell>
-
-                          {/* Acceptance Rate */}
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-foreground/80">
-                                {problem.acceptance_rate !== null ? `${problem.acceptance_rate}%` : "—"}
-                              </span>
-                              {problem.total_submissions > 0 && (
-                                <span className="text-xs text-muted-foreground/60">
-                                  ({problem.total_submissions})
-                                </span>
-                              )}
-                            </div>
-                          </TableCell>
-
-                          {/* Tags */}
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1.5">
-                              {(problem.tags || []).slice(0, 2).map((tag) => (
-                                <Badge
-                                  key={tag}
-                                  variant="secondary"
-                                  className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted/80 text-muted-foreground/80 hover:bg-muted border-transparent"
-                                >
-                                  {tag}
-                                </Badge>
-                              ))}
-                              {(problem.tags || []).length > 2 && (
-                                <Badge
-                                  variant="secondary"
-                                  className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted/40 text-muted-foreground/60 hover:bg-muted/50 border-transparent"
-                                >
-                                  +{(problem.tags || []).length - 2}
-                                </Badge>
-                              )}
-                            </div>
-                          </TableCell>
-
-                          {/* Admin actions */}
-                          {isAdmin && (
-                            <TableCell className="text-right pr-6" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-                              <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Link
-                                  href={`/logiclab/admin/edit/${problem.id}`}
-                                  className="p-2 hover:bg-background rounded-md text-muted-foreground hover:text-emerald-500 transition-all cursor-pointer shadow-sm border border-transparent hover:border-border/60"
-                                  title="Edit Problem"
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Link>
-                                <button
-                                  onClick={() => setDeletingProblemId(problem.id)}
-                                  className="p-2 hover:bg-background rounded-md text-muted-foreground/70 hover:text-rose-500 transition-all cursor-pointer shadow-sm border border-transparent hover:border-border/60"
-                                  title="Delete Problem"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </div>
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-
-              {/* Pagination Footer */}
-              {totalCount > 0 && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-border/60 bg-muted/5">
-                  <div className="text-sm text-muted-foreground">
-                    Showing{" "}
-                    <span className="font-medium text-foreground">
-                      {totalCount === 0 ? 0 : Math.min(totalCount, (activePage - 1) * initialPageSize + 1)}
-                    </span>
-                    {" "}to{" "}
-                    <span className="font-medium text-foreground">{Math.min(totalCount, activePage * initialPageSize)}</span>
-                    {" "}of{" "}
-                    <span className="font-medium text-foreground">{totalCount}</span> problems
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground whitespace-nowrap">Rows per page</span>
-                      <Select
-                        value={initialPageSize.toString()}
-                        onValueChange={(val) => updateParams({ size: val, page: 1 })}
-                      >
-                        <SelectTrigger className="h-9 w-[80px] bg-background text-sm">
-                          <SelectValue placeholder={initialPageSize.toString()} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {[20, 50, 100].map((s) => (
-                            <SelectItem key={s} value={s.toString()} className="text-sm">{s}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      <Button variant="outline" size="icon" className="bg-background"
-                        onClick={() => updateParams({ page: 1 })} disabled={activePage === 1}>
-                        <ChevronsLeft />
-                        <span className="sr-only">First page</span>
-                      </Button>
-                      <Button variant="outline" size="icon" className="bg-background"
-                        onClick={() => updateParams({ page: Math.max(1, activePage - 1) })} disabled={activePage === 1}>
-                        <ChevronLeft />
-                        <span className="sr-only">Previous page</span>
-                      </Button>
-                      <div className="flex items-center justify-center text-sm font-medium min-w-[100px] text-muted-foreground">
-                        Page <span className="text-foreground mx-1">{activePage}</span> of {totalPages}
-                      </div>
-                      <Button variant="outline" size="icon" className="bg-background"
-                        onClick={() => updateParams({ page: Math.min(totalPages, activePage + 1) })}
-                        disabled={activePage === totalPages || totalPages === 0}>
-                        <ChevronRight />
-                        <span className="sr-only">Next page</span>
-                      </Button>
-                      <Button variant="outline" size="icon" className="bg-background"
-                        onClick={() => updateParams({ page: totalPages })}
-                        disabled={activePage === totalPages || totalPages === 0}>
-                        <ChevronsRight />
-                        <span className="sr-only">Last page</span>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* End of list */}
+            {!hasMore && !isLoadingMore && problems.length > 0 && (
+              <p className="text-center text-xs text-muted-foreground/50 py-4">
+                All {problems.length} problems loaded
+              </p>
+            )}
           </div>
         </div>
 
@@ -1233,148 +1223,259 @@ export function LogicLabDashboardClient({
 
       {/* ── Filter Sheet ── */}
       <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
-        <SheetContent side="right" className="w-[300px] sm:w-[360px] flex flex-col gap-0 p-0">
-          <SheetHeader className="px-6 pt-5 pb-4 pr-10 border-b border-border/50">
-            <SheetTitle className="text-base font-semibold">Filters</SheetTitle>
-            <SheetDescription className="text-xs text-muted-foreground">
-              Narrow down by status, difficulty, and topic tags.
+        <SheetContent side="right" className="w-[320px] sm:w-[420px] flex flex-col gap-0 p-0">
+          <SheetHeader className="px-6 pt-5 pb-4 pr-10 border-b border-border/50 shrink-0">
+            <div className="flex items-center justify-between">
+              <SheetTitle className="text-base font-bold">Sort & Filter</SheetTitle>
+              {activeFilterCount > 0 && (
+                <button
+                  onClick={clearAllFilters}
+                  className="text-xs text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 font-semibold transition-colors"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
+            <SheetDescription className="text-xs text-muted-foreground -mt-0.5">
+              Refine results or change sorting to find problems easily.
             </SheetDescription>
-            {activeFilterCount > 0 && (
-              <button
-                onClick={() => updateParams({ tag: "All", difficulty: "All", tab: "all", page: 1 })}
-                className="text-xs text-primary hover:underline font-medium text-left"
-              >
-                Clear all
-              </button>
-            )}
           </SheetHeader>
 
-          <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-6">
-            {/* Status */}
-            <div className="flex flex-col gap-3">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                <ListTodo className="size-3.5" /> Status
-              </p>
-              <div className="grid grid-cols-2 gap-2.5">
-                {[
-                  { value: "all", label: "All", icon: <ListTodo className="size-3.5" /> },
-                  { value: "solved", label: "Solved", icon: <CircleCheck className="size-3.5 text-emerald-500" /> },
-                  { value: "attempted", label: "Attempted", icon: <CircleDot className="size-3.5 text-amber-500" /> },
-                  { value: "unsolved", label: "Unsolved", icon: <CircleDashed className="size-3.5 text-muted-foreground" /> }
-                ].map(opt => {
-                  const isActive = initialTab === opt.value
-                  return (
-                    <button
-                      key={opt.value}
-                      onClick={() => updateParams({ tab: opt.value, page: 1 })}
-                      className={cn(
-                        "flex items-center justify-center gap-2 p-1.5 rounded-lg border transition-all duration-200 select-none",
-                        isActive
-                          ? "bg-primary/5 border-primary text-primary shadow-sm ring-1 ring-primary/20"
-                          : "bg-muted/30 border-border/60 text-muted-foreground hover:bg-muted/80 hover:text-foreground hover:border-border"
-                      )}
-                    >
-                      {opt.icon}
-                      <span className="text-[11px] font-semibold">{opt.label}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Difficulty */}
-            <div className="flex flex-col gap-3">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                <Flame className="size-3.5" /> Difficulty
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { value: "All", label: "All Levels", color: "bg-muted-foreground", text: "text-muted-foreground", border: "border-muted-foreground/30", bg: "bg-muted-foreground/10" },
-                  { value: "Easy", label: "Easy", color: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400", border: "border-emerald-500/30", bg: "bg-emerald-500/10" },
-                  { value: "Medium", label: "Medium", color: "bg-amber-500", text: "text-amber-600 dark:text-amber-400", border: "border-amber-500/30", bg: "bg-amber-500/10" },
-                  { value: "Hard", label: "Hard", color: "bg-rose-500", text: "text-rose-600 dark:text-rose-400", border: "border-rose-500/30", bg: "bg-rose-500/10" }
-                ].map(opt => {
-                  const isActive = initialDifficulty === opt.value
-                  return (
-                    <button
-                      key={opt.value}
-                      onClick={() => updateParams({ difficulty: opt.value, page: 1 })}
-                      className={cn(
-                        "text-[11px] px-2 py-1.5 rounded-lg border font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 select-none",
-                        isActive
-                          ? `${opt.bg} ${opt.border} ${opt.text} shadow-sm ring-1 ring-${opt.border.split('-')[1]}`
-                          : "bg-muted/30 border-border/60 text-muted-foreground hover:bg-muted/80 hover:text-foreground hover:border-border"
-                      )}
-                    >
-                      <span className={cn("size-1.5 rounded-full shadow-sm", opt.color)} />
-                      {opt.label}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Topics / Tags */}
-            {allTags.length > 0 && (
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Topic Tags</p>
-                  {initialTag !== "All" && (
-                    <button
-                      onClick={() => updateParams({ tag: "All", page: 1 })}
-                      className="text-xs text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 font-medium"
-                    >
-                      Clear Tag
-                    </button>
+          <Tabs defaultValue="filter" className="flex-1 flex flex-col gap-0 min-h-0">
+            <div className="px-6 py-2 border-b border-border/30 bg-muted/20 shrink-0">
+              <TabsList className="grid grid-cols-2 w-full h-9 p-1 bg-muted/60 rounded-lg">
+                <TabsTrigger value="filter" className="text-xs font-semibold">
+                  Filters
+                  {activeFilterCount - (activeSort !== "number-asc" ? 1 : 0) > 0 && (
+                    <Badge variant="secondary" className="ml-1.5 px-1 py-0 h-4 min-w-4 text-[9px] font-bold leading-none bg-primary/10 text-primary border-none">
+                      {activeFilterCount - (activeSort !== "number-asc" ? 1 : 0)}
+                    </Badge>
                   )}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {visibleTags.map((t) => {
-                    const isSelected = initialTag === t
-                    const count = tagCounts[t] || 0
-                    return (
-                      <button
-                        key={t}
-                        onClick={() => updateParams({ tag: isSelected ? "All" : t, page: 1 })}
-                        className={cn(
-                          "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer",
-                          isSelected
-                            ? "bg-primary text-primary-foreground border-primary shadow-xs"
-                            : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border-transparent"
-                        )}
-                      >
-                        {t}
-                        <span className={cn(
-                          "text-[10px] px-1 rounded-sm",
-                          isSelected ? "bg-primary-foreground/25 text-primary-foreground" : "bg-muted text-muted-foreground"
-                        )}>
-                          {count}
-                        </span>
-                      </button>
-                    )
-                  })}
-                </div>
-                {allTags.length > 8 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowAllTags(!showAllTags)}
-                    className="w-full text-xs text-muted-foreground hover:text-foreground mt-2"
-                  >
-                    {showAllTags ? "Show Less" : `Show All Tags (${allTags.length})`}
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
+                </TabsTrigger>
+                <TabsTrigger value="sort" className="text-xs font-semibold">
+                  Sorting
+                  {activeSort !== "number-asc" && (
+                    <span className="ml-1.5 size-1.5 rounded-full bg-primary" />
+                  )}
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-          <div className="px-6 py-5 border-t border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            {/* TAB CONTENT: FILTERS */}
+            <TabsContent value="filter" className="flex-1 overflow-y-auto min-h-0 focus-visible:outline-none">
+              <Accordion type="multiple" defaultValue={["status", "difficulty", "tags"]} className="w-full">
+
+                {/* Accordion 1: Status */}
+                <AccordionItem value="status" className="px-6 border-b border-border/30">
+                  <AccordionTrigger className="py-3.5 hover:no-underline text-xs font-bold uppercase tracking-wider text-foreground">
+                    <span className="flex items-center gap-2">
+                      <ListTodo className="size-3.5" />
+                      Status
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-4 pt-1 flex flex-col gap-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { value: "all", label: "All Status", icon: <ListTodo className="size-3.5 text-foreground/70" /> },
+                        { value: "solved", label: "Solved Only", icon: <CircleCheck className="size-3.5 text-emerald-500" /> },
+                        { value: "attempted", label: "Attempting", icon: <CircleDot className="size-3.5 text-amber-500" /> },
+                        { value: "unsolved", label: "Unsolved", icon: <CircleDashed className="size-3.5 text-foreground/60" /> },
+                      ].map((opt) => (
+                        <button
+                          key={opt.value}
+                          onClick={() => applyFilter("tab", opt.value)}
+                          className={cn(
+                            "flex items-center gap-2.5 p-2 rounded-lg border text-left transition-all select-none cursor-pointer text-xs font-medium",
+                            activeTab === opt.value
+                              ? "bg-primary/5 border-primary text-primary font-semibold shadow-xs"
+                              : "bg-muted/20 border-border/40 text-foreground/80 hover:bg-muted/50 hover:text-foreground hover:border-border/80"
+                          )}
+                        >
+                          {opt.icon}
+                          <span>{opt.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Accordion 2: Difficulty */}
+                <AccordionItem value="difficulty" className="px-6 border-b border-border/30">
+                  <AccordionTrigger className="py-3.5 hover:no-underline text-xs font-bold uppercase tracking-wider text-foreground">
+                    <span className="flex items-center gap-2">
+                      <Flame className="size-3.5" />
+                      Difficulty
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-4 pt-1 flex flex-col gap-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { value: "All", label: "All Levels", color: "bg-foreground/50", text: "text-foreground/80", border: "border-border/40", bg: "bg-muted/20", desc: "No restriction" },
+                        { value: "Easy", label: "Easy Level", color: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400", border: "border-emerald-500/25", bg: "bg-emerald-500/10", desc: "Beginner level" },
+                        { value: "Medium", label: "Medium Level", color: "bg-amber-500", text: "text-amber-600 dark:text-amber-400", border: "border-amber-500/25", bg: "bg-amber-500/10", desc: "Standard practice" },
+                        { value: "Hard", label: "Hard Level", color: "bg-rose-500", text: "text-rose-600 dark:text-rose-400", border: "border-rose-500/25", bg: "bg-rose-500/10", desc: "Complex problems" },
+                      ].map((opt) => (
+                        <button
+                          key={opt.value}
+                          onClick={() => applyFilter("difficulty", opt.value)}
+                          className={cn(
+                            "flex flex-col items-start gap-0.5 p-2 rounded-lg border text-left transition-all select-none cursor-pointer",
+                            activeDifficulty === opt.value
+                              ? `${opt.bg} ${opt.border} ${opt.text} font-semibold shadow-xs`
+                              : "bg-muted/20 border-border/40 text-foreground/80 hover:bg-muted/50 hover:text-foreground hover:border-border/80"
+                          )}
+                        >
+                          <div className="flex items-center gap-1.5 text-xs font-semibold">
+                            <span className={cn("size-2 rounded-full", opt.color)} />
+                            <span>{opt.label}</span>
+                          </div>
+                          <span className="text-[10px] text-foreground/65 font-normal">{opt.desc}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Accordion 3: Topic Tags */}
+                {allTags.length > 0 && (
+                  <AccordionItem value="tags" className="px-6 border-none">
+                    <AccordionTrigger className="py-3.5 hover:no-underline text-xs font-bold uppercase tracking-wider text-foreground">
+                      <span className="flex items-center gap-2">
+                        <BookOpen className="size-3.5" />
+                        Topic Tags
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-4 pt-1 flex flex-col gap-3">
+                      {/* Tag Search Input */}
+                      <InputGroup className="bg-muted/25 border-border/40 h-8 rounded-md">
+                        <InputGroupAddon align="inline-start">
+                          <Search className="size-3.5 text-foreground/50" />
+                        </InputGroupAddon>
+                        <InputGroupInput
+                          placeholder="Search tags..."
+                          value={tagSearchInput}
+                          onChange={(e) => setTagSearchInput(e.target.value)}
+                          className="text-xs h-full placeholder:text-foreground/45"
+                        />
+                        {tagSearchInput && (
+                          <InputGroupAddon align="inline-end">
+                            <InputGroupButton
+                              onClick={() => setTagSearchInput("")}
+                              variant="ghost"
+                              size="icon-xs"
+                              className="text-foreground/70 hover:text-foreground"
+                            >
+                              <X className="size-3" />
+                            </InputGroupButton>
+                          </InputGroupAddon>
+                        )}
+                      </InputGroup>
+
+                      {visibleTags.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {visibleTags.map((t) => {
+                            const isSelected = activeTag === t
+                            const count = tagCounts[t] || 0
+                            return (
+                              <button
+                                key={t}
+                                onClick={() => applyFilter("tag", isSelected ? "All" : t)}
+                                className={cn(
+                                  "flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium border transition-all cursor-pointer select-none",
+                                  isSelected
+                                    ? "bg-primary text-primary-foreground border-primary shadow-xs"
+                                    : "bg-muted/30 hover:bg-muted/80 text-foreground/80 hover:text-foreground border-border/50"
+                                )}
+                              >
+                                <span>{t}</span>
+                                <span className={cn(
+                                  "text-[9px] px-1 rounded-sm font-semibold",
+                                  isSelected ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-foreground/70"
+                                )}>
+                                  {count}
+                                </span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-foreground/50 italic py-2 text-center">No tags match search query</p>
+                      )}
+
+                      {allTags.length > 8 && !tagSearchInput && (
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          onClick={() => setShowAllTags(!showAllTags)}
+                          className="w-full text-xs text-foreground/80 hover:text-foreground border border-dashed border-border/30 rounded-md py-1 mt-1"
+                        >
+                          {showAllTags ? "Show Less" : `Show All Topic Tags (${allTags.length})`}
+                        </Button>
+                      )}
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+              </Accordion>
+            </TabsContent>
+
+            {/* TAB CONTENT: SORT SETTINGS */}
+            <TabsContent value="sort" className="flex-1 overflow-y-auto px-6 py-5 min-h-0 focus-visible:outline-none">
+              <RadioGroup
+                value={activeSort}
+                onValueChange={(val) => applyFilter("sortBy", val)}
+                className="flex flex-col gap-3"
+              >
+                {[
+                  { value: "number-asc", title: "Number: Low to High", desc: "Start from the first problem" },
+                  { value: "number-desc", title: "Number: High to Low", desc: "Show latest problems first" },
+                  { value: "difficulty-asc", title: "Difficulty: Easy to Hard", desc: "Sort by ascending difficulty levels" },
+                  { value: "difficulty-desc", title: "Difficulty: Hard to Easy", desc: "Sort by descending difficulty levels" },
+                  { value: "title-asc", title: "Title: Alphabetical A-Z", desc: "Order alphabetically by problem title" },
+                  { value: "title-desc", title: "Title: Alphabetical Z-A", desc: "Order descending by problem title" },
+                  { value: "acceptance-desc", title: "Acceptance: Highest First", desc: "Order by descending success rates" },
+                  { value: "acceptance-asc", title: "Acceptance: Lowest First", desc: "Order by ascending success rates" },
+                  { value: "submissions-desc", title: "Submissions: Most First", desc: "Show most attempted problems first" },
+                  { value: "submissions-asc", title: "Submissions: Fewest First", desc: "Show least attempted problems first" },
+                ].map((opt) => {
+                  const isSelected = activeSort === opt.value
+                  return (
+                    <div
+                      key={opt.value}
+                      onClick={() => applyFilter("sortBy", opt.value)}
+                      className={cn(
+                        "flex items-center justify-between p-3.5 rounded-xl border transition-all cursor-pointer select-none",
+                        isSelected
+                          ? "bg-primary/5 border-primary text-primary shadow-xs ring-1 ring-primary/20"
+                          : "bg-muted/15 border-border/50 text-foreground/80 hover:bg-muted/40 hover:text-foreground hover:border-border/80"
+                      )}
+                    >
+                      <div className="flex flex-col gap-0.5 flex-1 min-w-0 pr-3">
+                        <Label className={cn("text-xs font-semibold cursor-pointer block truncate", isSelected ? "text-primary" : "text-foreground")}>
+                          {opt.title}
+                        </Label>
+                        <span className="text-[10px] text-foreground/65 leading-tight">{opt.desc}</span>
+                      </div>
+                      <RadioGroupItem value={opt.value} className="size-4 shrink-0 pointer-events-none" />
+                    </div>
+                  )
+                })}
+              </RadioGroup>
+            </TabsContent>
+          </Tabs>
+
+          <Separator />
+
+          <div className="px-6 py-4 bg-muted/10 shrink-0">
             <Button
-              className="w-full rounded-xl font-semibold h-11 shadow-md bg-primary hover:bg-primary/90 transition-all text-sm gap-2"
+              className="w-full rounded-xl font-bold h-10 shadow-md bg-primary hover:bg-primary/95 transition-all text-sm gap-2 cursor-pointer"
               onClick={() => setFilterSheetOpen(false)}
             >
-              <CircleCheck className="size-4 opacity-70" />
-              Show {totalCount} problem{totalCount !== 1 ? "s" : ""}
+              <CircleCheck className="size-4 opacity-80" />
+              <span>
+                {isPending
+                  ? "Applying..."
+                  : `Apply & View List (${problems.length}${hasMore ? "+" : ""})`}
+              </span>
             </Button>
           </div>
         </SheetContent>
