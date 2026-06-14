@@ -140,3 +140,108 @@ export const getCachedGlobalProblems = unstable_cache(
   ["global-problems-stats-cache-v2"],
   { revalidate: 3600 }
 )
+
+// Infinite scroll pagination for daily challenges history
+export async function fetchDailyChallengesInfinite({
+  userId,
+  offset = 0,
+  limit = 20,
+  search = "",
+  tab = "all",
+  difficulty = "All",
+  tag = "All",
+  sortBy = "date-desc",
+  todayStr,
+}: {
+  userId: string
+  offset?: number
+  limit?: number
+  search?: string
+  tab?: string
+  difficulty?: string
+  tag?: string
+  sortBy?: string
+  todayStr: string
+}): Promise<{ challenges: any[]; hasMore: boolean }> {
+  const supabase = (await createServerClient()) as any
+
+  // Fetch all POTDs (excluding today)
+  const { data: historyData, error } = await supabase
+    .from("logiclab_daily_challenges")
+    .select("id, date, problem_id, logiclab_problems ( id, number, title, difficulty, tags )")
+    .neq("date", todayStr)
+    .order("date", { ascending: false })
+
+  if (error || !historyData) return { challenges: [], hasMore: false }
+
+  // Fetch user submissions
+  const problemIds = historyData.map((h: any) => h.problem_id)
+  const { data: submissions } = await supabase
+    .from("logiclab_daily_challenge_submissions")
+    .select("problem_id, status")
+    .eq("user_id", userId)
+    .in("problem_id", problemIds)
+
+  const solvedMap: Record<string, string> = {}
+  for (const sub of submissions ?? []) {
+    if (!solvedMap[sub.problem_id] || sub.status === "Accepted") {
+      solvedMap[sub.problem_id] = sub.status
+    }
+  }
+
+  // Enrich
+  let enriched = historyData.map((h: any) => ({
+    id: h.id,
+    date: h.date,
+    problem_id: h.problem_id,
+    number: h.logiclab_problems?.number,
+    title: h.logiclab_problems?.title || "Unknown Problem",
+    difficulty: (h.logiclab_problems?.difficulty || "Medium") as "Easy" | "Medium" | "Hard",
+    tags: (h.logiclab_problems?.tags || []) as string[],
+    solved_status: solvedMap[h.problem_id] || null,
+    total_submissions: 0,
+    acceptance_rate: 0,
+  }))
+
+  // Apply filters
+  if (search) {
+    const q = search.toLowerCase()
+    enriched = enriched.filter(
+      (p: any) =>
+        p.title.toLowerCase().includes(q) ||
+        p.tags?.some((t: string) => t.toLowerCase().includes(q))
+    )
+  }
+  if (difficulty !== "All") {
+    enriched = enriched.filter((p: any) => p.difficulty === difficulty)
+  }
+  if (tag !== "All") {
+    enriched = enriched.filter((p: any) => (p.tags || []).includes(tag))
+  }
+  if (tab === "solved") enriched = enriched.filter((p: any) => p.solved_status === "Accepted")
+  else if (tab === "attempted") enriched = enriched.filter((p: any) => p.solved_status && p.solved_status !== "Accepted")
+  else if (tab === "unsolved") enriched = enriched.filter((p: any) => !p.solved_status)
+
+  // Apply sorting
+  if (sortBy === "date-desc") {
+    enriched.sort((a: any, b: any) => b.date.localeCompare(a.date))
+  } else if (sortBy === "date-asc") {
+    enriched.sort((a: any, b: any) => a.date.localeCompare(b.date))
+  } else if (sortBy === "difficulty-asc") {
+    const rank: Record<string, number> = { Easy: 1, Medium: 2, Hard: 3 }
+    enriched.sort((a: any, b: any) => (rank[a.difficulty] || 0) - (rank[b.difficulty] || 0) || b.date.localeCompare(a.date))
+  } else if (sortBy === "difficulty-desc") {
+    const rank: Record<string, number> = { Easy: 1, Medium: 2, Hard: 3 }
+    enriched.sort((a: any, b: any) => (rank[b.difficulty] || 0) - (rank[a.difficulty] || 0) || b.date.localeCompare(a.date))
+  } else if (sortBy === "title-asc") {
+    enriched.sort((a: any, b: any) => a.title.localeCompare(b.title) || b.date.localeCompare(a.date))
+  } else if (sortBy === "title-desc") {
+    enriched.sort((a: any, b: any) => b.title.localeCompare(a.title) || b.date.localeCompare(a.date))
+  }
+
+  const page = enriched.slice(offset, offset + limit)
+  const hasMore = offset + limit < enriched.length
+
+  return { challenges: page, hasMore }
+}
+

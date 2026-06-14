@@ -1741,6 +1741,12 @@ export type Database = {
       logiclab_daily_challenge_user_activity: {
         Row: {
           activity_date: string | null
+          easy_attempted: number | null
+          easy_solved: number | null
+          hard_attempted: number | null
+          hard_solved: number | null
+          medium_attempted: number | null
+          medium_solved: number | null
           solved: boolean | null
           submission_count: number | null
           user_id: string | null

@@ -87,6 +87,12 @@ interface CalendarCell {
   count: number
   status: "none" | "attempted" | "solved"
   dayOfWeek: number
+  easySolved?: number
+  mediumSolved?: number
+  hardSolved?: number
+  easyAttempted?: number
+  mediumAttempted?: number
+  hardAttempted?: number
 }
 
 interface LogicLabDashboardProps {
@@ -280,6 +286,36 @@ export function LogicLabDashboardClient({
       toast.error(err.message || "Failed to fetch random problem", { id: toastId })
     }
   }
+
+  const getTooltipText = useCallback((cell: CalendarCell) => {
+    if (!cell.count || cell.count === 0) {
+      return `No activity on ${cell.date}`
+    }
+
+    const solvedParts: string[] = []
+    if (cell.easySolved && cell.easySolved > 0) solvedParts.push(`${cell.easySolved} Easy`)
+    if (cell.mediumSolved && cell.mediumSolved > 0) solvedParts.push(`${cell.mediumSolved} Medium`)
+    if (cell.hardSolved && cell.hardSolved > 0) solvedParts.push(`${cell.hardSolved} Hard`)
+
+    const attemptedParts: string[] = []
+    if (cell.easyAttempted && cell.easyAttempted > 0) attemptedParts.push(`${cell.easyAttempted} Easy`)
+    if (cell.mediumAttempted && cell.mediumAttempted > 0) attemptedParts.push(`${cell.mediumAttempted} Medium`)
+    if (cell.hardAttempted && cell.hardAttempted > 0) attemptedParts.push(`${cell.hardAttempted} Hard`)
+
+    const solvedStr = solvedParts.length > 0 ? `${solvedParts.join(", ")} solved` : ""
+    const attemptedStr = attemptedParts.length > 0 ? `${attemptedParts.join(", ")} attempted` : ""
+
+    let detail = ""
+    if (solvedStr && attemptedStr) {
+      detail = ` (${solvedStr}, ${attemptedStr})`
+    } else if (solvedStr) {
+      detail = ` (${solvedStr})`
+    } else if (attemptedStr) {
+      detail = ` (${attemptedStr})`
+    }
+
+    return `${cell.date}: ${cell.count} submission${cell.count > 1 ? "s" : ""}${detail}`
+  }, [])
 
   // Align cells into weeks starting on Sunday
   const alignedWeeks = useMemo(() => {
@@ -759,7 +795,7 @@ export function LogicLabDashboardClient({
                               cellRadiusClass,
                               cellColor
                             )}
-                            title={`${cell.date}: ${cell.count} submissions`}
+                            title={getTooltipText(cell)}
                           />
                         );
                       })}

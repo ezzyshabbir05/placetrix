@@ -93,18 +93,29 @@ export default async function LogicLabPage(props: {
   const yesterdayDate = new Date(istDate.getTime() - (24 * 60 * 60 * 1000))
   const yesterdayStr = yesterdayDate.toISOString().split("T")[0]
 
-  const cutOffDate = new Date(istDate.getTime() - (365 * 24 * 60 * 60 * 1000))
-  const cutOffStr = cutOffDate.toISOString().split("T")[0]
+  // Heatmap cut-off date (last 20 weeks = 140 days)
+  const cutOffDate20Weeks = new Date(istDate.getTime() - (140 * 24 * 60 * 60 * 1000))
+  const cutOffStr20Weeks = cutOffDate20Weeks.toISOString().split("T")[0]
 
-  // Fetch aggregated daily activity from logiclab_daily_challenge_user_activity view (Aggregated and grouped by IST Date)
+  // 1. Fetch aggregated daily activity for the 20-week heatmap
   const { data: activityRows } = await (supabase as any)
     .from("logiclab_daily_challenge_user_activity")
-    .select("activity_date, submission_count, solved")
+    .select("activity_date, submission_count, solved, easy_solved, medium_solved, hard_solved, easy_attempted, medium_attempted, hard_attempted")
     .eq("user_id", profile.id)
-    .gte("activity_date", cutOffStr)
+    .gte("activity_date", cutOffStr20Weeks)
     .order("activity_date", { ascending: true })
 
-  const uniqueDatesWithStatus = new Map<string, { solved: boolean; attempted: boolean; count: number }>()
+  const uniqueDatesWithStatus = new Map<string, {
+    solved: boolean
+    attempted: boolean
+    count: number
+    easy_solved: number
+    medium_solved: number
+    hard_solved: number
+    easy_attempted: number
+    medium_attempted: number
+    hard_attempted: number
+  }>()
 
   for (const row of activityRows ?? []) {
     if (!row.activity_date) continue
@@ -112,16 +123,35 @@ export default async function LogicLabPage(props: {
     uniqueDatesWithStatus.set(dateStr, {
       solved: !!row.solved,
       attempted: !row.solved && row.submission_count > 0,
-      count: Number(row.submission_count)
+      count: Number(row.submission_count),
+      easy_solved: Number(row.easy_solved || 0),
+      medium_solved: Number(row.medium_solved || 0),
+      hard_solved: Number(row.hard_solved || 0),
+      easy_attempted: Number(row.easy_attempted || 0),
+      medium_attempted: Number(row.medium_attempted || 0),
+      hard_attempted: Number(row.hard_attempted || 0),
     })
   }
 
-  const sortedDates = Array.from(uniqueDatesWithStatus.keys()).sort((a, b) => b.localeCompare(a))
+  // 2. Fetch all activity dates (without date limits) to calculate streaks accurately across any length of time
+  const { data: streakRows } = await (supabase as any)
+    .from("logiclab_daily_challenge_user_activity")
+    .select("activity_date, solved")
+    .eq("user_id", profile.id)
+    .order("activity_date", { ascending: true })
+
+  const allActiveDates = new Map<string, { solved: boolean }>()
+  for (const row of streakRows ?? []) {
+    if (!row.activity_date) continue
+    allActiveDates.set(row.activity_date, { solved: !!row.solved })
+  }
+
+  const sortedDates = Array.from(allActiveDates.keys()).sort((a, b) => b.localeCompare(a))
   
   let currentStreak = 0
   let maxStreak = 0
 
-  const hasActiveStreak = uniqueDatesWithStatus.has(todayStr) || uniqueDatesWithStatus.has(yesterdayStr)
+  const hasActiveStreak = allActiveDates.has(todayStr) || allActiveDates.has(yesterdayStr)
 
   if (sortedDates.length > 0) {
     const ascDates = [...sortedDates].reverse()
@@ -147,10 +177,10 @@ export default async function LogicLabPage(props: {
     if (tempStreak > maxStreak) maxStreak = tempStreak
 
     if (hasActiveStreak) {
-      const checkDate = uniqueDatesWithStatus.has(todayStr) ? new Date(istDate) : new Date(yesterdayDate)
+      const checkDate = allActiveDates.has(todayStr) ? new Date(istDate) : new Date(yesterdayDate)
       let checkStr = checkDate.toISOString().split("T")[0]
       
-      while (uniqueDatesWithStatus.has(checkStr)) {
+      while (allActiveDates.has(checkStr)) {
         currentStreak++
         checkDate.setUTCDate(checkDate.getUTCDate() - 1)
         checkStr = checkDate.toISOString().split("T")[0]
@@ -162,7 +192,7 @@ export default async function LogicLabPage(props: {
   const streakStats = { currentStreak, maxStreak }
 
   const activityCalendar: any[] = []
-  const daysToGenerate = 182 // 26 weeks * 7 days
+  const daysToGenerate = 140 // 20 weeks * 7 days
   for (let i = daysToGenerate - 1; i >= 0; i--) {
     const d = new Date(istDate.getTime() - (i * 24 * 60 * 60 * 1000))
     const dateStr = d.toISOString().split("T")[0]
@@ -171,7 +201,13 @@ export default async function LogicLabPage(props: {
       date: dateStr,
       count: activity?.count || 0,
       status: activity?.solved ? "solved" : activity?.attempted ? "attempted" : "none",
-      dayOfWeek: d.getUTCDay()
+      dayOfWeek: d.getUTCDay(),
+      easySolved: activity?.easy_solved || 0,
+      mediumSolved: activity?.medium_solved || 0,
+      hardSolved: activity?.hard_solved || 0,
+      easyAttempted: activity?.easy_attempted || 0,
+      mediumAttempted: activity?.medium_attempted || 0,
+      hardAttempted: activity?.hard_attempted || 0,
     })
   }
   // Derive unique tags and counts from all enriched problems
