@@ -12,8 +12,8 @@ export const getCachedGlobalProblemsList = unstable_cache(
     
     const { data: problems } = await adminSupabase
       .from("logiclab_problems")
-      .select("id, title, difficulty, created_at")
-      .order("created_at", { ascending: true })
+      .select("id, number, title, difficulty, created_at")
+      .order("number", { ascending: true })
 
     return (problems as any[]) || []
   },
@@ -34,11 +34,11 @@ export async function getIdeProblemList(userId: string) {
     
   const solvedSet = new Set(solvedData?.map((s: any) => s.problem_id) || [])
   
-  return problems.map((p: any, idx: number) => ({
+  return problems.map((p: any) => ({
     id: p.id,
     title: p.title,
     difficulty: p.difficulty,
-    number: idx + 1,
+    number: p.number,
     isSolved: solvedSet.has(p.id)
   }))
 }

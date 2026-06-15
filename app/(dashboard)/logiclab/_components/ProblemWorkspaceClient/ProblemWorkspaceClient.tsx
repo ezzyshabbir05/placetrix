@@ -2399,16 +2399,14 @@ export function ProblemWorkspaceClient({
                       },
                     )}
 
-                    {activeTestcaseIndex >= sampleTestCases.length && (
-                      <div className={cn('mt-4', 'pt-4', 'border-t', 'border-border/10', 'space-y-1.5', 'text-xs', 'font-mono')}>
-                        <span className={cn('text-[10px]', 'text-zinc-600 dark:text-muted-foreground/80', 'uppercase', 'tracking-widest', 'font-bold', 'block', 'select-none')}>
-                          Expected Output (Optional) =
-                        </span>
+                    <div className={cn('mt-4', 'pt-4', 'border-t', 'border-border/10', 'space-y-1.5', 'text-xs', 'font-mono')}>
+                      <span className={cn('text-[10px]', 'text-zinc-600 dark:text-muted-foreground/80', 'uppercase', 'tracking-widest', 'font-bold', 'block', 'select-none')}>
+                        Expected Output {activeTestcaseIndex >= sampleTestCases.length ? "(Optional) =" : "="}
+                      </span>
+                      {activeTestcaseIndex >= sampleTestCases.length ? (
                         <input
                           type="text"
-                          value={
-                            customExpectedOutputs[activeTestcaseIndex] || ""
-                          }
+                          value={customExpectedOutputs[activeTestcaseIndex] || ""}
                           onChange={(e) => {
                             setCustomExpectedOutputs((prev) => {
                               const next = [...prev];
@@ -2419,8 +2417,12 @@ export function ProblemWorkspaceClient({
                           placeholder="Expected Output (e.g. 2)"
                           className={cn('w-full', 'px-3', 'py-2', 'bg-zinc-100/80 dark:bg-zinc-900/50', 'border', 'border-border/60', 'rounded-md', 'text-foreground', 'text-sm', 'font-mono', 'outline-none', 'transition-colors', 'focus:border-zinc-400 dark:focus:border-zinc-600 focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 shadow-sm')}
                         />
-                      </div>
-                    )}
+                      ) : (
+                        <div className={cn('w-full', 'px-3', 'py-2', 'bg-zinc-100/40 dark:bg-zinc-900/30', 'border', 'border-border/30', 'rounded-md', 'text-foreground/70', 'text-sm', 'font-mono')}>
+                          {customExpectedOutputs[activeTestcaseIndex] || "N/A"}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ) : (

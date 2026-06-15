@@ -286,19 +286,6 @@ export function AdminProblemEditorClient({
   const [saving, setSaving] = useState(false)
   const [activeTab, setActiveTab] = useState<"single" | "bulk">("single")
   
-  // Signature Generator States
-  const [sigName, setSigName] = useState("twoSum")
-  const [sigReturnType, setSigReturnType] = useState("int[]")
-  const [sigArgs, setSigArgs] = useState<Array<{name: string, type: string}>>([
-    { name: "nums", type: "int[]" },
-    { name: "target", type: "int" }
-  ])
-
-  const addArg = () => setSigArgs([...sigArgs, { name: "", type: "" }])
-  const removeArg = (idx: number) => setSigArgs(sigArgs.filter((_, i) => i !== idx))
-  const updateArg = (idx: number, field: "name" | "type", value: string) => 
-    setSigArgs(sigArgs.map((a, i) => i === idx ? { ...a, [field]: value } : a))
-
   // Parse initial values safely
   let parsedBoilerplates = initialProblem?.boilerplates || {}
   if (typeof parsedBoilerplates === "string") {
@@ -312,6 +299,42 @@ export function AdminProblemEditorClient({
   if (typeof parsedTestCases === "string") {
     try { parsedTestCases = JSON.parse(parsedTestCases) } catch (e) { console.error(e) }
   }
+
+  // Extract Signature from Java Boilerplate
+  let initialSigName = "twoSum"
+  let initialSigReturnType = "int[]"
+  let initialSigArgs: Array<{name: string, type: string}> = [
+    { name: "nums", type: "int[]" },
+    { name: "target", type: "int" }
+  ]
+
+  if (isEdit && parsedBoilerplates["62"]) { // 62 is Java
+    const javaCode = parsedBoilerplates["62"];
+    const match = javaCode.match(/public\s+([A-Za-z0-9_\[\]]+)\s+([A-Za-z0-9_]+)\s*\(([^)]*)\)/);
+    if (match) {
+      initialSigReturnType = match[1];
+      initialSigName = match[2];
+      const argsStr = match[3];
+      if (argsStr.trim()) {
+        initialSigArgs = argsStr.split(',').map((a: string) => {
+          const parts = a.trim().split(/\s+/);
+          return { type: parts[0] || "", name: parts[1] || "" };
+        }).filter((a: any) => a.name);
+      } else {
+        initialSigArgs = [];
+      }
+    }
+  }
+
+  // Signature Generator States
+  const [sigName, setSigName] = useState(initialSigName)
+  const [sigReturnType, setSigReturnType] = useState(initialSigReturnType)
+  const [sigArgs, setSigArgs] = useState<Array<{name: string, type: string}>>(initialSigArgs)
+
+  const addArg = () => setSigArgs([...sigArgs, { name: "", type: "" }])
+  const removeArg = (idx: number) => setSigArgs(sigArgs.filter((_, i) => i !== idx))
+  const updateArg = (idx: number, field: "name" | "type", value: string) => 
+    setSigArgs(sigArgs.map((a, i) => i === idx ? { ...a, [field]: value } : a))
 
   // Problem metadata
   const [title, setTitle] = useState(initialProblem?.title || "")
@@ -483,10 +506,17 @@ export function AdminProblemEditorClient({
 
       let result;
       if (isEdit) {
-        const { data, error } = await (supabase as any).functions.invoke('update-problem', {
-          body: { problemId: initialProblem.id, data: payload },
+        const res = await fetch("/api/logiclab/update-problem", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ problemId: initialProblem.id, data: payload }),
         })
-        result = { data, error }
+        const json = await res.json()
+        if (!res.ok || json.error) {
+          result = { error: { message: json.error || "Failed to update problem via API" } }
+        } else {
+          result = { data: json.data }
+        }
       } else {
         const res = await fetch("/api/logiclab/seed-problems", {
           method: "POST",
