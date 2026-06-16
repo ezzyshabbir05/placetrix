@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { RecentSupportTickets } from "./RecentSupportTickets";
+import { CandidateDashboardClient } from "./_components/CandidateDashboardClient";
 import {
   ArrowRight,
   BookOpen,
@@ -108,101 +109,272 @@ export default async function HomePage() {
 
   // ── Candidate ──────────────────────────────────────────────────────────────
   if (profile.account_type === "candidate") {
-    const { data } = await (supabase as any).rpc("get_candidate_home_stats" as any, {
+    const { data: homeStatsData } = await (supabase as any).rpc("get_candidate_home_stats" as any, {
       p_profile_id: profile.id,
     });
 
-    const candidateData = data as unknown as CandidateStatsResponse;
-    const cp = candidateData?.profile;
-    const stats = candidateData?.stats;
+    const candidateData = homeStatsData as unknown as CandidateStatsResponse;
+    const cp = candidateData?.profile || {};
+    const stats = candidateData?.stats || {
+      total_tests: 0,
+      live_tests: 0,
+      upcoming_tests: 0,
+      completed_tests: 0,
+    };
 
-    const isComplete = cp?.profile_complete === true;
-    const hasBeenSaved = cp?.profile_updated === true;
-    const profileReady = isComplete && hasBeenSaved;
+    // 1. Fetch test attempts to get submitted count and average score
+    const { data: testAttempts } = await (supabase as any)
+      .from("test_attempts")
+      .select("percentage, score, total_marks, status, test_id")
+      .eq("candidate_id", profile.id)
+      .eq("status", "submitted");
 
-    const profileSubtitle = !cp
-      ? "You haven't set up your profile yet. Fill in your details to access all features."
-      : !hasBeenSaved
-        ? "Your profile has been started but not saved yet."
-        : "A few required fields are still missing.";
+    let totalPercentage = 0;
+    let validScoresCount = 0;
+    if (testAttempts && testAttempts.length > 0) {
+      testAttempts.forEach((attempt: any) => {
+        if (attempt.percentage !== null && attempt.percentage !== undefined) {
+          totalPercentage += Number(attempt.percentage);
+          validScoresCount++;
+        } else if (attempt.score !== null && attempt.total_marks) {
+          totalPercentage += (Number(attempt.score) / Number(attempt.total_marks)) * 100;
+          validScoresCount++;
+        }
+      });
+    }
+    const averageScore = validScoresCount > 0 ? totalPercentage / validScoresCount : 0;
+
+    const testStats = {
+      total_tests: stats.total_tests,
+      live_tests: stats.live_tests,
+      upcoming_tests: stats.upcoming_tests,
+      completed_tests: testAttempts?.length || 0,
+      average_score: averageScore,
+    };
+
+    // 2. Fetch LogicLab global statistics
+    const { data: statsData } = await (supabase as any).rpc('get_user_global_stats', { p_user_id: profile.id });
+    const globalStats = (statsData as any) || { 
+      total: 0, solved: 0, 
+      easy: { total: 0, solved: 0 }, 
+      medium: { total: 0, solved: 0 }, 
+      hard: { total: 0, solved: 0 } 
+    };
+
+    // 3. Streaks calculation
+    const today = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const istDate = new Date(today.getTime() + istOffset);
+    const todayStr = istDate.toISOString().split("T")[0];
+
+    const yesterdayDate = new Date(istDate.getTime() - (24 * 60 * 60 * 1000));
+    const yesterdayStr = yesterdayDate.toISOString().split("T")[0];
+
+    // Fetch all activity dates
+    const { data: streakRows } = await (supabase as any)
+      .from("logiclab_daily_challenge_user_activity")
+      .select("activity_date, solved")
+      .eq("user_id", profile.id)
+      .order("activity_date", { ascending: true });
+
+    const allActiveDates = new Map<string, { solved: boolean }>();
+    for (const row of streakRows ?? []) {
+      if (!row.activity_date) continue;
+      allActiveDates.set(row.activity_date, { solved: !!row.solved });
+    }
+
+    const sortedDates = Array.from(allActiveDates.keys()).sort((a, b) => b.localeCompare(a));
+    
+    let currentStreak = 0;
+    let maxStreak = 0;
+
+    const hasActiveStreak = allActiveDates.has(todayStr) || allActiveDates.has(yesterdayStr);
+
+    if (sortedDates.length > 0) {
+      const ascDates = [...sortedDates].reverse();
+      let prevDate: Date | null = null;
+      let tempStreak = 0;
+      
+      for (const dStr of ascDates) {
+        const currentDate = new Date(dStr);
+        if (!prevDate) {
+          tempStreak = 1;
+        } else {
+          const diffTime = Math.abs(currentDate.getTime() - prevDate.getTime());
+          const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+          if (diffDays <= 1) {
+            tempStreak++;
+          } else {
+            if (tempStreak > maxStreak) maxStreak = tempStreak;
+            tempStreak = 1;
+          }
+        }
+        prevDate = currentDate;
+      }
+      if (tempStreak > maxStreak) maxStreak = tempStreak;
+
+      if (hasActiveStreak) {
+        const checkDate = allActiveDates.has(todayStr) ? new Date(istDate) : new Date(yesterdayDate);
+        let checkStr = checkDate.toISOString().split("T")[0];
+        
+        while (allActiveDates.has(checkStr)) {
+          currentStreak++;
+          checkDate.setUTCDate(checkDate.getUTCDate() - 1);
+          checkStr = checkDate.toISOString().split("T")[0];
+        }
+      }
+    }
+
+    if (currentStreak > maxStreak) maxStreak = currentStreak;
+    const streakStats = { currentStreak, maxStreak };
+
+    // 4. 14-day Activity Calendar
+    const cutOffDate14Days = new Date(istDate.getTime() - (14 * 24 * 60 * 60 * 1000));
+    const cutOffStr14Days = cutOffDate14Days.toISOString().split("T")[0];
+
+    const { data: activityRows } = await (supabase as any)
+      .from("logiclab_daily_challenge_user_activity")
+      .select("activity_date, submission_count, solved")
+      .eq("user_id", profile.id)
+      .gte("activity_date", cutOffStr14Days)
+      .order("activity_date", { ascending: true });
+
+    const uniqueDatesWithStatus = new Map<string, { solved: boolean; attempted: boolean; count: number }>();
+    for (const row of activityRows ?? []) {
+      if (!row.activity_date) continue;
+      const dateStr = row.activity_date;
+      uniqueDatesWithStatus.set(dateStr, {
+        solved: !!row.solved,
+        attempted: !row.solved && row.submission_count > 0,
+        count: Number(row.submission_count),
+      });
+    }
+
+    const activityCalendar: any[] = [];
+    for (let i = 14 - 1; i >= 0; i--) {
+      const d = new Date(istDate.getTime() - (i * 24 * 60 * 60 * 1000));
+      const dateStr = d.toISOString().split("T")[0];
+      const activity = uniqueDatesWithStatus.get(dateStr);
+      activityCalendar.push({
+        date: dateStr,
+        count: activity?.count || 0,
+        status: activity?.solved ? "solved" : activity?.attempted ? "attempted" : "none",
+      });
+    }
+
+    // 5. Job Applications
+    const { data: apps } = await (supabase as any)
+      .from("job_applications")
+      .select(`
+        id,
+        status,
+        created_at,
+        job_postings!inner (
+          id,
+          title,
+          job_type,
+          location,
+          work_mode,
+          profiles!inner (
+            recruiter_profiles ( company_name )
+          )
+        )
+      `)
+      .eq("candidate_id", profile.id)
+      .order("created_at", { ascending: false })
+      .limit(3);
+
+    const jobApplications = (apps ?? []).map((row: any) => {
+      const jobData = Array.isArray(row.job_postings) ? row.job_postings[0] : row.job_postings;
+
+      let companyName = "Unknown Company";
+      if (jobData?.profiles) {
+        const p = Array.isArray(jobData.profiles) ? jobData.profiles[0] : jobData.profiles;
+        if (p?.recruiter_profiles) {
+          const rp = Array.isArray(p.recruiter_profiles) ? p.recruiter_profiles[0] : p.recruiter_profiles;
+          companyName = rp?.company_name || "Unknown Company";
+        }
+      }
+
+      return {
+        id: row.id,
+        status: row.status,
+        created_at: row.created_at,
+        title: jobData?.title,
+        company_name: companyName,
+        location: jobData?.location,
+        work_mode: jobData?.work_mode,
+      };
+    });
+
+    // 6. Fetch live/upcoming tests for candidate
+    const submittedTestIds = (testAttempts ?? [])
+      .map((a: any) => a.test_id);
+
+    const nowIso = new Date().toISOString();
+
+    let liveTests: any[] = [];
+    let upcomingTests: any[] = [];
+
+    if (cp.institute_id) {
+      let liveQuery = (supabase as any)
+        .from("tests")
+        .select("id, title, description, time_limit_seconds, available_from, available_until")
+        .eq("status", "published")
+        .eq("institute_id", cp.institute_id)
+        .lte("available_from", nowIso)
+        .or(`available_until.gt.${nowIso},available_until.is.null`);
+
+      if (submittedTestIds.length > 0) {
+        liveQuery = liveQuery.not("id", "in", `(${submittedTestIds.join(",")})`);
+      }
+
+      const { data: liveData } = await liveQuery
+        .order("available_until", { ascending: true, nullsFirst: false })
+        .limit(2);
+      
+      if (liveData) liveTests = liveData;
+
+      let upcomingQuery = (supabase as any)
+        .from("tests")
+        .select("id, title, description, time_limit_seconds, available_from, available_until")
+        .eq("status", "published")
+        .eq("institute_id", cp.institute_id)
+        .gt("available_from", nowIso);
+
+      if (submittedTestIds.length > 0) {
+        upcomingQuery = upcomingQuery.not("id", "in", `(${submittedTestIds.join(",")})`);
+      }
+
+      const { data: upcomingData } = await upcomingQuery
+        .order("available_from", { ascending: true })
+        .limit(2);
+
+      if (upcomingData) upcomingTests = upcomingData;
+    }
+
+    const candidateProfile = {
+      id: profile.id,
+      username: profile.username || null,
+      full_name: cp.full_name || null,
+      first_name: cp.first_name || null,
+      last_name: cp.last_name || null,
+      profile_complete: cp.profile_complete || null,
+      profile_updated: cp.profile_updated || false,
+      institute_id: cp.institute_id || null,
+    };
 
     return (
-      <div className="flex flex-col gap-6 px-4 py-8 md:px-8">
-        <div className="flex flex-col gap-1.5">
-          <h1 className="text-3xl font-bold font-cirka tracking-tight text-foreground">Home</h1>
-          <p className="text-sm text-muted-foreground">
-            Welcome back{profile.username ? `, @${profile.username}` : ""}
-          </p>
-        </div>
-
-        <div className="space-y-6">
-          {/* ── Profile banner ───────────────────────────────────────────── */}
-          {!profileReady && (
-            <div className="rounded-lg border bg-card p-4 flex items-start justify-between gap-4">
-              <div className="space-y-0.5">
-                <p className="text-sm font-medium">Your profile isn't complete yet</p>
-                <p className="text-xs text-muted-foreground">{profileSubtitle}</p>
-              </div>
-              <Link href="/myprofile" className="shrink-0">
-                <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs">
-                  Complete Profile
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Button>
-              </Link>
-            </div>
-          )}
-
-          {/* ── Test Stats ───────────────────────────────────────────────── */}
-          {cp?.institute_id && stats && (
-            <div className="space-y-3">
-              <SectionHeader title="Tests Overview" href="/tests" />
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <StatCard
-                  icon={<BookOpen className="h-4 w-4" />}
-                  label="Assigned"
-                  value={stats.total_tests}
-                />
-                <StatCard
-                  icon={<PlayCircle className="h-4 w-4" />}
-                  label="Live Now"
-                  value={stats.live_tests}
-                  accent={stats.live_tests > 0 ? "green" : "muted"}
-                />
-                <StatCard
-                  icon={<CalendarClock className="h-4 w-4" />}
-                  label="Upcoming"
-                  value={stats.upcoming_tests}
-                  accent={stats.upcoming_tests > 0 ? "amber" : "muted"}
-                />
-                <StatCard
-                  icon={<CheckCircle2 className="h-4 w-4" />}
-                  label="Completed"
-                  value={stats.completed_tests}
-                  accent={stats.completed_tests > 0 ? "blue" : "muted"}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* ── View Tests CTA (when profile ready but no institute) ─────── */}
-          {profileReady && !cp?.institute_id && (
-            <div className="rounded-lg border bg-card p-4 flex items-center justify-between gap-4">
-              <div className="space-y-0.5">
-                <p className="text-sm font-medium">Looking for tests?</p>
-                <p className="text-xs text-muted-foreground">
-                  Browse available assessments assigned to you.
-                </p>
-              </div>
-              <Link href="/tests" className="shrink-0">
-                <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs">
-                  View Tests
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Button>
-              </Link>
-            </div>
-          )}
-        </div>
-      </div>
+      <CandidateDashboardClient
+        profile={candidateProfile}
+        stats={testStats}
+        globalStats={globalStats}
+        streakStats={streakStats}
+        activityCalendar={activityCalendar}
+        jobApplications={jobApplications}
+        liveTests={liveTests}
+        upcomingTests={upcomingTests}
+      />
     );
   }
 
