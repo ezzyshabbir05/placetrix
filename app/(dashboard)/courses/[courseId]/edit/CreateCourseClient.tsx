@@ -220,6 +220,22 @@ export function CreateCourseClient({ initialCourse, initialModules = [], adminPr
     }
   }, [lastAddedId, modules])
 
+  // Sync state with props when initialCourse or initialModules change (e.g. after a router.refresh())
+  useEffect(() => {
+    if (initialCourse) {
+      setTitle(initialCourse.title ?? "")
+      setDescription(initialCourse.description ?? "")
+      setLevel(initialCourse.level ?? "Beginner")
+      setCoverImagePath(initialCourse.cover_image_path ?? null)
+      setIsPublished(initialCourse.is_published ?? false)
+    }
+  }, [initialCourse])
+
+  useEffect(() => {
+    if (initialModules) {
+      setModules(initialModules)
+    }
+  }, [initialModules])
 
   const removeModule = (index: number) => {
     setModules(modules.filter((_, i) => i !== index))
@@ -341,6 +357,9 @@ export function CreateCourseClient({ initialCourse, initialModules = [], adminPr
             if (shouldExit) {
               router.push("/courses")
             } else {
+              if (result.modules) {
+                setModules(result.modules)
+              }
               router.refresh()
             }
           }

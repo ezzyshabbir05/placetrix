@@ -154,6 +154,7 @@ export async function updateCourseAction(
   }
 
   // C. Upsert modules
+  let returnedModules: AdminModuleInput[] = []
   if (modules && modules.length > 0) {
     const modulesToUpsert = modules.map((mod, index) => {
       const isNew = !mod.id || mod.id.startsWith("temp-")
@@ -179,11 +180,21 @@ export async function updateCourseAction(
       console.error("Error upserting course modules:", upsertError)
       throw new Error(upsertError.message || "Failed to update course modules (upsert phase).")
     }
+
+    returnedModules = modulesToUpsert.map((m) => ({
+      id: m.id,
+      title: m.title,
+      description: m.description ?? "",
+      duration: m.duration ?? "30 min",
+      min_duration: m.min_duration ?? null,
+      type: m.type,
+      content: m.content ?? "",
+    }))
   }
 
   revalidatePath(`/courses/${courseId}`)
   revalidatePath("/courses")
-  return { success: true }
+  return { success: true, modules: returnedModules }
 }
 
 /**

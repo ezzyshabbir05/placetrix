@@ -2,7 +2,8 @@
 
 import * as React from "react"
 import { useMemo, useState } from "react"
-import { MathText } from "./math-text"
+import katex from "katex"
+import "katex/dist/katex.min.css"
 import { Copy, Check, Code, Terminal, Quote, BookOpen, Lightbulb, AlertTriangle, Info } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Prism from "prismjs"
@@ -16,6 +17,43 @@ import "prismjs/components/prism-csharp"
 import "prismjs/components/prism-java"
 import "prismjs/components/prism-bash"
 import "./prism-adaptive.css"
+
+interface KatexMathProps {
+  latex: string
+  display?: boolean
+  className?: string
+}
+
+function KatexMath({ latex, display = false, className }: KatexMathProps) {
+  const html = useMemo(() => {
+    try {
+      return katex.renderToString(latex, {
+        displayMode: display,
+        throwOnError: false,
+        trust: false,
+      })
+    } catch (err) {
+      console.error("KaTeX rendering error:", err)
+      return `<span class="text-destructive font-mono text-[13px]">[LaTeX error: ${latex}]</span>`
+    }
+  }, [latex, display])
+
+  if (display) {
+    return (
+      <span
+        className={cn("my-2 block overflow-x-auto py-1 text-center", className)}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    )
+  }
+
+  return (
+    <span
+      className={cn("inline align-middle", className)}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  )
+}
 
 // ─── Inline Parser ────────────────────────────────────────────────────────────
 
@@ -91,7 +129,8 @@ export function parseLatexInline(text: string): React.ReactNode[] {
     if (text.startsWith("$$", i)) {
       const j = text.indexOf("$$", i + 2)
       if (j !== -1) {
-        pushKey(<MathText key={`dm-${i}`}>{text.slice(i, j + 2)}</MathText>)
+        const formula = text.slice(i + 2, j)
+        pushKey(<KatexMath key={`dm-${i}`} latex={formula} display={true} />)
         i = j + 2
         continue
       }
@@ -101,7 +140,8 @@ export function parseLatexInline(text: string): React.ReactNode[] {
     if (text.startsWith("\\[", i)) {
       const j = text.indexOf("\\]", i + 2)
       if (j !== -1) {
-        pushKey(<MathText key={`dl-${i}`}>{text.slice(i, j + 2)}</MathText>)
+        const formula = text.slice(i + 2, j)
+        pushKey(<KatexMath key={`dl-${i}`} latex={formula} display={true} />)
         i = j + 2
         continue
       }
@@ -111,7 +151,8 @@ export function parseLatexInline(text: string): React.ReactNode[] {
     if (text[i] === "$" && !text.startsWith("$$", i)) {
       const j = text.indexOf("$", i + 1)
       if (j !== -1) {
-        pushKey(<MathText key={`im-${i}`}>{text.slice(i, j + 1)}</MathText>)
+        const formula = text.slice(i + 1, j)
+        pushKey(<KatexMath key={`im-${i}`} latex={formula} display={false} />)
         i = j + 1
         continue
       }
@@ -121,7 +162,8 @@ export function parseLatexInline(text: string): React.ReactNode[] {
     if (text.startsWith("\\(", i)) {
       const j = text.indexOf("\\)", i + 2)
       if (j !== -1) {
-        pushKey(<MathText key={`ip-${i}`}>{text.slice(i, j + 2)}</MathText>)
+        const formula = text.slice(i + 2, j)
+        pushKey(<KatexMath key={`ip-${i}`} latex={formula} display={false} />)
         i = j + 2
         continue
       }
@@ -1204,20 +1246,24 @@ function renderBlock(block: Block, index: number, figureNumber?: number): React.
     case "equation":
     case "align": {
       const isAlign = block.type === "align"
-      const content = block.content?.trim() || ""
-      let rawFormula = content
-      if (!content.startsWith("$$")) {
-        rawFormula = isAlign
-          ? `$$ \\begin{aligned} ${content} \\end{aligned} $$`
-          : `$$ ${content} $$`
+      let content = block.content?.trim() || ""
+      
+      // Strip outer $$ if they exist
+      if (content.startsWith("$$") && content.endsWith("$$")) {
+        content = content.slice(2, -2).trim()
       }
+      
+      const latex = isAlign
+        ? `\\begin{aligned} ${content} \\end{aligned}`
+        : content
+
       return (
         <div
           key={`eq-${index}`}
           className="my-7 relative group/eq"
         >
           <div className="p-4 md:p-6 bg-muted/20 dark:bg-muted/10 border border-border/40 rounded-xl overflow-x-auto max-w-full flex justify-center items-center shadow-xs hover:border-border/60 transition-all duration-200">
-            <MathText className="w-full text-center">{rawFormula}</MathText>
+            <KatexMath className="w-full text-center" latex={latex} display={true} />
           </div>
         </div>
       )
