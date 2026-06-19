@@ -186,7 +186,8 @@ export function CandidateDashboardClient({
 
   useEffect(() => {
     const hours = new Date().getHours()
-    if (hours < 12) setGreeting("Good morning")
+    if (hours >= 0 && hours <= 6) setGreeting("Still up? You're Unstoppable")
+    else if (hours < 12) setGreeting("Good morning")
     else if (hours < 17) setGreeting("Good afternoon")
     else setGreeting("Good evening")
   }, [])
@@ -213,7 +214,7 @@ export function CandidateDashboardClient({
               {greeting}, {profileName}!
             </h1>
             <p className="text-sm text-muted-foreground">
-              Track your placements, mock Tests, and progress in coding challenges all from one dashboard.
+              Track your Placements, Mock Tests, and Progress in Coding Challenges all from One Dashboard.
             </p>
           </div>
 
@@ -261,7 +262,7 @@ export function CandidateDashboardClient({
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Left Panel: LogicLab Coding Stats */}
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.45, ease: "easeOut" }}
@@ -358,7 +359,7 @@ export function CandidateDashboardClient({
                 </motion.div>
 
                 {/* Right Panel: Mock Test Performance */}
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.45, ease: "easeOut", delay: 0.1 }}
@@ -386,7 +387,7 @@ export function CandidateDashboardClient({
                           className="h-1.5 bg-primary/10 [&>div]:bg-primary"
                         />
                       </div>
-                      
+
                       {/* Refined stats grid */}
                       <div className="grid grid-cols-3 gap-2 mt-4 bg-background/50 dark:bg-muted/10 rounded-xl p-2.5 border border-border/20 select-none text-center">
                         <div>
