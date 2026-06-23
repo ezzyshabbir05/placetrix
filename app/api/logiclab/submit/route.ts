@@ -404,7 +404,8 @@ export async function POST(req: NextRequest) {
 
     if (daily_challenge_id) {
       submission.daily_challenge_id = daily_challenge_id
-      submission.date = dailyChallengeDate || new Date().toISOString().split("T")[0]
+      const fallbackIst = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000)
+      submission.date = dailyChallengeDate || fallbackIst.toISOString().split("T")[0]
 
       const { data: saved, error: sErr } = await (supabase as any)
         .from("logiclab_daily_challenge_submissions")
