@@ -781,10 +781,6 @@ export function CandidateProfileClient({ userProfile, initialData }: Props) {
             }
             throw error;
           }
-          await (supabase as any)
-            .from("profiles")
-            .update({ institute_id: instituteId || null })
-            .eq("id", userProfile.id);
           toast.success("Education details saved!");
         }
 

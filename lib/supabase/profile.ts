@@ -230,8 +230,11 @@ export const getUserProfile = cache(async (): Promise<UserProfile | null> => {
       const { data: dbProfile, error: dbError } = await (supabase as any)
         .from("profiles")
         .select(`
-          username, display_name, avatar_path, account_type, account_subtype, signature_path, institute_id, profile_updated,
-          candidate_profiles!candidate_profiles_profile_id_fkey (institute_verified, profile_complete, profile_updated, institute_id)
+          username, display_name, avatar_path, account_type, account_subtype, signature_path, profile_updated,
+          candidate_profiles!candidate_profiles_profile_id_fkey (institute_verified, profile_complete, profile_updated, institute_id),
+          staff_profiles!staff_profiles_profile_id_fkey (institute_id),
+          tpo_profiles!tpo_profiles_profile_id_fkey (institute_id),
+          institute_profiles!institute_profiles_profile_id_fkey (institute_id)
         `)
         .eq("id", built.id)
         .maybeSingle();
@@ -253,16 +256,32 @@ export const getUserProfile = cache(async (): Promise<UserProfile | null> => {
         const complete = Array.isArray(cp) ? cp[0]?.profile_complete : cp?.profile_complete;
         built.profile_complete = complete ?? null;
 
-        // Map profile_updated and institute_id from candidate_profiles for candidates.
-        // For other account types, map them from profiles table.
+        // Map profile_updated from candidate_profiles for candidates, fallback to profiles.profile_updated.
         if (dbProfile.account_type === "candidate") {
           const cpUpdated = Array.isArray(cp) ? cp[0]?.profile_updated : cp?.profile_updated;
           built.profile_updated = cpUpdated ?? null;
-          const cpInstId = Array.isArray(cp) ? cp[0]?.institute_id : cp?.institute_id;
-          built.institute_id = cpInstId ?? null;
         } else {
           if (dbProfile.profile_updated !== undefined) built.profile_updated = dbProfile.profile_updated;
-          if (dbProfile.institute_id !== undefined) built.institute_id = dbProfile.institute_id;
+        }
+
+        // Map institute_id from sub-tables depending on user's role.
+        if (dbProfile.account_type === "candidate") {
+          const cpInstId = Array.isArray(cp) ? cp[0]?.institute_id : cp?.institute_id;
+          built.institute_id = cpInstId ?? null;
+        } else if (dbProfile.account_type === "institute") {
+          if (dbProfile.account_subtype === "staff") {
+            const sp = dbProfile.staff_profiles;
+            const spInstId = Array.isArray(sp) ? sp[0]?.institute_id : sp?.institute_id;
+            built.institute_id = spInstId ?? null;
+          } else if (dbProfile.account_subtype === "tpo") {
+            const tp = dbProfile.tpo_profiles;
+            const tpInstId = Array.isArray(tp) ? tp[0]?.institute_id : tp?.institute_id;
+            built.institute_id = tpInstId ?? null;
+          } else if (dbProfile.account_subtype === "primary") {
+            const ip = dbProfile.institute_profiles;
+            const ipInstId = Array.isArray(ip) ? ip[0]?.institute_id : ip?.institute_id;
+            built.institute_id = ipInstId ?? null;
+          }
         }
 
         if (dbProfile.signature_path !== undefined) built.signature_path = dbProfile.signature_path;

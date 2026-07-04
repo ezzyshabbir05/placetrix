@@ -378,15 +378,13 @@ export default async function HomePage() {
     let primaryProfileId = profile.id
     if (profile.account_subtype !== "primary" && instituteId) {
       const { data: primaryLink } = await (supabase as any)
-        .from("profiles")
-        .select("id")
+        .from("institute_profiles")
+        .select("profile_id")
         .eq("institute_id", instituteId)
-        .eq("account_type", "institute")
-        .eq("account_subtype", "primary")
         .limit(1)
         .maybeSingle()
-      if (primaryLink?.id) {
-        primaryProfileId = primaryLink.id
+      if (primaryLink?.profile_id) {
+        primaryProfileId = primaryLink.profile_id
       }
     }
 
