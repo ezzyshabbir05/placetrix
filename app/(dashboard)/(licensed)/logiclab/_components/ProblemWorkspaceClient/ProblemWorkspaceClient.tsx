@@ -1339,24 +1339,48 @@ export function ProblemWorkspaceClient({
                 <Button
                   variant={timerRunning ? "secondary" : "default"}
                   size="sm"
-                  className={cn('h-8', 'flex-1', 'text-xs', 'font-bold')}
+                  className={cn('h-8', 'flex-1', 'text-xs', 'font-bold', 'relative', 'overflow-hidden')}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={(e) => {
                     setTimerRunning(!timerRunning);
                     e.currentTarget.blur();
                   }}
                 >
-                  {timerRunning ? (
-                    <>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span
+                      className={cn(
+                        "absolute flex items-center justify-center transition-all duration-300 ease-in-out",
+                        timerRunning
+                          ? "opacity-100 translate-y-0 scale-100"
+                          : "opacity-0 -translate-y-2 scale-95 pointer-events-none"
+                      )}
+                    >
                       <IconPlayerPause className={cn('h-3.5', 'w-3.5', 'mr-1')} />
                       Pause
-                    </>
-                  ) : (
-                    <>
+                    </span>
+                    <span
+                      className={cn(
+                        "absolute flex items-center justify-center transition-all duration-300 ease-in-out",
+                        !timerRunning && timerSeconds === 0
+                          ? "opacity-100 translate-y-0 scale-100"
+                          : "opacity-0 translate-y-2 scale-95 pointer-events-none"
+                      )}
+                    >
+                      <IconPlayerPlay className={cn('h-3.5', 'w-3.5', 'mr-1', 'text-emerald-500', 'fill-emerald-500')} />
+                      Start
+                    </span>
+                    <span
+                      className={cn(
+                        "absolute flex items-center justify-center transition-all duration-300 ease-in-out",
+                        !timerRunning && timerSeconds > 0
+                          ? "opacity-100 translate-y-0 scale-100"
+                          : "opacity-0 translate-y-2 scale-95 pointer-events-none"
+                      )}
+                    >
                       <IconPlayerPlay className={cn('h-3.5', 'w-3.5', 'mr-1', 'text-emerald-500', 'fill-emerald-500')} />
                       Resume
-                    </>
-                  )}
+                    </span>
+                  </div>
                 </Button>
                 <Button
                   variant="ghost"
@@ -1365,6 +1389,7 @@ export function ProblemWorkspaceClient({
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={(e) => {
                     setTimerSeconds(0);
+                    setTimerRunning(false);
                     e.currentTarget.blur();
                   }}
                   title="Reset"
@@ -1573,7 +1598,7 @@ export function ProblemWorkspaceClient({
         {/* Tab Content */}
         <div className="flex-1 w-full min-h-0 flex flex-col relative">
           <TabsContent value="description" className={cn('mt-0', 'outline-none', 'flex-1', 'w-full', 'min-h-0', 'flex', 'flex-col')}>
-            <ScrollArea className="flex-1 w-full [&_[data-slot=scroll-area-scrollbar]]:hidden">
+            <div className="flex-1 w-full overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               <div className="p-5">
               {isTransitioning ? (
                 <div className={cn('flex', 'flex-col', 'w-full', 'space-y-4', 'pt-2')}>
@@ -1693,7 +1718,7 @@ export function ProblemWorkspaceClient({
                 </div>
               )}
               </div>
-            </ScrollArea>
+            </div>
           </TabsContent>
           <TabsContent value="submissions" className={cn('container-pane-submissions', 'mt-0', 'outline-none', 'flex-1', 'w-full', 'min-h-0', 'flex', 'flex-col')}>
             <ScrollArea className="flex-1 w-full [&_[data-slot=scroll-area-scrollbar]]:hidden">
