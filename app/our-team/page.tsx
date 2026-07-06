@@ -457,6 +457,14 @@ const TEAM: TeamMember[] = [
 		linkedin: "https://www.linkedin.com/in/vishalraut2106",
 		github: "https://github.com/vishalraut2106",
 	},
+	{
+		name: "Vaishnavi Dharam",
+		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/Vaishnavi.jpeg",
+		role: "UX Designer",
+		email: "vaishnavidharam05@gmail.com",
+		linkedin: "https://www.linkedin.com/in/vaishnavi-dharam-b3881b274",
+		github: "https://github.com/vaishnavidharam",
+	},
 ];
 
 function MissionSection() {
@@ -567,7 +575,7 @@ function TeamMemberCard({
 						{member.email ? (
 							<Button variant="outline" size="sm" className={NAV_BUTTON} asChild>
 								<a href={`mailto:${member.email}`}>
-									<MailIcon className="size-4" />
+									<MailIcon className="size-3" />
 									Contact
 								</a>
 							</Button>
@@ -617,7 +625,7 @@ function TeamSection() {
 				"pt-24 md:pt-28"
 			)}
 		>
-			<div className={CONTENT}>
+			<div className="mx-auto w-full max-w-7xl px-4 md:px-6">
 				<div className="mx-auto max-w-3xl text-center">
 					<p className="mb-2 text-xs font-medium uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
 						The team
@@ -632,7 +640,7 @@ function TeamSection() {
 						flows, and giving students a better system to grow through.
 					</p>
 				</div>
-				<div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
+				<div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 lg:gap-5">
 					{TEAM.map((member) => (
 						<TeamMemberCard
 							key={`${member.name}-${member.role}`}
