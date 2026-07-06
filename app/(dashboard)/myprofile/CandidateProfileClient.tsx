@@ -5,10 +5,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { jsPDF } from "jspdf";
 import { UserProfile } from "@/lib/supabase/profile";
-import { updateCandidatePersonalDetails } from "./actions";
 import {
-  saveEducationAction,
-  deleteEducationAction,
+  updateCandidatePersonalDetails,
   saveExperienceAction,
   deleteExperienceAction,
   saveProjectAction,
@@ -16,7 +14,7 @@ import {
   saveCertificationAction,
   deleteCertificationAction,
   updateCandidateBioAction
-} from "./candidate-extensions-actions";
+} from "./actions";
 import {
   CandidateEducation,
   CandidateExperience,
@@ -40,6 +38,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle
 } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Combobox, ComboboxChip, ComboboxChips, ComboboxChipsInput,
   ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem,
@@ -81,6 +80,33 @@ const PASSOUT_YEAR_OPTIONS = Array.from({ length: 11 }, (_, i) => String(new Dat
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
 const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
+
+const EDUCATION_LEVEL_OPTIONS = [
+  "Class 10 (SSC)",
+  "Class 12 (HSC)",
+  "Diploma",
+  "Undergraduate (UG)",
+  "Postgraduate (PG)",
+  "Other"
+];
+
+const EDUCATION_TYPE_LABELS: Record<string, string> = {
+  ssc: "Class 10 (SSC)",
+  hsc: "Class 12 (HSC)",
+  diploma: "Diploma",
+  ug: "Undergraduate (UG)",
+  pg: "Postgraduate (PG)",
+  other: "Other"
+};
+
+const EDUCATION_LABEL_TO_TYPE: Record<string, string> = {
+  "Class 10 (SSC)": "ssc",
+  "Class 12 (HSC)": "hsc",
+  "Diploma": "diploma",
+  "Undergraduate (UG)": "ug",
+  "Postgraduate (PG)": "pg",
+  "Other": "other"
+};
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -293,33 +319,48 @@ export function CandidateProfileClient({
   const [passoutYear, setPassoutYear] = useState(
     initialData?.passout_year ? String(initialData.passout_year) : ""
   );
+  const [universityPrn, setUniversityPrn] = useState(initialData?.university_prn ?? "");
+
+  // SSC Details
   const [sscPercentage, setSscPercentage] = useState(
-    sscRecord?.grade_or_percentage != null ? String(sscRecord.grade_or_percentage) : ""
+    sscRecord?.grade_or_percentage != null ? Number(sscRecord.grade_or_percentage).toFixed(2) : ""
   );
   const [sscPassYear, setSscPassYear] = useState(
     sscRecord?.passout_year ? String(sscRecord.passout_year) : ""
   );
+  const [sscInstitution, setSscInstitution] = useState(
+    sscRecord?.institution_name || ""
+  );
+
+  // HSC Details
   const [isHsc, setIsHsc] = useState(!!hscRecord);
   const [hscPercentage, setHscPercentage] = useState(
-    hscRecord?.grade_or_percentage != null ? String(hscRecord.grade_or_percentage) : ""
+    hscRecord?.grade_or_percentage != null ? Number(hscRecord.grade_or_percentage).toFixed(2) : ""
   );
   const [hscPassYear, setHscPassYear] = useState(
     hscRecord?.passout_year ? String(hscRecord.passout_year) : ""
   );
+  const [hscInstitution, setHscInstitution] = useState(
+    hscRecord?.institution_name || ""
+  );
+
+  // Diploma Details
   const [isDiploma, setIsDiploma] = useState(!!diplomaRecord);
   const [diplomaPercentage, setDiplomaPercentage] = useState(
-    diplomaRecord?.grade_or_percentage != null ? String(diplomaRecord.grade_or_percentage) : ""
+    diplomaRecord?.grade_or_percentage != null ? Number(diplomaRecord.grade_or_percentage).toFixed(2) : ""
   );
   const [diplomaPassYear, setDiplomaPassYear] = useState(
     diplomaRecord?.passout_year ? String(diplomaRecord.passout_year) : ""
   );
-  const [universityPrn, setUniversityPrn] = useState(initialData?.university_prn ?? "");
+  const [diplomaInstitution, setDiplomaInstitution] = useState(
+    diplomaRecord?.institution_name || ""
+  );
 
   // Load semester SGPAs from JSONB array
   const [sgpaValues, setSgpaValues] = useState<string[]>(
     Array.from({ length: 8 }, (_, i) => {
       const val = initialData?.sgpa_semesters?.[i];
-      return val != null && val !== 0 ? String(val) : "";
+      return val != null && val !== 0 ? val.toFixed(2) : "";
     })
   );
 
@@ -339,7 +380,8 @@ export function CandidateProfileClient({
   const [activeCertification, setActiveCertification] = useState<Partial<CandidateCertification> | null>(null);
   const [uploadingCert, setUploadingCert] = useState(false);
 
-  // Sync props data to state when Server Component re-renders
+
+
   useEffect(() => {
     setExperiences(experienceData || []);
   }, [experienceData]);
@@ -378,7 +420,10 @@ export function CandidateProfileClient({
   );
   const educationComplete = !!(
     userProfile.institute_id && initialData?.course_name &&
-    initialData?.passout_year && sscRecord?.grade_or_percentage
+    initialData?.passout_year &&
+    sscPercentage && sscPassYear && sscInstitution &&
+    ((isHsc && hscPercentage && hscPassYear && hscInstitution) ||
+      (isDiploma && diplomaPercentage && diplomaPassYear && diplomaInstitution))
   );
   const professionalComplete = !!(initialData?.skills?.length > 0);
 
@@ -483,12 +528,15 @@ export function CandidateProfileClient({
       setPassoutYear(initialData?.passout_year ? String(initialData.passout_year) : "");
       setSscPercentage(sscRecord?.grade_or_percentage != null ? String(sscRecord.grade_or_percentage) : "");
       setSscPassYear(sscRecord?.passout_year ? String(sscRecord.passout_year) : "");
+      setSscInstitution(sscRecord?.institution_name || "");
       setIsHsc(!!hscRecord);
       setHscPercentage(hscRecord?.grade_or_percentage != null ? String(hscRecord.grade_or_percentage) : "");
       setHscPassYear(hscRecord?.passout_year ? String(hscRecord.passout_year) : "");
+      setHscInstitution(hscRecord?.institution_name || "");
       setIsDiploma(!!diplomaRecord);
       setDiplomaPercentage(diplomaRecord?.grade_or_percentage != null ? String(diplomaRecord.grade_or_percentage) : "");
       setDiplomaPassYear(diplomaRecord?.passout_year ? String(diplomaRecord.passout_year) : "");
+      setDiplomaInstitution(diplomaRecord?.institution_name || "");
       setUniversityPrn(initialData?.university_prn ?? "");
       setSgpaValues(Array.from({ length: 8 }, (_, i) => {
         const val = initialData?.sgpa_semesters?.[i];
@@ -663,6 +711,14 @@ export function CandidateProfileClient({
     if (!courseName) e.courseName = "Branch/Course is required";
     if (!passoutYear) e.passoutYear = "Expected graduation year is required";
 
+    const currentYear = new Date().getFullYear();
+    const gradYear = Number(passoutYear);
+
+    if (gradYear && gradYear < currentYear - 5) {
+      e.passoutYear = "Expected graduation year must be a reasonable value.";
+    }
+
+    // SSC Validation
     if (!sscPercentage) {
       e.sscPercentage = "SSC percentage is required";
     } else {
@@ -671,10 +727,13 @@ export function CandidateProfileClient({
         e.sscPercentage = "SSC percentage must be between 0 and 100.";
       }
     }
-
     if (!sscPassYear) e.sscPassYear = "SSC passing year is required";
+    if (!sscInstitution.trim()) e.sscInstitution = "SSC school name is required";
 
-    if (!isHsc && !isDiploma) e.educationAfterSsc = "Select at least one option (HSC or Diploma)";
+    // HSC/Diploma selection validation
+    if (!isHsc && !isDiploma) {
+      e.educationAfterSsc = "Select at least one option (HSC or Diploma)";
+    }
 
     if (isHsc) {
       if (!hscPercentage) {
@@ -686,6 +745,7 @@ export function CandidateProfileClient({
         }
       }
       if (!hscPassYear) e.hscPassYear = "HSC passing year is required";
+      if (!hscInstitution.trim()) e.hscInstitution = "HSC college name is required";
     }
 
     if (isDiploma) {
@@ -698,44 +758,7 @@ export function CandidateProfileClient({
         }
       }
       if (!diplomaPassYear) e.diplomaPassYear = "Diploma passing year is required";
-    }
-
-    const currentYear = new Date().getFullYear();
-    const sscYear = Number(sscPassYear);
-    const gradYear = Number(passoutYear);
-
-    if (sscYear > currentYear) {
-      e.sscPassYear = "SSC passing year cannot be in the future.";
-    }
-
-    if (sscYear && gradYear && gradYear <= sscYear) {
-      e.passoutYear = "Graduation year must be after SSC passing year.";
-    }
-
-    if (isHsc && hscPassYear) {
-      const hscYear = Number(hscPassYear);
-      if (hscYear > currentYear) {
-        e.hscPassYear = "HSC passing year cannot be in the future.";
-      }
-      if (sscYear && hscYear <= sscYear) {
-        e.hscPassYear = "HSC passing year must be after SSC passing year.";
-      }
-      if (gradYear && gradYear <= hscYear) {
-        e.passoutYear = "Graduation year must be after HSC passing year.";
-      }
-    }
-
-    if (isDiploma && diplomaPassYear) {
-      const dipYear = Number(diplomaPassYear);
-      if (dipYear > currentYear) {
-        e.diplomaPassYear = "Diploma passing year cannot be in the future.";
-      }
-      if (sscYear && dipYear <= sscYear) {
-        e.diplomaPassYear = "Diploma passing year must be after SSC passing year.";
-      }
-      if (gradYear && gradYear <= dipYear) {
-        e.passoutYear = "Graduation year must be after Diploma passing year.";
-      }
+      if (!diplomaInstitution.trim()) e.diplomaInstitution = "Diploma institute name is required";
     }
 
     if (universityPrn.trim()) {
@@ -852,7 +875,7 @@ export function CandidateProfileClient({
               university_prn: universityPrn.trim() || null,
               sgpa_semesters: sgpaValues.map((v) => v ? Number(v) : 0),
             }, { onConflict: 'profile_id' });
-            
+
           await (supabase as any)
             .from("profiles")
             .update({ institute_id: instituteId || null })
@@ -880,7 +903,7 @@ export function CandidateProfileClient({
                 id: sscExist?.id || undefined,
                 profile_id: userProfile.id,
                 type: "ssc",
-                institution_name: "High School",
+                institution_name: sscInstitution.trim() || "High School",
                 grade_or_percentage: Number(sscPercentage),
                 passout_year: Number(sscPassYear),
               });
@@ -902,7 +925,7 @@ export function CandidateProfileClient({
                 id: hscExist?.id || undefined,
                 profile_id: userProfile.id,
                 type: "hsc",
-                institution_name: "Junior College",
+                institution_name: hscInstitution.trim() || "Junior College",
                 grade_or_percentage: Number(hscPercentage),
                 passout_year: Number(hscPassYear),
               });
@@ -930,7 +953,7 @@ export function CandidateProfileClient({
                 id: dipExist?.id || undefined,
                 profile_id: userProfile.id,
                 type: "diploma",
-                institution_name: "Diploma Institute",
+                institution_name: diplomaInstitution.trim() || "Diploma Institute",
                 grade_or_percentage: Number(diplomaPercentage),
                 passout_year: Number(diplomaPassYear),
               });
@@ -942,6 +965,7 @@ export function CandidateProfileClient({
               .eq("profile_id", userProfile.id)
               .eq("type", "diploma");
           }
+
           toast.success("Education details saved!");
         }
 
@@ -1363,9 +1387,11 @@ export function CandidateProfileClient({
 
         {/* Profile Photo — always interactive */}
         <Card>
-          <CardHeader>
-            <CardTitle>Profile Photo</CardTitle>
-            <CardDescription>JPEG, PNG or WEBP</CardDescription>
+          <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 space-y-0">
+            <div>
+              <CardTitle>Profile Photo</CardTitle>
+              <CardDescription>Upload a clear, professional photo. Supports JPEG, PNG or WEBP, max 2MB.</CardDescription>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row items-center gap-6">
@@ -1411,7 +1437,7 @@ export function CandidateProfileClient({
                   )}
                 </Button>
                 <p className="text-xs text-muted-foreground text-center sm:text-left">
-                  Supports JPEG, PNG or WEBP. Max size 2MB.
+                  Click the avatar or button to upload a new photo.
                 </p>
               </div>
             </div>
@@ -1723,27 +1749,43 @@ export function CandidateProfileClient({
 
                 <Separator />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* SSC Details */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-foreground">Class 10 (SSC) details</h4>
                   <div className="space-y-2">
-                    <Label>SSC Percentage<RequiredMark /></Label>
-                    <Input placeholder="e.g. 85.60" type="number" step={0.01} min={0} max={100} value={sscPercentage} onChange={(e) => setSscPercentage(e.target.value)} />
-                    <FieldError message={errors.sscPercentage} />
+                    <Label>School / Institution Name<RequiredMark /></Label>
+                    <Input
+                      placeholder="e.g. St. Mary's High School"
+                      value={sscInstitution}
+                      onChange={(e) => setSscInstitution(e.target.value)}
+                    />
+                    <FieldError message={errors.sscInstitution} />
                   </div>
-                  <div className="space-y-2">
-                    <Label>SSC Passing Year<RequiredMark /></Label>
-                    <Combobox items={YEAR_OPTIONS} value={sscPassYear} onValueChange={(v) => setSscPassYear(v ?? "")}>
-                      <ComboboxInput placeholder="Select year" />
-                      <ComboboxContent>
-                        <ComboboxEmpty>No year found.</ComboboxEmpty>
-                        <ComboboxList>
-                          {(item: string) => <ComboboxItem key={item} value={item}>{item}</ComboboxItem>}
-                        </ComboboxList>
-                      </ComboboxContent>
-                    </Combobox>
-                    <FieldError message={errors.sscPassYear} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>SSC Percentage<RequiredMark /></Label>
+                      <Input placeholder="e.g. 85.60" type="number" step={0.01} min={0} max={100} value={sscPercentage} onChange={(e) => setSscPercentage(e.target.value)} />
+                      <FieldError message={errors.sscPercentage} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>SSC Passing Year<RequiredMark /></Label>
+                      <Combobox items={YEAR_OPTIONS} value={sscPassYear} onValueChange={(v) => setSscPassYear(v ?? "")}>
+                        <ComboboxInput placeholder="Select year" />
+                        <ComboboxContent>
+                          <ComboboxEmpty>No year found.</ComboboxEmpty>
+                          <ComboboxList>
+                            {(item: string) => <ComboboxItem key={item} value={item}>{item}</ComboboxItem>}
+                          </ComboboxList>
+                        </ComboboxContent>
+                      </Combobox>
+                      <FieldError message={errors.sscPassYear} />
+                    </div>
                   </div>
                 </div>
 
+                <Separator />
+
+                {/* HSC / Diploma Checkboxes */}
                 <div className="space-y-3">
                   <Label>Education After SSC<RequiredMark /></Label>
                   <div className="flex gap-6">
@@ -1759,53 +1801,79 @@ export function CandidateProfileClient({
                   <FieldError message={errors.educationAfterSsc} />
 
                   {isHsc && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                    <div className="space-y-3 pt-2">
+                      <h4 className="text-sm font-semibold text-foreground">Class 12 (HSC) details</h4>
                       <div className="space-y-2">
-                        <Label>HSC Percentage<RequiredMark /></Label>
-                        <Input placeholder="e.g. 78.40" type="number" step={0.01} max={100} value={hscPercentage} onChange={(e) => setHscPercentage(e.target.value)} />
-                        <FieldError message={errors.hscPercentage} />
+                        <Label>Junior College / Institution Name<RequiredMark /></Label>
+                        <Input
+                          placeholder="e.g. St. Xavier's Junior College"
+                          value={hscInstitution}
+                          onChange={(e) => setHscInstitution(e.target.value)}
+                        />
+                        <FieldError message={errors.hscInstitution} />
                       </div>
-                      <div className="space-y-2">
-                        <Label>HSC Passing Year<RequiredMark /></Label>
-                        <Combobox items={YEAR_OPTIONS} value={hscPassYear} onValueChange={(v) => setHscPassYear(v ?? "")}>
-                          <ComboboxInput placeholder="Select year" />
-                          <ComboboxContent>
-                            <ComboboxEmpty>No year found.</ComboboxEmpty>
-                            <ComboboxList>
-                              {(item: string) => <ComboboxItem key={item} value={item}>{item}</ComboboxItem>}
-                            </ComboboxList>
-                          </ComboboxContent>
-                        </Combobox>
-                        <FieldError message={errors.hscPassYear} />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>HSC Percentage<RequiredMark /></Label>
+                          <Input placeholder="e.g. 78.40" type="number" step={0.01} max={100} value={hscPercentage} onChange={(e) => setHscPercentage(e.target.value)} />
+                          <FieldError message={errors.hscPercentage} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>HSC Passing Year<RequiredMark /></Label>
+                          <Combobox items={YEAR_OPTIONS} value={hscPassYear} onValueChange={(v) => setHscPassYear(v ?? "")}>
+                            <ComboboxInput placeholder="Select year" />
+                            <ComboboxContent>
+                              <ComboboxEmpty>No year found.</ComboboxEmpty>
+                              <ComboboxList>
+                                {(item: string) => <ComboboxItem key={item} value={item}>{item}</ComboboxItem>}
+                              </ComboboxList>
+                            </ComboboxContent>
+                          </Combobox>
+                          <FieldError message={errors.hscPassYear} />
+                        </div>
                       </div>
                     </div>
                   )}
 
                   {isDiploma && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                    <div className="space-y-3 pt-2">
+                      <h4 className="text-sm font-semibold text-foreground">Diploma details</h4>
                       <div className="space-y-2">
-                        <Label>Diploma Percentage<RequiredMark /></Label>
-                        <Input placeholder="e.g. 72.00" type="number" step={0.01} max={100} value={diplomaPercentage} onChange={(e) => setDiplomaPercentage(e.target.value)} />
-                        <FieldError message={errors.diplomaPercentage} />
+                        <Label>Diploma Institute / Institution Name<RequiredMark /></Label>
+                        <Input
+                          placeholder="e.g. Government Polytechnic"
+                          value={diplomaInstitution}
+                          onChange={(e) => setDiplomaInstitution(e.target.value)}
+                        />
+                        <FieldError message={errors.diplomaInstitution} />
                       </div>
-                      <div className="space-y-2">
-                        <Label>Diploma Passing Year<RequiredMark /></Label>
-                        <Combobox items={YEAR_OPTIONS} value={diplomaPassYear} onValueChange={(v) => setDiplomaPassYear(v ?? "")}>
-                          <ComboboxInput placeholder="Select year" />
-                          <ComboboxContent>
-                            <ComboboxEmpty>No year found.</ComboboxEmpty>
-                            <ComboboxList>
-                              {(item: string) => <ComboboxItem key={item} value={item}>{item}</ComboboxItem>}
-                            </ComboboxList>
-                          </ComboboxContent>
-                        </Combobox>
-                        <FieldError message={errors.diplomaPassYear} />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Diploma Percentage<RequiredMark /></Label>
+                          <Input placeholder="e.g. 72.00" type="number" step={0.01} max={100} value={diplomaPercentage} onChange={(e) => setDiplomaPercentage(e.target.value)} />
+                          <FieldError message={errors.diplomaPercentage} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Diploma Passing Year<RequiredMark /></Label>
+                          <Combobox items={YEAR_OPTIONS} value={diplomaPassYear} onValueChange={(v) => setDiplomaPassYear(v ?? "")}>
+                            <ComboboxInput placeholder="Select year" />
+                            <ComboboxContent>
+                              <ComboboxEmpty>No year found.</ComboboxEmpty>
+                              <ComboboxList>
+                                {(item: string) => <ComboboxItem key={item} value={item}>{item}</ComboboxItem>}
+                              </ComboboxList>
+                            </ComboboxContent>
+                          </Combobox>
+                          <FieldError message={errors.diplomaPassYear} />
+                        </div>
                       </div>
                     </div>
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Separator />
+
+                <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
                     <Label>University PRN</Label>
                     <Input
@@ -1815,15 +1883,6 @@ export function CandidateProfileClient({
                       onChange={(e) => setUniversityPrn(e.target.value.replace(/[<>]/g, ''))}
                     />
                     <FieldError message={errors.universityPrn} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>CGPA</Label>
-                    <Input
-                      value={initialData?.cgpa != null ? initialData.cgpa.toFixed(2) : "—"}
-                      disabled
-                      className="bg-zinc-50 dark:bg-zinc-900/50 text-muted-foreground border-muted cursor-not-allowed"
-                    />
-                    <p className="text-[10px] text-muted-foreground">Calculated and managed directly by the system.</p>
                   </div>
                 </div>
 
@@ -1847,6 +1906,18 @@ export function CandidateProfileClient({
                   </div>
                   <FieldError message={errors.sgpa} />
                 </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>CGPA</Label>
+                    <Input
+                      value={initialData?.cgpa != null ? initialData.cgpa.toFixed(2) : "—"}
+                      disabled
+                      className="bg-zinc-50 dark:bg-zinc-900/50 text-muted-foreground border-muted cursor-not-allowed"
+                    />
+                    <p className="text-[10px] text-muted-foreground">Calculated and managed directly by the system.</p>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
@@ -1862,19 +1933,39 @@ export function CandidateProfileClient({
                 </div>
 
                 <Separator />
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                  <div className="sm:col-span-2">
+                    <ReadonlyField label="SSC School / Institution" value={sscInstitution} />
+                  </div>
                   <ReadonlyField label="SSC Percentage" value={sscPercentage && !isNaN(parseFloat(sscPercentage)) ? `${parseFloat(sscPercentage).toFixed(2)}%` : null} />
                   <ReadonlyField label="SSC Passing Year" value={sscPassYear} />
-                  <ReadonlyField label="HSC Percentage" value={isHsc && hscPercentage && !isNaN(parseFloat(hscPercentage)) ? `${parseFloat(hscPercentage).toFixed(2)}%` : null} />
-                  <ReadonlyField label="HSC Passing Year" value={isHsc ? hscPassYear : null} />
-                  <ReadonlyField label="Diploma Percentage" value={isDiploma && diplomaPercentage && !isNaN(parseFloat(diplomaPercentage)) ? `${parseFloat(diplomaPercentage).toFixed(2)}%` : null} />
-                  <ReadonlyField label="Diploma Passing Year" value={isDiploma ? diplomaPassYear : null} />
+
+                  {isHsc && (
+                    <>
+                      <div className="sm:col-span-2">
+                        <ReadonlyField label="HSC Junior College" value={hscInstitution} />
+                      </div>
+                      <ReadonlyField label="HSC Percentage" value={hscPercentage && !isNaN(parseFloat(hscPercentage)) ? `${parseFloat(hscPercentage).toFixed(2)}%` : null} />
+                      <ReadonlyField label="HSC Passing Year" value={hscPassYear} />
+                    </>
+                  )}
+
+                  {isDiploma && (
+                    <>
+                      <div className="sm:col-span-2">
+                        <ReadonlyField label="Diploma Institute" value={diplomaInstitution} />
+                      </div>
+                      <ReadonlyField label="Diploma Percentage" value={diplomaPercentage && !isNaN(parseFloat(diplomaPercentage)) ? `${parseFloat(diplomaPercentage).toFixed(2)}%` : null} />
+                      <ReadonlyField label="Diploma Passing Year" value={diplomaPassYear} />
+                    </>
+                  )}
                 </div>
 
                 <Separator />
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
                   <ReadonlyField label="University PRN" value={universityPrn} />
-                  <ReadonlyField label="CGPA" value={initialData?.cgpa != null ? initialData.cgpa.toFixed(2) : "—"} />
                 </div>
 
                 <div>
@@ -1887,6 +1978,10 @@ export function CandidateProfileClient({
                       </div>
                     ))}
                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                  <ReadonlyField label="CGPA" value={initialData?.cgpa != null ? initialData.cgpa.toFixed(2) : "—"} />
                 </div>
               </div>
             )}
@@ -2061,45 +2156,49 @@ export function CandidateProfileClient({
               Add Experience
             </Button>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent>
             {experiences.length === 0 ? (
               <p className="text-sm text-muted-foreground italic">No work experience listed yet.</p>
             ) : (
-              experiences.map((exp, idx) => (
-                <div key={exp.id} className="group relative flex gap-4 items-start pt-1">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-zinc-50 dark:bg-zinc-900/50">
-                    <Briefcase className="h-5 w-5 text-muted-foreground" />
+              <div className="space-y-0">
+                {experiences.map((exp, idx) => (
+                  <div key={exp.id}>
+                    <div className="group relative flex gap-4 items-start py-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
+                        <Briefcase className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div className="space-y-1 pr-16 flex-1">
+                        <h4 className="text-sm font-semibold leading-none">{exp.title}</h4>
+                        <p className="text-xs text-muted-foreground font-medium">
+                          {exp.company_name} {exp.location ? `• ${exp.location}` : ""}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground font-medium">
+                          {new Date(exp.start_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })} –{" "}
+                          {exp.is_current
+                            ? "Present"
+                            : exp.end_date
+                              ? new Date(exp.end_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+                              : "—"}
+                        </p>
+                        {exp.description && (
+                          <p className="text-xs text-foreground/80 mt-2 whitespace-pre-line leading-normal">
+                            {exp.description}
+                          </p>
+                        )}
+                      </div>
+                      <div className="absolute right-0 top-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handleEditExperience(exp)}>
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteExperience(exp.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                    {idx < experiences.length - 1 && <Separator />}
                   </div>
-                  <div className="space-y-1 pr-16 flex-1">
-                    <h4 className="text-sm font-semibold leading-none">{exp.title}</h4>
-                    <p className="text-xs text-muted-foreground font-medium">
-                      {exp.company_name} {exp.location ? `• ${exp.location}` : ""}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground font-medium">
-                      {new Date(exp.start_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })} –{" "}
-                      {exp.is_current
-                        ? "Present"
-                        : exp.end_date
-                        ? new Date(exp.end_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })
-                        : "—"}
-                    </p>
-                    {exp.description && (
-                      <p className="text-xs text-foreground/80 mt-2 whitespace-pre-line leading-normal">
-                        {exp.description}
-                      </p>
-                    )}
-                  </div>
-                  <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handleEditExperience(exp)}>
-                      <Edit2 className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteExperience(exp.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                  {idx < experiences.length - 1 && <Separator className="mt-4" />}
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
@@ -2116,66 +2215,70 @@ export function CandidateProfileClient({
               Add Project
             </Button>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent>
             {projects.length === 0 ? (
               <p className="text-sm text-muted-foreground italic">No projects listed yet.</p>
             ) : (
-              projects.map((proj, idx) => (
-                <div key={proj.id} className="group relative flex gap-4 items-start pt-1">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-zinc-50 dark:bg-zinc-900/50">
-                    <FolderGit2 className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <div className="space-y-1 pr-16 flex-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-sm font-semibold leading-none">{proj.title}</h4>
-                      {proj.project_url && (
-                        <a href={proj.project_url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
-                          <Link2 className="h-3.5 w-3.5" />
-                        </a>
-                      )}
-                    </div>
-                    {proj.associated_with && (
-                      <p className="text-xs text-muted-foreground font-medium">
-                        Associated with: {proj.associated_with}
-                      </p>
-                    )}
-                    {(proj.start_date || proj.end_date || proj.is_ongoing) && (
-                      <p className="text-[11px] text-muted-foreground font-medium">
-                        {proj.start_date
-                          ? new Date(proj.start_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })
-                          : "—"}{" "}
-                        –{" "}
-                        {proj.is_ongoing
-                          ? "Present"
-                          : proj.end_date
-                          ? new Date(proj.end_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })
-                          : "—"}
-                      </p>
-                    )}
-                    <p className="text-xs text-foreground/80 mt-2 whitespace-pre-line leading-normal">
-                      {proj.description}
-                    </p>
-                    {proj.skills && proj.skills.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {proj.skills.map((skill) => (
-                          <Badge key={skill} variant="secondary" className="text-[10px] px-1.5 py-0">
-                            {skill}
-                          </Badge>
-                        ))}
+              <div className="space-y-0">
+                {projects.map((proj, idx) => (
+                  <div key={proj.id}>
+                    <div className="group relative flex gap-4 items-start py-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
+                        <FolderGit2 className="h-5 w-5 text-muted-foreground" />
                       </div>
-                    )}
+                      <div className="space-y-1 pr-16 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-semibold leading-none">{proj.title}</h4>
+                          {proj.project_url && (
+                            <a href={proj.project_url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
+                              <Link2 className="h-3.5 w-3.5" />
+                            </a>
+                          )}
+                        </div>
+                        {proj.associated_with && (
+                          <p className="text-xs text-muted-foreground font-medium">
+                            Associated with: {proj.associated_with}
+                          </p>
+                        )}
+                        {(proj.start_date || proj.end_date || proj.is_ongoing) && (
+                          <p className="text-[11px] text-muted-foreground font-medium">
+                            {proj.start_date
+                              ? new Date(proj.start_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+                              : "—"}{" "}
+                            –{" "}
+                            {proj.is_ongoing
+                              ? "Present"
+                              : proj.end_date
+                                ? new Date(proj.end_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+                                : "—"}
+                          </p>
+                        )}
+                        <p className="text-xs text-foreground/80 mt-2 whitespace-pre-line leading-normal">
+                          {proj.description}
+                        </p>
+                        {proj.skills && proj.skills.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {proj.skills.map((skill) => (
+                              <Badge key={skill} variant="secondary" className="text-[10px] px-1.5 py-0">
+                                {skill}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="absolute right-0 top-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handleEditProject(proj)}>
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteProject(proj.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                    {idx < projects.length - 1 && <Separator />}
                   </div>
-                  <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handleEditProject(proj)}>
-                      <Edit2 className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteProject(proj.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                  {idx < projects.length - 1 && <Separator className="mt-4" />}
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
@@ -2192,101 +2295,109 @@ export function CandidateProfileClient({
               Add Certification
             </Button>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent>
             {certifications.length === 0 ? (
               <p className="text-sm text-muted-foreground italic">No certifications listed yet.</p>
             ) : (
-              certifications.map((cert, idx) => (
-                <div key={cert.id} className="group relative flex gap-4 items-start pt-1">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-zinc-50 dark:bg-zinc-900/50">
-                    <Award className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <div className="space-y-1 pr-16 flex-1">
-                    <h4 className="text-sm font-semibold leading-none">{cert.name}</h4>
-                    <p className="text-xs text-muted-foreground font-medium">{cert.issuing_org}</p>
-                    <p className="text-[11px] text-muted-foreground font-medium">
-                      Issued {new Date(cert.issue_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
-                      {!cert.does_not_expire && cert.expiration_date
-                        ? ` • Expires ${new Date(cert.expiration_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}`
-                        : " • No Expiration Date"}
-                    </p>
-                    {cert.credential_id && (
-                      <p className="text-[11px] text-muted-foreground">Credential ID: {cert.credential_id}</p>
-                    )}
-                    <div className="flex flex-wrap items-center gap-3 mt-2">
-                      {cert.credential_url && (
-                        <a
-                          href={cert.credential_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                        >
-                          <Link2 className="h-3 w-3" /> Show credential
-                        </a>
-                      )}
-                      {cert.certificate_path && (
-                        <a
-                          href={getStorageUrl(supabase, "certificates", cert.certificate_path) ?? "#"}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                        >
-                          <FileText className="h-3 w-3" /> View certificate document
-                        </a>
-                      )}
+              <div className="space-y-0">
+                {certifications.map((cert, idx) => (
+                  <div key={cert.id}>
+                    <div className="group relative flex gap-4 items-start py-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
+                        <Award className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div className="space-y-1 pr-16 flex-1">
+                        <h4 className="text-sm font-semibold leading-none">{cert.name}</h4>
+                        <p className="text-xs text-muted-foreground font-medium">{cert.issuing_org}</p>
+                        <p className="text-[11px] text-muted-foreground font-medium">
+                          Issued {new Date(cert.issue_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                          {!cert.does_not_expire && cert.expiration_date
+                            ? ` • Expires ${new Date(cert.expiration_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}`
+                            : " • No Expiration Date"}
+                        </p>
+                        {cert.credential_id && (
+                          <p className="text-[11px] text-muted-foreground">Credential ID: {cert.credential_id}</p>
+                        )}
+                        <div className="flex flex-wrap items-center gap-3 mt-2">
+                          {cert.credential_url && (
+                            <a
+                              href={cert.credential_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                            >
+                              <Link2 className="h-3 w-3" /> Show credential
+                            </a>
+                          )}
+                          {cert.certificate_path && (
+                            <a
+                              href={getStorageUrl(supabase, "certificates", cert.certificate_path) ?? "#"}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                            >
+                              <FileText className="h-3 w-3" /> View certificate document
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                      <div className="absolute right-0 top-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handleEditCertification(cert)}>
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteCertification(cert.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </div>
+                    {idx < certifications.length - 1 && <Separator />}
                   </div>
-                  <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handleEditCertification(cert)}>
-                      <Edit2 className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteCertification(cert.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                  {idx < certifications.length - 1 && <Separator className="mt-4" />}
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
         {/* Events Participation Certificates Card */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 space-y-0">
             <div>
               <CardTitle>Events Certificates of Participation</CardTitle>
               <CardDescription>Verified participation certificates for concluded campus events</CardDescription>
             </div>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent>
             {eventCertificates.length === 0 ? (
               <p className="text-sm text-muted-foreground italic">No event participation certificates available yet.</p>
             ) : (
-              eventCertificates.map((cert, idx) => (
-                <div key={cert.ticketId} className="group relative flex gap-4 items-start pt-1">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-zinc-50 dark:bg-zinc-900/50">
-                    <Award className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                  <div className="space-y-1 pr-16 flex-1">
-                    <h4 className="text-sm font-semibold leading-none">{cert.eventTitle}</h4>
-                    <p className="text-xs text-muted-foreground font-medium">PlaceTrix Campus Event</p>
-                    <p className="text-[11px] text-muted-foreground font-medium">
-                      Attended {new Date(cert.eventDate).toLocaleDateString("en-US", { month: "short", year: "numeric", day: "numeric" })}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-3 mt-2">
-                      <Button
-                        variant="link"
-                        size="sm"
-                        onClick={() => downloadEventCertificate(cert)}
-                        className="p-0 h-auto text-xs text-primary hover:underline gap-1"
-                      >
-                        <FileDown className="h-3 w-3" /> Download Certificate
-                      </Button>
+              <div className="space-y-0">
+                {eventCertificates.map((cert, idx) => (
+                  <div key={cert.ticketId}>
+                    <div className="flex gap-4 items-start py-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
+                        <Award className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <div className="space-y-1 flex-1">
+                        <h4 className="text-sm font-semibold leading-none">{cert.eventTitle}</h4>
+                        <p className="text-xs text-muted-foreground font-medium">PlaceTrix Campus Event</p>
+                        <p className="text-[11px] text-muted-foreground font-medium">
+                          Attended {new Date(cert.eventDate).toLocaleDateString("en-US", { month: "short", year: "numeric", day: "numeric" })}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-3 mt-2">
+                          <Button
+                            variant="link"
+                            size="sm"
+                            onClick={() => downloadEventCertificate(cert)}
+                            className="p-0 h-auto text-xs text-primary hover:underline gap-1"
+                          >
+                            <FileDown className="h-3 w-3" /> Download Certificate
+                          </Button>
+                        </div>
+                      </div>
                     </div>
+                    {idx < eventCertificates.length - 1 && <Separator />}
                   </div>
-                  {idx < eventCertificates.length - 1 && <Separator className="mt-4" />}
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
@@ -2609,6 +2720,8 @@ export function CandidateProfileClient({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+
       <ImageCropperModal
         isOpen={cropModalOpen}
         onClose={handleCropModalClose}

@@ -104,7 +104,6 @@ const NAV_MAIN: Record<AccountType, NavItem[]> = {
   institute_primary: [
     { title: "Home", url: "/home", icon: Home },
     { title: "Students", url: "/students", icon: GraduationCap },
-    { title: "Staff", url: "/staff-management", icon: Users },
   ],
   institute_staff: [
     { title: "Home", url: "/home", icon: Home },
