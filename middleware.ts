@@ -49,8 +49,16 @@ async function getSystemStatus(): Promise<SystemStatus> {
   }
 
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+
+    if (!supabaseUrl || !supabasePublishableKey) {
+      console.error(
+        "[status] Missing required environment variables: NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"
+      );
+      statusCache = { value: "connection_error", expiresAt: now + CACHE_TTL_MS };
+      return "connection_error";
+    }
 
     const res = await fetch(
       `${supabaseUrl}/rest/v1/app_config?key=eq.maintenance_mode&select=value`,
