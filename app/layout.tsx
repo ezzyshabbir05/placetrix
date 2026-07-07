@@ -23,8 +23,8 @@ export const metadata: Metadata = {
     "exam preparation",
     "learning platform",
   ],
-  authors: [{ name: "Placetrix Team" }],
-  creator: "Placetrix",
+  authors: [{ name: "4 Grid Technologies" }],
+  creator: "4 Grid Technologies",
   openGraph: {
     type: "website",
     locale: "en_US",
