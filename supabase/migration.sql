@@ -42,11 +42,7 @@ DECLARE
   v_opt_ids uuid[];
 BEGIN
   -- Resolve the user's institute_id
-  SELECT COALESCE(
-    (SELECT institute_id FROM public.institute_profiles WHERE profile_id = v_user_id),
-    (SELECT institute_id FROM public.tpo_profiles WHERE profile_id = v_user_id),
-    (SELECT institute_id FROM public.staff_profiles WHERE profile_id = v_user_id)
-  ) INTO v_institute_id;
+  SELECT institute_id INTO v_institute_id FROM public.profiles WHERE id = v_user_id;
   
   IF v_institute_id IS NULL THEN
     RAISE EXCEPTION 'User does not belong to any institute';
