@@ -84,7 +84,7 @@ interface ProfileState {
   principalName: string
   principalEmail: string
   principalPhone: string
-  courses: { id: string; value: string }[]
+  courses: { id: string; value: string; semesters_count: number }[]
   socialLinks: { id: string; value: string }[]
   errors: Record<string, string>
 }
@@ -93,6 +93,7 @@ type ProfileAction =
   | { type: "SET_FIELD"; field: keyof ProfileState; value: any }
   | { type: "SET_FIELDS"; fields: Partial<ProfileState> }
   | { type: "SET_COURSE"; index: number; value: string }
+  | { type: "SET_COURSE_SEMESTERS"; index: number; value: number }
   | { type: "ADD_COURSE" }
   | { type: "REMOVE_COURSE"; index: number }
   | { type: "SET_SOCIAL_LINK"; index: number; value: string }
@@ -184,8 +185,12 @@ function createInitialState(
     principalEmail: initialData?.principal_email ?? "",
     principalPhone: initialData?.principal_phone ?? "",
     courses: initialData?.courses?.length
-      ? initialData.courses.map((c: string) => ({ id: generateId(), value: c }))
-      : [{ id: generateId(), value: "" }],
+      ? initialData.courses.map((c: any) => ({
+          id: c.id || generateId(),
+          value: c.value ?? c,
+          semesters_count: c.semesters_count ?? 8
+        }))
+      : [{ id: generateId(), value: "", semesters_count: 8 }],
     socialLinks: initialData?.social_links?.length
       ? initialData.social_links.map((l: string) => ({ id: generateId(), value: l }))
       : [{ id: generateId(), value: "" }],
@@ -204,8 +209,13 @@ function profileReducer(state: ProfileState, action: ProfileAction): ProfileStat
       newCourses[action.index] = { ...newCourses[action.index], value: action.value }
       return { ...state, courses: newCourses }
     }
+    case "SET_COURSE_SEMESTERS": {
+      const newCourses = [...state.courses]
+      newCourses[action.index] = { ...newCourses[action.index], semesters_count: action.value }
+      return { ...state, courses: newCourses }
+    }
     case "ADD_COURSE":
-      return { ...state, courses: [...state.courses, { id: generateId(), value: "" }] }
+      return { ...state, courses: [...state.courses, { id: generateId(), value: "", semesters_count: 8 }] }
     case "REMOVE_COURSE":
       return {
         ...state,
@@ -251,8 +261,12 @@ function profileReducer(state: ProfileState, action: ProfileAction): ProfileStat
         resetFields.principalPhone = initialData?.principal_phone ?? ""
       } else if (section === "courses") {
         resetFields.courses = initialData?.courses?.length
-          ? initialData.courses.map((c: string) => ({ id: generateId(), value: c }))
-          : [{ id: generateId(), value: "" }]
+          ? initialData.courses.map((c: any) => ({
+              id: c.id || generateId(),
+              value: c.value ?? c,
+              semesters_count: c.semesters_count ?? 8
+            }))
+          : [{ id: generateId(), value: "", semesters_count: 8 }]
       } else if (section === "social") {
         resetFields.socialLinks = initialData?.social_links?.length
           ? initialData.social_links.map((l: string) => ({ id: generateId(), value: l }))
@@ -408,6 +422,9 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
   }
   function handleCourseChange(index: number, value: string) {
     dispatch({ type: "SET_COURSE", index, value })
+  }
+  function handleCourseSemestersChange(index: number, value: number) {
+    dispatch({ type: "SET_COURSE_SEMESTERS", index, value })
   }
   function removeCourse(index: number) {
     dispatch({ type: "REMOVE_COURSE", index })
@@ -608,13 +625,30 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
 
 
         else if (section === "courses") {
-          const filteredCourses = courses.map((c) => c.value.trim()).filter(Boolean)
           if (!initialData?.id) { toast.error("Please save Basic Information first."); return }
-          const { error } = await (supabase as any)
-            .from("institutes")
-            .update({ courses: filteredCourses })
-            .eq("id", initialData.id)
-          if (error) throw error
+          
+          // Delete all existing courses for this institute
+          const { error: deleteError } = await (supabase as any)
+            .from("institute_courses")
+            .delete()
+            .eq("institute_id", initialData.id);
+          if (deleteError) throw deleteError;
+
+          const coursesToInsert = courses
+            .map((c) => ({
+              institute_id: initialData.id,
+              course_name: c.value.trim(),
+              semesters_count: c.semesters_count || 8
+            }))
+            .filter((c) => c.course_name);
+
+          if (coursesToInsert.length > 0) {
+            const { error: insertError } = await (supabase as any)
+              .from("institute_courses")
+              .insert(coursesToInsert);
+            if (insertError) throw insertError;
+          }
+
           toast.success("Courses updated!")
         }
 
@@ -1243,17 +1277,31 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
             {editing("courses") ? (
               <div className="space-y-3">
                 {courses.map((courseItem, index) => (
-                  <div key={courseItem.id} className="flex items-center gap-2">
-                    <Input
-                      placeholder="e.g. Computer Science"
-                      value={courseItem.value}
-                      onChange={(e) => handleCourseChange(index, e.target.value)}
-                    />
-                    {courses.length > 1 && (
-                      <Button variant="ghost" size="icon" type="button" onClick={() => removeCourse(index)}>
-                        <Minus className="size-4" />
-                      </Button>
-                    )}
+                  <div key={courseItem.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 border p-3 rounded-lg sm:border-0 sm:p-0">
+                    <div className="w-full sm:flex-1">
+                      <Input
+                        placeholder="e.g. Computer Science"
+                        value={courseItem.value}
+                        onChange={(e) => handleCourseChange(index, e.target.value)}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <Input
+                        type="number"
+                        min={1}
+                        max={20}
+                        placeholder="Semesters"
+                        className="w-24 shrink-0"
+                        value={courseItem.semesters_count}
+                        onChange={(e) => handleCourseSemestersChange(index, parseInt(e.target.value) || 8)}
+                      />
+                      <span className="text-xs text-muted-foreground whitespace-nowrap hidden sm:inline">sems</span>
+                      {courses.length > 1 && (
+                        <Button variant="ghost" size="icon" type="button" onClick={() => removeCourse(index)} className="ml-auto sm:ml-0">
+                          <Minus className="size-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ))}
                 <Button variant="outline" size="sm" onClick={addCourse} type="button">
@@ -1267,8 +1315,11 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                     const trimmed = courseItem.value.trim()
                     if (trimmed) {
                       acc.push(
-                        <Badge key={courseItem.id} variant="secondary">
+                        <Badge key={courseItem.id} variant="secondary" className="flex items-center gap-1.5 py-1 px-2.5">
                           {trimmed}
+                          <span className="text-[10px] text-muted-foreground border-l pl-1.5">
+                            {courseItem.semesters_count} Sems
+                          </span>
                         </Badge>
                       )
                     }

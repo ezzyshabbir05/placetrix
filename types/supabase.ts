@@ -133,7 +133,7 @@ export type Database = {
           created_at: string
           grade_or_percentage: number
           id: string
-          institution_name: string
+          institution_name: string | null
           passout_year: number
           profile_id: string
           type: string
@@ -144,7 +144,7 @@ export type Database = {
           created_at?: string
           grade_or_percentage: number
           id?: string
-          institution_name: string
+          institution_name?: string | null
           passout_year: number
           profile_id: string
           type: string
@@ -155,7 +155,7 @@ export type Database = {
           created_at?: string
           grade_or_percentage?: number
           id?: string
-          institution_name?: string
+          institution_name?: string | null
           passout_year?: number
           profile_id?: string
           type?: string
@@ -237,7 +237,6 @@ export type Database = {
           portfolio_links: string[] | null
           profile_complete: boolean
           profile_id: string
-          sgpa_semesters: Json | null
           university_prn: string | null
           updated_at: string
         }
@@ -258,7 +257,6 @@ export type Database = {
           portfolio_links?: string[] | null
           profile_complete?: boolean
           profile_id: string
-          sgpa_semesters?: Json | null
           university_prn?: string | null
           updated_at?: string
         }
@@ -279,7 +277,6 @@ export type Database = {
           portfolio_links?: string[] | null
           profile_complete?: boolean
           profile_id?: string
-          sgpa_semesters?: Json | null
           university_prn?: string | null
           updated_at?: string
         }
@@ -338,6 +335,40 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "candidate_projects_profile_id_fkey"
+            columns: ["profile_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      candidate_semester_grades: {
+        Row: {
+          created_at: string
+          id: string
+          profile_id: string
+          semester_number: number
+          sgpa: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          profile_id: string
+          semester_number: number
+          sgpa?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          profile_id?: string
+          semester_number?: number
+          sgpa?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_semester_grades_profile_id_fkey"
             columns: ["profile_id"]
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -771,6 +802,40 @@ export type Database = {
           },
         ]
       }
+      institute_courses: {
+        Row: {
+          course_name: string
+          created_at: string
+          id: string
+          institute_id: string
+          semesters_count: number
+          updated_at: string
+        }
+        Insert: {
+          course_name: string
+          created_at?: string
+          id?: string
+          institute_id: string
+          semesters_count?: number
+          updated_at?: string
+        }
+        Update: {
+          course_name?: string
+          created_at?: string
+          id?: string
+          institute_id?: string
+          semesters_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "institute_courses_institute_id_fkey"
+            columns: ["institute_id"]
+            referencedRelation: "institutes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       institute_licenses: {
         Row: {
           created_at: string | null
@@ -845,7 +910,6 @@ export type Database = {
           affiliation: string | null
           city: string | null
           country: string | null
-          courses: string[] | null
           created_at: string | null
           email: string | null
           established_year: number | null
@@ -868,7 +932,6 @@ export type Database = {
           affiliation?: string | null
           city?: string | null
           country?: string | null
-          courses?: string[] | null
           created_at?: string | null
           email?: string | null
           established_year?: number | null
@@ -891,7 +954,6 @@ export type Database = {
           affiliation?: string | null
           city?: string | null
           country?: string | null
-          courses?: string[] | null
           created_at?: string | null
           email?: string | null
           established_year?: number | null

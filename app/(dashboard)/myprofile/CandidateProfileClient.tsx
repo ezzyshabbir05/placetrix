@@ -127,6 +127,8 @@ interface Props {
   eventCertificates?: EventCertificate[];
   allSkills: Skill[];
   initialSkillIds: string[];
+  semestersCount?: number;
+  courseConfigured?: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -432,7 +434,9 @@ export function CandidateProfileClient({
   certificationsData,
   eventCertificates = [],
   allSkills,
-  initialSkillIds
+  initialSkillIds,
+  semestersCount = 8,
+  courseConfigured = true
 }: Props) {
   const supabase = createClient();
   const router = useRouter();
@@ -544,11 +548,21 @@ export function CandidateProfileClient({
 
   // Load semester SGPAs from JSONB array
   const [sgpaValues, setSgpaValues] = useState<string[]>(
-    Array.from({ length: 8 }, (_, i) => {
+    Array.from({ length: semestersCount }, (_, i) => {
       const val = initialData?.sgpa_semesters?.[i];
-      return val != null && val !== 0 ? val.toFixed(2) : "";
+      return val != null && val !== 0 && val !== "" ? (typeof val === "number" ? val.toFixed(2) : Number(val).toFixed(2)) : "";
     })
   );
+  const [currentSemestersCount, setCurrentSemestersCount] = useState<number>(semestersCount);
+
+  const calculatedCgpa = useMemo(() => {
+    const validSgpas = sgpaValues
+      .map(v => v ? parseFloat(v) : null)
+      .filter((v): v is number => v !== null && !isNaN(v));
+    if (validSgpas.length === 0) return null;
+    const sum = validSgpas.reduce((acc, val) => acc + val, 0);
+    return sum / validSgpas.length;
+  }, [sgpaValues]);
 
   // Experiences list and dialog
   const [experiences, setExperiences] = useState<CandidateExperience[]>(experienceData || []);
@@ -604,6 +618,7 @@ export function CandidateProfileClient({
 
   // Institute lookup
   const [institutes, setInstitutes] = useState<InstituteOption[]>([]);
+  const [availableCoursesData, setAvailableCoursesData] = useState<{ course_name: string; semesters_count: number }[]>([]);
   const [availableCourses, setAvailableCourses] = useState<string[]>([]);
   const [selectedAffiliation, setSelectedAffiliation] = useState<string | null>(null);
 
@@ -658,7 +673,7 @@ export function CandidateProfileClient({
     (async () => {
       const { data } = await (supabase as any)
         .from("institutes")
-        .select("id, institute_name, courses, affiliation")
+        .select("id, institute_name, affiliation")
         .order("institute_name");
       if (data) {
         setInstitutes(data);
@@ -666,13 +681,34 @@ export function CandidateProfileClient({
           const found = data.find((i: any) => i.id === userProfile.institute_id);
           if (found) {
             setInstituteName(found.institute_name);
-            setAvailableCourses(found.courses ?? []);
             setSelectedAffiliation(found.affiliation ?? null);
           }
         }
       }
     })();
   }, []);
+
+  useEffect(() => {
+    if (instituteId) {
+      (async () => {
+        const { data } = await (supabase as any)
+          .from("institute_courses")
+          .select("course_name, semesters_count")
+          .eq("institute_id", instituteId)
+          .order("course_name");
+        if (data) {
+          setAvailableCoursesData(data);
+          setAvailableCourses(data.map((c: any) => c.course_name));
+        } else {
+          setAvailableCoursesData([]);
+          setAvailableCourses([]);
+        }
+      })();
+    } else {
+      setAvailableCoursesData([]);
+      setAvailableCourses([]);
+    }
+  }, [instituteId]);
 
   // Sync state when userProfile.institute_id updates from router.refresh()
   useEffect(() => {
@@ -681,7 +717,6 @@ export function CandidateProfileClient({
       if (found && found.id !== instituteId) {
         setInstituteId(found.id);
         setInstituteName(found.institute_name);
-        setAvailableCourses(found.courses ?? []);
         setSelectedAffiliation(found.affiliation ?? null);
       }
     }
@@ -690,11 +725,37 @@ export function CandidateProfileClient({
   useEffect(() => {
     const found = institutes.find((i) => i.id === instituteId);
     if (found) {
-      setAvailableCourses(found.courses ?? []);
       setSelectedAffiliation(found.affiliation ?? null);
-      if (!found.courses?.includes(courseName)) setCourseName("");
     }
   }, [instituteId, institutes]);
+
+  useEffect(() => {
+    if (availableCourses.length > 0 && courseName && !availableCourses.includes(courseName)) {
+      setCourseName("");
+    }
+  }, [availableCourses]);
+
+  useEffect(() => {
+    const matched = availableCoursesData.find(c => c.course_name === courseName);
+    if (matched) {
+      setCurrentSemestersCount(matched.semesters_count);
+    } else {
+      setCurrentSemestersCount(semestersCount);
+    }
+  }, [courseName, availableCoursesData, semestersCount]);
+
+  useEffect(() => {
+    setSgpaValues(prev => {
+      if (prev.length === currentSemestersCount) return prev;
+      return Array.from({ length: currentSemestersCount }, (_, i) => prev[i] || "");
+    });
+  }, [currentSemestersCount]);
+
+  const isCourseConfigured = useMemo(() => {
+    if (!courseName) return true;
+    if (availableCoursesData.length === 0) return courseConfigured;
+    return availableCoursesData.some(c => c.course_name === courseName);
+  }, [courseName, availableCoursesData, courseConfigured]);
 
   // ─── Section open/close ──────────────────────────────────────────────────────
 
@@ -776,11 +837,11 @@ export function CandidateProfileClient({
     const origDipYear = diplomaRecord?.passout_year ? String(diplomaRecord.passout_year) : "";
     const origDipInst = diplomaRecord?.institution_name || "";
 
-    const origSgpas = Array.from({ length: 8 }, (_, i) => {
+    const origSgpas = Array.from({ length: currentSemestersCount }, (_, i) => {
       const val = initialData?.sgpa_semesters?.[i];
-      return val != null && val !== 0 ? val.toFixed(2) : "";
+      return val != null && val !== 0 && val !== "" ? (typeof val === "number" ? val.toFixed(2) : Number(val).toFixed(2)) : "";
     });
-    const sgpaEqual = sgpaValues.every((val, i) => val === origSgpas[i]);
+    const sgpaEqual = sgpaValues.length === origSgpas.length && sgpaValues.every((val, i) => val === origSgpas[i]);
 
     const numOrEmpty = (v: string) => v ? parseFloat(v) : null;
 
@@ -870,9 +931,9 @@ export function CandidateProfileClient({
       setDiplomaPassYear(diplomaRecord?.passout_year ? String(diplomaRecord.passout_year) : "");
       setDiplomaInstitution(diplomaRecord?.institution_name || "");
       setUniversityPrn(initialData?.university_prn ?? "");
-      setSgpaValues(Array.from({ length: 8 }, (_, i) => {
+      setSgpaValues(Array.from({ length: currentSemestersCount }, (_, i) => {
         const val = initialData?.sgpa_semesters?.[i];
-        return val != null && val !== 0 ? val.toFixed(2) : "";
+        return val != null && val !== 0 && val !== "" ? (typeof val === "number" ? val.toFixed(2) : Number(val).toFixed(2)) : "";
       }));
     } else if (section === "professional") {
       setSelectedSkillIds(initialSkillIds ?? []);
@@ -1238,6 +1299,15 @@ export function CandidateProfileClient({
         }
 
         else if (section === "education") {
+          const calculatedCgpaNum = (() => {
+            const validSgpas = sgpaValues
+              .map(v => v ? parseFloat(v) : null)
+              .filter((v): v is number => v !== null && !isNaN(v));
+            if (validSgpas.length === 0) return null;
+            const sum = validSgpas.reduce((acc, val) => acc + val, 0);
+            return parseFloat((sum / validSgpas.length).toFixed(2));
+          })();
+
           // 1. Save main profile details
           const { error: profileError } = await (supabase as any)
             .from("candidate_profiles")
@@ -1246,19 +1316,47 @@ export function CandidateProfileClient({
               course_name: courseName || null,
               passout_year: passoutYear ? Number(passoutYear) : null,
               university_prn: universityPrn.trim() || null,
-              sgpa_semesters: sgpaValues.map((v) => v ? Number(v) : 0),
+              cgpa: calculatedCgpaNum,
             }, { onConflict: 'profile_id' });
 
           await (supabase as any)
             .from("profiles")
             .update({ institute_id: instituteId || null })
             .eq("id", userProfile.id);
+
           if (profileError) {
             if (profileError.code === "PGRST116") {
               toast.error("Please save Personal Details first.");
               return;
             }
             throw profileError;
+          }
+
+          // 1.5. Save Semester Grades
+          if (isCourseConfigured) {
+            await (supabase as any)
+              .from("candidate_semester_grades")
+              .delete()
+              .eq("profile_id", userProfile.id);
+
+            const gradesToInsert = sgpaValues.map((val, index) => {
+              const num = val ? parseFloat(val) : null;
+              if (num !== null && !isNaN(num)) {
+                return {
+                  profile_id: userProfile.id,
+                  semester_number: index + 1,
+                  sgpa: num
+                };
+              }
+              return null;
+            }).filter(Boolean);
+
+            if (gradesToInsert.length > 0) {
+              const { error: gradesError } = await (supabase as any)
+                .from("candidate_semester_grades")
+                .insert(gradesToInsert);
+              if (gradesError) throw gradesError;
+            }
           }
 
           // 2. Save SSC Education
@@ -2301,22 +2399,32 @@ export function CandidateProfileClient({
 
                 <div className="space-y-3">
                   <Label>Semester SGPA</Label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {sgpaValues.map((val, i) => (
-                      <div key={i} className="space-y-1.5">
-                        <Label className="text-xs text-muted-foreground">Sem {i + 1}</Label>
-                        <Input
-                          placeholder="0.00"
-                          type="number"
-                          step={0.01}
-                          min={0}
-                          max={10}
-                          value={val}
-                          onChange={(e) => handleSgpaChange(i, e.target.value)}
-                        />
-                      </div>
-                    ))}
-                  </div>
+                  {isCourseConfigured ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {sgpaValues.map((val, i) => (
+                        <div key={i} className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Sem {i + 1}</Label>
+                          <Input
+                            placeholder="0.00"
+                            type="number"
+                            step={0.01}
+                            min={0}
+                            max={10}
+                            value={val}
+                            onChange={(e) => handleSgpaChange(i, e.target.value)}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <Alert variant="destructive">
+                      <ShieldAlert className="h-4 w-4" />
+                      <AlertTitle>Course Semesters Not Configured</AlertTitle>
+                      <AlertDescription>
+                        Please contact your institute coordinator to configure the semesters count for &quot;{courseName}&quot;.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                   <FieldError message={errors.sgpa} />
                 </div>
 
@@ -2324,7 +2432,7 @@ export function CandidateProfileClient({
                   <div className="space-y-2">
                     <Label>CGPA</Label>
                     <Input
-                      value={initialData?.cgpa != null ? initialData.cgpa.toFixed(2) : "—"}
+                      value={calculatedCgpa != null ? calculatedCgpa.toFixed(2) : "—"}
                       disabled
                       className="bg-zinc-50 dark:bg-zinc-900/50 text-muted-foreground border-muted cursor-not-allowed"
                     />
@@ -2383,18 +2491,28 @@ export function CandidateProfileClient({
 
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">Semester SGPA</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {sgpaValues.map((val, i) => (
-                      <div key={i}>
-                        <p className="text-[10px] text-muted-foreground">Sem {i + 1}</p>
-                        <p className="text-sm font-medium">{val && !isNaN(parseFloat(val)) ? parseFloat(val).toFixed(2) : "—"}</p>
-                      </div>
-                    ))}
-                  </div>
+                  {isCourseConfigured ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {sgpaValues.map((val, i) => (
+                        <div key={i}>
+                          <p className="text-[10px] text-muted-foreground">Sem {i + 1}</p>
+                          <p className="text-sm font-medium">{val && !isNaN(parseFloat(val)) ? parseFloat(val).toFixed(2) : "—"}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <Alert variant="destructive" className="py-2">
+                      <ShieldAlert className="h-4 w-4" />
+                      <AlertTitle className="text-xs">Course Semesters Not Configured</AlertTitle>
+                      <AlertDescription className="text-xs">
+                        Please contact your institute coordinator to configure the semesters count for &quot;{courseName}&quot;.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-                  <ReadonlyField label="CGPA" value={initialData?.cgpa != null ? initialData.cgpa.toFixed(2) : "—"} />
+                  <ReadonlyField label="CGPA" value={calculatedCgpa != null ? calculatedCgpa.toFixed(2) : "—"} />
                 </div>
               </div>
             )}

@@ -31,7 +31,8 @@ export default async function MyProfilePage() {
       { data: candidateCertifications },
       { data: eventTickets },
       { data: allSkills },
-      { data: candidateSkillRows }
+      { data: candidateSkillRows },
+      { data: semesterGrades }
     ] = await Promise.all([
       (supabase as any).from("candidate_profiles").select("*").eq("profile_id", profile.id).maybeSingle(),
       (supabase as any).from("candidate_education").select("*").eq("profile_id", profile.id).order("passout_year", { ascending: false }),
@@ -54,8 +55,29 @@ export default async function MyProfilePage() {
         .eq("events.status", "Concluded"),
       (supabase as any).from("skills").select("*").order("category").order("name"),
       (supabase as any).from("candidate_skills").select("skill_id").eq("profile_id", profile.id),
+      (supabase as any).from("candidate_semester_grades").select("semester_number, sgpa").eq("profile_id", profile.id).order("semester_number"),
     ]);
 
+    let semestersCount = 8;
+    let courseConfigured = true;
+    if (profile.institute_id && candidateProfile?.course_name) {
+      const { data: courseData } = await (supabase as any)
+        .from("institute_courses")
+        .select("semesters_count")
+        .eq("institute_id", profile.institute_id)
+        .eq("course_name", candidateProfile.course_name)
+        .maybeSingle();
+      if (courseData) {
+        semestersCount = courseData.semesters_count;
+      } else {
+        courseConfigured = false;
+      }
+    }
+
+    const initialSgpaArray = Array.from({ length: semestersCount }, (_, i) => {
+      const row = (semesterGrades || []).find((g: any) => g.semester_number === i + 1);
+      return row && row.sgpa != null ? Number(row.sgpa).toFixed(2) : "";
+    });
 
     const eventCertificates = (eventTickets ?? [])
       .filter((t: any) => t.event)
@@ -82,6 +104,7 @@ export default async function MyProfilePage() {
       middle_name: profile.middle_name,
       last_name: profile.last_name,
       full_name: profile.full_name,
+      sgpa_semesters: initialSgpaArray,
     } : null;
 
     const selectedSkillIds: string[] = (candidateSkillRows ?? []).map((r: any) => r.skill_id);
@@ -97,6 +120,8 @@ export default async function MyProfilePage() {
         eventCertificates={eventCertificates}
         allSkills={allSkills ?? []}
         initialSkillIds={selectedSkillIds}
+        semestersCount={semestersCount}
+        courseConfigured={courseConfigured}
       />
     )
   }
@@ -120,22 +145,32 @@ export default async function MyProfilePage() {
   }
 
   if (profile.account_type === "institute_primary") {
-
-    const instituteId = profile.institute_id
-    let instituteProfile = null
+    const instituteId = profile.institute_id;
+    let instituteProfile = null;
+    let instituteCourses: any[] = [];
+    
     if (instituteId) {
-      const { data } = await (supabase as any)
-        .from("institutes")
-        .select("*")
-        .eq("id", instituteId)
-        .maybeSingle()
-      instituteProfile = data
+      const [instRes, coursesRes] = await Promise.all([
+        (supabase as any).from("institutes").select("*").eq("id", instituteId).maybeSingle(),
+        (supabase as any).from("institute_courses").select("id, course_name, semesters_count").eq("institute_id", instituteId).order("course_name")
+      ]);
+      instituteProfile = instRes.data;
+      instituteCourses = coursesRes.data || [];
     }
+
+    const mergedData = instituteProfile ? {
+      ...instituteProfile,
+      courses: instituteCourses.map((c: any) => ({
+        id: c.id,
+        value: c.course_name,
+        semesters_count: c.semesters_count
+      }))
+    } : null;
 
     return (
       <InstituteProfileClient
         userProfile={profile}
-        initialData={instituteProfile ?? null}
+        initialData={mergedData}
       />
     )
   }
