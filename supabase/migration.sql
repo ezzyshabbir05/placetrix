@@ -154,3 +154,68 @@ BEGIN
   END LOOP;
 END;
 $function$;
+
+-- 3. Create or Replace test_attempt_init database function
+CREATE OR REPLACE FUNCTION public.test_attempt_init(p_test_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_user_id UUID := auth.uid();
+  v_institute_id UUID;
+  v_profile_complete BOOLEAN;
+  v_profile_updated BOOLEAN;
+  v_test RECORD;
+  v_existing_attempt RECORD;
+  v_completed_count INT;
+  v_saved_answers JSONB;
+BEGIN
+  SELECT p.institute_id INTO v_institute_id FROM public.profiles p WHERE p.id = v_user_id;
+  
+  -- Correctly fetch profile_complete from candidate_profiles and profile_updated from profiles
+  SELECT cp.profile_complete INTO v_profile_complete FROM public.candidate_profiles cp WHERE cp.profile_id = v_user_id;
+  SELECT p.profile_updated INTO v_profile_updated FROM public.profiles p WHERE p.id = v_user_id;
+
+  IF NOT COALESCE(v_profile_complete, FALSE) OR NOT COALESCE(v_profile_updated, FALSE) THEN
+    RETURN jsonb_build_object('error', 'Profile incomplete');
+  END IF;
+
+  SELECT id, status, institute_id, max_attempts, available_from, available_until INTO v_test FROM public.tests WHERE id = p_test_id;
+  IF NOT FOUND OR v_test.status != 'published' OR v_test.institute_id != v_institute_id THEN
+    RETURN jsonb_build_object('error', 'Test not available');
+  END IF;
+
+  SELECT id, started_at, expires_at, tab_switch_count, attempt_number INTO v_existing_attempt FROM public.test_attempts WHERE test_id = p_test_id AND candidate_id = v_user_id AND status = 'in_progress' ORDER BY created_at DESC LIMIT 1;
+  IF FOUND THEN
+    SELECT jsonb_agg(jsonb_build_object('question_id', question_id, 'selected_option_ids', selected_option_ids)) INTO v_saved_answers FROM public.test_attempt_answers WHERE attempt_id = v_existing_attempt.id;
+    RETURN jsonb_build_object(
+      'status', 'resumed',
+      'attempt', jsonb_build_object(
+        'id', v_existing_attempt.id,
+        'started_at', v_existing_attempt.started_at,
+        'expires_at', v_existing_attempt.expires_at,
+        'tab_switch_count', COALESCE(v_existing_attempt.tab_switch_count, 0),
+        'attempt_number', v_existing_attempt.attempt_number
+      ),
+      'saved_answers', COALESCE(v_saved_answers, '[]'::jsonb)
+    );
+  END IF;
+
+  IF v_test.available_from IS NOT NULL AND v_test.available_from > NOW() THEN
+    RETURN jsonb_build_object('error', 'Test is not yet open');
+  END IF;
+
+  IF v_test.available_until IS NOT NULL AND v_test.available_until < NOW() THEN
+    RETURN jsonb_build_object('error', 'Test has closed');
+  END IF;
+
+  SELECT count(*) INTO v_completed_count FROM public.test_attempts WHERE test_id = p_test_id AND candidate_id = v_user_id AND status IN ('submitted', 'auto_submitted');
+  IF v_completed_count >= v_test.max_attempts THEN
+    RETURN jsonb_build_object('error', 'Max attempts reached');
+  END IF;
+
+  RETURN jsonb_build_object('status', 'ready', 'completed_count', v_completed_count, 'max_attempts', v_test.max_attempts);
+END;
+$function$;
