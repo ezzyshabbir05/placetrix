@@ -1,28 +1,42 @@
 import * as React from "react"
-
 import { cn } from "@/lib/utils"
 
-function Card({ className, ...props }: React.ComponentProps<"div">) {
+function Card({ className, children, ...props }: React.ComponentProps<"div">) {
+  // Automatically check if a CardHeader is present in direct children
+  let hasHeader = false
+  React.Children.forEach(children, (child) => {
+    if (React.isValidElement(child) && child.type === CardHeader) {
+      hasHeader = true
+    }
+  })
+
+  const clonedChildren = React.Children.map(children, (child) => {
+    if (React.isValidElement(child) && child.type === CardContent) {
+      return React.cloneElement(child as React.ReactElement<any>, { _hasHeader: hasHeader })
+    }
+    return child
+  })
+
   return (
     <div
       data-slot="card"
       className={cn(
-        "bg-card text-card-foreground flex flex-col gap-4 rounded-xl border shadow-sm",
+        "bg-card text-card-foreground flex flex-col rounded-xl border shadow-sm",
         className
       )}
       {...props}
-    />
+    >
+      {clonedChildren}
+    </div>
   )
 }
 
 function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
-  const hasPadding = typeof className === "string" && /\bp[xytblr]?-/.test(className)
   return (
     <div
       data-slot="card-header"
       className={cn(
-        "@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6",
-        !hasPadding && "px-6 pt-6 last:pb-6",
+        "@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 p-5 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-5",
         className
       )}
       {...props}
@@ -63,13 +77,17 @@ function CardAction({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-function CardContent({ className, ...props }: React.ComponentProps<"div">) {
-  const hasPadding = typeof className === "string" && /\bp[xytblr]?-/.test(className)
+interface CardContentProps extends React.ComponentProps<"div"> {
+  _hasHeader?: boolean
+}
+
+function CardContent({ className, _hasHeader, ...props }: CardContentProps) {
   return (
     <div
       data-slot="card-content"
       className={cn(
-        !hasPadding && "px-6 first:pt-6 last:pb-6",
+        "p-5",
+        _hasHeader && "pt-0",
         className
       )}
       {...props}
@@ -78,13 +96,11 @@ function CardContent({ className, ...props }: React.ComponentProps<"div">) {
 }
 
 function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
-  const hasPadding = typeof className === "string" && /\bp[xytblr]?-/.test(className)
   return (
     <div
       data-slot="card-footer"
       className={cn(
-        "flex items-center [.border-t]:pt-6",
-        !hasPadding && "px-6 pb-6 first:pt-6",
+        "flex items-center p-5 pt-0 [.border-t]:pt-5",
         className
       )}
       {...props}

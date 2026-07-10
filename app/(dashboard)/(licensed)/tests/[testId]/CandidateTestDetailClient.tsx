@@ -455,57 +455,55 @@ export function CandidateTestDetailClient({ test, attempt, serverNow }: Props) {
       <PageHeader test={test} />
 
       <Card className="rounded-xl overflow-hidden border">
-        <CardContent className="p-0">
-          <div className="p-5 space-y-4">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-1">
-                <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Performance Summary
-                </p>
-                <h3 className="text-lg font-semibold">Test Submitted</h3>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <CalendarClock className="h-3.5 w-3.5" />
-                  <span>
-                    {attempt?.submitted_at ? formatDateTime(attempt.submitted_at) : "Recorded successfully"}
-                  </span>
-                </div>
+        <CardContent className="p-5 space-y-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Performance Summary
+              </p>
+              <h3 className="text-lg font-semibold">Test Submitted</h3>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <CalendarClock className="h-3.5 w-3.5" />
+                <span>
+                  {attempt?.submitted_at ? formatDateTime(attempt.submitted_at) : "Recorded successfully"}
+                </span>
               </div>
             </div>
+          </div>
 
-            {!test.results_available ? (
-              <div className="rounded-lg border bg-muted/30 p-3 flex items-start gap-2.5">
-                <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                <p className="text-xs leading-relaxed text-muted-foreground">
-                  Detailed results and scores are currently hidden by the instructor. They will be visible once released.
+          {!test.results_available ? (
+            <div className="rounded-lg border bg-muted/30 p-3 flex items-start gap-2.5">
+              <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Detailed results and scores are currently hidden by the instructor. They will be visible once released.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg border bg-muted/20 p-3">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Score</p>
+                <p className={cn("mt-1 text-2xl font-bold tabular-nums", pctColorClass)}>
+                  {pct.toFixed(2)}%
                 </p>
               </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-lg border bg-muted/20 p-3">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Score</p>
-                  <p className={cn("mt-1 text-2xl font-bold tabular-nums", pctColorClass)}>
-                    {pct.toFixed(2)}%
-                  </p>
-                </div>
-                <div className="rounded-lg border bg-muted/20 p-3">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Time Taken</p>
-                  <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
-                    {attempt?.time_spent_seconds ? formatSeconds(attempt.time_spent_seconds) : "—"}
-                  </p>
-                </div>
+              <div className="rounded-lg border bg-muted/20 p-3">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Time Taken</p>
+                <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
+                  {attempt?.time_spent_seconds ? formatSeconds(attempt.time_spent_seconds) : "—"}
+                </p>
               </div>
-            )}
+            </div>
+          )}
 
-            {test.results_available && (
-              <div className="pt-2">
-                <Button asChild variant="default" className="w-full sm:w-auto">
-                  <Link href={`/tests/${test.id}/result/${attempt?.id}`}>
-                    View Detailed Report
-                  </Link>
-                </Button>
-              </div>
-            )}
-          </div>
+          {test.results_available && (
+            <div className="pt-2">
+              <Button asChild variant="default" className="w-full sm:w-auto">
+                <Link href={`/tests/${test.id}/result/${attempt?.id}`}>
+                  View Detailed Report
+                </Link>
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -14,8 +14,8 @@ export default function SignUpPage() {
           <h1 className="font-cirka font-bold text-2xl tracking-wide">
             Contact Your Institute
           </h1>
-          <p className="text-base text-muted-foreground">
-            Your Placetrix account must be pre-created by your training and placement officer or institute coordinator. Please contact them to obtain your login credentials.
+          <p className="text-sm text-muted-foreground">
+            Accounts must be by your institute. Please contact your placement officer or coordinator to obtain login credentials.
           </p>
         </div>
       </div>
@@ -25,7 +25,6 @@ export default function SignUpPage() {
       <div className="space-y-3">
         <Button asChild className="w-full">
           <Link href="/auth/login">
-            <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Sign In
           </Link>
         </Button>

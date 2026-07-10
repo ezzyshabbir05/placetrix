@@ -162,14 +162,9 @@ function AuthButtons({
   size: "sm" | "default";
 }) {
   return (
-    <>
-      <Button size={size} variant="outline" className={NAV_BUTTON} asChild>
-        <Link href="/auth/login">Sign In</Link>
-      </Button>
-      <Button size={size} asChild>
-        <Link href="/auth/sign-up">Get Started</Link>
-      </Button>
-    </>
+    <Button size={size} asChild>
+      <Link href="/auth/login">Sign In</Link>
+    </Button>
   );
 }
 
@@ -271,15 +266,10 @@ function MobileNav({
                     </div>
                   </Link>
                 ) : (
-                  <div className="mb-3 grid grid-cols-2 gap-2">
-                    <Button variant="outline" className={cn("w-full", NAV_BUTTON)} asChild>
+                  <div className="mb-3">
+                    <Button className="w-full" asChild>
                       <Link href="/auth/login" onClick={closeMenu}>
                         Sign In
-                      </Link>
-                    </Button>
-                    <Button className="w-full" asChild>
-                      <Link href="/auth/sign-up" onClick={closeMenu}>
-                        Get Started
                       </Link>
                     </Button>
                   </div>
@@ -538,8 +528,8 @@ function HeroSection() {
 
               <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
                 <Button size="lg" className="rounded-full font-medium shadow-sm" asChild>
-                  <Link href="/auth/sign-up">
-                    Get Started
+                  <Link href="/auth/login">
+                    Sign In
                     <ArrowRightIcon data-icon="inline-end" />
                   </Link>
                 </Button>
@@ -842,7 +832,7 @@ function CTASection() {
 
           <div className="relative z-20">
             <p className="mb-3 text-xs font-medium uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
-              Get started today
+              Sign in today
             </p>
             <h2
               className="font-cirka text-balance text-4xl font-semibold tracking-tight sm:text-5xl md:text-6xl"
@@ -855,7 +845,7 @@ function CTASection() {
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Button size="lg" className="rounded-full font-medium" asChild>
-                <Link href="/auth/sign-up">Get Started</Link>
+                <Link href="/auth/login">Sign In</Link>
               </Button>
             </div>
           </div>

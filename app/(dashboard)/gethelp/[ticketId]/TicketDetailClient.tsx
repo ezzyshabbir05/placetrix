@@ -279,7 +279,7 @@ export default function TicketDetailClient({
       )}
 
       {/* ── Chat Container ─────────────────────────────────────────────── */}
-      <Card className="h-[calc(100vh-20rem)] min-h-[500px] max-h-[750px] flex flex-col gap-0 py-0 overflow-hidden border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-950/20 backdrop-blur-sm shadow-none">
+      <Card className="h-[calc(100vh-20rem)] min-h-[500px] max-h-[750px] flex flex-col gap-0 overflow-hidden border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-950/20 backdrop-blur-sm shadow-none">
         <CardHeader className="flex flex-row items-center justify-between px-6 py-4 space-y-0 border-b border-border/40">
           <div className="flex flex-col gap-1">
             <CardTitle className="text-base font-semibold text-foreground">Ticket Conversation</CardTitle>

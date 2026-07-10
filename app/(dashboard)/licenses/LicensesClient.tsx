@@ -180,7 +180,7 @@ export function LicensesClient({ initialInstitutes }: LicensesClientProps) {
         {filteredInstitutes.map((inst) => {
           const hasLicense = !!inst.license;
           return (
-            <Card key={inst.id} className="py-0 overflow-hidden hover:shadow-sm transition-shadow">
+            <Card key={inst.id} className="overflow-hidden hover:shadow-sm transition-shadow">
               <CardContent className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 {/* Left: Info */}
                 <div className="flex-1 min-w-0 space-y-1.5">
