@@ -245,11 +245,12 @@ export function CreateEventClient({ eventId, initialData }: Props) {
         if (eventId) {
           await updateEventAction(eventId, payload)
           toast.success("Event updated successfully!")
+          router.push(`/events/${eventId}`)
         } else {
           await createEventAction(payload)
           toast.success("Event created successfully!")
+          router.push("/events")
         }
-        router.push("/events")
         router.refresh()
       } catch (err: any) {
         toast.error(err.message || "Failed to save event.")
@@ -299,7 +300,7 @@ export function CreateEventClient({ eventId, initialData }: Props) {
       {/* Header Actions */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b pb-5">
         <div className="flex items-center gap-3">
-          <Link href="/events">
+          <Link href={eventId ? `/events/${eventId}` : "/events"}>
             <Button variant="ghost" size="icon" className="h-9 w-9">
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -315,7 +316,7 @@ export function CreateEventClient({ eventId, initialData }: Props) {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link href="/events">
+          <Link href={eventId ? `/events/${eventId}` : "/events"}>
             <Button variant="outline" size="sm" disabled={isPending}>
               Cancel
             </Button>

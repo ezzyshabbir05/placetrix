@@ -29,6 +29,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import {
   ArrowLeft,
   Calendar,
   Clock,
@@ -44,11 +55,13 @@ import {
   Loader2,
   ScanLine,
   FileSpreadsheet,
+  PenLine,
+  Trash2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import * as XLSX from "xlsx"
-import { markAttendanceAction } from "../actions"
+import { markAttendanceAction, deleteEventAction, concludeEventAction } from "../actions"
 import type { EventTicket, EventStatus, TicketStatus, AttendanceStatus } from "../types"
 
 
@@ -178,8 +191,34 @@ export function EventDetailStaffClient({ event, tickets: initialTickets }: Props
   const router = useRouter()
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState<"all" | "confirmed" | "waitlisted" | "present">("all")
+  const [isPending, startTransition] = useTransition()
+  const isPast = new Date(event.date) < new Date()
 
   const onCheckIn = () => router.refresh()
+
+  const handleDelete = () => {
+    startTransition(async () => {
+      try {
+        await deleteEventAction(event.id)
+        toast.success("Event deleted.")
+        router.push("/events")
+      } catch (err: any) {
+        toast.error(err.message)
+      }
+    })
+  }
+
+  const handleConclude = () => {
+    startTransition(async () => {
+      try {
+        await concludeEventAction(event.id)
+        toast.success("Event concluded.")
+        router.refresh()
+      } catch (err: any) {
+        toast.error(err.message)
+      }
+    })
+  }
 
   const stats = useMemo(() => {
     const confirmed = initialTickets.filter((t) => t.status === "Confirmed").length
@@ -251,10 +290,77 @@ export function EventDetailStaffClient({ event, tickets: initialTickets }: Props
         >
           <ArrowLeft className="h-4 w-4" /> Back to Events
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight">{event.title}</h1>
-        {event.description && (
-          <p className="text-sm text-muted-foreground mt-1">{event.description}</p>
-        )}
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl font-bold tracking-tight">{event.title}</h1>
+            {event.description && (
+              <p className="text-sm text-muted-foreground mt-1">{event.description}</p>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2 md:mt-1">
+            {(event.status === "Draft" || event.status === "Published") && (
+              <Link href={`/events/${event.id}/edit`}>
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs cursor-pointer">
+                  <PenLine className="h-3.5 w-3.5" />
+                  Edit
+                </Button>
+              </Link>
+            )}
+
+            {event.status === "Published" && !isPast && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="outline" className="text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/20 border-amber-200 dark:border-amber-900/30 gap-1.5 cursor-pointer">
+                    Conclude
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Conclude this event?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will mark the event as concluded. No new RSVPs will be accepted.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleConclude} disabled={isPending} className="cursor-pointer">
+                      {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Conclude
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="outline" className="text-xs text-destructive hover:bg-destructive/5 border-destructive/20 hover:border-destructive/30 gap-1.5 cursor-pointer">
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete this event?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. All candidate tickets will also be deleted.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDelete}
+                    disabled={isPending}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer"
+                  >
+                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
       </div>
 
       {/* Event Info */}

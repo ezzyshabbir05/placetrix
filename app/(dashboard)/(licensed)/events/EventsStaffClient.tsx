@@ -16,17 +16,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import {
   Calendar,
   Plus,
   Search,
@@ -36,8 +25,6 @@ import {
   Clock,
   Eye,
   CheckCircle2,
-  PenLine,
-  Trash2,
   FileText,
   Loader2,
   QrCode,
@@ -50,10 +37,10 @@ import {
   BookOpen,
   CalendarClock,
   PlayCircle,
+  Settings,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-import { deleteEventAction, concludeEventAction } from "./actions"
 import type { EventListItem, EventStatus } from "./types"
 
 type Tab = "all" | "published" | "draft" | "concluded"
@@ -217,39 +204,11 @@ function StaffAccessStatus({
 // ─── Event Card ───────────────────────────────────────────────────────────────
 function EventCard({
   event,
-  onRefresh,
 }: {
   event: EventListItem
-  onRefresh: () => void
 }) {
   const router = useRouter()
-  const [isPending, startTransition] = useTransition()
   const isPast = new Date(event.date) < new Date()
-  const spotsLeft = Math.max(0, event.capacity - event.tickets_confirmed)
-
-  const handleDelete = () => {
-    startTransition(async () => {
-      try {
-        await deleteEventAction(event.id)
-        toast.success("Event deleted.")
-        onRefresh()
-      } catch (err: any) {
-        toast.error(err.message)
-      }
-    })
-  }
-
-  const handleConclude = () => {
-    startTransition(async () => {
-      try {
-        await concludeEventAction(event.id)
-        toast.success("Event concluded.")
-        onRefresh()
-      } catch (err: any) {
-        toast.error(err.message)
-      }
-    })
-  }
 
   return (
     <Card className="overflow-hidden border-border/70 bg-card p-0">
@@ -302,91 +261,30 @@ function EventCard({
         </div>
 
         {/* Right Action Column */}
-        <div className="flex flex-col gap-3 border-t border-border/60 pt-3 md:min-w-[220px] md:items-end md:pt-0 md:border-t-0 md:text-right">
+        <div className="flex flex-col gap-3 border-t border-border/60 pt-3 md:min-w-[120px] md:items-end md:pt-0 md:border-t-0 md:text-right">
           <div className="md:items-end">
             <StaffAccessStatus status={event.status} isPast={isPast} />
           </div>
 
-          <div className="flex items-center gap-1.5 w-full md:w-auto md:justify-end">
-            {event.status === "Published" ? (
-              <>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => router.push(`/events/${event.id}`)}
-                  className="w-full md:w-auto gap-1 text-xs cursor-pointer"
-                >
-                  <QrCode className="h-3.5 w-3.5" />
-                  Manage & Scan
-                </Button>
-
-                <Link href={`/events/${event.id}/edit`} className="h-8 w-8 p-0 cursor-pointer hidden md:flex items-center justify-center border border-border rounded-md hover:bg-accent">
-                  <PenLine className="h-4 w-4 text-muted-foreground" />
-                </Link>
-
-                {/* Conclude Action */}
-                {!isPast && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button size="sm" variant="ghost" className="text-xs text-amber-600 cursor-pointer">
-                        Conclude
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Conclude this event?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will mark the event as concluded. No new RSVPs will be accepted.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConclude} disabled={isPending} className="cursor-pointer">
-                          {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                          Conclude
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
-              </>
-            ) : (
-              // Draft edit link
-              <Link href={`/events/${event.id}/edit`} className="w-full md:w-auto">
-                <Button size="sm" variant="outline" className="w-full md:w-auto gap-1.5 text-xs cursor-pointer">
-                  <PenLine className="h-3.5 w-3.5" />
-                  Edit Draft
-                </Button>
-              </Link>
-            )}
-
-            {/* Delete Alert */}
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button size="sm" variant="ghost" className="text-xs text-destructive hover:bg-destructive/5 font-medium cursor-pointer">
-                  Delete
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete this event?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. All candidate tickets will also be deleted.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleDelete}
-                    disabled={isPending}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer"
-                  >
-                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-1.5 w-full md:w-auto md:justify-end">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => router.push(`/events/${event.id}`)}
+              className="w-full md:w-auto gap-1 text-xs cursor-pointer"
+            >
+              <Settings className="h-3.5 w-3.5" />
+              Manage
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => toast.info("Scan feature is coming soon!")}
+              className="w-full md:w-auto gap-1 text-xs cursor-pointer"
+            >
+              <QrCode className="h-3.5 w-3.5" />
+              Scan
+            </Button>
           </div>
         </div>
       </div>
@@ -587,7 +485,7 @@ export function EventsStaffClient({
                       <>
                         <div className="flex flex-col gap-3 w-full">
                           {events.map((event) => (
-                            <EventCard key={event.id} event={event} onRefresh={onRefresh} />
+                            <EventCard key={event.id} event={event} />
                           ))}
                         </div>
 
