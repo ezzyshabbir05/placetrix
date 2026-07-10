@@ -454,7 +454,7 @@ export function CandidateTestDetailClient({ test, attempt, serverNow }: Props) {
       {/* ── Page Header ────────────────────────────────────────────────── */}
       <PageHeader test={test} />
 
-      <Card className="rounded-xl overflow-hidden border py-0">
+      <Card className="rounded-xl overflow-hidden border">
         <CardContent className="p-0">
           <div className="p-5 space-y-4">
             <div className="flex items-start justify-between gap-4">
