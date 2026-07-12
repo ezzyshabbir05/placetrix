@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Wrench, ChevronRight } from "lucide-react"
+import { Wrench, ChevronRight, FileText } from "lucide-react"
 import { IconBrain } from "@tabler/icons-react"
 import { useRouter } from "next/navigation"
 
@@ -16,6 +16,15 @@ const toolsList = [
     badge: "AI",
     icon: <IconBrain className="size-5 text-violet-500" />,
     iconBg: "bg-violet-500/10",
+  },
+  {
+    title: "Resume Generator",
+    description:
+      "Auto-build a professional resume from your filled profile. Pick a template, customise sections, and download as PDF in seconds.",
+    href: "/tools/resume_generator",
+    badge: "New",
+    icon: <FileText className="size-5 text-emerald-500" />,
+    iconBg: "bg-emerald-500/10",
   },
 ]
 
