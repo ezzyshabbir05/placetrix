@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/supabase";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { getUserProfile } from "@/lib/supabase/profile";
+import { sendNewSupportTicketNotification, sendTicketCreatorConfirmation } from "@/lib/email";
 
 export async function createTicketAction(data: { title: string; description: string; email: string }) {
   const profile = await getUserProfile();
@@ -27,6 +28,28 @@ export async function createTicketAction(data: { title: string; description: str
 
   if (error) {
     throw new Error(error.message);
+  }
+
+  // Fire-and-forget: send both emails in parallel
+  if (ticket) {
+    const emailPayload = {
+      id: ticket.id,
+      title: data.title,
+      description: data.description,
+      email: data.email,
+      userName: profile.full_name ?? undefined,
+    };
+
+    Promise.allSettled([
+      sendNewSupportTicketNotification(emailPayload),
+      sendTicketCreatorConfirmation(emailPayload),
+    ]).then((results) => {
+      results.forEach((r, i) => {
+        if (r.status === "rejected") {
+          console.error(`[createTicketAction] Email #${i} failed:`, r.reason);
+        }
+      });
+    });
   }
 
   return ticket;

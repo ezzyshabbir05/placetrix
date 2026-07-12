@@ -358,3 +358,440 @@ export async function sendTicketEmail(ticketId: string): Promise<{ success: bool
     return { success: false, error: err.message || "Internal error in sendTicketEmail via SMTP" }
   }
 }
+
+export async function sendNewSupportTicketNotification(ticket: {
+  id: string;
+  title: string;
+  description: string;
+  email: string;
+  userName?: string;
+}): Promise<{ success: boolean; error?: string; mock?: boolean }> {
+  try {
+    const smtpHost = process.env.SMTP_HOST
+    const smtpPort = process.env.SMTP_PORT
+    const smtpUser = process.env.SMTP_USER
+    const smtpPass = process.env.SMTP_PASS
+    const smtpSenderName = process.env.SMTP_SENDER_NAME || "PlaceTrix"
+    const smtpSenderEmail = process.env.SMTP_ADMIN_EMAIL || "noreply@placetrix.app"
+
+    const subject = `🎫 New Support Ticket: ${ticket.title}`
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>${subject}</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+              background-color: #f4f4f7;
+              color: #333333;
+              margin: 0;
+              padding: 0;
+              width: 100% !important;
+            }
+            .wrapper { width: 100%; background-color: #f4f4f7; padding: 24px 0; }
+            .container {
+              max-width: 540px;
+              margin: 0 auto;
+              background: #ffffff;
+              border-radius: 16px;
+              overflow: hidden;
+              box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+              border: 1px solid #e1e4e8;
+            }
+            .header {
+              background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+              color: #ffffff;
+              padding: 28px 28px 24px;
+            }
+            .header-badge {
+              display: inline-block;
+              background: rgba(255,255,255,0.12);
+              border: 1px solid rgba(255,255,255,0.18);
+              color: #fff;
+              font-size: 11px;
+              font-weight: 700;
+              letter-spacing: 0.08em;
+              text-transform: uppercase;
+              padding: 4px 10px;
+              border-radius: 9999px;
+              margin-bottom: 12px;
+            }
+            .header h1 {
+              margin: 0;
+              font-size: 20px;
+              font-weight: 700;
+              letter-spacing: -0.3px;
+              line-height: 1.3;
+            }
+            .header p {
+              margin: 6px 0 0;
+              font-size: 13px;
+              opacity: 0.65;
+            }
+            .content { padding: 28px; }
+            .field {
+              margin-bottom: 18px;
+            }
+            .field-label {
+              font-size: 11px;
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.07em;
+              color: #64748b;
+              margin-bottom: 5px;
+            }
+            .field-value {
+              font-size: 14px;
+              color: #0f172a;
+              line-height: 1.55;
+              background: #f8fafc;
+              border: 1px solid #e2e8f0;
+              border-radius: 8px;
+              padding: 10px 14px;
+              word-break: break-word;
+            }
+            .ticket-id {
+              font-family: monospace;
+              font-size: 12px;
+              background: #f1f5f9;
+              border: 1px solid #e2e8f0;
+              border-radius: 6px;
+              padding: 8px 12px;
+              color: #475569;
+              margin-bottom: 20px;
+              display: block;
+            }
+            .cta {
+              text-align: center;
+              margin: 24px 0 8px;
+            }
+            .cta a {
+              display: inline-block;
+              background: #0f172a;
+              color: #fff;
+              text-decoration: none;
+              font-size: 14px;
+              font-weight: 600;
+              padding: 12px 28px;
+              border-radius: 9999px;
+              letter-spacing: 0.01em;
+            }
+            .footer {
+              text-align: center;
+              font-size: 11px;
+              color: #94a3b8;
+              padding: 20px 28px;
+              border-top: 1px solid #f1f5f9;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="wrapper">
+            <div class="container">
+              <div class="header">
+                <div class="header-badge">Support Ticket</div>
+                <h1>New ticket submitted</h1>
+                <p>A user has opened a new support request on PlaceTrix.</p>
+              </div>
+              <div class="content">
+                <span class="ticket-id">Ticket ID: ${ticket.id}</span>
+
+                <div class="field">
+                  <div class="field-label">Subject</div>
+                  <div class="field-value">${ticket.title}</div>
+                </div>
+
+                <div class="field">
+                  <div class="field-label">Description</div>
+                  <div class="field-value">${ticket.description.replace(/\n/g, "<br>")}</div>
+                </div>
+
+                <div class="field">
+                  <div class="field-label">Submitted By</div>
+                  <div class="field-value">${ticket.userName ? `${ticket.userName} &lt;${ticket.email}&gt;` : ticket.email}</div>
+                </div>
+
+                <div class="field">
+                  <div class="field-label">Submitted At</div>
+                  <div class="field-value">${new Date().toLocaleString("en-IN", { dateStyle: "full", timeStyle: "short" })}</div>
+                </div>
+
+                <div class="cta">
+                  <a href="${process.env.NEXT_PUBLIC_SITE_URL || "https://placetrix.app"}/support/${ticket.id}">View Ticket in Dashboard</a>
+                </div>
+              </div>
+              <div class="footer">
+                <p>This is an automated notification from PlaceTrix Support System.</p>
+                <p>&copy; ${new Date().getFullYear()} PlaceTrix. All rights reserved.</p>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `
+
+    if (!smtpHost || !smtpPort || !smtpUser || !smtpPass) {
+      console.warn("⚠️ [EMAIL SERVICE] SMTP configuration is incomplete. Skipping notification email.")
+      console.log("[MOCK] New support ticket notification:")
+      console.log(`  To: 4grid.tech@gmail.com`)
+      console.log(`  Subject: ${subject}`)
+      console.log(`  Ticket ID: ${ticket.id}`)
+      return { success: true, mock: true }
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: parseInt(smtpPort, 10),
+      secure: parseInt(smtpPort, 10) === 465,
+      auth: { user: smtpUser, pass: smtpPass },
+      tls: { rejectUnauthorized: false },
+    })
+
+    await transporter.sendMail({
+      from: `"${smtpSenderName}" <${smtpSenderEmail}>`,
+      to: "4grid.tech@gmail.com",
+      subject,
+      html,
+    })
+
+    return { success: true }
+  } catch (err: any) {
+    console.error("[EMAIL SERVICE] Failed to send new ticket notification:", err)
+    return { success: false, error: err.message || "Internal error in sendNewSupportTicketNotification" }
+  }
+}
+
+export async function sendTicketCreatorConfirmation(ticket: {
+  id: string;
+  title: string;
+  description: string;
+  email: string;
+  userName?: string;
+}): Promise<{ success: boolean; error?: string; mock?: boolean }> {
+  try {
+    const smtpHost = process.env.SMTP_HOST
+    const smtpPort = process.env.SMTP_PORT
+    const smtpUser = process.env.SMTP_USER
+    const smtpPass = process.env.SMTP_PASS
+    const smtpSenderName = process.env.SMTP_SENDER_NAME || "PlaceTrix"
+    const smtpSenderEmail = process.env.SMTP_ADMIN_EMAIL || "noreply@placetrix.app"
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://placetrix.app"
+
+    const recipientName = ticket.userName || "there"
+    const subject = `✅ Support Ticket Received – ${ticket.title}`
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>${subject}</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+              background-color: #f4f4f7;
+              color: #333333;
+              margin: 0;
+              padding: 0;
+              width: 100% !important;
+            }
+            .wrapper { width: 100%; background-color: #f4f4f7; padding: 24px 0; }
+            .container {
+              max-width: 540px;
+              margin: 0 auto;
+              background: #ffffff;
+              border-radius: 16px;
+              overflow: hidden;
+              box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+              border: 1px solid #e1e4e8;
+            }
+            .header {
+              background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+              color: #ffffff;
+              padding: 28px 28px 24px;
+            }
+            .header-badge {
+              display: inline-block;
+              background: rgba(255,255,255,0.15);
+              border: 1px solid rgba(255,255,255,0.25);
+              color: #fff;
+              font-size: 11px;
+              font-weight: 700;
+              letter-spacing: 0.08em;
+              text-transform: uppercase;
+              padding: 4px 10px;
+              border-radius: 9999px;
+              margin-bottom: 12px;
+            }
+            .header h1 {
+              margin: 0;
+              font-size: 22px;
+              font-weight: 700;
+              letter-spacing: -0.3px;
+              line-height: 1.3;
+            }
+            .header p {
+              margin: 6px 0 0;
+              font-size: 13px;
+              opacity: 0.75;
+            }
+            .content { padding: 28px; }
+            .greeting {
+              font-size: 15px;
+              color: #334155;
+              line-height: 1.6;
+              margin: 0 0 20px;
+            }
+            .greeting strong { color: #0f172a; }
+            .info-box {
+              background: #f8fafc;
+              border: 1px solid #e2e8f0;
+              border-radius: 10px;
+              padding: 18px 20px;
+              margin-bottom: 20px;
+            }
+            .info-box .ticket-id-label {
+              font-size: 11px;
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.07em;
+              color: #64748b;
+              margin-bottom: 4px;
+            }
+            .info-box .ticket-id-value {
+              font-family: monospace;
+              font-size: 13px;
+              color: #0f172a;
+              font-weight: 600;
+            }
+            .divider {
+              border: none;
+              border-top: 1px solid #e2e8f0;
+              margin: 14px 0;
+            }
+            .field-label {
+              font-size: 11px;
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.07em;
+              color: #64748b;
+              margin-bottom: 3px;
+            }
+            .field-value {
+              font-size: 14px;
+              color: #0f172a;
+              line-height: 1.55;
+              word-break: break-word;
+              margin-bottom: 14px;
+            }
+            .note {
+              font-size: 13px;
+              color: #475569;
+              line-height: 1.6;
+              background: #fffbeb;
+              border: 1px solid #fde68a;
+              border-radius: 8px;
+              padding: 12px 16px;
+              margin-bottom: 24px;
+            }
+            .cta {
+              text-align: center;
+              margin: 4px 0 12px;
+            }
+            .cta a {
+              display: inline-block;
+              background: #10b981;
+              color: #fff;
+              text-decoration: none;
+              font-size: 14px;
+              font-weight: 600;
+              padding: 12px 28px;
+              border-radius: 9999px;
+              letter-spacing: 0.01em;
+            }
+            .footer {
+              text-align: center;
+              font-size: 11px;
+              color: #94a3b8;
+              padding: 20px 28px;
+              border-top: 1px solid #f1f5f9;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="wrapper">
+            <div class="container">
+              <div class="header">
+                <div class="header-badge">Ticket Received</div>
+                <h1>We've got your request!</h1>
+                <p>Our support team will get back to you shortly.</p>
+              </div>
+              <div class="content">
+                <p class="greeting">Hi <strong>${recipientName}</strong>,</p>
+                <p class="greeting">
+                  Thank you for reaching out. Your support ticket has been successfully created and is now in our queue.
+                  We'll review it and respond as soon as possible.
+                </p>
+
+                <div class="info-box">
+                  <div class="ticket-id-label">Ticket Reference</div>
+                  <div class="ticket-id-value">${ticket.id}</div>
+                  <hr class="divider">
+                  <div class="field-label">Subject</div>
+                  <div class="field-value">${ticket.title}</div>
+                  <div class="field-label">Your Message</div>
+                  <div class="field-value">${ticket.description.replace(/\n/g, "<br>")}</div>
+                </div>
+
+                <div class="note">
+                  💡 You can track the status of your ticket and read any replies from our team by visiting your dashboard.
+                </div>
+
+                <div class="cta">
+                  <a href="${siteUrl}/gethelp/${ticket.id}">Track Your Ticket</a>
+                </div>
+              </div>
+              <div class="footer">
+                <p>This is an automated confirmation from PlaceTrix Support.</p>
+                <p>Please do not reply directly to this email.</p>
+                <p>&copy; ${new Date().getFullYear()} PlaceTrix. All rights reserved.</p>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `
+
+    if (!smtpHost || !smtpPort || !smtpUser || !smtpPass) {
+      console.warn("⚠️ [EMAIL SERVICE] SMTP configuration is incomplete. Skipping creator confirmation email.")
+      console.log("[MOCK] Ticket creator confirmation:")
+      console.log(`  To: ${ticket.email}`)
+      console.log(`  Subject: ${subject}`)
+      console.log(`  Ticket ID: ${ticket.id}`)
+      return { success: true, mock: true }
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: parseInt(smtpPort, 10),
+      secure: parseInt(smtpPort, 10) === 465,
+      auth: { user: smtpUser, pass: smtpPass },
+      tls: { rejectUnauthorized: false },
+    })
+
+    await transporter.sendMail({
+      from: `"${smtpSenderName}" <${smtpSenderEmail}>`,
+      to: ticket.email,
+      subject,
+      html,
+    })
+
+    return { success: true }
+  } catch (err: any) {
+    console.error("[EMAIL SERVICE] Failed to send ticket creator confirmation:", err)
+    return { success: false, error: err.message || "Internal error in sendTicketCreatorConfirmation" }
+  }
+}
