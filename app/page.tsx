@@ -53,9 +53,9 @@ export default async function RootPage() {
         },
         "description": "Educational Assessment Platform for mock tests and study groups.",
         "sameAs": [
-          "https://www.linkedin.com/company/360-view-tech/",
-          "https://www.instagram.com/360viewtech/",
-          "https://github.com/360viewtech"
+          "https://www.linkedin.com/company/4-grid-technologies/",
+          "https://www.instagram.com/4grid.tech/",
+          "https://github.com/4-Grid-Tech/"
         ]
       }
     ]

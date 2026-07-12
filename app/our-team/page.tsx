@@ -758,15 +758,15 @@ const resources = [
 const socialLinks = [
 	{
 		icon: <LinkedinIcon />,
-		link: "https://www.linkedin.com/company/360-view-tech/",
+		link: "https://www.linkedin.com/company/4-grid-technologies/",
 	},
 	{
 		icon: <InstagramIcon />,
-		link: "https://www.instagram.com/360viewtech/",
+		link: "https://www.instagram.com/4grid.tech/",
 	},
 	{
 		icon: <GithubIcon />,
-		link: "https://github.com/360viewtech",
+		link: "https://github.com/4-Grid-Tech/",
 	},
 ];
 
