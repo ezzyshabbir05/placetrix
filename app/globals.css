@@ -59,6 +59,9 @@
   --shadow-2xl: 0px 32px 48px -12px rgba(0, 0, 0, 0.24), 0px 16px 28px -8px rgba(0, 0, 0, 0.14);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
+
+  --logo-shimmer-base: hsl(0 0% 92%);
+  --logo-shimmer-highlight: hsl(0 0% 98%);
 }
 
 .dark {
@@ -109,6 +112,9 @@
   --shadow-lg: 0px 16px 32px -6px rgba(0, 0, 0, 0.8), 0px 8px 16px -4px rgba(0, 0, 0, 0.45);
   --shadow-xl: 0px 24px 44px -8px rgba(0, 0, 0, 0.85), 0px 12px 24px -6px rgba(0, 0, 0, 0.5);
   --shadow-2xl: 0px 32px 56px -12px rgba(0, 0, 0, 0.95), 0px 16px 32px -8px rgba(0, 0, 0, 0.55);
+
+  --logo-shimmer-base: hsl(0 0% 12%);
+  --logo-shimmer-highlight: hsl(0 0% 22%);
 }
 
 @theme inline {
