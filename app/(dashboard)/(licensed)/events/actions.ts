@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { getUserProfile } from "@/lib/supabase/profile"
+import { sendTicketEmail } from "@/lib/email"
 import type { EventFormData, TicketStatus } from "./types"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -260,6 +261,8 @@ export async function rsvpEventAction(eventId: string) {
 
   const ticketStatus: TicketStatus = (confirmedCount ?? 0) >= event.capacity ? "Waitlisted" : "Confirmed"
 
+  let ticketId: string | undefined
+
   if (existingTicket && existingTicket.status === "Cancelled") {
     // Reactivate existing ticket
     const { error: updateError } = await (supabase as any)
@@ -271,20 +274,31 @@ export async function rsvpEventAction(eventId: string) {
       console.error("Error reactivating RSVP:", updateError)
       throw new Error(updateError.message || "Failed to RSVP.")
     }
+    ticketId = existingTicket.id
   } else {
     // Insert new ticket
-    const { error: insertError } = await (supabase as any)
+    const { data: newTicket, error: insertError } = await (supabase as any)
       .from("event_tickets")
       .insert({
         event_id: eventId,
         candidate_id: profile.id,
         status: ticketStatus,
       })
+      .select("id")
+      .single()
 
-    if (insertError) {
+    if (insertError || !newTicket) {
       console.error("Error creating RSVP:", insertError)
-      throw new Error(insertError.message || "Failed to RSVP.")
+      throw new Error(insertError?.message || "Failed to RSVP.")
     }
+    ticketId = newTicket.id
+  }
+
+  // Trigger ticket email in the background
+  if (ticketId) {
+    sendTicketEmail(ticketId).catch((err) => {
+      console.error("Error sending RSVP ticket email in background:", err)
+    })
   }
 
   revalidatePath("/events")
@@ -340,6 +354,11 @@ export async function cancelRsvpAction(eventId: string) {
 
       if (promoteError) {
         console.error("Error promoting waitlisted candidate:", promoteError)
+      } else {
+        // Send confirmation email to the promoted candidate
+        sendTicketEmail(oldestWaitlist.id).catch((err) => {
+          console.error("Error sending promoted RSVP ticket email in background:", err)
+        })
       }
     }
   }

@@ -354,8 +354,14 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
   const basicComplete = !!(initialData?.institute_name && initialData?.affiliation && initialData?.city)
   const contactComplete = !!(initialData?.phone_number && initialData?.email)
   const adminComplete = !!(initialData?.principal_name && initialData?.principal_email)
-  const coursesComplete = !!(initialData?.courses?.some((c: string) => c.trim()))
-  const socialComplete = !!(initialData?.social_links?.some((l: string) => l.trim()))
+  const coursesComplete = !!(initialData?.courses?.some((c: any) => {
+    const val = typeof c === "string" ? c : (c?.value ?? "")
+    return typeof val === "string" && val.trim().length > 0
+  }))
+  const socialComplete = !!(initialData?.social_links?.some((l: any) => {
+    const val = typeof l === "string" ? l : (l?.value ?? "")
+    return typeof val === "string" && val.trim().length > 0
+  }))
 
   // ── Username debounce ─────────────────────────────────────────────────────
 

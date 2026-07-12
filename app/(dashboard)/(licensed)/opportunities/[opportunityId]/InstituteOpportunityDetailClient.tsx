@@ -27,8 +27,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { 
-  Briefcase, MapPin, IndianRupee, Calendar, Users, 
+import {
+  Briefcase, MapPin, IndianRupee, Calendar, Users,
   Trash2, Edit3, Download, Building2, Search, X,
   Clock, ArrowLeft, CheckCircle2, Info, MoreHorizontal, Loader2, ChevronRight, XCircle,
   Sparkles, ListTodo, Award, FileText
@@ -61,18 +61,18 @@ function getInitials(name: string) {
     .slice(0, 2)
 }
 
-function PageHeader({ 
-  opp, 
-  companyName, 
-  onEdit, 
-  onDelete, 
-  isPending 
-}: { 
-  opp: OpportunityListItem; 
-  companyName: string; 
-  onEdit: () => void; 
-  onDelete: () => void; 
-  isPending: boolean 
+function PageHeader({
+  opp,
+  companyName,
+  onEdit,
+  onDelete,
+  isPending
+}: {
+  opp: OpportunityListItem;
+  companyName: string;
+  onEdit: () => void;
+  onDelete: () => void;
+  isPending: boolean
 }) {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -99,7 +99,7 @@ function PageHeader({
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            Published by <span className="font-semibold text-foreground">{companyName}</span> · {opp.job_role}
+            <span className="font-semibold text-foreground">{companyName}</span> · {opp.job_role}
           </p>
         </div>
       </div>
@@ -294,7 +294,7 @@ export function InstituteOpportunityDetailClient({
   // Filter applicants list dynamically
   const filteredApplications = useMemo(() => {
     return applications.filter(app => {
-      const matchSearch = 
+      const matchSearch =
         (app.candidate_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         (app.candidate_email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         (app.candidate_course && app.candidate_course.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -317,9 +317,9 @@ export function InstituteOpportunityDetailClient({
       </div>
 
       {/* Page Header */}
-      <PageHeader 
-        opp={opportunity} 
-        companyName={companyName} 
+      <PageHeader
+        opp={opportunity}
+        companyName={companyName}
         onEdit={() => router.push(`/opportunities/${opportunity.id}/edit`)}
         onDelete={handleDelete}
         isPending={isPending}
@@ -369,42 +369,42 @@ export function InstituteOpportunityDetailClient({
                 Opportunity Overview
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <MetaItem 
-                  icon={<MapPin className="h-4 w-4" />} 
-                  label="Location" 
-                  value={opportunity.location || "Remote"} 
+                <MetaItem
+                  icon={<MapPin className="h-4 w-4" />}
+                  label="Location"
+                  value={opportunity.location || "Remote"}
                 />
-                <MetaItem 
-                  icon={<IndianRupee className="h-4 w-4" />} 
-                  label="Package Details" 
-                  value={formatCompensation()} 
+                <MetaItem
+                  icon={<IndianRupee className="h-4 w-4" />}
+                  label="Package Details"
+                  value={formatCompensation()}
                 />
                 {opportunity.job_type && (
-                  <MetaItem 
-                    icon={<Building2 className="h-4 w-4" />} 
-                    label="Job Type" 
-                    value={opportunity.job_type} 
+                  <MetaItem
+                    icon={<Building2 className="h-4 w-4" />}
+                    label="Job Type"
+                    value={opportunity.job_type}
                   />
                 )}
                 {opportunity.job_timing && (
-                  <MetaItem 
-                    icon={<Clock className="h-4 w-4" />} 
-                    label="Job Timing" 
-                    value={opportunity.job_timing} 
+                  <MetaItem
+                    icon={<Clock className="h-4 w-4" />}
+                    label="Job Timing"
+                    value={opportunity.job_timing}
                   />
                 )}
-                <MetaItem 
-                  icon={<FileText className="h-4 w-4" />} 
-                  label="Service Agreement" 
-                  value={opportunity.bond_details || "None"} 
+                <MetaItem
+                  icon={<FileText className="h-4 w-4" />}
+                  label="Service Agreement"
+                  value={opportunity.bond_details || "None"}
                 />
-                <MetaItem 
-                  icon={<Calendar className="h-4 w-4" />} 
-                  label="Apply Before" 
+                <MetaItem
+                  icon={<Calendar className="h-4 w-4" />}
+                  label="Apply Before"
                   value={new Date(opportunity.deadline).toLocaleString("en-IN", {
                     dateStyle: "medium",
                     timeStyle: "short"
-                  })} 
+                  })}
                 />
               </div>
             </CardContent>
@@ -417,10 +417,10 @@ export function InstituteOpportunityDetailClient({
                 Eligibility Criteria
               </p>
               <div className="space-y-4">
-                <MetaItem 
-                  icon={<Building2 className="h-4 w-4" />} 
-                  label="CGPA Cutoff" 
-                  value={opportunity.min_cgpa > 0 ? `${opportunity.min_cgpa.toFixed(2)} or above` : "None"} 
+                <MetaItem
+                  icon={<Building2 className="h-4 w-4" />}
+                  label="CGPA Cutoff"
+                  value={opportunity.min_cgpa > 0 ? `${opportunity.min_cgpa.toFixed(2)} or above` : "None"}
                 />
               </div>
             </CardContent>
@@ -486,12 +486,12 @@ export function InstituteOpportunityDetailClient({
                       About {opportunity.company.name}
                     </p>
                     {opportunity.company.website && (
-                      <a 
-                        href={opportunity.company.website.startsWith("http://") || opportunity.company.website.startsWith("https://") 
-                          ? opportunity.company.website 
+                      <a
+                        href={opportunity.company.website.startsWith("http://") || opportunity.company.website.startsWith("https://")
+                          ? opportunity.company.website
                           : `https://${opportunity.company.website}`}
-                        target="_blank" 
-                        rel="noreferrer" 
+                        target="_blank"
+                        rel="noreferrer"
                         className="text-xs text-primary hover:text-primary/80 transition-colors font-semibold flex items-center gap-1"
                       >
                         Visit Website <ChevronRight className="h-3 w-3" />
@@ -548,8 +548,8 @@ export function InstituteOpportunityDetailClient({
               <Users className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
               <h4 className="font-bold text-lg text-foreground">No applicants found</h4>
               <p className="text-sm text-muted-foreground/80 mt-1.5 max-w-sm mx-auto">
-                {applications.length === 0 
-                  ? "Once candidates apply, their details will appear here." 
+                {applications.length === 0
+                  ? "Once candidates apply, their details will appear here."
                   : "No applicants match the current search filters."}
               </p>
             </Card>
@@ -599,9 +599,9 @@ export function InstituteOpportunityDetailClient({
                         </TableCell>
                         <TableCell className="text-center">
                           <Button variant="outline" size="sm" className="h-8 gap-1.5 rounded-lg border-border/80 text-[11px] font-semibold hover:bg-muted/50" asChild>
-                            <a 
-                              href={app.resume_url} 
-                              target="_blank" 
+                            <a
+                              href={app.resume_url}
+                              target="_blank"
                               rel="noreferrer"
                             >
                               <Download className="h-3 w-3 text-muted-foreground" /> PDF
@@ -621,7 +621,7 @@ export function InstituteOpportunityDetailClient({
                           </span>
                         </TableCell>
                         <TableCell className="text-right pr-6">
-                          <Select 
+                          <Select
                             value={app.status}
                             onValueChange={(val) => handleStageChange(app.id, val as any)}
                             disabled={isPending}
@@ -661,7 +661,7 @@ export function InstituteOpportunityDetailClient({
                           )}
                         </div>
                       </div>
-                      
+
                       <span className={cn(
                         "inline-flex items-center rounded-full px-2.5 py-0.5 text-[9px] font-extrabold uppercase border tracking-wider shrink-0",
                         app.status === "Applied" && "bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400",
@@ -695,7 +695,7 @@ export function InstituteOpportunityDetailClient({
                         </a>
                       </Button>
 
-                      <Select 
+                      <Select
                         value={app.status}
                         onValueChange={(val) => handleStageChange(app.id, val as any)}
                         disabled={isPending}
