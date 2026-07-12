@@ -354,24 +354,11 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [levelFilter, setLevelFilter] = useState<LevelFilter>("all")
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
-
-  // Restore view mode from localStorage & sync initialCourses
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const savedView = localStorage.getItem("placetrix_courses_view")
-    if (savedView === "list" || savedView === "grid") setViewMode(savedView)
-  }, [])
 
   useEffect(() => {
     setCourses(initialCourses)
   }, [initialCourses])
-
-  const handleViewToggle = (mode: "grid" | "list") => {
-    setViewMode(mode)
-    localStorage.setItem("placetrix_courses_view", mode)
-  }
 
   // Per-course stats
   const courseStats = useMemo(() => {
@@ -469,29 +456,7 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
           )}
         </Button>
 
-        {/* View Toggle */}
-        <div className="flex items-center bg-muted rounded-lg p-1 gap-0.5 h-9 shrink-0">
-          <button
-            onClick={() => handleViewToggle("grid")}
-            className={cn(
-              "h-7 w-7 flex items-center justify-center rounded-md transition-all duration-150",
-              viewMode === "grid" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-            )}
-            title="Grid view"
-          >
-            <LayoutGrid className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={() => handleViewToggle("list")}
-            className={cn(
-              "h-7 w-7 flex items-center justify-center rounded-md transition-all duration-150",
-              viewMode === "list" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-            )}
-            title="List view"
-          >
-            <LayoutList className="h-3.5 w-3.5" />
-          </button>
-        </div>
+
       </div>
 
       {/* Active filter summary strip */}
@@ -528,21 +493,10 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
             </EmptyContent>
           )}
         </Empty>
-      ) : viewMode === "grid" ? (
+      ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 animate-in fade-in duration-300">
           {filteredCourses.map((course) => (
             <CourseCard
-              key={course.id}
-              course={course}
-              stats={courseStats[course.id]}
-              onSelect={() => router.push(`/courses/${course.id}`)}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3 animate-in fade-in duration-300">
-          {filteredCourses.map((course) => (
-            <CourseRow
               key={course.id}
               course={course}
               stats={courseStats[course.id]}

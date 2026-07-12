@@ -39,6 +39,7 @@ import {
   BookOpen,
   Trophy,
   UsersRound,
+  Heart,
 } from "lucide-react"
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -140,6 +141,7 @@ const NAV_SECONDARY: NavItem[] = [
   { title: "Notifications", url: "/notifications", icon: Bell },
   { title: "Settings", url: "/settings", icon: Settings },
   { title: "Get Help", url: "/gethelp", icon: CircleHelp },
+  { title: "Our Team", url: "/our-team", icon: Heart },
 ]
 
 
