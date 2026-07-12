@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import {
   IconUpload,
@@ -30,7 +31,6 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
@@ -221,6 +221,7 @@ function KeywordChip({ keyword, count, important }: { keyword: string; count: nu
 // Main client component
 // ─────────────────────────────────────────────
 export function ResumeAnalyzerClient() {
+  const router = useRouter()
   const [file, setFile] = React.useState<File | null>(null)
   const [mode, setMode] = React.useState<"standalone" | "jd">("standalone")
   const [jobDescription, setJobDescription] = React.useState("")
@@ -258,17 +259,22 @@ export function ResumeAnalyzerClient() {
     <div className="flex flex-col gap-8 px-4 py-6 md:px-8 md:py-8">
 
       {/* ── Page Header ── */}
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-3 pb-2 border-b border-border/60">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground -ml-2 hover:bg-muted/50" onClick={() => router.back()}>
+            <IconArrowLeft className="size-4 mr-1" />
+            Back to Tools
+          </Button>
+        </div>
+
         <div className="flex items-center gap-2">
           <h1 className="text-3xl font-bold font-cirka tracking-tight text-foreground">Resume Analyzer</h1>
           <Badge variant="secondary" className="bg-violet-500/10 text-violet-600 dark:text-violet-400 text-xs ml-1">AI-Powered</Badge>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Upload your resume for a deep AI audit
+        <p className="text-sm text-muted-foreground font-sans">
+          Upload your resume for a deep AI audit.
         </p>
       </div>
-
-      <Separator />
 
       {/* ── Upload Card ── */}
       <Card className="border-border/60">
@@ -379,242 +385,254 @@ export function ResumeAnalyzerClient() {
             </Card>
           )}
 
-          <Tabs defaultValue="overview">
-            <TabsList className="w-full sm:w-auto">
-              <TabsTrigger value="overview" className="gap-1.5"><IconTarget className="size-3.5" />Overview</TabsTrigger>
-              <TabsTrigger value="strengths" className="gap-1.5"><IconListCheck className="size-3.5" />Strengths & Weaknesses</TabsTrigger>
-              <TabsTrigger value="sections" className="gap-1.5"><IconBrain className="size-3.5" />Section Details</TabsTrigger>
-              <TabsTrigger value="keywords" className="gap-1.5"><IconHash className="size-3.5" />Keywords</TabsTrigger>
-            </TabsList>
+          {/* ── Section 1: Scores Overview ── */}
+          <div className="flex flex-col gap-4">
+            <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+              <IconTarget className="size-5 text-violet-500" />
+              Score Overview
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
-            {/* ── Tab 1: Overview ── */}
-            <TabsContent value="overview" className="mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-
-                {/* Overall score */}
-                <Card className="md:col-span-1 border-border/60 flex flex-col items-center justify-center py-8 gap-4">
-                  <div className="text-sm font-medium text-muted-foreground">Overall Score</div>
-                  <ScoreDial score={result.overallScore} size={160} label={scoreLabel(result.overallScore)} />
-                  <p className="text-xs text-muted-foreground text-center px-4 max-w-[180px]">Based on ATS compatibility, content quality, and formatting.</p>
-                </Card>
-
-                {/* ATS + keyword */}
-                <Card className="border-border/60 flex flex-col justify-between gap-6 p-6">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">ATS Score</span>
-                    <ScoreDial score={result.atsScore} size={120} />
-                    <p className="text-xs text-muted-foreground mt-1">Applicant Tracking System compatibility</p>
-                  </div>
-                  <Separator />
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Keyword Match</span>
-                    <div className={cn("text-2xl font-bold tabular-nums mt-1", scoreColor(result.keywordMatchRate))}>{result.keywordMatchRate}%</div>
-                    <p className="text-xs text-muted-foreground">Industry-relevant keywords found</p>
-                  </div>
-                </Card>
-
-                {/* JD match OR detected skills */}
-                {result.jdMatchScore !== undefined ? (
-                  <Card className={cn("border flex flex-col gap-4 p-6", scoreBgClass(result.jdMatchScore))}>
-                    <div className="flex items-center gap-2">
-                      <IconBriefcase className="size-4 text-muted-foreground" />
-                      <span className="text-sm font-semibold">Job Match Score</span>
-                    </div>
-                    <ScoreDial score={result.jdMatchScore} size={120} label={scoreLabel(result.jdMatchScore)} />
-                    {result.missingSkills && result.missingSkills.length > 0 && (
-                      <div className="flex flex-col gap-2">
-                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Missing Skills</span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {result.missingSkills.map((s) => (
-                            <Badge key={s} variant="secondary" className="text-xs bg-rose-500/10 text-rose-600 dark:text-rose-400">{s}</Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </Card>
-                ) : (
-                  <Card className="border-border/60 flex flex-col gap-4 p-6">
-                    <div className="flex items-center gap-2">
-                      <IconSparkles className="size-4 text-violet-500" />
-                      <span className="text-sm font-semibold">Detected Skills</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {(result.detectedSkills ?? []).map((s) => (
-                        <Badge key={s} variant="secondary" className="text-xs">{s}</Badge>
-                      ))}
-                    </div>
-                  </Card>
-                )}
-
-                {/* Section scores full width */}
-                <Card className="md:col-span-2 lg:col-span-3 border-border/60 p-6">
-                  <div className="flex items-center gap-2 mb-5">
-                    <IconListCheck className="size-4 text-muted-foreground" />
-                    <span className="text-sm font-semibold">Section Scores</span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-                    {result.sections.map((s) => (<SectionBar key={s.name} name={s.name} score={s.score} />))}
-                  </div>
-                </Card>
-              </div>
-            </TabsContent>
-
-            {/* ── Tab 2: Strengths & Weaknesses ── */}
-            <TabsContent value="strengths" className="mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Strengths */}
-                <Card className="border-emerald-500/20 bg-emerald-500/5 p-6 flex flex-col gap-4">
-                  <div className="flex items-center gap-2">
-                    <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/15"><IconCheck className="size-4 text-emerald-500" /></div>
-                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">Strengths</span>
-                  </div>
-                  <ul className="flex flex-col gap-3">
-                    {result.strengths.map((s, i) => (
-                      <li key={i} className="flex items-start gap-2.5 text-sm">
-                        <IconCheck className="size-4 text-emerald-500 mt-0.5 shrink-0" />
-                        <span className="text-foreground">{s}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
-
-                {/* Weaknesses + collapsible AI suggestions */}
-                <Card className="border-rose-500/20 bg-rose-500/5 p-6 flex flex-col gap-4">
-                  <div className="flex items-center gap-2">
-                    <div className="flex size-7 items-center justify-center rounded-lg bg-rose-500/15"><IconAlertCircle className="size-4 text-rose-500" /></div>
-                    <span className="font-semibold text-rose-700 dark:text-rose-400">Weaknesses</span>
-                  </div>
-                  <ul className="flex flex-col gap-3">
-                    {result.weaknesses.map((w, i) => (
-                      <li key={i}>
-                        <Collapsible>
-                          <div className="flex items-start gap-2.5 text-sm">
-                            <IconAlertCircle className="size-4 text-rose-500 mt-0.5 shrink-0" />
-                            <div className="flex flex-1 items-start justify-between gap-2">
-                              <span className="text-foreground">{w}</span>
-                              <CollapsibleTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground gap-1 shrink-0">
-                                  Fix it<IconChevronDown className="size-3" />
-                                </Button>
-                              </CollapsibleTrigger>
-                            </div>
-                          </div>
-                          <CollapsibleContent>
-                            <div className="mt-2 ml-6 rounded-lg bg-background/70 border border-rose-500/20 p-3 text-xs text-muted-foreground">
-                              <IconBulb className="size-3 inline mr-1 text-amber-500" />
-                              {result.suggestions?.[w] ?? "Focus on making this section more specific and achievement-driven with quantifiable results."}
-                            </div>
-                          </CollapsibleContent>
-                        </Collapsible>
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
-              </div>
-            </TabsContent>
-
-            {/* ── Tab 3: Section Details (with Before/After) ── */}
-            <TabsContent value="sections" className="mt-6">
-              <Card className="border-border/60">
-                <CardContent className="pt-6">
-                  <Accordion type="multiple" className="w-full">
-                    {result.sections.map((section) => (
-                      <AccordionItem key={section.name} value={section.name}>
-                        <AccordionTrigger className="hover:no-underline">
-                          <div className="flex items-center gap-3 flex-1 pr-2">
-                            <SectionScoreBadge score={section.score} />
-                            <span className="font-medium text-sm">{section.name}</span>
-                            <span className="text-xs text-muted-foreground hidden sm:block truncate ml-auto mr-4">{section.feedback}</span>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="flex flex-col gap-4 pt-1 pb-2">
-                            <div className="flex flex-col gap-1">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Feedback</p>
-                              <p className="text-sm text-foreground">{section.feedback}</p>
-                            </div>
-
-                            <div className="flex flex-col gap-1">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Improvement Tip</p>
-                              <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm text-foreground">
-                                <IconBulb className="size-3.5 inline mr-1 text-amber-500" />{section.suggestion}
-                              </div>
-                            </div>
-
-                            {section.rewriteExample && (
-                              <div className="flex flex-col gap-1">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1">
-                                  <IconArrowRight className="size-3" />Concrete Rewrite Example
-                                </p>
-                                <RewriteExample before={section.rewriteExample.before} after={section.rewriteExample.after} />
-                              </div>
-                            )}
-
-                            <SectionBar name={section.name} score={section.score} />
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
-                  </Accordion>
-                </CardContent>
+              {/* Overall score */}
+              <Card className="md:col-span-1 border-border/60 flex flex-col items-center justify-center py-8 gap-4">
+                <div className="text-sm font-medium text-muted-foreground">Overall Score</div>
+                <ScoreDial score={result.overallScore} size={160} label={scoreLabel(result.overallScore)} />
+                <p className="text-xs text-muted-foreground text-center px-4 max-w-[180px]">Based on ATS compatibility, content quality, and formatting.</p>
               </Card>
-            </TabsContent>
 
-            {/* ── Tab 4: Keywords ── */}
-            <TabsContent value="keywords" className="mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* ATS + keyword */}
+              <Card className="border-border/60 flex flex-col justify-between gap-6 p-6">
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">ATS Score</span>
+                  <ScoreDial score={result.atsScore} size={120} />
+                  <p className="text-xs text-muted-foreground mt-1">Applicant Tracking System compatibility</p>
+                </div>
+                <Separator />
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Keyword Match</span>
+                  <div className={cn("text-2xl font-bold tabular-nums mt-1", scoreColor(result.keywordMatchRate))}>{result.keywordMatchRate}%</div>
+                  <p className="text-xs text-muted-foreground">Industry-relevant keywords found</p>
+                </div>
+              </Card>
 
-                {/* Keyword heatmap */}
-                <Card className="border-border/60 p-6 flex flex-col gap-4">
+              {/* JD match OR detected skills */}
+              {result.jdMatchScore !== undefined ? (
+                <Card className={cn("border flex flex-col gap-4 p-6", scoreBgClass(result.jdMatchScore))}>
                   <div className="flex items-center gap-2">
-                    <div className="flex size-7 items-center justify-center rounded-lg bg-violet-500/10"><IconHash className="size-4 text-violet-500" /></div>
-                    <div>
-                      <span className="text-sm font-semibold">Keyword Density</span>
-                      <p className="text-xs text-muted-foreground">Brighter = high-value industry keyword</p>
+                    <IconBriefcase className="size-4 text-muted-foreground" />
+                    <span className="text-sm font-semibold">Job Match Score</span>
+                  </div>
+                  <ScoreDial score={result.jdMatchScore} size={120} label={scoreLabel(result.jdMatchScore)} />
+                  {result.missingSkills && result.missingSkills.length > 0 && (
+                    <div className="flex flex-col gap-2">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Missing Skills</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {result.missingSkills.map((s) => (
+                          <Badge key={s} variant="secondary" className="text-xs bg-rose-500/10 text-rose-600 dark:text-rose-400">{s}</Badge>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {(result.keywords ?? []).length > 0
-                      ? result.keywords.map((k) => (
-                        <KeywordChip key={k.keyword} keyword={k.keyword} count={k.count} important={k.important} />
-                      ))
-                      : <p className="text-xs text-muted-foreground">No keywords extracted.</p>
-                    }
-                  </div>
-                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground pt-1">
-                    <span className="flex items-center gap-1"><span className="inline-block size-2.5 rounded-sm bg-violet-500/30" />High-value keyword</span>
-                    <span className="flex items-center gap-1"><span className="inline-block size-2.5 rounded-sm bg-muted" />Supporting keyword</span>
-                  </div>
-                </Card>
-
-                {/* Suggested keywords */}
-                <Card className="border-border/60 p-6 flex flex-col gap-4">
-                  <div className="flex items-center gap-2">
-                    <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/10"><IconTrendingUp className="size-4 text-emerald-500" /></div>
-                    <div>
-                      <span className="text-sm font-semibold">Suggested Keywords to Add</span>
-                      <p className="text-xs text-muted-foreground">Missing from your resume but strengthen it</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {(result.suggestedKeywords ?? []).length > 0
-                      ? result.suggestedKeywords.map((k) => (
-                        <Badge key={k} variant="secondary" className="text-xs gap-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                          + {k}
-                        </Badge>
-                      ))
-                      : <p className="text-xs text-muted-foreground">No additional keywords suggested — great coverage!</p>
-                    }
-                  </div>
-                  {result.suggestedKeywords && result.suggestedKeywords.length > 0 && (
-                    <p className="text-xs text-muted-foreground border-t border-border/40 pt-3">
-                      💡 Naturally weave these into your experience bullet points and skills section — don&apos;t keyword-stuff.
-                    </p>
                   )}
                 </Card>
-              </div>
-            </TabsContent>
-          </Tabs>
+              ) : (
+                <Card className="border-border/60 flex flex-col gap-4 p-6">
+                  <div className="flex items-center gap-2">
+                    <IconSparkles className="size-4 text-violet-500" />
+                    <span className="text-sm font-semibold">Detected Skills</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(result.detectedSkills ?? []).map((s) => (
+                      <Badge key={s} variant="secondary" className="text-xs">{s}</Badge>
+                    ))}
+                  </div>
+                </Card>
+              )}
+
+              {/* Section scores full width */}
+              <Card className="md:col-span-2 lg:col-span-3 border-border/60 p-6">
+                <div className="flex items-center gap-2 mb-5">
+                  <IconListCheck className="size-4 text-muted-foreground" />
+                  <span className="text-sm font-semibold">Section Scores</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                  {result.sections.map((s) => (<SectionBar key={s.name} name={s.name} score={s.score} />))}
+                </div>
+              </Card>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* ── Section 2: Strengths & Weaknesses ── */}
+          <div className="flex flex-col gap-4">
+            <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+              <IconListCheck className="size-5 text-emerald-500" />
+              Strengths & Weaknesses
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Strengths */}
+              <Card className="border-emerald-500/20 bg-emerald-500/5 p-6 flex flex-col gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/15"><IconCheck className="size-4 text-emerald-500" /></div>
+                  <span className="font-semibold text-emerald-700 dark:text-emerald-400">Strengths</span>
+                </div>
+                <ul className="flex flex-col gap-3">
+                  {result.strengths.map((s, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-sm">
+                      <IconCheck className="size-4 text-emerald-500 mt-0.5 shrink-0" />
+                      <span className="text-foreground">{s}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+
+              {/* Weaknesses + collapsible AI suggestions */}
+              <Card className="border-rose-500/20 bg-rose-500/5 p-6 flex flex-col gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="flex size-7 items-center justify-center rounded-lg bg-rose-500/15"><IconAlertCircle className="size-4 text-rose-500" /></div>
+                  <span className="font-semibold text-rose-700 dark:text-rose-400">Weaknesses</span>
+                </div>
+                <ul className="flex flex-col gap-3">
+                  {result.weaknesses.map((w, i) => (
+                    <li key={i}>
+                      <Collapsible>
+                        <div className="flex items-start gap-2.5 text-sm">
+                          <IconAlertCircle className="size-4 text-rose-500 mt-0.5 shrink-0" />
+                          <div className="flex flex-1 items-start justify-between gap-2">
+                            <span className="text-foreground">{w}</span>
+                            <CollapsibleTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground gap-1 shrink-0">
+                                Fix it<IconChevronDown className="size-3" />
+                              </Button>
+                            </CollapsibleTrigger>
+                          </div>
+                        </div>
+                        <CollapsibleContent>
+                          <div className="mt-2 ml-6 rounded-lg bg-background/70 border border-rose-500/20 p-3 text-xs text-muted-foreground">
+                            <IconBulb className="size-3 inline mr-1 text-amber-500" />
+                            {result.suggestions?.[w] ?? "Focus on making this section more specific and achievement-driven with quantifiable results."}
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* ── Section 3: Detailed Section Breakdown ── */}
+          <div className="flex flex-col gap-4">
+            <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+              <IconBrain className="size-5 text-violet-500" />
+              Detailed Section Breakdown
+            </h3>
+            <Card className="border-border/60">
+              <CardContent className="pt-6">
+                <Accordion type="multiple" className="w-full">
+                  {result.sections.map((section) => (
+                    <AccordionItem key={section.name} value={section.name}>
+                      <AccordionTrigger className="hover:no-underline">
+                        <div className="flex items-center gap-3 flex-1 pr-2">
+                          <SectionScoreBadge score={section.score} />
+                          <span className="font-medium text-sm">{section.name}</span>
+                          <span className="text-xs text-muted-foreground hidden sm:block truncate ml-auto mr-4">{section.feedback}</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="flex flex-col gap-4 pt-1 pb-2">
+                          <div className="flex flex-col gap-1">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Feedback</p>
+                            <p className="text-sm text-foreground">{section.feedback}</p>
+                          </div>
+
+                          <div className="flex flex-col gap-1">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Improvement Tip</p>
+                            <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm text-foreground">
+                              <IconBulb className="size-3.5 inline mr-1 text-amber-500" />{section.suggestion}
+                            </div>
+                          </div>
+
+                          {section.rewriteExample && (
+                            <div className="flex flex-col gap-1">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1">
+                                <IconArrowRight className="size-3" />Concrete Rewrite Example
+                              </p>
+                              <RewriteExample before={section.rewriteExample.before} after={section.rewriteExample.after} />
+                            </div>
+                          )}
+
+                          <SectionBar name={section.name} score={section.score} />
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Separator />
+
+          {/* ── Section 4: Keyword Analysis ── */}
+          <div className="flex flex-col gap-4">
+            <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+              <IconHash className="size-5 text-blue-500" />
+              Keyword Analysis
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Keyword heatmap */}
+              <Card className="border-border/60 p-6 flex flex-col gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="flex size-7 items-center justify-center rounded-lg bg-violet-500/10"><IconHash className="size-4 text-violet-500" /></div>
+                  <div>
+                    <span className="text-sm font-semibold">Keyword Density</span>
+                    <p className="text-xs text-muted-foreground">Brighter = high-value industry keyword</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(result.keywords ?? []).length > 0
+                    ? result.keywords.map((k) => (
+                      <KeywordChip key={k.keyword} keyword={k.keyword} count={k.count} important={k.important} />
+                    ))
+                    : <p className="text-xs text-muted-foreground">No keywords extracted.</p>
+                  }
+                </div>
+                <div className="flex items-center gap-3 text-[10px] text-muted-foreground pt-1">
+                  <span className="flex items-center gap-1"><span className="inline-block size-2.5 rounded-sm bg-violet-500/30" />High-value keyword</span>
+                  <span className="flex items-center gap-1"><span className="inline-block size-2.5 rounded-sm bg-muted" />Supporting keyword</span>
+                </div>
+              </Card>
+
+              {/* Suggested keywords */}
+              <Card className="border-border/60 p-6 flex flex-col gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/10"><IconTrendingUp className="size-4 text-emerald-500" /></div>
+                  <div>
+                    <span className="text-sm font-semibold">Suggested Keywords to Add</span>
+                    <p className="text-xs text-muted-foreground">Missing from your resume but strengthen it</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(result.suggestedKeywords ?? []).length > 0
+                    ? result.suggestedKeywords.map((k) => (
+                      <Badge key={k} variant="secondary" className="text-xs gap-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                        + {k}
+                      </Badge>
+                    ))
+                    : <p className="text-xs text-muted-foreground">No additional keywords suggested — great coverage!</p>
+                  }
+                </div>
+                {result.suggestedKeywords && result.suggestedKeywords.length > 0 && (
+                  <p className="text-xs text-muted-foreground border-t border-border/40 pt-3">
+                    💡 Naturally weave these into your experience bullet points and skills section — don&apos;t keyword-stuff.
+                  </p>
+                )}
+              </Card>
+            </div>
+          </div>
         </div>
       )}
     </div>

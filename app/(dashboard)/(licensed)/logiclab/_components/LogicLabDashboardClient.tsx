@@ -1100,9 +1100,9 @@ export function LogicLabDashboardClient({
                 )}
               </Empty>
             ) : (
-              <div className={cn('flex', 'flex-col', 'border', 'border-border/40', 'rounded-xl', 'overflow-hidden', 'shadow-sm', 'bg-background/40')}>
+              <div className={cn('flex', 'flex-col', 'border', 'border-border', 'rounded-xl', 'overflow-hidden', 'shadow-sm', 'bg-background/40')}>
                 {/* Table Header */}
-                <div className={cn('hidden', 'md:flex', 'items-center', 'gap-3', 'px-4', 'py-3.5', 'bg-muted/40', 'border-b', 'border-border/50', 'text-xs', 'font-bold', 'text-muted-foreground', 'uppercase', 'tracking-wider', 'select-none')}>
+                <div className={cn('hidden', 'md:flex', 'items-center', 'gap-3', 'px-4', 'py-3.5', 'bg-muted/40', 'border-b', 'border-border', 'text-xs', 'font-bold', 'text-muted-foreground', 'uppercase', 'tracking-wider', 'select-none')}>
                   <div className={cn('w-14', 'shrink-0', 'text-center')}>Status</div>
                   
                   <div className={cn('flex-1', 'min-w-0', 'pl-4')}>Title</div>
@@ -1125,7 +1125,7 @@ export function LogicLabDashboardClient({
                       className={cn(
                         "group flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors duration-150",
                         isEven ? "bg-transparent" : "bg-zinc-100 dark:bg-white/[0.04]",
-                        idx !== problems.length - 1 && "border-b border-border/30"
+                        idx !== problems.length - 1 && "border-b border-border"
                       )}
                     >
                       {/* Status icon */}

@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -302,20 +303,23 @@ function FormSection({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border border-border/60 rounded-xl overflow-hidden">
-      <button
-        type="button"
+    <Card className={cn("transition-all duration-200 border border-border/50", open && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
+      <CardHeader
+        className="flex flex-row items-center justify-between gap-3 p-4 space-y-0 cursor-pointer select-none"
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-muted/30 hover:bg-muted/50 transition-colors"
       >
         <div className="flex items-center gap-2.5">
           <span className="text-muted-foreground">{icon}</span>
-          <span className="text-sm font-semibold">{title}</span>
+          <CardTitle className="text-sm font-semibold">{title}</CardTitle>
         </div>
         {open ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-      </button>
-      {open && <div className="p-4 space-y-4 bg-card">{children}</div>}
-    </div>
+      </CardHeader>
+      {open && (
+        <CardContent className="p-4 pt-0 space-y-4">
+          {children}
+        </CardContent>
+      )}
+    </Card>
   );
 }
 
@@ -566,346 +570,364 @@ export function ResumeGeneratorClient({ prefillData }: Props) {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="resume-generator-page flex flex-col h-full min-h-0 overflow-hidden bg-background px-4 py-6 md:px-8 md:py-8 gap-4">
+      <style>{`
+        /* Prevent outer container scrolling only when on the resume generator page */
+        body:has(.resume-generator-page) .h-svh,
+        body:has(.resume-generator-page) {
+          overflow: hidden !important;
+        }
+        .resume-generator-page {
+          height: 100svh !important;
+        }
+        @media (max-width: 767px) {
+          .resume-generator-page {
+            height: calc(100svh - 56px) !important;
+          }
+        }
+      `}</style>
 
-      {/* ── Top Bar ── */}
-      <div className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-border/60 bg-background/95 backdrop-blur px-4 py-3 md:px-6">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={() => router.back()}>
-            <ChevronLeft className="h-4 w-4" />
-            Back
+      {/* ── Page Header ── */}
+      <div className="flex flex-col gap-3 pb-4 border-b border-border/60">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground -ml-2 hover:bg-muted/50" onClick={() => router.back()}>
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Back to Tools
           </Button>
-          <Separator orientation="vertical" className="h-5" />
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500/10">
-              <FileText className="h-4 w-4 text-emerald-500" />
-            </div>
-            <span className="font-semibold text-sm">Resume Generator</span>
-            <Badge variant="secondary" className="text-[10px] px-1.5 h-4">LaTeX Style</Badge>
-          </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
-            onClick={handlePrefill}
-            disabled={isPrefilling}
-          >
-            {isPrefilling
-              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              : <Sparkles className="h-3.5 w-3.5" />
-            }
-            Prefill from Profile
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 border-violet-500/40 text-violet-700 dark:text-violet-400 hover:bg-violet-500/10"
-            onClick={handleDownloadLatex}
-          >
-            <Code2 className="h-3.5 w-3.5" />
-            Download .tex
-          </Button>
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-3xl font-bold font-cirka tracking-tight text-foreground flex items-center gap-2">
+              Resume Generator
+            </h1>
+            <p className="text-sm text-muted-foreground font-sans">
+              Customize your professional LaTeX-styled resume with instant preview.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10 shadow-sm"
+              onClick={handlePrefill}
+              disabled={isPrefilling}
+            >
+              {isPrefilling
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                : <Sparkles className="h-3.5 w-3.5" />
+              }
+              Prefill from Profile
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 border-violet-500/40 text-violet-700 dark:text-violet-400 hover:bg-violet-500/10 shadow-sm"
+              onClick={handleDownloadLatex}
+            >
+              <Code2 className="h-3.5 w-3.5" />
+              Download .tex
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* ── Body ── */}
-      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
+      {/* ── Columns Container ── */}
+      <div className="flex flex-col lg:flex-row flex-1 min-h-0 gap-6 overflow-hidden">
 
-        {/* ── LEFT: Editable Form ── */}
-        <div className="w-full lg:w-[440px] flex-shrink-0 overflow-y-auto border-r border-border/60 bg-background">
-          <div className="p-4 space-y-3">
+        {/* ── LEFT: Editable Form (Independent Scroll) ── */}
+        <div className="w-full lg:w-[440px] flex-shrink-0 overflow-y-auto h-full pr-1 space-y-4">
 
-            {/* ─ Personal Info ─ */}
-            <FormSection title="Personal Information" icon={<UserRound className="h-4 w-4" />}>
-              <Row className="grid-cols-1">
-                <Field label="Full Name" required>
-                  <Input placeholder="e.g. Priya Sharma" value={form.fullName}
-                    onChange={e => setField("fullName", e.target.value)} />
-                </Field>
-              </Row>
-              <Row className="grid-cols-2">
-                <Field label="Email" required>
-                  <Input type="email" placeholder="priya@email.com" value={form.email}
-                    onChange={e => setField("email", e.target.value)} />
-                </Field>
-                <Field label="Phone">
-                  <Input placeholder="+91 98765 43210" value={form.phone}
-                    onChange={e => setField("phone", e.target.value)} />
-                </Field>
-              </Row>
-              <Row className="grid-cols-1">
-                <Field label="Location">
-                  <Input placeholder="Pune, India" value={form.location}
-                    onChange={e => setField("location", e.target.value)} />
-                </Field>
-              </Row>
-              <Row className="grid-cols-2">
-                <Field label="LinkedIn URL">
-                  <Input placeholder="linkedin.com/in/priya" value={form.linkedin}
-                    onChange={e => setField("linkedin", e.target.value)} />
-                </Field>
-                <Field label="GitHub URL">
-                  <Input placeholder="github.com/priya" value={form.github}
-                    onChange={e => setField("github", e.target.value)} />
-                </Field>
-              </Row>
-              <Row className="grid-cols-1">
-                <Field label="Portfolio URL">
-                  <Input placeholder="https://priya.dev" value={form.portfolio}
-                    onChange={e => setField("portfolio", e.target.value)} />
-                </Field>
-              </Row>
-              <Field label="Summary / Objective">
-                <Textarea
-                  placeholder="A brief 2-3 line professional summary..."
-                  rows={3}
-                  value={form.summary}
-                  onChange={e => setField("summary", e.target.value)}
-                  className="resize-none text-sm"
-                />
+          {/* ─ Personal Info ─ */}
+          <FormSection title="Personal Information" icon={<UserRound className="h-4 w-4" />}>
+            <Row className="grid-cols-1">
+              <Field label="Full Name" required>
+                <Input placeholder="e.g. Priya Sharma" value={form.fullName}
+                  onChange={e => setField("fullName", e.target.value)} />
               </Field>
-            </FormSection>
+            </Row>
+            <Row className="grid-cols-2">
+              <Field label="Email" required>
+                <Input type="email" placeholder="priya@email.com" value={form.email}
+                  onChange={e => setField("email", e.target.value)} />
+              </Field>
+              <Field label="Phone">
+                <Input placeholder="+91 98765 43210" value={form.phone}
+                  onChange={e => setField("phone", e.target.value)} />
+              </Field>
+            </Row>
+            <Row className="grid-cols-1">
+              <Field label="Location">
+                <Input placeholder="Pune, India" value={form.location}
+                  onChange={e => setField("location", e.target.value)} />
+              </Field>
+            </Row>
+            <Row className="grid-cols-2">
+              <Field label="LinkedIn URL">
+                <Input placeholder="linkedin.com/in/priya" value={form.linkedin}
+                  onChange={e => setField("linkedin", e.target.value)} />
+              </Field>
+              <Field label="GitHub URL">
+                <Input placeholder="github.com/priya" value={form.github}
+                  onChange={e => setField("github", e.target.value)} />
+              </Field>
+            </Row>
+            <Row className="grid-cols-1">
+              <Field label="Portfolio URL">
+                <Input placeholder="https://priya.dev" value={form.portfolio}
+                  onChange={e => setField("portfolio", e.target.value)} />
+              </Field>
+            </Row>
+            <Field label="Summary / Objective">
+              <Textarea
+                placeholder="A brief 2-3 line professional summary..."
+                rows={3}
+                value={form.summary}
+                onChange={e => setField("summary", e.target.value)}
+                className="resize-none text-sm"
+              />
+            </Field>
+          </FormSection>
 
-            {/* ─ Education ─ */}
-            <FormSection title="Education" icon={<GraduationCap className="h-4 w-4" />}>
-              {form.education.map((edu, idx) => (
-                <div key={idx} className="relative space-y-3 p-3 border border-border/50 rounded-lg bg-muted/20">
-                  {form.education.length > 1 && (
-                    <button type="button" onClick={() => setField("education", removeEntry(form.education, idx))}
-                      className="absolute top-2 right-2 text-muted-foreground hover:text-destructive transition-colors">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                  <Row className="grid-cols-1">
-                    <Field label="Degree / Course">
-                      <Input placeholder="B.E. Computer Engineering" value={edu.degree}
-                        onChange={e => setField("education", updateEntry(form.education, idx, { degree: e.target.value }))} />
-                    </Field>
-                  </Row>
-                  <Row className="grid-cols-2">
-                    <Field label="Institution">
-                      <Input placeholder="MIT Pune" value={edu.institution}
-                        onChange={e => setField("education", updateEntry(form.education, idx, { institution: e.target.value }))} />
-                    </Field>
-                    <Field label="Location">
-                      <Input placeholder="Pune, India" value={edu.location ?? ""}
-                        onChange={e => setField("education", updateEntry(form.education, idx, { location: e.target.value }))} />
-                    </Field>
-                  </Row>
-                  <Row className="grid-cols-2">
-                    <Field label="Year of Passing">
-                      <Input placeholder="2025" value={edu.year}
-                        onChange={e => setField("education", updateEntry(form.education, idx, { year: e.target.value }))} />
-                    </Field>
-                    <Field label="CGPA / %">
-                      <Input placeholder="8.5 CGPA" value={edu.grade ?? ""}
-                        onChange={e => setField("education", updateEntry(form.education, idx, { grade: e.target.value }))} />
-                    </Field>
-                  </Row>
-                </div>
-              ))}
-              <Button type="button" variant="outline" size="sm" className="w-full gap-2 border-dashed"
-                onClick={() => setField("education", [...form.education, emptyEducation()])}>
-                <Plus className="h-3.5 w-3.5" /> Add Education
-              </Button>
-            </FormSection>
+          {/* ─ Education ─ */}
+          <FormSection title="Education" icon={<GraduationCap className="h-4 w-4" />}>
+            {form.education.map((edu, idx) => (
+              <div key={idx} className="relative space-y-3 p-3 border border-border/50 rounded-lg bg-muted/20">
+                {form.education.length > 1 && (
+                  <button type="button" onClick={() => setField("education", removeEntry(form.education, idx))}
+                    className="absolute top-2 right-2 text-muted-foreground hover:text-destructive transition-colors">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                <Row className="grid-cols-1">
+                  <Field label="Degree / Course">
+                    <Input placeholder="B.E. Computer Engineering" value={edu.degree}
+                      onChange={e => setField("education", updateEntry(form.education, idx, { degree: e.target.value }))} />
+                  </Field>
+                </Row>
+                <Row className="grid-cols-2">
+                  <Field label="Institution">
+                    <Input placeholder="MIT Pune" value={edu.institution}
+                      onChange={e => setField("education", updateEntry(form.education, idx, { institution: e.target.value }))} />
+                  </Field>
+                  <Field label="Location">
+                    <Input placeholder="Pune, India" value={edu.location ?? ""}
+                      onChange={e => setField("education", updateEntry(form.education, idx, { location: e.target.value }))} />
+                  </Field>
+                </Row>
+                <Row className="grid-cols-2">
+                  <Field label="Year of Passing">
+                    <Input placeholder="2025" value={edu.year}
+                      onChange={e => setField("education", updateEntry(form.education, idx, { year: e.target.value }))} />
+                  </Field>
+                  <Field label="CGPA / %">
+                    <Input placeholder="8.5 CGPA" value={edu.grade ?? ""}
+                      onChange={e => setField("education", updateEntry(form.education, idx, { grade: e.target.value }))} />
+                  </Field>
+                </Row>
+              </div>
+            ))}
+            <Button type="button" variant="outline" size="sm" className="w-full gap-2 border-dashed"
+              onClick={() => setField("education", [...form.education, emptyEducation()])}>
+              <Plus className="h-3.5 w-3.5" /> Add Education
+            </Button>
+          </FormSection>
 
-            {/* ─ Experience ─ */}
-            <FormSection title="Experience" icon={<Briefcase className="h-4 w-4" />} defaultOpen={false}>
-              {form.experience.map((exp, idx) => (
-                <div key={idx} className="relative space-y-3 p-3 border border-border/50 rounded-lg bg-muted/20">
-                  {form.experience.length > 1 && (
-                    <button type="button" onClick={() => setField("experience", removeEntry(form.experience, idx))}
-                      className="absolute top-2 right-2 text-muted-foreground hover:text-destructive transition-colors">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                  <Row className="grid-cols-2">
-                    <Field label="Job Title">
-                      <Input placeholder="Software Engineer" value={exp.title}
-                        onChange={e => setField("experience", updateEntry(form.experience, idx, { title: e.target.value }))} />
+          {/* ─ Experience ─ */}
+          <FormSection title="Experience" icon={<Briefcase className="h-4 w-4" />} defaultOpen={false}>
+            {form.experience.map((exp, idx) => (
+              <div key={idx} className="relative space-y-3 p-3 border border-border/50 rounded-lg bg-muted/20">
+                {form.experience.length > 1 && (
+                  <button type="button" onClick={() => setField("experience", removeEntry(form.experience, idx))}
+                    className="absolute top-2 right-2 text-muted-foreground hover:text-destructive transition-colors">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                <Row className="grid-cols-2">
+                  <Field label="Job Title">
+                    <Input placeholder="Software Engineer" value={exp.title}
+                      onChange={e => setField("experience", updateEntry(form.experience, idx, { title: e.target.value }))} />
+                  </Field>
+                  <Field label="Company">
+                    <Input placeholder="Infosys" value={exp.company}
+                      onChange={e => setField("experience", updateEntry(form.experience, idx, { company: e.target.value }))} />
+                  </Field>
+                </Row>
+                <Row className="grid-cols-1">
+                  <Field label="Location">
+                    <Input placeholder="Bengaluru, India" value={exp.location ?? ""}
+                      onChange={e => setField("experience", updateEntry(form.experience, idx, { location: e.target.value }))} />
+                  </Field>
+                </Row>
+                <Row className="grid-cols-2">
+                  <Field label="Start Date">
+                    <Input placeholder="Jun 2023" value={exp.startDate}
+                      onChange={e => setField("experience", updateEntry(form.experience, idx, { startDate: e.target.value }))} />
+                  </Field>
+                  <div className="space-y-1">
+                    <Field label="End Date">
+                      <Input placeholder="Jun 2024" value={exp.endDate ?? ""}
+                        disabled={exp.isCurrent}
+                        onChange={e => setField("experience", updateEntry(form.experience, idx, { endDate: e.target.value }))} />
                     </Field>
-                    <Field label="Company">
-                      <Input placeholder="Infosys" value={exp.company}
-                        onChange={e => setField("experience", updateEntry(form.experience, idx, { company: e.target.value }))} />
-                    </Field>
-                  </Row>
-                  <Row className="grid-cols-1">
-                    <Field label="Location">
-                      <Input placeholder="Bengaluru, India" value={exp.location ?? ""}
-                        onChange={e => setField("experience", updateEntry(form.experience, idx, { location: e.target.value }))} />
-                    </Field>
-                  </Row>
-                  <Row className="grid-cols-2">
-                    <Field label="Start Date">
-                      <Input placeholder="Jun 2023" value={exp.startDate}
-                        onChange={e => setField("experience", updateEntry(form.experience, idx, { startDate: e.target.value }))} />
-                    </Field>
-                    <div className="space-y-1">
-                      <Field label="End Date">
-                        <Input placeholder="Jun 2024" value={exp.endDate ?? ""}
-                          disabled={exp.isCurrent}
-                          onChange={e => setField("experience", updateEntry(form.experience, idx, { endDate: e.target.value }))} />
-                      </Field>
-                      <div className="flex items-center gap-2 pt-0.5">
-                        <Switch
-                          id={`current-${idx}`}
-                          checked={exp.isCurrent}
-                          onCheckedChange={v => setField("experience", updateEntry(form.experience, idx, { isCurrent: v, endDate: v ? "" : exp.endDate }))}
-                        />
-                        <Label htmlFor={`current-${idx}`} className="text-xs text-muted-foreground cursor-pointer">Currently working</Label>
-                      </div>
+                    <div className="flex items-center gap-2 pt-0.5">
+                      <Switch
+                        id={`current-${idx}`}
+                        checked={exp.isCurrent}
+                        onCheckedChange={v => setField("experience", updateEntry(form.experience, idx, { isCurrent: v, endDate: v ? "" : exp.endDate }))}
+                      />
+                      <Label htmlFor={`current-${idx}`} className="text-xs text-muted-foreground cursor-pointer">Currently working</Label>
                     </div>
-                  </Row>
-                  <Field label="Responsibilities (one per line, start each with an action verb)">
-                    <Textarea
-                      placeholder={"• Developed REST APIs using Node.js...\n• Led a team of 4 engineers..."}
-                      rows={4}
-                      className="resize-none text-sm font-mono"
-                      value={exp.bullets.join("\n")}
-                      onChange={e => setField("experience", updateEntry(form.experience, idx, {
-                        bullets: e.target.value.split("\n"),
-                      }))}
-                    />
-                  </Field>
-                </div>
-              ))}
-              <Button type="button" variant="outline" size="sm" className="w-full gap-2 border-dashed"
-                onClick={() => setField("experience", [...form.experience, emptyExperience()])}>
-                <Plus className="h-3.5 w-3.5" /> Add Experience
-              </Button>
-            </FormSection>
-
-            {/* ─ Projects ─ */}
-            <FormSection title="Projects" icon={<FolderGit2 className="h-4 w-4" />} defaultOpen={false}>
-              {form.projects.map((proj, idx) => (
-                <div key={idx} className="relative space-y-3 p-3 border border-border/50 rounded-lg bg-muted/20">
-                  {form.projects.length > 1 && (
-                    <button type="button" onClick={() => setField("projects", removeEntry(form.projects, idx))}
-                      className="absolute top-2 right-2 text-muted-foreground hover:text-destructive transition-colors">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                  <Row className="grid-cols-2">
-                    <Field label="Project Title">
-                      <Input placeholder="Campus Placement Tracker" value={proj.title}
-                        onChange={e => setField("projects", updateEntry(form.projects, idx, { title: e.target.value }))} />
-                    </Field>
-                    <Field label="Technologies">
-                      <Input placeholder="React, Node.js, Supabase" value={proj.technologies ?? ""}
-                        onChange={e => setField("projects", updateEntry(form.projects, idx, { technologies: e.target.value }))} />
-                    </Field>
-                  </Row>
-                  <Field label="Project URL (optional)">
-                    <Input placeholder="https://github.com/..." value={proj.url ?? ""}
-                      onChange={e => setField("projects", updateEntry(form.projects, idx, { url: e.target.value }))} />
-                  </Field>
-                  <Field label="Description (one point per line)">
-                    <Textarea
-                      placeholder={"• Built a dashboard for tracking placement drives...\n• Integrated AI resume analysis..."}
-                      rows={3}
-                      className="resize-none text-sm font-mono"
-                      value={proj.description}
-                      onChange={e => setField("projects", updateEntry(form.projects, idx, { description: e.target.value }))}
-                    />
-                  </Field>
-                </div>
-              ))}
-              <Button type="button" variant="outline" size="sm" className="w-full gap-2 border-dashed"
-                onClick={() => setField("projects", [...form.projects, emptyProject()])}>
-                <Plus className="h-3.5 w-3.5" /> Add Project
-              </Button>
-            </FormSection>
-
-            {/* ─ Certifications ─ */}
-            <FormSection title="Certifications" icon={<Award className="h-4 w-4" />} defaultOpen={false}>
-              {form.certifications.map((cert, idx) => (
-                <div key={idx} className="relative space-y-3 p-3 border border-border/50 rounded-lg bg-muted/20">
-                  {form.certifications.length > 1 && (
-                    <button type="button" onClick={() => setField("certifications", removeEntry(form.certifications, idx))}
-                      className="absolute top-2 right-2 text-muted-foreground hover:text-destructive transition-colors">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                  <Row className="grid-cols-2">
-                    <Field label="Certificate Name">
-                      <Input placeholder="AWS Cloud Practitioner" value={cert.name}
-                        onChange={e => setField("certifications", updateEntry(form.certifications, idx, { name: e.target.value }))} />
-                    </Field>
-                    <Field label="Issuing Organization">
-                      <Input placeholder="Amazon Web Services" value={cert.issuer}
-                        onChange={e => setField("certifications", updateEntry(form.certifications, idx, { issuer: e.target.value }))} />
-                    </Field>
-                  </Row>
-                  <Row className="grid-cols-2">
-                    <Field label="Date">
-                      <Input placeholder="Mar 2024" value={cert.date}
-                        onChange={e => setField("certifications", updateEntry(form.certifications, idx, { date: e.target.value }))} />
-                    </Field>
-                    <Field label="Credential URL">
-                      <Input placeholder="https://credly.com/..." value={cert.url ?? ""}
-                        onChange={e => setField("certifications", updateEntry(form.certifications, idx, { url: e.target.value }))} />
-                    </Field>
-                  </Row>
-                </div>
-              ))}
-              <Button type="button" variant="outline" size="sm" className="w-full gap-2 border-dashed"
-                onClick={() => setField("certifications", [...form.certifications, emptyCertification()])}>
-                <Plus className="h-3.5 w-3.5" /> Add Certification
-              </Button>
-            </FormSection>
-
-            {/* ─ Skills ─ */}
-            <FormSection title="Technical Skills" icon={<Wrench className="h-4 w-4" />} defaultOpen={false}>
-              <p className="text-xs text-muted-foreground -mt-2">Each row = one category. Skills are comma-separated.</p>
-              {form.skillGroups.map((group, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <Input
-                    placeholder="Category"
-                    className="w-28 shrink-0 text-sm"
-                    value={group.category}
-                    onChange={e => setField("skillGroups", updateEntry(form.skillGroups, idx, { category: e.target.value }))}
+                  </div>
+                </Row>
+                <Field label="Responsibilities (one per line, start each with an action verb)">
+                  <Textarea
+                    placeholder={"• Developed REST APIs using Node.js...\n• Led a team of 4 engineers..."}
+                    rows={4}
+                    className="resize-none text-sm font-mono"
+                    value={exp.bullets.join("\n")}
+                    onChange={e => setField("experience", updateEntry(form.experience, idx, {
+                      bullets: e.target.value.split("\n"),
+                    }))}
                   />
-                  <Input
-                    placeholder="Python, React, PostgreSQL, Docker..."
-                    className="flex-1 text-sm"
-                    value={group.skills}
-                    onChange={e => setField("skillGroups", updateEntry(form.skillGroups, idx, { skills: e.target.value }))}
-                  />
-                  {form.skillGroups.length > 1 && (
-                    <button type="button" onClick={() => setField("skillGroups", removeEntry(form.skillGroups, idx))}
-                      className="text-muted-foreground hover:text-destructive transition-colors shrink-0">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-              ))}
-              <Button type="button" variant="outline" size="sm" className="w-full gap-2 border-dashed"
-                onClick={() => setField("skillGroups", [...form.skillGroups, emptySkillGroup()])}>
-                <Plus className="h-3.5 w-3.5" /> Add Skill Category
-              </Button>
-            </FormSection>
+                </Field>
+              </div>
+            ))}
+            <Button type="button" variant="outline" size="sm" className="w-full gap-2 border-dashed"
+              onClick={() => setField("experience", [...form.experience, emptyExperience()])}>
+              <Plus className="h-3.5 w-3.5" /> Add Experience
+            </Button>
+          </FormSection>
 
-          </div>
+          {/* ─ Projects ─ */}
+          <FormSection title="Projects" icon={<FolderGit2 className="h-4 w-4" />} defaultOpen={false}>
+            {form.projects.map((proj, idx) => (
+              <div key={idx} className="relative space-y-3 p-3 border border-border/50 rounded-lg bg-muted/20">
+                {form.projects.length > 1 && (
+                  <button type="button" onClick={() => setField("projects", removeEntry(form.projects, idx))}
+                    className="absolute top-2 right-2 text-muted-foreground hover:text-destructive transition-colors">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                <Row className="grid-cols-2">
+                  <Field label="Project Title">
+                    <Input placeholder="Campus Placement Tracker" value={proj.title}
+                      onChange={e => setField("projects", updateEntry(form.projects, idx, { title: e.target.value }))} />
+                  </Field>
+                  <Field label="Technologies">
+                    <Input placeholder="React, Node.js, Supabase" value={proj.technologies ?? ""}
+                      onChange={e => setField("projects", updateEntry(form.projects, idx, { technologies: e.target.value }))} />
+                  </Field>
+                </Row>
+                <Field label="Project URL (optional)">
+                  <Input placeholder="https://github.com/..." value={proj.url ?? ""}
+                    onChange={e => setField("projects", updateEntry(form.projects, idx, { url: e.target.value }))} />
+                </Field>
+                <Field label="Description (one point per line)">
+                  <Textarea
+                    placeholder={"• Built a dashboard for tracking placement drives...\n• Integrated AI resume analysis..."}
+                    rows={3}
+                    className="resize-none text-sm font-mono"
+                    value={proj.description}
+                    onChange={e => setField("projects", updateEntry(form.projects, idx, { description: e.target.value }))}
+                  />
+                </Field>
+              </div>
+            ))}
+            <Button type="button" variant="outline" size="sm" className="w-full gap-2 border-dashed"
+              onClick={() => setField("projects", [...form.projects, emptyProject()])}>
+              <Plus className="h-3.5 w-3.5" /> Add Project
+            </Button>
+          </FormSection>
+
+          {/* ─ Certifications ─ */}
+          <FormSection title="Certifications" icon={<Award className="h-4 w-4" />} defaultOpen={false}>
+            {form.certifications.map((cert, idx) => (
+              <div key={idx} className="relative space-y-3 p-3 border border-border/50 rounded-lg bg-muted/20">
+                {form.certifications.length > 1 && (
+                  <button type="button" onClick={() => setField("certifications", removeEntry(form.certifications, idx))}
+                    className="absolute top-2 right-2 text-muted-foreground hover:text-destructive transition-colors">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                <Row className="grid-cols-2">
+                  <Field label="Certificate Name">
+                    <Input placeholder="AWS Cloud Practitioner" value={cert.name}
+                      onChange={e => setField("certifications", updateEntry(form.certifications, idx, { name: e.target.value }))} />
+                  </Field>
+                  <Field label="Issuing Organization">
+                    <Input placeholder="Amazon Web Services" value={cert.issuer}
+                      onChange={e => setField("certifications", updateEntry(form.certifications, idx, { issuer: e.target.value }))} />
+                  </Field>
+                </Row>
+                <Row className="grid-cols-2">
+                  <Field label="Date">
+                    <Input placeholder="Mar 2024" value={cert.date}
+                      onChange={e => setField("certifications", updateEntry(form.certifications, idx, { date: e.target.value }))} />
+                  </Field>
+                  <Field label="Credential URL">
+                    <Input placeholder="https://credly.com/..." value={cert.url ?? ""}
+                      onChange={e => setField("certifications", updateEntry(form.certifications, idx, { url: e.target.value }))} />
+                  </Field>
+                </Row>
+              </div>
+            ))}
+            <Button type="button" variant="outline" size="sm" className="w-full gap-2 border-dashed"
+              onClick={() => setField("certifications", [...form.certifications, emptyCertification()])}>
+              <Plus className="h-3.5 w-3.5" /> Add Certification
+            </Button>
+          </FormSection>
+
+          {/* ─ Skills ─ */}
+          <FormSection title="Technical Skills" icon={<Wrench className="h-4 w-4" />} defaultOpen={false}>
+            <p className="text-xs text-muted-foreground -mt-2">Each row = one category. Skills are comma-separated.</p>
+            {form.skillGroups.map((group, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <Input
+                  placeholder="Category"
+                  className="w-28 shrink-0 text-sm"
+                  value={group.category}
+                  onChange={e => setField("skillGroups", updateEntry(form.skillGroups, idx, { category: e.target.value }))}
+                />
+                <Input
+                  placeholder="Python, React, PostgreSQL, Docker..."
+                  className="flex-1 text-sm"
+                  value={group.skills}
+                  onChange={e => setField("skillGroups", updateEntry(form.skillGroups, idx, { skills: e.target.value }))}
+                />
+                {form.skillGroups.length > 1 && (
+                  <button type="button" onClick={() => setField("skillGroups", removeEntry(form.skillGroups, idx))}
+                    className="text-muted-foreground hover:text-destructive transition-colors shrink-0">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            ))}
+            <Button type="button" variant="outline" size="sm" className="w-full gap-2 border-dashed"
+              onClick={() => setField("skillGroups", [...form.skillGroups, emptySkillGroup()])}>
+              <Plus className="h-3.5 w-3.5" /> Add Skill Category
+            </Button>
+          </FormSection>
+
         </div>
 
-        {/* ── RIGHT: Live Preview ── */}
-        <div className="flex-1 overflow-auto bg-muted/40 p-4 md:p-8">
+        {/* ── RIGHT: Live Preview (Independent Scroll) ── */}
+        <div className="flex-1 overflow-y-auto h-full bg-muted/10 border border-border/40 rounded-[var(--radius)] p-4 md:p-6 shadow-sm">
           <div className="mx-auto max-w-[680px]">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-xs text-muted-foreground">Live preview — updates as you type</p>
-              <Badge variant="outline" className="text-[10px] gap-1">
+              <p className="text-xs text-muted-foreground font-sans">Live preview — updates as you type</p>
+              <Badge variant="outline" className="text-[10px] gap-1 bg-background">
                 <FileText className="h-3 w-3" /> LaTeX Style
               </Badge>
             </div>
             <LivePreview data={form} />
-            <p className="text-center text-[11px] text-muted-foreground mt-4">
+            <p className="text-center text-[11px] text-muted-foreground mt-4 font-sans">
               Generated by <span className="font-medium text-foreground">PlaceTrix</span>
             </p>
           </div>
         </div>
+
       </div>
     </div>
   );

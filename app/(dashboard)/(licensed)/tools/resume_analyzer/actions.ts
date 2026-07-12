@@ -124,11 +124,30 @@ export async function analyzeResumeAction(formData: FormData): Promise<AnalysisR
   })
 
   const systemPrompt = `You are a senior career coach, ATS specialist, and technical recruiter with 15+ years of experience.
-Analyze the provided resume with surgical precision. Be brutally honest but constructive.
+First, determine if the provided text is indeed a professional resume or curriculum vitae (CV). A valid resume must represent a single individual's professional history, contact info, education, work experience, projects, or list of technical/professional skills.
+If the text is NOT a resume (e.g., it is a recipe, invoice, book chapter, code file, essay, news article, email thread, list of instructions, or unrelated document), you MUST return overallScore: 0, atsScore: 0, keywordMatchRate: 0, and verdict: "INVALID_RESUME".
+If it is a valid resume, analyze the provided resume with surgical precision. Be brutally honest but constructive.
 Your output must be a single raw JSON object — no markdown, no code fences, zero extra text before or after the JSON.
 Every rewrite example must be SPECIFIC to the actual content in this resume, not generic placeholders.`
 
-  const userPrompt = `Analyze this resume and return ONLY a raw JSON object with this exact shape (no markdown, no explanation):
+  const userPrompt = `CRITICAL: First, verify if the RESUME TEXT provided below is indeed a professional resume/CV. 
+If the text is NOT a professional resume/CV (e.g., a recipe, invoice, textbook extract, programming code, news article, general article, user guide, list of rules, or unrelated text), you MUST return exactly the following JSON structure and nothing else:
+{
+  "overallScore": 0,
+  "atsScore": 0,
+  "keywordMatchRate": 0,
+  "verdict": "INVALID_RESUME",
+  "sections": [],
+  "strengths": [],
+  "weaknesses": [],
+  "suggestions": {},
+  "quickWins": [],
+  "keywords": [],
+  "suggestedKeywords": [],
+  "detectedSkills": []
+}
+
+If it is a valid resume/CV, analyze it and return ONLY a raw JSON object with this exact shape (no markdown, no explanation, no backticks):
 
 {
   "overallScore": <integer 0-100>,
@@ -265,6 +284,10 @@ ${jobDescription.slice(0, 3000)}`
     parsed = JSON.parse(jsonMatch[0])
   } catch {
     throw new Error("AI returned an invalid response. Please try again.")
+  }
+
+  if (parsed.verdict === "INVALID_RESUME" || (parsed.overallScore === 0 && parsed.atsScore === 0)) {
+    throw new Error("The uploaded file does not appear to be a professional resume or CV. Please upload a valid resume containing typical sections like education, experience, or skills.")
   }
 
   return {
