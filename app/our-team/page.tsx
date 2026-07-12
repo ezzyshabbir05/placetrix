@@ -119,15 +119,15 @@ function UserAvatar({
 	className?: string;
 }) {
 	const initials = React.useMemo(() => {
-		return user.display_name
-			? user.display_name
+		return user.full_name
+			? user.full_name
 				.split(" ")
 				.map((n) => n[0])
 				.join("")
 				.toUpperCase()
 				.slice(0, 2)
 			: user.email[0].toUpperCase();
-	}, [user.display_name, user.email]);
+	}, [user.full_name, user.email]);
 
 	const avatarUrl = React.useMemo(() => {
 		return buildStorageUrl("avatars", user.avatar_path);
@@ -137,7 +137,7 @@ function UserAvatar({
 		<Avatar className={cn(AVATAR_SHELL, className)}>
 			<AvatarImage
 				src={avatarUrl ?? undefined}
-				alt={user.display_name || user.email}
+				alt={user.full_name || user.email}
 				className="object-cover"
 			/>
 			<AvatarFallback className="text-xs font-medium">
@@ -254,7 +254,7 @@ function MobileNav({
 										<UserAvatar user={user} className="size-10" />
 										<div className="min-w-0">
 											<p className="truncate text-sm font-medium text-zinc-900 dark:text-white">
-												{user.display_name || "Your account"}
+												{user.full_name || "Your account"}
 											</p>
 											<p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
 												{user.email}
@@ -424,26 +424,27 @@ type TeamMember = {
 	github?: string;
 };
 
+
 const TEAM: TeamMember[] = [
 	{
 		name: "Shabbir Ezzy",
-		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/ShabbirE.png",
-		role: "Lead Developer",
+		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/ShabbirEzzy.png",
+		role: "Lead Product Developer",
 		email: "ezzyshabbir05@gmail.com",
 		linkedin: "https://www.linkedin.com/in/ezzyshabbir05",
 		github: "https://github.com/ezzyshabbir05",
 	},
 	{
 		name: "Sidra Chaudhari",
-		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/SidraC.png",
-		role: "UI-UX Developer",
+		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/SidraChaudhari.png",
+		role: "UI/UX Designer",
 		email: "sidrasc05@gmail.com",
 		linkedin: "https://www.linkedin.com/in/sidra-chaudhari",
 		github: "https://github.com/sidrachaudhari",
 	},
 	{
 		name: "Pushkar Gaikwad",
-		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/Pushkar.png",
+		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/PushkarGaikwad.png",
 		role: "Software Engineer",
 		email: "pushkargaikwad25@gmail.com",
 		linkedin: "https://www.linkedin.com/in/pushkar2510/",
@@ -451,8 +452,8 @@ const TEAM: TeamMember[] = [
 	},
 	{
 		name: "Vishal Raut",
-		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/VishalR.png",
-		role: "LogicLab Developer",
+		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/VishalRaut.png",
+		role: "Software Engineer",
 		email: "vishalraut.contact@gmail.com",
 		linkedin: "https://www.linkedin.com/in/vishalraut2106",
 		github: "https://github.com/vishalraut2106",
@@ -567,7 +568,7 @@ function TeamMemberCard({
 						{member.email ? (
 							<Button variant="outline" size="sm" className={NAV_BUTTON} asChild>
 								<a href={`mailto:${member.email}`}>
-									<MailIcon className="size-4" />
+									<MailIcon className="size-3" />
 									Contact
 								</a>
 							</Button>
@@ -641,6 +642,50 @@ function TeamSection() {
 						/>
 					))}
 				</div>
+			</div>
+		</section>
+	);
+}
+
+function CompanySection() {
+	return (
+		<section
+			className={cn(
+				"bg-white text-zinc-950 dark:bg-black dark:text-white",
+				"pt-14 md:pt-20"
+			)}
+		>
+			<div className={CONTENT}>
+				<article className="rounded-3xl border border-black/10 bg-white/95 p-6 backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.03] md:p-8 lg:p-10">
+					<div className="max-w-4xl">
+						<p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-500 dark:text-zinc-400">
+							The company
+						</p>
+
+						<h2
+							className="font-cirka mt-2 text-balance text-3xl font-semibold tracking-tight md:text-5xl"
+						>
+							4 Grid Technologies
+						</h2>
+
+						<div className="mt-5 space-y-4 text-sm leading-7 text-stone-600 dark:text-stone-300 md:text-base md:leading-8">
+							<p>
+								PlaceTrix is engineered and maintained by 4 Grid Technologies, a technology company focused on creating high-performance and beautifully designed digital platforms.
+							</p>
+							<p>
+								We believe in building robust workflows and refined user experiences that solve real-world problems. By focusing on practical value, reliability, and clean execution, we aim to deliver high-quality digital solutions that make a meaningful difference for users and businesses alike.
+							</p>
+						</div>
+
+						<div className="mt-8">
+							<Button className="group rounded-full font-medium" asChild>
+								<a href="https://4grid.tech" target="_blank" rel="noopener noreferrer">
+									Explore 4 Grid
+								</a>
+							</Button>
+						</div>
+					</div>
+				</article>
 			</div>
 		</section>
 	);
@@ -795,13 +840,23 @@ function Footer() {
 				<div className="absolute inset-x-0 h-px w-full bg-border" />
 				<div className="flex flex-col justify-between gap-2 py-4">
 					<p className="text-center text-sm font-light text-zinc-500 dark:text-zinc-400">
-						&copy; {new Date().getFullYear()}, 360 View Tech, All rights reserved
+						&copy; {new Date().getFullYear()},{" "}
+						<a
+							href="https://4grid.tech"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="hover:underline font-medium"
+						>
+							4 Grid Technologies
+						</a>
+						, All rights reserved
 					</p>
 				</div>
 			</div>
 		</footer>
 	);
 }
+
 
 export default function OurTeamPage() {
 	return (
@@ -812,6 +867,7 @@ export default function OurTeamPage() {
 			<HeaderShell />
 			<main className="flex flex-col">
 				<TeamSection />
+				<CompanySection />
 				<MissionSection />
 				<CTASection />
 			</main>

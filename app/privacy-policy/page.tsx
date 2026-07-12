@@ -747,7 +747,16 @@ function Footer() {
         <div className="absolute inset-x-0 h-px w-full bg-border" />
         <div className="flex flex-col justify-between gap-2 py-4">
           <p className="text-center text-sm font-light text-zinc-500 dark:text-zinc-400">
-            &copy; {new Date().getFullYear()}, 4 Grid Technologies. All rights reserved.
+            &copy; {new Date().getFullYear()},{" "}
+            <a
+              href="https://4grid.tech"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:underline font-medium"
+            >
+              4 Grid Technologies
+            </a>
+            . All rights reserved.
           </p>
         </div>
       </div>

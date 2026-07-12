@@ -71,7 +71,16 @@ export function Footer() {
         <div className="absolute inset-x-0 h-px w-full bg-border" />
         <div className="flex max-w-4xl flex-col justify-between gap-2 py-4">
           <p className="text-center font-light text-muted-foreground text-sm">
-            &copy; {new Date().getFullYear()}, 4 Grid Technologies, All rights reserved
+            &copy; {new Date().getFullYear()},{" "}
+            <a
+              href="https://4grid.tech"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:underline font-medium"
+            >
+              4 Grid Technologies
+            </a>
+            , All rights reserved
           </p>
         </div>
       </div>
