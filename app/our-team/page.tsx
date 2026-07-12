@@ -119,15 +119,15 @@ function UserAvatar({
 	className?: string;
 }) {
 	const initials = React.useMemo(() => {
-		return user.full_name
-			? user.full_name
+		return user.display_name
+			? user.display_name
 				.split(" ")
 				.map((n) => n[0])
 				.join("")
 				.toUpperCase()
 				.slice(0, 2)
 			: user.email[0].toUpperCase();
-	}, [user.full_name, user.email]);
+	}, [user.display_name, user.email]);
 
 	const avatarUrl = React.useMemo(() => {
 		return buildStorageUrl("avatars", user.avatar_path);
@@ -137,7 +137,7 @@ function UserAvatar({
 		<Avatar className={cn(AVATAR_SHELL, className)}>
 			<AvatarImage
 				src={avatarUrl ?? undefined}
-				alt={user.full_name || user.email}
+				alt={user.display_name || user.email}
 				className="object-cover"
 			/>
 			<AvatarFallback className="text-xs font-medium">
@@ -254,7 +254,7 @@ function MobileNav({
 										<UserAvatar user={user} className="size-10" />
 										<div className="min-w-0">
 											<p className="truncate text-sm font-medium text-zinc-900 dark:text-white">
-												{user.full_name || "Your account"}
+												{user.display_name || "Your account"}
 											</p>
 											<p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
 												{user.email}
@@ -422,30 +422,28 @@ type TeamMember = {
 	email?: string;
 	linkedin?: string;
 	github?: string;
-	behance?: string;
 };
-
 
 const TEAM: TeamMember[] = [
 	{
 		name: "Shabbir Ezzy",
-		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/ShabbirEzzy.png",
-		role: "Lead Product Developer",
+		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/ShabbirE.png",
+		role: "Lead Developer",
 		email: "ezzyshabbir05@gmail.com",
 		linkedin: "https://www.linkedin.com/in/ezzyshabbir05",
 		github: "https://github.com/ezzyshabbir05",
 	},
 	{
 		name: "Sidra Chaudhari",
-		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/SidraChaudhari.png",
-		role: "UI/UX Designer",
+		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/SidraC.png",
+		role: "UI-UX Developer",
 		email: "sidrasc05@gmail.com",
 		linkedin: "https://www.linkedin.com/in/sidra-chaudhari",
 		github: "https://github.com/sidrachaudhari",
 	},
 	{
 		name: "Pushkar Gaikwad",
-		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/PushkarGaikwad.png",
+		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/Pushkar.png",
 		role: "Software Engineer",
 		email: "pushkargaikwad25@gmail.com",
 		linkedin: "https://www.linkedin.com/in/pushkar2510/",
@@ -453,19 +451,11 @@ const TEAM: TeamMember[] = [
 	},
 	{
 		name: "Vishal Raut",
-		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/VishalRaut.png",
-		role: "Software Engineer",
+		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/VishalR.png",
+		role: "LogicLab Developer",
 		email: "vishalraut.contact@gmail.com",
 		linkedin: "https://www.linkedin.com/in/vishalraut2106",
 		github: "https://github.com/vishalraut2106",
-	},
-	{
-		name: "Vaishnavi Dharam",
-		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/VaishnaviDharam.png",
-		role: "UI/UX Designer",
-		email: "vaishnavidharam5@gmail.com",
-		linkedin: "https://www.linkedin.com/in/vaishnavidharam511",
-		behance: "https://www.behance.net/vaishnavidharam5",
 	},
 ];
 
@@ -577,7 +567,7 @@ function TeamMemberCard({
 						{member.email ? (
 							<Button variant="outline" size="sm" className={NAV_BUTTON} asChild>
 								<a href={`mailto:${member.email}`}>
-									<MailIcon className="size-3" />
+									<MailIcon className="size-4" />
 									Contact
 								</a>
 							</Button>
@@ -608,19 +598,6 @@ function TeamMemberCard({
 								</a>
 							</Button>
 						) : null}
-
-						{member.behance ? (
-							<Button variant="outline" size="icon" className={NAV_BUTTON} asChild>
-								<a
-									href={member.behance}
-									target="_blank"
-									rel="noopener noreferrer"
-									aria-label={`${member.name} Behance`}
-								>
-									<BehanceIcon className="size-4" />
-								</a>
-							</Button>
-						) : null}
 					</div>
 				</div>
 			</article>
@@ -640,7 +617,7 @@ function TeamSection() {
 				"pt-24 md:pt-28"
 			)}
 		>
-			<div className="mx-auto w-full max-w-7xl px-4 md:px-6">
+			<div className={CONTENT}>
 				<div className="mx-auto max-w-3xl text-center">
 					<p className="mb-2 text-xs font-medium uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
 						The team
@@ -655,7 +632,7 @@ function TeamSection() {
 						flows, and giving students a better system to grow through.
 					</p>
 				</div>
-				<div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 lg:gap-5">
+				<div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
 					{TEAM.map((member) => (
 						<TeamMemberCard
 							key={`${member.name}-${member.role}`}
@@ -818,24 +795,11 @@ function Footer() {
 				<div className="absolute inset-x-0 h-px w-full bg-border" />
 				<div className="flex flex-col justify-between gap-2 py-4">
 					<p className="text-center text-sm font-light text-zinc-500 dark:text-zinc-400">
-						&copy; {new Date().getFullYear()}, 4 Grid Technologies, All rights reserved
+						&copy; {new Date().getFullYear()}, 360 View Tech, All rights reserved
 					</p>
 				</div>
 			</div>
 		</footer>
-	);
-}
-
-function BehanceIcon(props: React.ComponentProps<"svg">) {
-	return (
-		<svg
-			fill="currentColor"
-			viewBox="0 0 16 16"
-			xmlns="http://www.w3.org/2000/svg"
-			{...props}
-		>
-			<path d="M4.654 3c.461 0 .887.035 1.278.14.39.07.711.216.996.391s.497.426.641.747c.14.32.216.711.216 1.137 0 .496-.106.922-.356 1.242-.215.32-.566.606-.997.817.606.176 1.067.496 1.348.922s.461.957.461 1.563c0 .496-.105.922-.285 1.278a2.3 2.3 0 0 1-.782.887c-.32.215-.711.39-1.137.496a5.3 5.3 0 0 1-1.278.176L0 12.803V3zm-.285 3.978c.39 0 .71-.105.957-.285.246-.18.355-.497.355-.887 0-.216-.035-.426-.105-.567a1 1 0 0 0-.32-.355 1.8 1.8 0 0 0-.461-.176c-.176-.035-.356-.035-.567-.035H2.17v2.31c0-.005 2.2-.005 2.2-.005zm.105 4.193c.215 0 .426-.035.606-.07.176-.035.356-.106.496-.216s.25-.215.356-.39c.07-.176.14-.391.14-.641 0-.496-.14-.852-.426-1.102-.285-.215-.676-.32-1.137-.32H2.17v2.734h2.305zm6.858-.035q.428.427 1.278.426c.39 0 .746-.106 1.032-.286q.426-.32.53-.64h1.74c-.286.851-.712 1.457-1.278 1.848-.566.355-1.243.566-2.06.566a4.1 4.1 0 0 1-1.527-.285 2.8 2.8 0 0 1-1.137-.782 2.85 2.85 0 0 1-.712-1.172c-.175-.461-.25-.957-.25-1.528 0-.531.07-1.032.25-1.493.18-.46.426-.852.747-1.207.32-.32.711-.606 1.137-.782a4 4 0 0 1 1.493-.285c.606 0 1.137.105 1.598.355.46.25.817.532 1.102.958.285.39.496.851.641 1.348.07.496.105.996.07 1.563h-5.15c0 .58.21 1.11.496 1.396m2.24-3.732c-.25-.25-.642-.391-1.103-.391-.32 0-.566.07-.781.176s-.356.25-.496.39a.96.96 0 0 0-.25.497c-.036.175-.07.32-.07.46h3.196c-.07-.526-.25-.882-.497-1.132zm-3.127-3.728h3.978v.957h-3.978z" />
-		</svg>
 	);
 }
 
