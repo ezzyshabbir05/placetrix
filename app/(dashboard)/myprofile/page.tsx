@@ -32,7 +32,8 @@ export default async function MyProfilePage() {
       { data: eventTickets },
       { data: allSkills },
       { data: candidateSkillRows },
-      { data: semesterGrades }
+      { data: semesterGrades },
+      { data: allInstitutes }
     ] = await Promise.all([
       (supabase as any).from("candidate_academic_details").select("course_id, passout_year, university_prn, course:institute_courses(course_name)").eq("profile_id", profile.id).maybeSingle(),
       (supabase as any).from("candidate_education").select("*").eq("profile_id", profile.id).order("passout_year", { ascending: false }),
@@ -56,6 +57,7 @@ export default async function MyProfilePage() {
       (supabase as any).from("skills").select("*").order("category").order("name"),
       (supabase as any).from("candidate_skills").select("skill_id").eq("profile_id", profile.id),
       (supabase as any).from("candidate_semester_grades").select("semester_number, sgpa").eq("profile_id", profile.id).order("semester_number"),
+      (supabase as any).from("institutes").select("id, institute_name, affiliation").order("institute_name"),
     ]);
 
     let semestersCount = 8;
@@ -140,6 +142,7 @@ export default async function MyProfilePage() {
         initialSkillIds={selectedSkillIds}
         semestersCount={semestersCount}
         courseConfigured={courseConfigured}
+        allInstitutes={allInstitutes ?? []}
       />
     )
   }

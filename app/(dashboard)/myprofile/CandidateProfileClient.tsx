@@ -132,6 +132,7 @@ interface Props {
   initialSkillIds: string[];
   semestersCount?: number;
   courseConfigured?: boolean;
+  allInstitutes?: any[];
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -439,7 +440,8 @@ export function CandidateProfileClient({
   allSkills,
   initialSkillIds,
   semestersCount = 8,
-  courseConfigured = true
+  courseConfigured = true,
+  allInstitutes = []
 }: Props) {
   const supabase = createClient();
   const router = useRouter();
@@ -630,7 +632,7 @@ export function CandidateProfileClient({
   );
 
   // Institute lookup
-  const [institutes, setInstitutes] = useState<InstituteOption[]>([]);
+  const [institutes, setInstitutes] = useState<InstituteOption[]>(allInstitutes);
   const [availableCoursesData, setAvailableCoursesData] = useState<{ id: string; course_name: string; semesters_count: number }[]>([]);
   const [availableCourses, setAvailableCourses] = useState<string[]>([]);
   const [selectedAffiliation, setSelectedAffiliation] = useState<string | null>(null);
@@ -684,23 +686,34 @@ export function CandidateProfileClient({
   // ─── Load institutes ─────────────────────────────────────────────────────────
 
   useEffect(() => {
-    (async () => {
-      const { data } = await (supabase as any)
-        .from("institutes")
-        .select("id, institute_name, affiliation")
-        .order("institute_name");
-      if (data) {
-        setInstitutes(data);
-        if (userProfile.institute_id) {
-          const found = data.find((i: any) => i.id === userProfile.institute_id);
-          if (found) {
-            setInstituteName(found.institute_name);
-            setSelectedAffiliation(found.affiliation ?? null);
-          }
+    if (allInstitutes && allInstitutes.length > 0) {
+      setInstitutes(allInstitutes);
+      if (userProfile.institute_id) {
+        const found = allInstitutes.find((i: any) => i.id === userProfile.institute_id);
+        if (found) {
+          setInstituteName(found.institute_name);
+          setSelectedAffiliation(found.affiliation ?? null);
         }
       }
-    })();
-  }, []);
+    } else {
+      (async () => {
+        const { data } = await (supabase as any)
+          .from("institutes")
+          .select("id, institute_name, affiliation")
+          .order("institute_name");
+        if (data) {
+          setInstitutes(data);
+          if (userProfile.institute_id) {
+            const found = data.find((i: any) => i.id === userProfile.institute_id);
+            if (found) {
+              setInstituteName(found.institute_name);
+              setSelectedAffiliation(found.affiliation ?? null);
+            }
+          }
+        }
+      })();
+    }
+  }, [allInstitutes, userProfile.institute_id]);
 
   useEffect(() => {
     if (instituteId) {
