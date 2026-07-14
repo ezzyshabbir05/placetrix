@@ -28,6 +28,32 @@ export default async function AttemptPage({
   const { data: authData } = await supabase.auth.getClaims()
   if (!authData?.claims) redirect("/auth/login")
 
+  const userId = authData.claims.sub
+
+  // Verify that this test is targeted to one of the candidate's cohorts
+  const { data: memberRows } = await (supabase as any)
+    .from("cohort_students")
+    .select("cohort_id")
+    .eq("student_id", userId)
+
+  const cohortIds = (memberRows ?? []).map((r: any) => r.cohort_id)
+
+  if (cohortIds.length === 0) {
+    redirect("/tests")
+  }
+
+  const { data: isTargeted } = await (supabase as any)
+    .from("test_cohorts")
+    .select("id")
+    .eq("test_id", testId)
+    .in("cohort_id", cohortIds)
+    .limit(1)
+    .maybeSingle()
+
+  if (!isTargeted) {
+    redirect("/tests")
+  }
+
   // ── 1. Consolidated Initialization (RPC) ────────────────────────────────────
   const { data: initResult, error: initError } = await (supabase as any).rpc(
     "test_attempt_init",

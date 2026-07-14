@@ -1,4 +1,6 @@
 import { Metadata } from "next"
+import { getUserProfile } from "@/lib/supabase/profile"
+import { redirect } from "next/navigation"
 import { ResumeAnalyzerClient } from "./ResumeAnalyzerClient"
 
 export const metadata: Metadata = {
@@ -7,6 +9,11 @@ export const metadata: Metadata = {
     "Upload your resume for an AI-powered ATS score, section breakdown, skills gap analysis, and personalized improvement tips.",
 }
 
-export default function ResumeAnalyzerPage() {
+export default async function ResumeAnalyzerPage() {
+  const profile = await getUserProfile()
+  if (!profile) redirect("/auth/login")
+  if (profile.account_type !== "institute_candidate" && profile.account_type !== "admin") {
+    redirect("/home")
+  }
   return <ResumeAnalyzerClient />
 }

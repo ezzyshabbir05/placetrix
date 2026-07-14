@@ -15,6 +15,11 @@ export default async function OpportunitiesPage() {
   const profile = await getUserProfile()
   if (!profile) redirect("/auth/login")
 
+  const allowedRoles = ["institute_candidate", "institute_placement_officer", "institute_primary"]
+  if (!allowedRoles.includes(profile.account_type)) {
+    redirect("/home")
+  }
+
   const instituteId = profile.institute_id
   if (!instituteId) {
     return (
@@ -28,9 +33,6 @@ export default async function OpportunitiesPage() {
 
   // ─── Staff / Placement Officer / Admin View ───────────────────────────────
   if (profile.account_type !== "institute_candidate") {
-    if (!["institute_primary", "institute_placement_officer", "admin"].includes(profile.account_type)) {
-      redirect("/home")
-    }
 
     // Fetch opportunities joining their company profile
     const { data: opps } = await (supabase as any)

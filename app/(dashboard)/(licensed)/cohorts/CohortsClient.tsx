@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils"
 
 interface Props {
   cohorts: Cohort[]
+  isCandidate?: boolean
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -75,66 +76,84 @@ function StatChip({
 }
 
 // ─── Cohort Card ─────────────────────────────────────────────────────────────
-function CohortCard({ cohort }: { cohort: Cohort }) {
+function CohortCard({ cohort, isCandidate }: { cohort: Cohort; isCandidate?: boolean }) {
   const createdDate = formatDateTime(cohort.created_at)
 
-  return (
-    <Card className="overflow-hidden border-border/70 bg-card p-0 shadow-xs">
-      <Link href={`/cohorts/${cohort.id}`} className="block hover:bg-muted/30 transition-colors">
-        {/* Mobile Compact View */}
-        <div className="block md:hidden p-3.5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0 flex-1 space-y-1">
-              <div className="flex items-center gap-2 w-full min-w-0">
-                <h4 className="font-semibold text-sm text-foreground truncate leading-snug min-w-0 flex-1">
-                  {cohort.name}
-                </h4>
-              </div>
-              <p className={cn("text-xs line-clamp-1", cohort.description ? "text-muted-foreground" : "italic text-muted-foreground/60")}>
-                {cohort.description ?? "No description provided"}
-              </p>
-              <div className="flex items-center gap-2 text-[10px] text-muted-foreground flex-wrap">
-                <span className="flex items-center gap-1">
-                  <Users className="h-3 w-3 shrink-0" />
-                  {cohort.student_count ?? 0} students
-                </span>
-                <span>•</span>
-                <span>Created: {createdDate}</span>
-              </div>
+  const cardContent = (
+    <>
+      {/* Mobile Compact View */}
+      <div className="p-3.5 block md:hidden">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex items-center gap-2 w-full min-w-0">
+              <h4 className="font-semibold text-sm text-foreground truncate leading-snug min-w-0 flex-1">
+                {cohort.name}
+              </h4>
+            </div>
+            <p className={cn("text-xs line-clamp-1", cohort.description ? "text-muted-foreground" : "italic text-muted-foreground/60")}>
+              {cohort.description ?? "No description provided"}
+            </p>
+            <div className="flex items-center gap-2 text-[10px] text-muted-foreground flex-wrap">
+              {!isCandidate && (
+                <>
+                  <span className="flex items-center gap-1">
+                    <Users className="h-3 w-3 shrink-0" />
+                    {cohort.student_count ?? 0} students
+                  </span>
+                  <span>•</span>
+                </>
+              )}
+              <span>Created: {createdDate}</span>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Desktop Card View */}
-        <div className="hidden md:flex flex-row items-center justify-between gap-4 p-5">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 w-full min-w-0">
-              <h3 className="min-w-0 flex-1 text-base font-semibold leading-tight text-foreground truncate">
-                {cohort.name}
-              </h3>
-            </div>
-            <p className={cn("mt-1 text-xs leading-normal line-clamp-1", cohort.description ? "text-muted-foreground" : "italic text-muted-foreground/60")}>
-              {cohort.description ?? "No description provided"}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
+      {/* Desktop Card View */}
+      <div className="hidden md:flex flex-row items-center justify-between gap-4 p-5">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 w-full min-w-0">
+            <h3 className="min-w-0 flex-1 text-base font-semibold leading-tight text-foreground truncate">
+              {cohort.name}
+            </h3>
+          </div>
+          <p className={cn("mt-1 text-xs leading-normal line-clamp-1", cohort.description ? "text-muted-foreground" : "italic text-muted-foreground/60")}>
+            {cohort.description ?? "No description provided"}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {!isCandidate && (
               <StatChip icon={<Users className="h-3.5 w-3.5" />} tone="neutral">
                 {cohort.student_count ?? 0} students
               </StatChip>
-              <StatChip icon={<Calendar className="h-3.5 w-3.5" />} tone="neutral">
-                Created: {createdDate}
-              </StatChip>
-            </div>
+            )}
+            <StatChip icon={<Calendar className="h-3.5 w-3.5" />} tone="neutral">
+              Created: {createdDate}
+            </StatChip>
           </div>
+        </div>
+        {!isCandidate && (
           <div className="flex items-center gap-1 shrink-0">
             <ChevronRight className="h-5 w-5 text-muted-foreground/80" />
           </div>
-        </div>
-      </Link>
+        )}
+      </div>
+    </>
+  )
+
+  return (
+    <Card className="overflow-hidden border-border/70 bg-card p-0 shadow-xs">
+      {isCandidate ? (
+        <div className="block">{cardContent}</div>
+      ) : (
+        <Link href={`/cohorts/${cohort.id}`} className="block hover:bg-muted/30 transition-colors">
+          {cardContent}
+        </Link>
+      )}
     </Card>
   )
 }
 
-export function CohortsClient({ cohorts: initialCohorts }: Props) {
+export function CohortsClient({ cohorts: initialCohorts, isCandidate = false }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [cohorts, setCohorts] = useState<Cohort[]>(initialCohorts)
@@ -187,7 +206,7 @@ export function CohortsClient({ cohorts: initialCohorts }: Props) {
           <h1 className="text-3xl font-bold font-cirka tracking-tight text-foreground">Cohorts</h1>
           <p className="text-sm text-muted-foreground">
             {cohorts.length} cohort{cohorts.length !== 1 ? "s" : ""} total
-            {totalStudents > 0 && (
+            {!isCandidate && totalStudents > 0 && (
               <span className="ml-2 inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 {totalStudents} students
@@ -195,13 +214,15 @@ export function CohortsClient({ cohorts: initialCohorts }: Props) {
             )}
           </p>
         </div>
-        <Button
-          className="gap-1.5 cursor-pointer shrink-0"
-          onClick={() => setCreateOpen(true)}
-        >
-          <Plus className="h-3.5 w-3.5" />
-          New Cohort
-        </Button>
+        {!isCandidate && (
+          <Button
+            className="gap-1.5 cursor-pointer shrink-0"
+            onClick={() => setCreateOpen(true)}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            New Cohort
+          </Button>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -235,10 +256,10 @@ export function CohortsClient({ cohorts: initialCohorts }: Props) {
               </EmptyMedia>
               <EmptyTitle>No cohorts found</EmptyTitle>
               <EmptyDescription>
-                {search ? "No matching cohorts were found. Try adjusting your search query." : "No cohorts yet. Create your first cohort to get started."}
+                {search ? "No matching cohorts were found. Try adjusting your search query." : (isCandidate ? "You are not enrolled in any cohorts yet." : "No cohorts yet. Create your first cohort to get started.")}
               </EmptyDescription>
             </EmptyHeader>
-            {!search && (
+            {!search && !isCandidate && (
               <EmptyContent>
                 <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)} className="gap-1.5 mt-1">
                   <Plus className="h-3.5 w-3.5" /> Create Cohort
@@ -252,6 +273,7 @@ export function CohortsClient({ cohorts: initialCohorts }: Props) {
               <CohortCard
                 key={cohort.id}
                 cohort={cohort}
+                isCandidate={isCandidate}
               />
             ))}
           </div>

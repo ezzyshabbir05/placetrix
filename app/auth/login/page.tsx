@@ -120,7 +120,6 @@ function LoginContent() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          shouldCreateUser: false, // Ensure public signups stay disabled
           emailRedirectTo: `${window.location.origin}/auth/confirm?next=${encodeURIComponent(next)}`,
         },
       });
@@ -571,7 +570,7 @@ function LoginContent() {
               isLoading || isGoogleLoading ? "pointer-events-none opacity-50" : ""
             }`}
           >
-            Contact your institute for credentials
+            Sign up
           </Link>
         </p>
         <p className="text-muted-foreground text-xs text-center">

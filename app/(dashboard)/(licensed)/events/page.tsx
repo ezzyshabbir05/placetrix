@@ -168,6 +168,11 @@ export default async function EventsPage() {
   const profile = await getUserProfile()
   if (!profile) redirect("/auth/login")
 
+  const allowedRoles = ["institute_candidate", "institute_staff", "institute_placement_officer", "institute_primary"]
+  if (!allowedRoles.includes(profile.account_type)) {
+    redirect("/home")
+  }
+
   // ─── Staff / Institute View ──────────────────────────────────────────────
   if (profile.account_type !== "institute_candidate") {
     const {

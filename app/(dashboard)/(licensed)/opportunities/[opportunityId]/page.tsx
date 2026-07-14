@@ -17,6 +17,11 @@ export default async function OpportunityDetailPage(props: PageProps) {
   const profile = await getUserProfile()
   if (!profile) redirect("/auth/login")
 
+  const allowedRoles = ["institute_candidate", "institute_placement_officer", "institute_primary"]
+  if (!allowedRoles.includes(profile.account_type)) {
+    redirect("/home")
+  }
+
   const instituteId = profile.institute_id
   if (!instituteId) {
     return (
@@ -46,9 +51,6 @@ export default async function OpportunityDetailPage(props: PageProps) {
 
   // ─── Staff View ───────────────────────────────────────────────────────────
   if (profile.account_type !== "institute_candidate") {
-    if (!["institute_primary", "institute_placement_officer", "admin"].includes(profile.account_type)) {
-      redirect("/home")
-    }
 
     // Fetch applications with candidate profiles
     const { data: apps } = await (supabase as any)

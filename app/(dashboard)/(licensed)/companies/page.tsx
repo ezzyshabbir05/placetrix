@@ -13,8 +13,8 @@ export default async function CompaniesPage() {
   const profile = await getUserProfile()
   if (!profile) redirect("/auth/login")
 
-  // Only allow staff/TPOs/admins to manage companies
-  if (!["institute_primary", "institute_placement_officer", "admin"].includes(profile.account_type)) {
+  // Only allow staff/TPOs to manage companies
+  if (!["institute_primary", "institute_placement_officer"].includes(profile.account_type)) {
     redirect("/home")
   }
 

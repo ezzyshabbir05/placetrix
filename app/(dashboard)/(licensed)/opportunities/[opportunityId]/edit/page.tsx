@@ -17,7 +17,7 @@ export default async function EditOpportunityPage(props: PageProps) {
   if (!profile) redirect("/auth/login")
 
   // Verify staff/placement officer role
-  if (!["institute_primary", "institute_placement_officer", "admin"].includes(profile.account_type)) {
+  if (!["institute_primary", "institute_placement_officer"].includes(profile.account_type)) {
     redirect("/opportunities")
   }
 

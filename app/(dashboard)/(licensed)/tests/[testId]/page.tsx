@@ -74,6 +74,30 @@ async function fetchCandidateView(
     notFound()
   }
 
+  // Verify that this test is targeted to one of the candidate's cohorts
+  const { data: memberRows } = await (supabase as any)
+    .from("cohort_students")
+    .select("cohort_id")
+    .eq("student_id", userId)
+
+  const cohortIds = (memberRows ?? []).map((r: any) => r.cohort_id)
+
+  if (cohortIds.length === 0) {
+    notFound()
+  }
+
+  const { data: isTargeted } = await (supabase as any)
+    .from("test_cohorts")
+    .select("id")
+    .eq("test_id", testId)
+    .in("cohort_id", cohortIds)
+    .limit(1)
+    .maybeSingle()
+
+  if (!isTargeted) {
+    notFound()
+  }
+
   const logoPath = (raw.institute as any)?.logo_path ?? null
   const instituteLogoUrl = logoPath
     ? supabase.storage.from("avatars").getPublicUrl(logoPath).data.publicUrl

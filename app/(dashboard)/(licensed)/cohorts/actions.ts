@@ -365,3 +365,46 @@ export async function removeStudentFromCohortAction(
   revalidatePath(`/cohorts/${cohortId}`)
   return { success: true }
 }
+
+export async function getCandidateCohortsAction(): Promise<Cohort[]> {
+  const profile = await getUserProfile()
+  if (!profile || profile.account_type !== "institute_candidate") {
+    throw new Error("Unauthorized: Only candidates can fetch their cohorts.")
+  }
+  const supabase = await createClient()
+
+  const { data, error } = await (supabase as any)
+    .from("cohort_students")
+    .select(`
+      cohort_id,
+      cohorts (
+        id,
+        institute_id,
+        name,
+        description,
+        created_at,
+        updated_at
+      )
+    `)
+    .eq("student_id", profile.id)
+
+  if (error) {
+    console.error("Error fetching candidate cohorts:", error)
+    return []
+  }
+
+  return (data ?? [])
+    .filter((row: any) => row.cohorts !== null)
+    .map((row: any) => {
+      const c = row.cohorts
+      return {
+        id: c.id,
+        institute_id: c.institute_id,
+        name: c.name,
+        description: c.description,
+        created_at: c.created_at,
+        updated_at: c.updated_at,
+        student_count: 0,
+      }
+    })
+}

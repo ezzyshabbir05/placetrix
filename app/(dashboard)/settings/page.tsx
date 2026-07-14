@@ -3,7 +3,6 @@ import { getUserProfile } from "@/lib/supabase/profile"
 import { redirect } from "next/navigation"
 import { CandidateSettingsClient } from "./CandidateSettingsClient"
 import { InstituteSettingsClient } from "./InstituteSettingsClient"
-import { RecruiterSettingsClient } from "./RecruiterSettingsClient"
 import { AdminSettingsClient } from "./AdminSettingsClient"
 import { StaffSettingsClient } from "./StaffSettingsClient"
 
@@ -53,21 +52,6 @@ export default async function SettingsPage() {
       <InstituteSettingsClient
         userProfile={profile}
         initialData={instituteProfile ?? null}
-      />
-    )
-  }
-
-  if (profile.account_type === "recruiter") {
-    const { data: recruiterProfile } = await (supabase as any)
-      .from("recruiter_profiles")
-      .select("*")
-      .eq("profile_id", profile.id)
-      .maybeSingle()
-
-    return (
-      <RecruiterSettingsClient
-        userProfile={profile}
-        initialData={recruiterProfile ?? null}
       />
     )
   }

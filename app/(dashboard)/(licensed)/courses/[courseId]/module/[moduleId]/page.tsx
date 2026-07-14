@@ -23,6 +23,10 @@ export default async function ModuleDetailPage({ params }: PageProps) {
     redirect("/auth/login")
   }
 
+  if (profile.account_type !== "institute_candidate" && profile.account_type !== "admin") {
+    redirect("/home")
+  }
+
   const supabase = await createClient()
 
   // 1. Verify enrollment (unless admin)

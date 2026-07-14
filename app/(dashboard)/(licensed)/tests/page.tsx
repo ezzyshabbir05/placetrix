@@ -1,6 +1,7 @@
 // app/(dashboard)/(licensed)/tests/page.tsx
 
 import { getUserProfile } from "@/lib/supabase/profile"
+import { redirect } from "next/navigation"
 import { CandidateTestsClient } from "./CandidateTestsClient"
 import { InstituteTestsClient } from "./InstituteTestsClient"
 import { UnderDevelopment } from "@/components/under-development"
@@ -73,6 +74,6 @@ export default async function TestsPage(props: {
     )
   }
 
-  // Other account types — feature not yet available
-  return <UnderDevelopment />
+  // Other account types — redirect to home
+  redirect("/home")
 }

@@ -28,6 +28,11 @@ export default async function EventDetailPage({ params }: { params: Promise<Para
   const profile = await getUserProfile()
   if (!profile) redirect("/auth/login")
 
+  const allowedRoles = ["institute_candidate", "institute_staff", "institute_placement_officer", "institute_primary"]
+  if (!allowedRoles.includes(profile.account_type)) {
+    redirect("/home")
+  }
+
   const supabase = await createClient()
 
   // Fetch event
@@ -116,6 +121,30 @@ export default async function EventDetailPage({ params }: { params: Promise<Para
   }
 
   // ─── Candidate View ────────────────────────────────────────────────────────
+  // Check if candidate belongs to targeted cohorts of this event
+  const { data: memberRows } = await (supabase as any)
+    .from("cohort_students")
+    .select("cohort_id")
+    .eq("student_id", profile.id)
+
+  const cohortIds = (memberRows ?? []).map((r: any) => r.cohort_id)
+
+  if (cohortIds.length === 0) {
+    redirect("/events")
+  }
+
+  const { data: isTargeted } = await (supabase as any)
+    .from("event_cohorts")
+    .select("id")
+    .eq("event_id", eventId)
+    .in("cohort_id", cohortIds)
+    .limit(1)
+    .maybeSingle()
+
+  if (!isTargeted) {
+    redirect("/events")
+  }
+
   const { data: myTicket } = await (supabase as any)
     .from("event_tickets")
     .select("id, status, attendance_status")

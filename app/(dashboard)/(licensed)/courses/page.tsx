@@ -16,6 +16,10 @@ export default async function CoursesPage() {
     redirect("/auth/login")
   }
 
+  if (profile.account_type !== "institute_candidate" && profile.account_type !== "admin") {
+    redirect("/home")
+  }
+
   const supabase = await createClient()
 
   // 1. If admin, render the admin dashboard list view

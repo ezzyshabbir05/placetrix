@@ -1159,6 +1159,12 @@ export function CandidateProfileClient({
 
   function validateEducation(): Record<string, string> {
     const e: Record<string, string> = {};
+
+    // College / Institute — always required
+    if (!instituteId) e.instituteId = "Please select your college / institution.";
+    if (!courseName.trim()) e.courseName = "Branch / course is required.";
+    if (!passoutYear) e.passoutYear = "Expected graduation year is required.";
+
     // SSC Validation
     if (!sscPercentage) {
       e.sscPercentage = "SSC percentage is required";
@@ -2073,32 +2079,88 @@ export function CandidateProfileClient({
             {editing("education") ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Institution selector — always editable */}
                   <div className="md:col-span-2 space-y-2">
-                    <Label>Institution</Label>
-                    <div className="flex items-center h-9 w-full rounded-md border border-input bg-muted/40 px-3 py-2 text-sm text-muted-foreground cursor-not-allowed select-none">
-                      {instituteName || <span className="italic">Not set</span>}
-                    </div>
+                    <Label>College / Institution<RequiredMark /></Label>
+                    <Combobox
+                      items={instituteNames}
+                      value={instituteName}
+                      onValueChange={handleInstituteSelect}
+                    >
+                      <ComboboxInput placeholder="Search and select your college…" />
+                      <ComboboxContent>
+                        <ComboboxEmpty>No college found.</ComboboxEmpty>
+                        <ComboboxList>
+                          {(item: string) => (
+                            <ComboboxItem key={item} value={item}>{item}</ComboboxItem>
+                          )}
+                        </ComboboxList>
+                      </ComboboxContent>
+                    </Combobox>
+                    <FieldError message={errors.instituteId} />
                   </div>
+
+                  {/* Affiliation — always read-only (derived from institute) */}
                   <div className="space-y-2">
                     <Label>Affiliation</Label>
                     <div className="flex items-center h-9 w-full rounded-md border border-input bg-muted/40 px-3 py-2 text-sm text-muted-foreground cursor-not-allowed select-none">
                       {selectedAffiliation || <span className="italic">—</span>}
                     </div>
                   </div>
+
+                  {/* Branch / Course — editable once institute is selected */}
                   <div className="space-y-2">
-                    <Label>Branch / Course</Label>
-                    <div className="flex items-center h-9 w-full rounded-md border border-input bg-muted/40 px-3 py-2 text-sm text-muted-foreground cursor-not-allowed select-none">
-                      {courseName || <span className="italic">Not set</span>}
-                    </div>
+                    <Label>Branch / Course<RequiredMark /></Label>
+                    {instituteId && availableCourses.length > 0 ? (
+                      <Combobox
+                        items={availableCourses}
+                        value={courseName}
+                        onValueChange={(v) => setCourseName(v ?? "")}
+                      >
+                        <ComboboxInput placeholder="Select your branch…" />
+                        <ComboboxContent>
+                          <ComboboxEmpty>No course found.</ComboboxEmpty>
+                          <ComboboxList>
+                            {(item: string) => (
+                              <ComboboxItem key={item} value={item}>{item}</ComboboxItem>
+                            )}
+                          </ComboboxList>
+                        </ComboboxContent>
+                      </Combobox>
+                    ) : (
+                      <div className="flex items-center h-9 w-full rounded-md border border-input bg-muted/40 px-3 py-2 text-sm text-muted-foreground cursor-not-allowed select-none">
+                        {instituteId
+                          ? <span className="italic">Loading courses…</span>
+                          : <span className="italic">Select a college first</span>}
+                      </div>
+                    )}
+                    <FieldError message={errors.courseName} />
                   </div>
+
+                  {/* Expected Graduation Year — editable */}
                   <div className="space-y-2">
-                    <Label>Expected Graduation Year</Label>
-                    <div className="flex items-center h-9 w-full rounded-md border border-input bg-muted/40 px-3 py-2 text-sm text-muted-foreground cursor-not-allowed select-none">
-                      {passoutYear || <span className="italic">Not set</span>}
-                    </div>
+                    <Label>Expected Graduation Year<RequiredMark /></Label>
+                    <Combobox
+                      items={PASSOUT_YEAR_OPTIONS}
+                      value={passoutYear}
+                      onValueChange={(v) => setPassoutYear(v ?? "")}
+                    >
+                      <ComboboxInput placeholder="Select year" />
+                      <ComboboxContent>
+                        <ComboboxEmpty>No year found.</ComboboxEmpty>
+                        <ComboboxList>
+                          {(item: string) => (
+                            <ComboboxItem key={item} value={item}>{item}</ComboboxItem>
+                          )}
+                        </ComboboxList>
+                      </ComboboxContent>
+                    </Combobox>
+                    <FieldError message={errors.passoutYear} />
                   </div>
                 </div>
-                <p className="text-[10px] text-muted-foreground -mt-2">Institution, affiliation, branch/course and graduation year are managed by the platform.</p>
+                <p className="text-[10px] text-muted-foreground -mt-2">
+                  Select your college to load available branches. Affiliation is auto-filled.
+                </p>
 
                 <Separator />
 

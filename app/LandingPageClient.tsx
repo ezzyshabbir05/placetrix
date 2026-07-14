@@ -528,8 +528,8 @@ function HeroSection() {
 
               <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
                 <Button size="lg" className="rounded-full font-medium shadow-sm" asChild>
-                  <Link href="/auth/login">
-                    Sign In
+                  <Link href="/auth/sign-up">
+                    Get Started
                     <ArrowRightIcon data-icon="inline-end" />
                   </Link>
                 </Button>
@@ -538,6 +538,15 @@ function HeroSection() {
                   size="lg"
                   variant="outline"
                   className="rounded-full border-zinc-200 bg-white/75 text-zinc-900 backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-white"
+                  asChild
+                >
+                  <Link href="/auth/login">Sign In</Link>
+                </Button>
+
+                <Button
+                  size="lg"
+                  variant="ghost"
+                  className="rounded-full text-zinc-600 dark:text-zinc-400"
                   asChild
                 >
                   <Link href="#features">Explore Features</Link>

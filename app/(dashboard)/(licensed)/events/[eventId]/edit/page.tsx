@@ -13,8 +13,8 @@ export default async function EventEditorPage({ params }: Props) {
   const profile = await getUserProfile()
   if (!profile) redirect("/auth/login")
 
-  // Guard: Only institute staff, placement officers, primary users, or admins can edit events
-  const allowedRoles = ["institute_primary", "institute_staff", "institute_placement_officer", "admin"]
+  // Guard: Only institute staff, placement officers, or primary users can edit events
+  const allowedRoles = ["institute_primary", "institute_staff", "institute_placement_officer"]
   if (!allowedRoles.includes(profile.account_type)) {
     redirect("/events")
   }

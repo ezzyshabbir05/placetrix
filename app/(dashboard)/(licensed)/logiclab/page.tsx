@@ -31,6 +31,10 @@ export default async function LogicLabPage() {
   const profile = await getUserProfile()
   if (!profile) redirect("/auth/login")
 
+  if (profile.account_type !== "institute_candidate" && profile.account_type !== "admin") {
+    redirect("/home")
+  }
+
   const isAdmin = profile.account_type === "admin"
   if (isAdmin) redirect("/logiclab/admin")
 

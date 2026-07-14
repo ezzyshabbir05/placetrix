@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default async function ResumeGeneratorPage() {
   const profile = await getUserProfile();
   if (!profile) redirect("/auth/login");
-  if (profile.account_type !== "institute_candidate") redirect("/tools");
+  if (profile.account_type !== "institute_candidate" && profile.account_type !== "admin") redirect("/tools");
 
   const supabase = await createServerClient();
 
