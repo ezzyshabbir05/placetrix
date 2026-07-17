@@ -671,7 +671,7 @@ const testimonials: Testimonial[] = [
   {
     quote:
       "Placetrix's structured aptitude and technical tests were vital to my prep. Consistent practice boosted my confidence and helped me clear the Infosys aptitude round.",
-    image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/testimonials/pranjal.png",
+    image: "https://db.placetrix.app/storage/v1/object/public/landing-page-material/testimonials/pranjal.png",
     name: "Pranjal Haral",
     role: "Software Engineer",
     company: "Infosys",
@@ -679,7 +679,7 @@ const testimonials: Testimonial[] = [
   {
     quote:
       "Regular practice with Placetrix improved my fundamentals and helped me crack the Infosys aptitude round. I recommend it to all aspirants.",
-    image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/testimonials/janhavi.png",
+    image: "https://db.placetrix.app/storage/v1/object/public/landing-page-material/testimonials/janhavi.png",
     name: "Janhavi Patil",
     role: "Software Engineer",
     company: "Infosys",
@@ -687,7 +687,7 @@ const testimonials: Testimonial[] = [
   {
     quote:
       "The app's quizzes and mock tests significantly improved my speed and accuracy, leaving me well-prepared for the placement process. Truly thankful!",
-    image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/testimonials/pinal.png",
+    image: "https://db.placetrix.app/storage/v1/object/public/landing-page-material/testimonials/pinal.png",
     name: "Pinal Lagdhir",
     role: "Software Engineer",
     company: "Infosys",
@@ -695,7 +695,7 @@ const testimonials: Testimonial[] = [
   {
     quote:
       "Placetrix helped me approach placements in a structured way. The consistent practice strengthened my problem-solving skills and boosted my confidence.",
-    image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/testimonials/chaitali.png",
+    image: "https://db.placetrix.app/storage/v1/object/public/landing-page-material/testimonials/chaitali.png",
     name: "Chaitali Bonde",
     role: "Software Engineer",
     company: "Infosys",

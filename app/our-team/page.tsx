@@ -428,7 +428,7 @@ type TeamMember = {
 const TEAM: TeamMember[] = [
 	{
 		name: "Shabbir Ezzy",
-		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/ShabbirEzzy.png",
+		image: "https://db.placetrix.app/storage/v1/object/public/landing-page-material/team-members/ShabbirEzzy.png",
 		role: "Lead Product Developer",
 		email: "ezzyshabbir05@gmail.com",
 		linkedin: "https://www.linkedin.com/in/ezzyshabbir05",
@@ -436,7 +436,7 @@ const TEAM: TeamMember[] = [
 	},
 	{
 		name: "Sidra Chaudhari",
-		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/SidraChaudhari.png",
+		image: "https://db.placetrix.app/storage/v1/object/public/landing-page-material/team-members/SidraChaudhari.png",
 		role: "UI/UX Designer",
 		email: "sidrasc05@gmail.com",
 		linkedin: "https://www.linkedin.com/in/sidra-chaudhari",
@@ -444,7 +444,7 @@ const TEAM: TeamMember[] = [
 	},
 	{
 		name: "Pushkar Gaikwad",
-		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/PushkarGaikwad.png",
+		image: "https://db.placetrix.app/storage/v1/object/public/landing-page-material/team-members/PushkarGaikwad.png",
 		role: "Software Engineer",
 		email: "pushkargaikwad25@gmail.com",
 		linkedin: "https://www.linkedin.com/in/pushkar2510/",
@@ -452,7 +452,7 @@ const TEAM: TeamMember[] = [
 	},
 	{
 		name: "Vishal Raut",
-		image: "https://supabase.placetrix.app/storage/v1/object/public/landing-page-material/team-members/VishalRaut.png",
+		image: "https://db.placetrix.app/storage/v1/object/public/landing-page-material/team-members/VishalRaut.png",
 		role: "Software Engineer",
 		email: "vishalraut.contact@gmail.com",
 		linkedin: "https://www.linkedin.com/in/vishalraut2106",
@@ -661,6 +661,16 @@ function CompanySection() {
 						<p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-500 dark:text-zinc-400">
 							The company
 						</p>
+
+						<div className="relative size-14 md:size-16 rounded-full overflow-hidden border-2 border-zinc-200 dark:border-zinc-800 bg-white p-1.5 mt-4 mb-4 flex items-center justify-center shrink-0 shadow-sm">
+							<Image
+								src="https://db.placetrix.app/storage/v1/object/public/landing-page-material/team-members/4Grid.png"
+								alt="4 Grid Technologies Logo"
+								fill
+								className="object-contain p-1"
+								unoptimized
+							/>
+						</div>
 
 						<h2
 							className="font-cirka mt-2 text-balance text-3xl font-semibold tracking-tight md:text-5xl"

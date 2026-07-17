@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "supabase.placetrix.app",
+        hostname: "db.placetrix.app",
         port: "",
         pathname: "/storage/v1/object/public/**",
       },
