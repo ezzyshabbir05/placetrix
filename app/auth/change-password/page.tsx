@@ -149,10 +149,10 @@ function ChangePasswordContent() {
             </p>
           </div>
         </div>
-        <Button asChild className="w-full">
+        <Button asChild className="w-full cursor-pointer">
           <Link href="/auth/reset-password">Request New Reset</Link>
         </Button>
-        <Button asChild variant="outline" className="w-full">
+        <Button asChild variant="outline" className="w-full cursor-pointer">
           <Link href="/auth/login">Back to Sign In</Link>
         </Button>
       </div>
@@ -175,7 +175,7 @@ function ChangePasswordContent() {
             </p>
           </div>
         </div>
-        <Button asChild className="w-full">
+        <Button asChild className="w-full cursor-pointer">
           <Link href="/auth/login">Sign In</Link>
         </Button>
       </div>
@@ -191,8 +191,7 @@ function ChangePasswordContent() {
           Choose a strong password for your account.
         </p>
       </div>
-
-      <form className="space-y-2" onSubmit={handleUpdatePassword}>
+      <form className="space-y-4" onSubmit={handleUpdatePassword}>
         <InputGroup>
           <InputGroupInput
             placeholder="New password"
@@ -245,7 +244,7 @@ function ChangePasswordContent() {
           </p>
         )}
 
-        <Button className="w-full" type="submit" disabled={isLoading}>
+        <Button className="w-full cursor-pointer" type="submit" disabled={isLoading}>
           {isLoading ? (
             <>
               <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
@@ -257,11 +256,11 @@ function ChangePasswordContent() {
         </Button>
       </form>
 
-      <p className="text-center text-sm text-muted-foreground">
+      <p className="text-center text-sm text-muted-foreground pt-2">
         Remember your password?{" "}
         <Link
           href="/auth/login"
-          className="underline underline-offset-4 hover:text-primary"
+          className="underline underline-offset-4 hover:text-primary transition-all"
         >
           Sign in
         </Link>

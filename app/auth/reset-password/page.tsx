@@ -191,7 +191,7 @@ export default function ResetPasswordPage() {
             </p>
           </div>
         </div>
-        <Button asChild className="w-full">
+        <Button asChild className="w-full cursor-pointer">
           <Link href="/auth/login">Sign In</Link>
         </Button>
       </div>
@@ -208,8 +208,7 @@ export default function ResetPasswordPage() {
             Choose a strong password for your account.
           </p>
         </div>
-
-        <form className="space-y-2" onSubmit={handleUpdatePassword}>
+        <form className="space-y-4" onSubmit={handleUpdatePassword}>
           <InputGroup>
             <InputGroupInput
               placeholder="New password"
@@ -262,7 +261,7 @@ export default function ResetPasswordPage() {
             </p>
           )}
 
-          <Button className="w-full" type="submit" disabled={isLoading}>
+          <Button className="w-full cursor-pointer" type="submit" disabled={isLoading}>
             {isLoading ? (
               <>
                 <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
@@ -295,7 +294,6 @@ export default function ResetPasswordPage() {
             </p>
           </div>
         </div>
-
         <form className="space-y-4" onSubmit={handleVerifyOtp}>
           <OTPInput value={otp} onChange={setOtp} disabled={isLoading} />
 
@@ -306,7 +304,7 @@ export default function ResetPasswordPage() {
           )}
 
           <Button
-            className="w-full"
+            className="w-full cursor-pointer"
             type="submit"
             disabled={isLoading || otp.length < 8}
           >
@@ -332,7 +330,7 @@ export default function ResetPasswordPage() {
                 <button
                   type="button"
                   onClick={handleResend}
-                  className="underline underline-offset-4 hover:text-foreground"
+                  className="underline underline-offset-4 hover:text-foreground cursor-pointer"
                 >
                   Resend code
                 </button>
@@ -349,7 +347,7 @@ export default function ResetPasswordPage() {
             setOtp("");
             setError(null);
           }}
-          className="w-full text-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+          className="w-full text-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground cursor-pointer"
         >
           Use a different email
         </button>
@@ -366,8 +364,7 @@ export default function ResetPasswordPage() {
           Enter your email and we&apos;ll send you a reset code.
         </p>
       </div>
-
-      <form className="space-y-2" onSubmit={handleSendEmail}>
+      <form className="space-y-4" onSubmit={handleSendEmail}>
         <InputGroup>
           <InputGroupInput
             placeholder="your.email@example.com"
@@ -388,7 +385,7 @@ export default function ResetPasswordPage() {
           </p>
         )}
 
-        <Button className="w-full" type="submit" disabled={isLoading}>
+        <Button className="w-full cursor-pointer" type="submit" disabled={isLoading}>
           {isLoading ? (
             <>
               <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
@@ -400,11 +397,11 @@ export default function ResetPasswordPage() {
         </Button>
       </form>
 
-      <p className="text-center text-sm text-muted-foreground">
+      <p className="text-center text-sm text-muted-foreground pt-2">
         Remember your password?{" "}
         <Link
           href="/auth/login"
-          className="underline underline-offset-4 hover:text-primary"
+          className="underline underline-offset-4 hover:text-primary transition-all"
         >
           Sign in
         </Link>

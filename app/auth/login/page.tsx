@@ -314,7 +314,7 @@ function LoginContent() {
             </p>
           )}
 
-          <Button className="w-full" type="submit" disabled={isLoading || otp.length < 6}>
+          <Button className="w-full cursor-pointer" type="submit" disabled={isLoading || otp.length < 6}>
             {isLoading ? (
               <><Loader2Icon className="mr-2 h-4 w-4 animate-spin" />Verifying…</>
             ) : (
@@ -334,7 +334,7 @@ function LoginContent() {
           type="button"
           disabled={isLoading}
           onClick={() => { setPageState("login-form"); setOtp(""); setError(null); }}
-          className="w-full text-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full text-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           Back to sign in
         </button>
@@ -371,7 +371,7 @@ function LoginContent() {
           )}
 
           <Button
-            className="w-full"
+            className="w-full cursor-pointer"
             type="submit"
             disabled={isLoading || otp.length < 8}
           >
@@ -398,7 +398,7 @@ function LoginContent() {
                   type="button"
                   disabled={isLoading}
                   onClick={handleResend}
-                  className="underline underline-offset-4 hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="underline underline-offset-4 hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   Resend code
                 </button>
@@ -416,7 +416,7 @@ function LoginContent() {
             setOtp("");
             setError(null);
           }}
-          className="w-full text-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full text-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           Back to sign in
         </button>
@@ -439,7 +439,7 @@ function LoginContent() {
         </div>
 
         <Button
-          className="w-full"
+          className="w-full cursor-pointer"
           variant="outline"
           type="button"
           onClick={handleGoogleLogin}
@@ -453,6 +453,21 @@ function LoginContent() {
           {isGoogleLoading ? "Redirecting…" : "Continue with Google"}
         </Button>
 
+        {/* Toggle between Password and Magic Link below Google Login */}
+        <Button
+          className="w-full cursor-pointer"
+          variant="secondary"
+          type="button"
+          onClick={() => {
+            setLoginMethod(loginMethod === "password" ? "magiclink" : "password");
+            setError(null);
+            setSuccessMessage(null);
+          }}
+          disabled={isLoading || isGoogleLoading}
+        >
+          {loginMethod === "password" ? "Sign in with Magic Link" : "Sign in with Password"}
+        </Button>
+
         <div className="flex w-full items-center justify-center gap-2">
           <Separator className="flex-1" />
           <span className="shrink-0 text-muted-foreground text-xs">OR</span>
@@ -460,7 +475,7 @@ function LoginContent() {
         </div>
 
         <form
-          className="space-y-2"
+          className="space-y-4"
           onSubmit={loginMethod === "password" ? handleLogin : handleMagicLinkLogin}
         >
           <p className="text-start text-muted-foreground text-xs">
@@ -521,7 +536,7 @@ function LoginContent() {
           )}
 
           <Button
-            className="w-full"
+            className="w-full cursor-pointer"
             type="submit"
             disabled={isLoading || isGoogleLoading}
           >
@@ -536,18 +551,14 @@ function LoginContent() {
           </Button>
 
           <div className="flex justify-between items-center text-xs">
-            <button
-              type="button"
-              onClick={() => {
-                setLoginMethod(loginMethod === "password" ? "magiclink" : "password");
-                setError(null);
-                setSuccessMessage(null);
-              }}
-              className="text-muted-foreground underline underline-offset-4 hover:text-primary transition-all"
-              disabled={isLoading || isGoogleLoading}
+            <Link
+              href={isLoading || isGoogleLoading ? "#" : "/auth/sign-up"}
+              className={`text-muted-foreground underline underline-offset-4 hover:text-primary transition-all ${
+                isLoading || isGoogleLoading ? "pointer-events-none opacity-50" : ""
+              }`}
             >
-              {loginMethod === "password" ? "Sign in with Magic Link" : "Sign in with Password"}
-            </button>
+              Don&apos;t have an account? Sign up
+            </Link>
 
             {loginMethod === "password" && (
               <Link
@@ -562,18 +573,7 @@ function LoginContent() {
           </div>
         </form>
 
-        <p className="text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <Link
-            href={isLoading || isGoogleLoading ? "#" : "/auth/sign-up"}
-            className={`underline underline-offset-4 hover:text-primary ${
-              isLoading || isGoogleLoading ? "pointer-events-none opacity-50" : ""
-            }`}
-          >
-            Sign up
-          </Link>
-        </p>
-        <p className="text-muted-foreground text-xs text-center">
+        <p className="text-muted-foreground text-xs text-center pt-2">
           By signing in, you agree to our{" "}
           <Link
             href="/terms-of-service"

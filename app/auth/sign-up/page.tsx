@@ -212,9 +212,7 @@ function SignUpContent() {
             <MailIcon className="h-6 w-6 text-primary" />
           </div>
           <div className="space-y-1">
-            <h1 className="font-cirka font-bold text-2xl tracking-wide">
-              Confirm Your Email
-            </h1>
+            <h1 className="font-cirka font-bold text-2xl tracking-wide">Confirm Your Email</h1>
             <p className="text-base text-muted-foreground">
               We sent an 8-digit confirmation code to{" "}
               <span className="font-medium text-foreground">{email}</span>.
@@ -222,7 +220,6 @@ function SignUpContent() {
             </p>
           </div>
         </div>
-
         <form className="space-y-4" onSubmit={handleVerifyOtp}>
           <OTPInput value={otp} onChange={setOtp} disabled={isLoading} />
 
@@ -233,7 +230,7 @@ function SignUpContent() {
           )}
 
           <Button
-            className="w-full"
+            className="w-full cursor-pointer"
             type="submit"
             disabled={isLoading || otp.length < 8}
           >
@@ -260,7 +257,7 @@ function SignUpContent() {
                   type="button"
                   disabled={isLoading}
                   onClick={handleResend}
-                  className="underline underline-offset-4 hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="underline underline-offset-4 hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   Resend code
                 </button>
@@ -278,7 +275,7 @@ function SignUpContent() {
             setOtp("");
             setError(null);
           }}
-          className="w-full text-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full text-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           Back to sign up
         </button>
@@ -295,9 +292,8 @@ function SignUpContent() {
           Sign up to get started with Placetrix.
         </p>
       </div>
-
       <Button
-        className="w-full"
+        className="w-full cursor-pointer"
         variant="outline"
         type="button"
         onClick={handleGoogleSignUp}
@@ -317,7 +313,7 @@ function SignUpContent() {
         <Separator className="flex-1" />
       </div>
 
-      <form className="space-y-2" onSubmit={handleSignUp}>
+      <form className="space-y-4" onSubmit={handleSignUp}>
         <p className="text-start text-muted-foreground text-xs">
           Fill in your details to create an account
         </p>
@@ -388,7 +384,7 @@ function SignUpContent() {
         )}
 
         <Button
-          className="w-full"
+          className="w-full cursor-pointer"
           type="submit"
           disabled={isLoading || isGoogleLoading}
         >
@@ -403,18 +399,18 @@ function SignUpContent() {
         </Button>
       </form>
 
-      <p className="text-center text-sm text-muted-foreground">
+      <p className="text-center text-sm text-muted-foreground pt-2">
         Already have an account?{" "}
         <Link
           href={isLoading || isGoogleLoading ? "#" : "/auth/login"}
-          className={`underline underline-offset-4 hover:text-primary ${
+          className={`underline underline-offset-4 hover:text-primary transition-all ${
             isLoading || isGoogleLoading ? "pointer-events-none opacity-50" : ""
           }`}
         >
           Sign in
         </Link>
       </p>
-      <p className="text-muted-foreground text-xs text-center">
+      <p className="text-muted-foreground text-xs text-center pt-1">
         By creating an account, you agree to our{" "}
         <Link
           href="/terms-of-service"

@@ -25,10 +25,10 @@ export default function SignUpSuccessPage() {
           </p>
         </div>
       </div>
-      <Button asChild className="w-full">
+      <Button asChild className="w-full cursor-pointer">
         <Link href="/auth/login">Enter Code</Link>
       </Button>
-      <Button asChild variant="outline" className="w-full">
+      <Button asChild variant="outline" className="w-full cursor-pointer">
         <Link href="/auth/login">Go to Sign In</Link>
       </Button>
     </div>
