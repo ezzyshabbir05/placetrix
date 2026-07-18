@@ -298,6 +298,7 @@ const DIFFICULTY_MARKS: Record<AiGenerateForm["difficulty"], number> = Object.fr
 
 const MODEL_FALLBACK_CHAIN: readonly string[] = Object.freeze([
   "gemini-3.5-flash",
+  "gemini-3.1-flash-lite",
   "gemini-2.5-flash",
   "gemini-2.0-flash",
   "gemini-1.5-flash",
@@ -452,7 +453,7 @@ Ensure all questions are entirely distinct, unique, use creative scenarios, and 
       contents: userPrompt,
       config: {
         systemInstruction: systemPrompt,
-        temperature: 1.0,
+        temperature: 0.25,
         responseMimeType: "application/json",
         responseSchema: {
           type: "object",

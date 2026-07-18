@@ -12,38 +12,66 @@ import {
   IconSparkles,
   IconCheck,
   IconAlertCircle,
-  IconTarget,
   IconBrain,
   IconArrowLeft,
   IconRefresh,
   IconFileText,
-  IconLoader2,
-  IconBolt,
   IconTrendingUp,
-  IconHash,
   IconBulb,
-  IconArrowRight,
-  IconChevronDown,
   IconClock,
   IconUser,
   IconBuildingSkyscraper,
+  IconTrash,
+  IconHistory,
+  IconBolt,
+  IconArrowRight,
 } from "@tabler/icons-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible"
 import { analyzeResumeAction, type AnalysisResult } from "./actions"
+import { GenerateButton } from "@/components/ui/generate-button"
 
 // ─────────────────────────────────────────────
 // localStorage helpers
 // ─────────────────────────────────────────────
-const LS_KEY = "placetrix_resume_last"
-function saveResult(r: AnalysisResult) { try { localStorage.setItem(LS_KEY, JSON.stringify(r)) } catch { } }
-function loadResult(): AnalysisResult | null { try { const v = localStorage.getItem(LS_KEY); return v ? JSON.parse(v) : null } catch { return null } }
+const HISTORY_KEY = "placetrix_resume_history"
+
+function saveResult(r: AnalysisResult) {
+  try {
+    saveToHistory(r)
+  } catch { }
+}
+
+function getHistory(): AnalysisResult[] {
+  try {
+    const v = localStorage.getItem(HISTORY_KEY)
+    return v ? JSON.parse(v) : []
+  } catch {
+    return []
+  }
+}
+
+function saveToHistory(r: AnalysisResult) {
+  try {
+    const history = getHistory()
+    const exists = history.some((h) => h.analyzedAt === r.analyzedAt)
+    if (!exists) {
+      // If there is an entry with the exact same file name and overall score within 10s (re-analyze), replace it
+      const dupIdx = history.findIndex(
+        (h) => h.fileName === r.fileName && Math.abs(new Date(h.analyzedAt).getTime() - new Date(r.analyzedAt).getTime()) < 10000
+      )
+      if (dupIdx > -1) {
+        history[dupIdx] = r
+      } else {
+        history.unshift(r)
+      }
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 15))) // Keep last 15 reports
+    }
+  } catch {}
+}
 
 // ─────────────────────────────────────────────
 // Score colour helpers
@@ -52,6 +80,8 @@ function scoreColor(s: number) { return s >= 75 ? "text-emerald-500" : s >= 50 ?
 function scoreRingColor(s: number) { return s >= 75 ? "#10b981" : s >= 50 ? "#f59e0b" : "#f43f5e" }
 function scoreLabel(s: number) { return s >= 85 ? "Excellent" : s >= 70 ? "Good" : s >= 50 ? "Fair" : "Needs Work" }
 function scoreBgClass(s: number) { return s >= 75 ? "bg-emerald-500/10 border-emerald-500/20" : s >= 50 ? "bg-amber-500/10 border-amber-500/20" : "bg-rose-500/10 border-rose-500/20" }
+function severityColor(sev: string) { return sev === "High" ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20" : sev === "Medium" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" : "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20" }
+function severityBorder(sev: string) { return sev === "High" ? "border-rose-500/10" : sev === "Medium" ? "border-amber-500/10" : "border-blue-500/10" }
 function impactColor(impact: string) { return impact === "High" ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20" : impact === "Medium" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" : "bg-muted text-muted-foreground border-border" }
 
 // ─────────────────────────────────────────────
@@ -96,38 +126,21 @@ function ScoreDial({ score, size = 160, label }: { score: number; size?: number;
 }
 
 // ─────────────────────────────────────────────
-// Animated section bar
-// ─────────────────────────────────────────────
-function SectionBar({ name, score }: { name: string; score: number }) {
-  const [value, setValue] = React.useState(0)
-  React.useEffect(() => { const t = setTimeout(() => setValue(score), 100); return () => clearTimeout(t) }, [score])
-  return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between text-sm">
-        <span className="font-medium text-foreground">{name}</span>
-        <span className={cn("font-semibold tabular-nums", scoreColor(score))}>{score}%</span>
-      </div>
-      <Progress value={value} className={cn("h-2 transition-all duration-1000", score >= 75 ? "[&>[data-slot=progress-indicator]]:bg-emerald-500" : score >= 50 ? "[&>[data-slot=progress-indicator]]:bg-amber-500" : "[&>[data-slot=progress-indicator]]:bg-rose-500")} />
-    </div>
-  )
-}
-
-// ─────────────────────────────────────────────
 // Before / After rewrite card
 // ─────────────────────────────────────────────
 function RewriteExample({ before, after }: { before: string; after: string }) {
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-border/60 bg-muted/20 p-3">
       <div className="flex flex-col gap-1">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-rose-500">Before</span>
-        <p className="text-xs text-muted-foreground italic leading-relaxed line-through decoration-rose-400/60">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-rose-500 font-sans">Before</span>
+        <p className="text-xs text-muted-foreground italic leading-relaxed line-through decoration-rose-400/60 font-sans">
           &quot;{before}&quot;
         </p>
       </div>
       <Separator />
       <div className="flex flex-col gap-1">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-500">After</span>
-        <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium leading-relaxed">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-500 font-sans">After</span>
+        <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium leading-relaxed font-sans">
           &quot;{after}&quot;
         </p>
       </div>
@@ -154,7 +167,12 @@ function FileDropZone({ file, onFileChange }: { file: File | null; onFileChange:
 
   return (
     <div
-      className={cn("relative flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed p-10 text-center transition-all duration-200 cursor-pointer", dragging ? "border-primary bg-primary/5 scale-[1.01]" : "border-border/60 bg-muted/20 hover:border-primary/50 hover:bg-primary/5")}
+      className={cn(
+        "relative flex items-center gap-4 rounded-xl border border-dashed p-4 transition-all duration-200 cursor-pointer w-full select-none",
+        dragging 
+          ? "border-primary bg-primary/5 scale-[1.005] ring-2 ring-primary/10" 
+          : "border-border/60 bg-muted/20 hover:border-primary/50 hover:bg-primary/5 hover:shadow-sm"
+      )}
       onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
@@ -162,25 +180,46 @@ function FileDropZone({ file, onFileChange }: { file: File | null; onFileChange:
     >
       <input ref={inputRef} type="file" accept=".pdf,.docx" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) validateAndSet(f) }} />
       {file ? (
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10"><FileIcon className="size-7 text-primary" /></div>
-          <div>
-            <p className="font-semibold text-foreground text-sm">{file.name}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">{(file.size / 1024).toFixed(0)} KB · Ready to analyze</p>
+        <div className="flex items-center gap-3 w-full justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <FileIcon className="size-5" />
+            </div>
+            <div className="flex flex-col text-left min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">{file.name}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{(file.size / 1024).toFixed(0)} KB · Ready to analyze</p>
+            </div>
           </div>
-          <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); onFileChange(null) }}>
-            <IconX className="size-3.5" />Remove
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 px-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-1 shrink-0" 
+            onClick={(e) => { e.stopPropagation(); onFileChange(null) }}
+          >
+            <IconX className="size-3.5" />
+            <span className="hidden sm:inline">Remove</span>
           </Button>
         </div>
       ) : (
-        <>
-          <div className="flex size-16 items-center justify-center rounded-2xl bg-muted"><IconUpload className="size-7 text-muted-foreground" /></div>
-          <div>
-            <p className="font-semibold text-foreground">Drop your resume here</p>
-            <p className="text-sm text-muted-foreground mt-1">or <span className="text-primary underline underline-offset-2">browse</span> to select</p>
+        <div className="flex items-center gap-3 w-full justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground transition-colors duration-200">
+              <IconUpload className="size-5 animate-pulse" />
+            </div>
+            <div className="flex flex-col text-left">
+              <p className="text-sm font-medium text-foreground">
+                Drop your resume here or <span className="text-primary hover:underline font-semibold">browse</span>
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Supports PDF & DOCX (Max 5MB)
+              </p>
+            </div>
           </div>
-          <div className="flex gap-2"><Badge variant="secondary">PDF</Badge><Badge variant="secondary">DOCX</Badge><Badge variant="secondary">Max 5 MB</Badge></div>
-        </>
+          <div className="flex gap-1.5 hidden sm:flex shrink-0">
+            <Badge variant="secondary" className="bg-background/50 hover:bg-background/50 text-[10px] py-0 px-2 h-5 text-muted-foreground border border-border/40">PDF</Badge>
+            <Badge variant="secondary" className="bg-background/50 hover:bg-background/50 text-[10px] py-0 px-2 h-5 text-muted-foreground border border-border/40">DOCX</Badge>
+          </div>
+        </div>
       )}
     </div>
   )
@@ -196,9 +235,18 @@ export function ResumeAnalyzerClient() {
   const [jobDescription, setJobDescription] = React.useState("")
   const [loading, setLoading] = React.useState(false)
   const [result, setResult] = React.useState<AnalysisResult | null>(null)
+  const [activeTab, setActiveTab] = React.useState<"audit" | "history">("audit")
+  const [historyList, setHistoryList] = React.useState<AnalysisResult[]>([])
+
   const resultsRef = React.useRef<HTMLDivElement>(null)
 
-  React.useEffect(() => { const s = loadResult(); if (s) setResult(s) }, [])
+  React.useEffect(() => {
+    setHistoryList(getHistory())
+  }, [])
+
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" })
+  }, [activeTab])
 
   const handleAnalyze = async () => {
     if (!file) { toast.error("Please select a resume file first."); return }
@@ -210,6 +258,7 @@ export function ResumeAnalyzerClient() {
       const res = await analyzeResumeAction(fd)
       setResult(res)
       saveResult(res)
+      setHistoryList(getHistory())
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 200)
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Analysis failed. Please try again.")
@@ -220,8 +269,28 @@ export function ResumeAnalyzerClient() {
 
   const handleReset = () => {
     setResult(null); setFile(null); setJobDescription("")
-    try { localStorage.removeItem(LS_KEY) } catch { }
     window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
+  const restoreReport = (r: AnalysisResult) => {
+    setResult(r)
+    setActiveTab("audit")
+    toast.success(`Restored analysis for ${r.fileName}`)
+    setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 200)
+  }
+
+  const deleteReport = (e: React.MouseEvent, r: AnalysisResult) => {
+    e.stopPropagation()
+    try {
+      const history = getHistory()
+      const updated = history.filter((h) => h.analyzedAt !== r.analyzedAt)
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(updated))
+      setHistoryList(updated)
+      toast.success("Report deleted from history.")
+      if (result && result.analyzedAt === r.analyzedAt) {
+        setResult(null)
+      }
+    } catch {}
   }
 
   // Safely access verdict fields (handles both string legacy and object format)
@@ -231,7 +300,7 @@ export function ResumeAnalyzerClient() {
   const verdictPriority = typeof verdict === "object" ? verdict?.topPriority : undefined
 
   return (
-    <div className="flex flex-col gap-8 px-4 py-6 md:px-8 md:py-8">
+    <div className="flex flex-col gap-6 px-4 py-6 md:px-8 md:py-8 font-sans">
 
       {/* ── Page Header ── */}
       <div className="flex flex-col gap-3 pb-2 border-b border-border/60">
@@ -245,408 +314,591 @@ export function ResumeAnalyzerClient() {
           <h1 className="text-3xl font-bold font-cirka tracking-tight text-foreground">Resume Analyzer</h1>
           <Badge variant="secondary" className="bg-violet-500/10 text-violet-600 dark:text-violet-400 text-xs ml-1">AI-Powered</Badge>
         </div>
-        <p className="text-sm text-muted-foreground font-sans">
-          Upload your resume for a deep AI audit — ATS scoring, section breakdown, and actionable rewrites.
+        <p className="text-sm text-muted-foreground">
+          Upload your resume for a deep AI audit — ATS scoring, keyword alignment, and historical progression tracking.
         </p>
       </div>
 
-      {/* ── Upload Card ── */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <IconUpload className="size-4 text-muted-foreground" />
-            Upload Resume
-          </CardTitle>
-          <CardDescription>PDF or DOCX only · Max 5 MB · Your file is never stored on our servers</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-6">
-          <FileDropZone file={file} onFileChange={setFile} />
-
-          {/* Mode toggle */}
-          <div className="flex flex-col gap-3">
-            <p className="text-sm font-medium text-foreground">Analysis Mode</p>
-            <div className="flex gap-2 flex-wrap">
-              {(["standalone", "jd"] as const).map((m) => (
-                <button key={m} onClick={() => setMode(m)} className={cn("flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all", mode === m ? "border-primary bg-primary/10 text-primary" : "border-border bg-muted/30 text-muted-foreground hover:border-primary/40 hover:text-foreground")}>
-                  {m === "standalone" ? <><IconFileText className="size-4" />Resume Only</> : <><IconBriefcase className="size-4" />Match a Job</>}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* JD textarea */}
-          <div className={cn("overflow-hidden transition-all duration-300", mode === "jd" ? "max-h-72 opacity-100" : "max-h-0 opacity-0")}>
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-foreground">Paste Job Title & Description</label>
-              <textarea
-                className="min-h-36 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 resize-none transition"
-                placeholder={"e.g. Senior Frontend Engineer at Acme Corp\n\nWe are looking for a React developer with 3+ years of experience..."}
-                value={jobDescription}
-                onChange={(e) => setJobDescription(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">The AI will extract required skills and score your resume against them.</p>
-            </div>
-          </div>
-
-          <Button className="w-full gap-2 h-11 text-sm font-semibold" onClick={handleAnalyze} disabled={!file || loading}>
-            {loading ? <><IconLoader2 className="size-4 animate-spin" />Analyzing your resume…</> : <><IconSparkles className="size-4" />Analyze Resume</>}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* ── Results ── */}
-      {result && (
-        <div ref={resultsRef} className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-
-          {/* Results header */}
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                Analysis Results
-              </h2>
-              <div className="flex items-center gap-3 mt-1 flex-wrap">
-                <p className="text-xs text-muted-foreground">{result.fileName} · {new Date(result.analyzedAt).toLocaleString()}</p>
-                {result.detectedIndustry && (
-                  <Badge variant="secondary" className="text-[10px] gap-1">
-                    <IconBuildingSkyscraper className="size-3" />{result.detectedIndustry}
-                  </Badge>
-                )}
-                {result.experienceLevel && (
-                  <Badge variant="secondary" className="text-[10px] gap-1">
-                    <IconUser className="size-3" />{result.experienceLevel} Level
-                  </Badge>
-                )}
-              </div>
-            </div>
-            <div className="flex gap-2 mt-3 sm:mt-0">
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={handleAnalyze} disabled={loading || !file}>
-                <IconRefresh className="size-3.5" />Re-analyze
-              </Button>
-              <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={handleReset}>
-                <IconArrowLeft className="size-3.5" />New Resume
-              </Button>
-            </div>
-          </div>
-
-          {/* ── AI Verdict ── */}
-          {verdict && (
-            <Card className="border-violet-500/20 bg-violet-500/5">
-              <CardContent className="pt-5 pb-5">
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-start gap-3">
-                    <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 mt-0.5">
-                      <IconBrain className="size-4 text-violet-500" />
-                    </div>
-                    <div className="flex flex-col gap-1.5 flex-1">
-                      <span className="text-xs font-semibold uppercase tracking-widest text-violet-600 dark:text-violet-400">AI Verdict</span>
-                      {verdictHeadline && (
-                        <p className="text-sm font-semibold text-foreground">{verdictHeadline}</p>
-                      )}
-                      {verdictSummary && verdictSummary !== verdictHeadline && (
-                        <p className="text-sm text-foreground/80 leading-relaxed">{verdictSummary}</p>
-                      )}
-                    </div>
-                  </div>
-                  {verdictPriority && (
-                    <div className="ml-11 rounded-lg border border-violet-500/20 bg-violet-500/10 px-3 py-2">
-                      <p className="text-xs text-foreground">
-                        <span className="font-semibold text-violet-600 dark:text-violet-400">Top Priority: </span>
-                        {verdictPriority}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+      {/* ── Tabs Navigation ── */}
+      <div className="flex border-b border-border/60 gap-1">
+        <button
+          onClick={() => setActiveTab("audit")}
+          className={cn(
+            "flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-all -mb-px outline-none",
+            activeTab === "audit"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           )}
-
-          {/* ── Quick Wins ── */}
-          {result.quickWins && result.quickWins.length > 0 && (
-            <Card className="border-amber-500/20 bg-amber-500/5">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2 text-amber-700 dark:text-amber-400">
-                  <IconBolt className="size-4" />
-                  Quick Wins — Highest Impact Changes
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-3">
-                {result.quickWins.map((win, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <div className="flex flex-col items-center gap-1">
-                      <span className={cn("inline-flex shrink-0 items-center rounded-lg border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide", impactColor(win.impact))}>
-                        {win.impact}
-                      </span>
-                      {win.estimatedTime && (
-                        <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                          <IconClock className="size-2.5" />{win.estimatedTime}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-sm font-semibold text-foreground">{win.title}</span>
-                      <span className="text-xs text-muted-foreground leading-relaxed">{win.action}</span>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+        >
+          <IconFileText className="size-4" />
+          {result ? "Dashboard & Audit" : "Analyze & Upload"}
+        </button>
+        <button
+          onClick={() => setActiveTab("history")}
+          className={cn(
+            "flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-all -mb-px outline-none",
+            activeTab === "history"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           )}
+        >
+          <IconHistory className="size-4" />
+          History & Progress
+          {historyList.length > 0 && (
+            <Badge variant="secondary" className="px-1.5 py-px text-[10px] ml-1 bg-muted text-muted-foreground">
+              {historyList.length}
+            </Badge>
+          )}
+        </button>
+      </div>
 
-          {/* ── Score Overview ── */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Overall score */}
-            <Card className="flex flex-col items-center justify-center py-8 gap-4">
-              <span className="text-sm font-medium text-muted-foreground">Overall Score</span>
-              <ScoreDial score={result.overallScore} size={160} label={scoreLabel(result.overallScore)} />
-              <p className="text-xs text-muted-foreground text-center px-6">Based on content quality, ATS compatibility, and formatting.</p>
-            </Card>
+      {/* ── Tab Content ── */}
+      <div className="flex flex-col gap-6">
 
-            {/* ATS + Keyword match */}
-            <Card className="flex flex-col justify-between gap-6 p-6">
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">ATS Score</span>
-                <ScoreDial score={result.atsScore} size={110} />
-                <p className="text-xs text-muted-foreground mt-1">Applicant Tracking System compatibility</p>
-              </div>
-              <Separator />
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Keyword Match</span>
-                <div className={cn("text-2xl font-bold tabular-nums mt-1", scoreColor(result.keywordMatchRate))}>{result.keywordMatchRate}%</div>
-                <p className="text-xs text-muted-foreground">Industry-relevant keywords found</p>
-              </div>
-            </Card>
+        {/* ── Tab 1: Audit & Upload ── */}
+        {activeTab === "audit" && (
+          <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {!result ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Upload Resume</CardTitle>
+                  <CardDescription>PDF or DOCX only · Max 5 MB · Your file is never stored on our servers</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-6">
+                  <FileDropZone file={file} onFileChange={setFile} />
 
-            {/* JD match or detected skills */}
-            {result.jdMatchScore !== undefined ? (
-              <Card className={cn("border flex flex-col gap-4 p-6", scoreBgClass(result.jdMatchScore))}>
-                <div className="flex items-center gap-2">
-                  <IconBriefcase className="size-4 text-muted-foreground" />
-                  <span className="text-sm font-semibold">Job Match Score</span>
-                </div>
-                <div className="flex justify-center">
-                  <ScoreDial score={result.jdMatchScore} size={110} label={scoreLabel(result.jdMatchScore)} />
-                </div>
-                {result.missingSkills && result.missingSkills.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Missing Skills</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {result.missingSkills.map((s) => (
-                        <Badge key={s} variant="secondary" className="text-xs bg-rose-500/10 text-rose-600 dark:text-rose-400">{s}</Badge>
+                  {/* Mode toggle */}
+                  <div className="flex flex-col gap-3">
+                    <p className="text-sm font-medium text-foreground">Analysis Mode</p>
+                    <div className="flex gap-2 flex-wrap">
+                      {(["standalone", "jd"] as const).map((m) => (
+                        <button key={m} onClick={() => setMode(m)} className={cn("flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all", mode === m ? "border-primary bg-primary/10 text-primary" : "border-border bg-muted/30 text-muted-foreground hover:border-primary/40 hover:text-foreground")}>
+                          {m === "standalone" ? <><IconFileText className="size-4" />Resume Only</> : <><IconBriefcase className="size-4" />Match a Job</>}
+                        </button>
                       ))}
                     </div>
                   </div>
-                )}
+
+                  {/* JD textarea */}
+                  <div className={cn("overflow-hidden transition-all duration-300", mode === "jd" ? "max-h-72 opacity-100" : "max-h-0 opacity-0")}>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-sm font-medium text-foreground">Paste Job Title & Description</label>
+                      <textarea
+                        className="min-h-36 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 resize-none transition"
+                        placeholder={"e.g. Senior Frontend Engineer at Acme Corp\n\nWe are looking for a React developer with 3+ years of experience..."}
+                        value={jobDescription}
+                        onChange={(e) => setJobDescription(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">The AI will extract required skills and score your resume against them.</p>
+                    </div>
+                  </div>
+
+                  <GenerateButton
+                    className="w-full h-11 text-sm font-semibold"
+                    onClick={handleAnalyze}
+                    isGenerating={loading}
+                    disabled={!file || loading}
+                    text="Analyze"
+                    generatingText="Analyzing"
+                    hue={260}
+                  />
+                </CardContent>
               </Card>
             ) : (
-              <Card className="flex flex-col gap-4 p-6">
-                <div className="flex items-center gap-2">
-                  <IconSparkles className="size-4 text-violet-500" />
-                  <span className="text-sm font-semibold">Detected Skills</span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {(result.detectedSkills ?? []).map((s) => (
-                    <Badge key={s} variant="secondary" className="text-xs">{s}</Badge>
-                  ))}
-                </div>
-              </Card>
-            )}
-          </div>
+              <div ref={resultsRef} className="flex flex-col gap-6 animate-in fade-in duration-300">
 
-          {/* Section score bars */}
-          <Card className="p-6">
-            <div className="flex items-center gap-2 mb-5">
-              <span className="text-sm font-semibold">Section Scores</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-              {result.sections.map((s) => (<SectionBar key={s.name} name={s.name} score={s.score} />))}
-            </div>
-          </Card>
-
-          {/* ── Strengths & Weaknesses ── */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Strengths */}
-            <Card className="border-emerald-500/20 bg-emerald-500/5">
-              <CardHeader>
-                <CardTitle className="text-sm flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
-
-                  Strengths
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="flex flex-col gap-3">
-                  {result.strengths.map((s, i) => (
-                    <li key={i} className="flex items-start gap-2.5 text-sm">
-                      <IconCheck className="size-4 text-emerald-500 mt-0.5 shrink-0" />
-                      <span className="text-foreground">{s}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-
-            {/* Weaknesses */}
-            <Card className="border-rose-500/20 bg-rose-500/5">
-              <CardHeader>
-                <CardTitle className="text-sm flex items-center gap-2 text-rose-700 dark:text-rose-400">
-
-                  Weaknesses
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="flex flex-col gap-3">
-                  {result.weaknesses.map((w, i) => (
-                    <li key={i}>
-                      <Collapsible>
-                        <div className="flex items-start gap-2.5 text-sm">
-                          <IconAlertCircle className="size-4 text-rose-500 mt-0.5 shrink-0" />
-                          <div className="flex flex-1 items-start justify-between gap-2">
-                            <span className="text-foreground">{w}</span>
-                            <CollapsibleTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground gap-1 shrink-0">
-                                Fix it<IconChevronDown className="size-3" />
-                              </Button>
-                            </CollapsibleTrigger>
-                          </div>
-                        </div>
-                        <CollapsibleContent>
-                          <div className="mt-2 ml-6 rounded-lg bg-background/70 border border-rose-500/20 p-3 text-xs text-muted-foreground">
-                            <IconBulb className="size-3 inline mr-1 text-amber-500" />
-                            {result.suggestions?.[w] ?? "Focus on making this section more specific and achievement-driven with quantifiable results."}
-                          </div>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* ── Detailed Section Breakdown ── */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                Detailed Section Breakdown
-              </CardTitle>
-              <CardDescription>Expand each section for specific feedback, improvement tips, and rewrite examples.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Accordion type="multiple" className="w-full">
-                {result.sections.map((section) => (
-                  <AccordionItem key={section.name} value={section.name}>
-                    <AccordionTrigger className="hover:no-underline">
-                      <div className="flex items-center gap-3 flex-1 pr-2">
-                        <Badge variant="secondary" className={cn("text-xs font-bold tabular-nums px-2 py-0.5", scoreBgClass(section.score), scoreColor(section.score))}>
-                          {section.score}
+                {/* Results header */}
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                      Analysis Results
+                    </h2>
+                    <div className="flex items-center gap-3 mt-1 flex-wrap">
+                      <p className="text-xs text-muted-foreground">{result.fileName} · {new Date(result.analyzedAt).toLocaleString()}</p>
+                      {result.detectedIndustry && (
+                        <Badge variant="secondary" className="text-[10px] gap-1">
+                          <IconBuildingSkyscraper className="size-3" />{result.detectedIndustry}
                         </Badge>
-                        <span className="font-medium text-sm">{section.name}</span>
-                        <span className="text-xs text-muted-foreground hidden sm:block truncate ml-auto mr-4">{section.feedback}</span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="flex flex-col gap-4 pt-1 pb-2">
-                        <div className="flex flex-col gap-1">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Feedback</p>
-                          <p className="text-sm text-foreground">{section.feedback}</p>
-                        </div>
+                      )}
+                      {result.experienceLevel && (
+                        <Badge variant="secondary" className="text-[10px] gap-1">
+                          <IconUser className="size-3" />{result.experienceLevel} Level
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-3 sm:mt-0">
+                    <Button variant="outline" size="sm" className="gap-1.5" onClick={handleAnalyze} disabled={loading || !file}>
+                      <IconRefresh className="size-3.5" />Re-analyze
+                    </Button>
+                    <Button variant="secondary" size="sm" className="gap-1.5 border border-border" onClick={handleReset}>
+                      <IconUpload className="size-3.5" />New Resume
+                    </Button>
+                  </div>
+                </div>
 
-                        <div className="flex flex-col gap-1">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Improvement Tip</p>
-                          <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm text-foreground">
-                            <IconBulb className="size-3.5 inline mr-1 text-amber-500" />{section.suggestion}
+                {/* ── AI Verdict ── */}
+                {verdict && (
+                  <Card className="border-violet-500/20 bg-violet-500/5">
+                    <CardContent className="pt-5 pb-5">
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-start gap-3">
+                          <div className="flex flex-col gap-1.5 flex-1 font-sans">
+                            <span className="text-xs font-semibold uppercase tracking-widest text-violet-600 dark:text-violet-400">AI Verdict</span>
+                            {verdictHeadline && (
+                              <p className="text-sm font-semibold text-foreground">{verdictHeadline}</p>
+                            )}
+                            {verdictSummary && verdictSummary !== verdictHeadline && (
+                              <p className="text-sm text-foreground/80 leading-relaxed">{verdictSummary}</p>
+                            )}
                           </div>
                         </div>
-
-                        {section.rewriteExample && (
-                          <div className="flex flex-col gap-1">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1">
-                              <IconArrowRight className="size-3" />Concrete Rewrite Example
+                        {verdictPriority && (
+                          <div className="rounded-lg border border-violet-500/20 bg-violet-500/10 px-3 py-2">
+                            <p className="text-xs text-foreground leading-relaxed">
+                              <span className="font-semibold text-violet-600 dark:text-violet-400">Top Priority: </span>
+                              {verdictPriority}
                             </p>
-                            <RewriteExample before={section.rewriteExample.before} after={section.rewriteExample.after} />
                           </div>
                         )}
-
-                        <SectionBar name={section.name} score={section.score} />
                       </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </CardContent>
-          </Card>
-
-          {/* ── Keyword Analysis ── */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Keyword density */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm flex items-center gap-2">
-                  Keyword Density
-                </CardTitle>
-                <CardDescription>Brighter = high-value industry keyword</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {(result.keywords ?? []).length > 0
-                    ? result.keywords.map((k) => {
-                      const intensity = Math.min(k.count, 5)
-                      const bgOpacity = 10 + intensity * 8
-                      return (
-                        <div
-                          key={k.keyword}
-                          className={cn(
-                            "flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all",
-                            k.important
-                              ? `bg-violet-500/${bgOpacity} border-violet-500/30 text-violet-700 dark:text-violet-300`
-                              : "bg-muted/40 border-border/60 text-muted-foreground"
-                          )}
-                        >
-                          <span>{k.keyword}</span>
-                          <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums", k.important ? "bg-violet-500/20 text-violet-600 dark:text-violet-400" : "bg-muted text-muted-foreground")}>
-                            ×{k.count}
-                          </span>
-                        </div>
-                      )
-                    })
-                    : <p className="text-xs text-muted-foreground">No keywords extracted.</p>
-                  }
-                </div>
-                <div className="flex items-center gap-3 text-[10px] text-muted-foreground pt-3">
-                  <span className="flex items-center gap-1"><span className="inline-block size-2.5 rounded-sm bg-violet-500/30" />High-value keyword</span>
-                  <span className="flex items-center gap-1"><span className="inline-block size-2.5 rounded-sm bg-muted" />Supporting keyword</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Suggested keywords */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm flex items-center gap-2">
-                  Suggested Keywords to Add
-                </CardTitle>
-                <CardDescription>Missing from your resume but would strengthen it</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {(result.suggestedKeywords ?? []).length > 0
-                    ? result.suggestedKeywords.map((k) => (
-                      <Badge key={k} variant="secondary" className="text-xs gap-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                        + {k}
-                      </Badge>
-                    ))
-                    : <p className="text-xs text-muted-foreground">No additional keywords suggested — great coverage!</p>
-                  }
-                </div>
-                {result.suggestedKeywords && result.suggestedKeywords.length > 0 && (
-                  <p className="text-xs text-muted-foreground border-t border-border/40 pt-3 mt-3">
-                    💡 Naturally weave these into your experience bullet points and skills section — don&apos;t keyword-stuff.
-                  </p>
+                    </CardContent>
+                  </Card>
                 )}
-              </CardContent>
-            </Card>
+
+                {/* ── Quick Wins ── */}
+                {result.quickWins && result.quickWins.length > 0 && (
+                  <Card className="border-amber-500/20 bg-amber-500/5">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm text-amber-700 dark:text-amber-400 font-semibold">
+                        Quick Wins — High Impact Fixes (under 10 mins)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-col gap-2.5 pt-1">
+                      {result.quickWins.map((win, i) => (
+                        <div key={i} className="flex items-start justify-between gap-3 border-b border-border/20 last:border-0 pb-2 last:pb-0">
+                          <div className="flex items-start gap-2.5">
+                            <div className="flex flex-col items-center gap-1 mt-0.5 shrink-0">
+                              <Badge className={cn("text-[9px] font-bold uppercase tracking-wider", impactColor(win.impact))}>
+                                {win.impact}
+                              </Badge>
+                              {win.estimatedTime && (
+                                <span className="flex items-center gap-0.5 text-[8px] text-muted-foreground font-mono">
+                                  <IconClock className="size-2.5" />{win.estimatedTime}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-sm font-semibold text-foreground leading-none">{win.title}</span>
+                              <span className="text-xs text-muted-foreground leading-relaxed">{win.action}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* ── Score Overview Grid ── */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Overall score */}
+                  <Card className="flex flex-col items-center justify-center py-8 gap-4">
+                    <span className="text-sm font-medium text-muted-foreground">Overall Score</span>
+                    <ScoreDial score={result.overallScore} size={160} label={scoreLabel(result.overallScore)} />
+                    <p className="text-xs text-muted-foreground text-center px-6">Based on formatting, impact, and content quality.</p>
+                  </Card>
+
+                  {/* ATS Compatibility Score */}
+                  <Card className="flex flex-col items-center justify-center py-8 gap-4">
+                    <span className="text-sm font-medium text-muted-foreground">ATS Compatibility</span>
+                    <ScoreDial score={result.atsScore} size={160} />
+                    <p className="text-xs text-muted-foreground text-center px-6">Scan-ability and structural layout alignment.</p>
+                  </Card>
+
+                  {/* Mode-specific Third Card */}
+                  {result.jdMatchScore !== undefined ? (
+                    <Card className={cn("border flex flex-col gap-4 p-6 justify-center items-center", scoreBgClass(result.jdMatchScore))}>
+                      <div className="flex items-center gap-2 text-foreground font-semibold">
+                        <span className="text-sm font-semibold">Job Match Score</span>
+                      </div>
+                      <div className="flex justify-center mt-1">
+                        <ScoreDial score={result.jdMatchScore} size={110} label={scoreLabel(result.jdMatchScore)} />
+                      </div>
+                    </Card>
+                  ) : (
+                    <Card className="flex flex-col gap-4 p-6 font-sans">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold">Detected Skills</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 overflow-y-auto max-h-48 pt-1">
+                        {result.detectedSkills && result.detectedSkills.length > 0 ? (
+                          result.detectedSkills.map((s) => (
+                            <Badge key={s} variant="secondary" className="text-xs">{s}</Badge>
+                          ))
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">No skills extracted.</span>
+                        )}
+                      </div>
+                    </Card>
+                  )}
+                </div>
+
+                {/* ── Main Details Grid (Recommendations on left, Audits & Clouds on right) ── */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                  {/* Left Column: Recommendations (Take 2/3 width) */}
+                  <div className="lg:col-span-2 flex flex-col gap-6">
+                    {/* Key Recommendations */}
+                    {result.recommendations && result.recommendations.length > 0 && (
+                      <Card className="h-full">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base font-sans">
+                            Key Suggestions & Action Items
+                          </CardTitle>
+                          <CardDescription>
+                            Prioritized instructions to refine and rewrite specific sections of your resume.
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex flex-col gap-4">
+                          {result.recommendations.map((rec, i) => (
+                            <div
+                              key={i}
+                              className={cn(
+                                "rounded-xl border p-4 flex flex-col gap-3 transition-all hover:bg-muted/10",
+                                severityBorder(rec.severity)
+                              )}
+                            >
+                              <div className="flex items-center gap-2">
+                                <Badge className={cn("text-[9px] font-bold uppercase tracking-wider", severityColor(rec.severity))}>
+                                  {rec.severity} Severity
+                                </Badge>
+                                <h4 className="text-sm font-semibold text-foreground">{rec.title}</h4>
+                              </div>
+
+                              <div className="flex flex-col gap-1.5 text-sm pl-0.5">
+                                <p className="text-muted-foreground leading-relaxed font-sans">
+                                  <span className="font-semibold text-foreground">Issue: </span>
+                                  {rec.feedback}
+                                </p>
+                                <p className="text-foreground leading-relaxed font-sans">
+                                  <span className="font-semibold text-violet-600 dark:text-violet-400">Fix: </span>
+                                  {rec.suggestion}
+                                </p>
+                              </div>
+
+                              {rec.rewrite && (
+                                <div className="mt-1">
+                                  <RewriteExample before={rec.rewrite.before} after={rec.rewrite.after} />
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+
+                  {/* Right Column: Checklists, Audits, Keywords (Take 1/3 width) */}
+                  <div className="flex flex-col gap-6">
+
+                    {/* Resume Metadata & Contact Audit */}
+                    {result.localAnalysis && (
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-semibold">
+                            Resume Metadata & Contact Audit
+                          </CardTitle>
+                          <CardDescription>Deterministic checks for key contact details.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex flex-col gap-3 pt-1">
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="flex items-center gap-1.5">
+                              {result.localAnalysis.hasEmail ? (
+                                <IconCheck className="size-4 text-emerald-500 shrink-0" />
+                              ) : (
+                                <IconAlertCircle className="size-4 text-amber-500 shrink-0" />
+                              )}
+                              <span className="text-muted-foreground">Email Address</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              {result.localAnalysis.hasPhone ? (
+                                <IconCheck className="size-4 text-emerald-500 shrink-0" />
+                              ) : (
+                                <IconAlertCircle className="size-4 text-amber-500 shrink-0" />
+                              )}
+                              <span className="text-muted-foreground">Phone Number</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              {result.localAnalysis.hasLinkedIn ? (
+                                <IconCheck className="size-4 text-emerald-500 shrink-0" />
+                              ) : (
+                                <IconAlertCircle className="size-4 text-amber-500 shrink-0" />
+                              )}
+                              <span className="text-muted-foreground">LinkedIn Link</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              {result.localAnalysis.hasGitHub ? (
+                                <IconCheck className="size-4 text-emerald-500 shrink-0" />
+                              ) : (
+                                <IconAlertCircle className="size-4 text-amber-500 shrink-0" />
+                              )}
+                              <span className="text-muted-foreground">GitHub Profile</span>
+                            </div>
+                          </div>
+
+                          <Separator className="my-1" />
+
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Words: <span className="font-semibold text-foreground">{result.localAnalysis.wordCount}</span></span>
+                            <span>Read Time: <span className="font-semibold text-foreground">{Math.ceil(result.localAnalysis.wordCount / 200)} min</span></span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Strengths Card */}
+                    <Card className="border-emerald-500/20 bg-emerald-500/5">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm text-emerald-700 dark:text-emerald-400">
+                          Strengths
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="flex flex-col gap-2.5">
+                          {result.strengths && result.strengths.map((s, i) => (
+                            <li key={i} className="flex items-start gap-2 text-xs">
+                              <IconCheck className="size-3.5 text-emerald-500 mt-0.5 shrink-0" />
+                              <span className="text-foreground font-medium leading-relaxed">{s}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
+
+                    {/* ATS Formatting Audit checklist */}
+                    {result.formatChecks && result.formatChecks.length > 0 && (
+                      <Card className="font-sans">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm text-foreground font-semibold">
+                            Layout & Format Audit
+                          </CardTitle>
+                          <CardDescription>Visual scan of layout parse-ability checklist.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex flex-col gap-3 pt-1">
+                          {result.formatChecks.map((check, i) => {
+                            const icon =
+                              check.status === "Passed" ? (
+                                <IconCheck className="size-4 text-emerald-500 shrink-0 mt-0.5" />
+                              ) : check.status === "Warning" ? (
+                                <IconAlertCircle className="size-4 text-amber-500 shrink-0 mt-0.5" />
+                              ) : (
+                                <IconX className="size-4 text-rose-500 shrink-0 mt-0.5" />
+                              )
+
+                            const labelColor =
+                              check.status === "Passed"
+                                ? "text-emerald-700 dark:text-emerald-400"
+                                : check.status === "Warning"
+                                ? "text-amber-700 dark:text-amber-400"
+                                : "text-rose-700 dark:text-rose-400"
+
+                            return (
+                              <div key={i} className="flex items-start gap-2 text-xs border-b border-border/20 last:border-0 pb-2 last:pb-0">
+                                {icon}
+                                <div className="flex flex-col gap-0.5 flex-1">
+                                  <span className={cn("font-semibold text-[11px]", labelColor)}>{check.label}</span>
+                                  <span className="text-muted-foreground text-[10px] leading-relaxed">{check.feedback}</span>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Job Match missing skills (if mode === jd) */}
+                    {mode === "jd" && (
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm">
+                            Missing Job Skills
+                          </CardTitle>
+                          <CardDescription>Identified in JD but missing in resume</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex flex-wrap gap-1.5 pt-0.5">
+                            {result.missingSkills && result.missingSkills.length > 0 ? (
+                              result.missingSkills.map((s) => (
+                                <Badge key={s} variant="secondary" className="text-[10px] bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                                  {s}
+                                </Badge>
+                              ))
+                            ) : (
+                              <p className="text-[11px] text-muted-foreground">No major skills missing relative to this job description.</p>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Detected Skills Cloud (if mode === jd, else shown as scores column) */}
+                    {mode === "jd" && (
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm">
+                            Detected Skills
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pt-0.5">
+                            {result.detectedSkills && result.detectedSkills.length > 0 ? (
+                              result.detectedSkills.map((s) => (
+                                <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>
+                              ))
+                            ) : (
+                              <span className="text-xs text-muted-foreground italic">No skills detected.</span>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Suggested keywords to add */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          Suggested Keywords
+                        </CardTitle>
+                        <CardDescription>Add naturally to improve ATS match</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-wrap gap-1.5">
+                          {result.suggestedKeywords && result.suggestedKeywords.length > 0 ? (
+                            result.suggestedKeywords.map((k) => (
+                              <Badge key={k} variant="secondary" className="text-[10px] gap-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                                + {k}
+                              </Badge>
+                            ))
+                          ) : (
+                            <p className="text-xs text-muted-foreground">Great keyword coverage!</p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                  </div>
+                </div>
+
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
+
+        {/* ── Tab 2: History & Progress ── */}
+        {activeTab === "history" && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col gap-6">
+            {historyList.length === 0 ? (
+              <Card className="flex flex-col items-center justify-center p-12 text-center">
+                <div className="flex size-14 items-center justify-center rounded-2xl bg-muted mb-4">
+                  <IconHistory className="size-7 text-muted-foreground" />
+                </div>
+                <h3 className="font-semibold text-foreground text-base">No analysis history</h3>
+                <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+                  Upload and analyze your resume on the first tab. Your progress history will populate here automatically.
+                </p>
+              </Card>
+            ) : (
+              <div className="flex flex-col gap-6">
+
+                {/* Score Progression Overview */}
+                {historyList.length >= 2 && (
+                  <Card className="border-emerald-500/20 bg-emerald-500/5">
+                    <CardContent className="p-5 flex flex-col gap-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-sans">Progression Tracker</span>
+                      <h3 className="text-lg font-bold text-foreground">
+                        Your overall score improved by {historyList[0].overallScore - historyList[historyList.length - 1].overallScore} points!
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        From a starting score of {historyList[historyList.length - 1].overallScore} (first upload) to your latest score of {historyList[0].overallScore}.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Timeline */}
+                <h3 className="text-base font-semibold text-foreground px-1">Analysis History</h3>
+                <div className="relative border-l border-border/80 ml-4 pl-6 flex flex-col gap-5">
+                  {historyList.map((h, i) => {
+                    const isCurrent = result?.analyzedAt === h.analyzedAt
+                    return (
+                      <div key={h.analyzedAt} className="relative">
+                        {/* Timeline node */}
+                        <span className={cn(
+                          "absolute -left-[31px] top-1.5 flex size-4 items-center justify-center rounded-full border bg-background",
+                          isCurrent ? "border-primary ring-2 ring-primary/20" : "border-muted-foreground"
+                        )}>
+                          <span className={cn("size-2 rounded-full", h.overallScore >= 75 ? "bg-emerald-500" : h.overallScore >= 50 ? "bg-amber-500" : "bg-rose-500")} />
+                        </span>
+
+                        <Card
+                          className={cn(
+                            "transition-all cursor-pointer",
+                            isCurrent ? "border-primary bg-primary/5 shadow-sm" : "hover:border-primary/40 hover:bg-muted/10"
+                          )}
+                          onClick={() => restoreReport(h)}
+                        >
+                          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-sm text-foreground">{h.fileName}</span>
+                                {isCurrent && <Badge className="text-[9px] px-1.5 py-px bg-primary text-primary-foreground font-medium">Active Report</Badge>}
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(h.analyzedAt).toLocaleString()} · {h.detectedIndustry || "General"} · {h.experienceLevel} Level
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                              <div className="flex flex-col items-end">
+                                <span className={cn("text-lg font-bold tabular-nums", scoreColor(h.overallScore))}>
+                                  {h.overallScore}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground">Overall Score</span>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 border-l border-border pl-4">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-8 text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                                  onClick={(e) => { e.stopPropagation(); restoreReport(h) }}
+                                  title="Restore and view this report"
+                                >
+                                  <IconFileText className="size-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-8 text-rose-500 hover:text-rose-600 hover:bg-rose-500/10"
+                                  onClick={(e) => deleteReport(e, h)}
+                                  title="Delete from history"
+                                >
+                                  <IconTrash className="size-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
     </div>
   )
 }

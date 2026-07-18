@@ -537,9 +537,9 @@ function TeamMemberCard({
 			fillOpacity={glowEnabled ? 0.08 : 0}
 			coneSpread={glowEnabled ? 14 : 0}
 		>
-			<article className="h-full rounded-3xl bg-white/95 p-4 backdrop-blur-sm transition-all duration-300 dark:bg-white/[0.03] md:p-5">
+			<article className="h-full rounded-3xl bg-white/95 p-3 backdrop-blur-sm transition-all duration-300 dark:bg-white/[0.03] md:p-5">
 				<div className="flex h-full flex-col">
-					<div className="relative mb-4 overflow-hidden rounded-2xl bg-black/[0.04] aspect-[1/1] dark:bg-white/[0.05]">
+					<div className="relative mb-3 md:mb-4 overflow-hidden rounded-2xl bg-black/[0.04] aspect-[1/1] dark:bg-white/[0.05]">
 						{member.image ? (
 							<Image
 								src={member.image}
@@ -549,53 +549,53 @@ function TeamMemberCard({
 								sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
 							/>
 						) : (
-							<div className="flex h-full items-center justify-center text-lg font-semibold text-zinc-500 dark:text-zinc-400">
+							<div className="flex h-full items-center justify-center text-sm md:text-lg font-semibold text-zinc-500 dark:text-zinc-400">
 								{member.name}
 							</div>
 						)}
 					</div>
 
 					<div className="flex-1 px-1">
-						<h3 className="text-lg font-semibold tracking-[-0.02em] text-zinc-900 dark:text-white">
+						<h3 className="text-sm md:text-lg font-semibold tracking-[-0.02em] text-zinc-900 dark:text-white">
 							{member.name}
 						</h3>
-						<p className="mt-1 text-sm font-medium text-emerald-700 dark:text-emerald-300">
+						<p className="mt-0.5 md:mt-1 text-xs md:text-sm font-medium text-emerald-700 dark:text-emerald-300">
 							{member.role}
 						</p>
 					</div>
 
-					<div className="mt-5 flex flex-wrap gap-2 px-1">
+					<div className="mt-3 md:mt-5 flex flex-wrap gap-2 px-1">
 						{member.email ? (
-							<Button variant="outline" size="sm" className={NAV_BUTTON} asChild>
+							<Button variant="outline" size="sm" className={cn("size-8 px-0 sm:w-auto sm:px-3 gap-1.5 text-xs sm:text-sm", NAV_BUTTON)} asChild>
 								<a href={`mailto:${member.email}`}>
-									<MailIcon className="size-3" />
-									Contact
+									<MailIcon className="size-3.5" />
+									<span className="hidden sm:inline">Contact</span>
 								</a>
 							</Button>
 						) : null}
 
 						{member.linkedin ? (
-							<Button variant="outline" size="icon" className={NAV_BUTTON} asChild>
+							<Button variant="outline" size="icon" className={cn("size-8", NAV_BUTTON)} asChild>
 								<a
 									href={member.linkedin}
 									target="_blank"
 									rel="noopener noreferrer"
 									aria-label={`${member.name} LinkedIn`}
 								>
-									<LinkedinIcon className="size-4" />
+									<LinkedinIcon className="size-3.5" />
 								</a>
 							</Button>
 						) : null}
 
 						{member.github ? (
-							<Button variant="outline" size="icon" className={NAV_BUTTON} asChild>
+							<Button variant="outline" size="icon" className={cn("size-8", NAV_BUTTON)} asChild>
 								<a
 									href={member.github}
 									target="_blank"
 									rel="noopener noreferrer"
 									aria-label={`${member.name} GitHub`}
 								>
-									<GithubIcon className="size-4" />
+									<GithubIcon className="size-3.5" />
 								</a>
 							</Button>
 						) : null}
@@ -633,7 +633,7 @@ function TeamSection() {
 						flows, and giving students a better system to grow through.
 					</p>
 				</div>
-				<div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
+				<div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
 					{TEAM.map((member) => (
 						<TeamMemberCard
 							key={`${member.name}-${member.role}`}

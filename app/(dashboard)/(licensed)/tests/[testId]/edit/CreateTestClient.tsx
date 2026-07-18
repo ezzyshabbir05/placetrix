@@ -29,6 +29,7 @@ import {
 } from "lucide-react"
 import { CohortSelector } from "@/components/cohort-selector"
 import type { CohortOption } from "@/app/(dashboard)/(licensed)/cohorts/types"
+import { GenerateButton } from "@/components/ui/generate-button"
 
 import type {
   SettingsForm,
@@ -1077,28 +1078,20 @@ function AiGenerateSheet({
             </div>
           </div>
 
-          <Button
+          <GenerateButton
             onClick={handleGenerate}
+            isGenerating={isPending}
             disabled={
               isPending ||
               !form.topic.trim() ||
               !generateQuestionsAction ||
               !!countFieldError
             }
+            text="Generate"
+            generatingText="Generating"
+            hue={275}
             className="w-full"
-          >
-            {isPending ? (
-              <>
-                <Sparkles className="mr-2 h-4 w-4 animate-pulse" />
-                Generating…
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Generate Questions
-              </>
-            )}
-          </Button>
+          />
 
           {isPending && (
             <div className="space-y-3">
