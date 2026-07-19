@@ -57,6 +57,7 @@ export function DashboardShell({
     if (insetRef.current) {
       insetRef.current.scrollTo(0, 0)
     }
+    window.scrollTo(0, 0)
   }, [pathname])
 
   const manualModeRef = React.useRef(false)
@@ -159,7 +160,7 @@ export function DashboardShell({
         {sidebar}
 
         {/* ✅ flex flex-col added so flex-1 children respond correctly */}
-        <SidebarInset ref={insetRef} className="h-svh overflow-y-auto flex flex-col">
+        <SidebarInset ref={insetRef} className="min-h-svh md:h-svh overflow-y-visible md:overflow-y-auto flex flex-col">
           <div className="sticky z-30 top-0 w-full bg-background border-b md:hidden">
             <SiteHeader onManualToggle={onManualToggle} />
           </div>

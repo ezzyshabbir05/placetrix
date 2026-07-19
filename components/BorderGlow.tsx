@@ -89,6 +89,15 @@ const BorderGlow: React.FC<BorderGlowProps> = ({
     const [cursorAngle, setCursorAngle] = useState(45);
     const [edgeProximity, setEdgeProximity] = useState(0);
     const [sweepActive, setSweepActive] = useState(false);
+    const [isMobileOrTouch, setIsMobileOrTouch] = useState(false);
+
+    useEffect(() => {
+        const hasTouch = typeof window !== 'undefined' && 
+            ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+        const isMobileUA = typeof navigator !== 'undefined' && 
+            /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+        setIsMobileOrTouch(hasTouch || isMobileUA);
+    }, []);
 
     const getCenterOfElement = useCallback((el: HTMLElement) => {
         const { width, height } = el.getBoundingClientRect();
@@ -118,6 +127,7 @@ const BorderGlow: React.FC<BorderGlowProps> = ({
     }, [getCenterOfElement]);
 
     const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+        if (isMobileOrTouch) return;
         const card = cardRef.current;
         if (!card) return;
         const rect = card.getBoundingClientRect();
@@ -125,10 +135,10 @@ const BorderGlow: React.FC<BorderGlowProps> = ({
         const y = e.clientY - rect.top;
         setEdgeProximity(getEdgeProximity(card, x, y));
         setCursorAngle(getCursorAngle(card, x, y));
-    }, [getEdgeProximity, getCursorAngle]);
+    }, [getEdgeProximity, getCursorAngle, isMobileOrTouch]);
 
     useEffect(() => {
-        if (!animated) return;
+        if (!animated || isMobileOrTouch) return;
         const angleStart = 110;
         const angleEnd = 465;
         setSweepActive(true);
@@ -150,7 +160,7 @@ const BorderGlow: React.FC<BorderGlowProps> = ({
             onUpdate: v => setEdgeProximity(v / 100),
             onEnd: () => setSweepActive(false),
         });
-    }, [animated]);
+    }, [animated, isMobileOrTouch]);
 
     const colorSensitivity = edgeSensitivity + 20;
     const isVisible = isHovered || sweepActive;
@@ -162,6 +172,22 @@ const BorderGlow: React.FC<BorderGlowProps> = ({
         : 0;
 
     const angleDeg = `${cursorAngle.toFixed(3)}deg`;
+
+    if (isMobileOrTouch) {
+        return (
+            <div
+                className={`relative grid isolate border border-black/15 dark:border-white/15 ${className}`}
+                style={{
+                    background: backgroundColor,
+                    borderRadius: `${borderRadius}px`,
+                }}
+            >
+                <div className="flex flex-col relative overflow-hidden z-[1]">
+                    {children}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div
