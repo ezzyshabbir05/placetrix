@@ -280,15 +280,24 @@ export async function getInstituteStudentsNotInCohortAction(
     return []
   }
 
-  return (data ?? []).map((row: any) => ({
-    student_id: row.student_id,
-    full_name: row.full_name || "Unknown",
-    email: row.email || "",
-    avatar_path: row.avatar_path || null,
-    account_type: row.account_type,
-    course_name: row.course_name || null,
-    passout_year: row.passout_year || null,
-  }))
+  const seen = new Set<string>()
+  const uniqueMembers: CohortMember[] = []
+  for (const row of data ?? []) {
+    if (row.student_id && !seen.has(row.student_id)) {
+      seen.add(row.student_id)
+      uniqueMembers.push({
+        student_id: row.student_id,
+        full_name: row.full_name || "Unknown",
+        email: row.email || "",
+        avatar_path: row.avatar_path || null,
+        account_type: row.account_type,
+        course_name: row.course_name || null,
+        passout_year: row.passout_year || null,
+      })
+    }
+  }
+
+  return uniqueMembers
 }
 
 export async function getInstituteFiltersAction(): Promise<{ courses: string[]; passoutYears: number[]; otherCohorts: { id: string; name: string }[] }> {
@@ -345,27 +354,50 @@ export async function addStudentsToCohortAction(
     throw new Error("Cohort not found or access denied.")
   }
 
-  // Verify target students belong to the same institute
-  const { data: students, error: studentError } = await (supabase as any)
-    .from("profiles")
-    .select("id")
-    .in("id", studentIds)
-    .eq("institute_id", profile.institute_id)
+  // Deduplicate target student IDs
+  const uniqueStudentIds = Array.from(new Set(studentIds))
 
-  if (studentError || !students || students.length !== studentIds.length) {
+  // Verify target students belong to the same institute in chunks (prevents URL parameter limit & PostgREST row limits)
+  const chunkSize = 200
+  const validStudentIds = new Set<string>()
+
+  for (let i = 0; i < uniqueStudentIds.length; i += chunkSize) {
+    const chunk = uniqueStudentIds.slice(i, i + chunkSize)
+    const { data: students, error: studentError } = await (supabase as any)
+      .from("profiles")
+      .select("id")
+      .in("id", chunk)
+      .eq("institute_id", profile.institute_id)
+
+    if (studentError) {
+      console.error("Error verifying target students:", studentError)
+      throw new Error("Failed to verify selected students.")
+    }
+
+    if (students) {
+      for (const s of students) {
+        validStudentIds.add(s.id)
+      }
+    }
+  }
+
+  if (validStudentIds.size !== uniqueStudentIds.length) {
     throw new Error("Some selected students do not belong to your institute.")
   }
 
-  const rows = studentIds.map((id) => ({ cohort_id: cohortId, student_id: id }))
+  const rows = uniqueStudentIds.map((id) => ({ cohort_id: cohortId, student_id: id }))
 
-  const { error } = await (supabase as any)
-    .from("cohort_students")
-    .insert(rows)
-    .throwOnError()
+  // Insert in chunks to avoid request size limits
+  for (let i = 0; i < rows.length; i += chunkSize) {
+    const chunk = rows.slice(i, i + chunkSize)
+    const { error } = await (supabase as any)
+      .from("cohort_students")
+      .upsert(chunk, { onConflict: "cohort_id,student_id", ignoreDuplicates: true })
 
-  if (error) {
-    console.error("Error adding students to cohort:", error)
-    throw new Error("Failed to add students to cohort.")
+    if (error) {
+      console.error("Error adding students to cohort:", error)
+      throw new Error("Failed to add students to cohort.")
+    }
   }
 
   revalidatePath(`/cohorts/${cohortId}`)
@@ -508,15 +540,21 @@ export async function removeStudentsFromCohortAction(
     throw new Error("Cohort not found or access denied.")
   }
 
-  const { error } = await (supabase as any)
-    .from("cohort_students")
-    .delete()
-    .eq("cohort_id", cohortId)
-    .in("student_id", studentIds)
+  const uniqueStudentIds = Array.from(new Set(studentIds))
+  const chunkSize = 200
 
-  if (error) {
-    console.error("Error removing students from cohort:", error)
-    throw new Error("Failed to remove students.")
+  for (let i = 0; i < uniqueStudentIds.length; i += chunkSize) {
+    const chunk = uniqueStudentIds.slice(i, i + chunkSize)
+    const { error } = await (supabase as any)
+      .from("cohort_students")
+      .delete()
+      .eq("cohort_id", cohortId)
+      .in("student_id", chunk)
+
+    if (error) {
+      console.error("Error removing students from cohort:", error)
+      throw new Error("Failed to remove students.")
+    }
   }
 
   revalidatePath(`/cohorts/${cohortId}`)

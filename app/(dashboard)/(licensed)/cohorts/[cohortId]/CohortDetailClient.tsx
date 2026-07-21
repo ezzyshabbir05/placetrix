@@ -377,14 +377,15 @@ function AddStudentsSheet({
                   size="sm" 
                   className="h-7 text-xs px-2"
                   onClick={() => {
-                    if (selected.size === students.length && students.length > 0) {
+                    const uniqueIds = Array.from(new Set(students.map(s => s.student_id)))
+                    if (selected.size === uniqueIds.length && uniqueIds.length > 0) {
                       setSelected(new Set())
                     } else {
-                      setSelected(new Set(students.map(s => s.student_id)))
+                      setSelected(new Set(uniqueIds))
                     }
                   }}
                 >
-                  {selected.size === students.length && students.length > 0 ? "Deselect All" : "Select All"}
+                  {selected.size === new Set(students.map(s => s.student_id)).size && students.length > 0 ? "Deselect All" : "Select All"}
                 </Button>
               </div>
               {students.map((student) => {
