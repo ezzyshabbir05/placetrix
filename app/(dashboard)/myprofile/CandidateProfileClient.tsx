@@ -55,7 +55,7 @@ import {
   Upload, Plus, Minus, Copy, CalendarIcon, Loader2, Camera,
   CheckCircle2, XCircle, AtSign, ShieldAlert, HelpCircle,
   Pencil, X, Info, CheckCircle, User, GraduationCap, Briefcase,
-  Link2, Trash2, Edit2, FileText, Check, FileDown, Award, FolderGit2, Tag
+  Link2, Trash2, Edit2, FileText, Check, FileDown, Award, FolderGit2, Tag, Share2
 } from "lucide-react";
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
@@ -1653,12 +1653,63 @@ export function CandidateProfileClient({
   const usernameMsg = usernameStatusMessage(usernameStatus);
   const editing = (s: SectionId) => editingSection === s;
 
+  // ─── Share Profile ───────────────────────────────────────────────────────────
+
+  const handleShareProfile = async () => {
+    if (!userProfile.username) return;
+    const profileUrl = `${window.location.origin}/u/${userProfile.username}`;
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: `${userProfile.full_name}'s Profile on PlaceTrix`,
+          text: `Check out ${userProfile.full_name}'s candidate profile on PlaceTrix.`,
+          url: profileUrl,
+        });
+        return;
+      } catch {
+        // User cancelled share or share failed — fall through to clipboard copy
+      }
+    }
+    // Clipboard fallback
+    try {
+      await navigator.clipboard.writeText(profileUrl);
+      toast.success("Profile link copied!", { description: profileUrl });
+    } catch {
+      toast.error("Could not copy link. Please copy it manually: " + profileUrl);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 px-4 py-8 md:px-8">
       {/* Page Header */}
-      <div className="flex flex-col gap-1.5">
-        <h1 className="text-3xl font-bold font-cirka tracking-tight text-foreground">My Profile</h1>
-        <p className="text-sm text-muted-foreground">Manage your personal, academic, and professional details</p>
+      <div className="flex flex-row items-start justify-between gap-4">
+        <div className="flex flex-col gap-1.5">
+          <h1 className="text-3xl font-bold font-cirka tracking-tight text-foreground">My Profile</h1>
+          <p className="text-sm text-muted-foreground">Manage your personal, academic, and professional details</p>
+        </div>
+        <TooltipProvider>
+          <Tooltip delayDuration={200}>
+            <TooltipTrigger asChild>
+              <span className="shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  disabled={!userProfile.username}
+                  onClick={handleShareProfile}
+                >
+                  <Share2 className="h-3.5 w-3.5" />
+                  Share Profile
+                </Button>
+              </span>
+            </TooltipTrigger>
+            {!userProfile.username && (
+              <TooltipContent side="bottom">
+                Set a username first to share your profile
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       <div className="space-y-6">
