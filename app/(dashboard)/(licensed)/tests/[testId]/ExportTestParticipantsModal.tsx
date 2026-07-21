@@ -31,6 +31,7 @@ const AVAILABLE_FIELDS = [
   { id: "passoutYear", label: "Passout Year" },
   { id: "status", label: "Attempt Status" },
   { id: "score", label: "Score" },
+  { id: "totalScore", label: "Total Score" },
   { id: "percentage", label: "Percentage" },
   { id: "timeSpent", label: "Time Spent" },
   { id: "tabSwitches", label: "Tab Switches" },
@@ -82,7 +83,8 @@ export function ExportTestParticipantsModal({ testId, testName, totalAttempts, t
         if (selectedFields.includes("branch")) row["Branch / Course"] = a.branch || "N/A"
         if (selectedFields.includes("passoutYear")) row["Passout Year"] = a.passout_year || "N/A"
         if (selectedFields.includes("status")) row["Status"] = a.status
-        if (selectedFields.includes("score")) row["Score"] = a.score != null ? `${a.score} / ${a.total_marks}` : "N/A"
+        if (selectedFields.includes("score")) row["Score"] = a.score != null ? a.score : "N/A"
+        if (selectedFields.includes("totalScore")) row["Total Score"] = a.total_marks != null ? a.total_marks : "N/A"
         if (selectedFields.includes("percentage")) row["Percentage (%)"] = a.percentage != null ? a.percentage : "N/A"
         if (selectedFields.includes("timeSpent")) row["Time Spent"] = formatSeconds(a.time_spent_seconds)
         if (selectedFields.includes("tabSwitches")) row["Tab Switches"] = a.tab_switch_count ?? "0"
