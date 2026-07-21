@@ -57,6 +57,7 @@ export interface InstituteUser {
   id: string
   full_name: string | null
   email: string
+  username: string | null
   account_type: string
   avatar_path: string | null
   created_at: string
@@ -141,6 +142,14 @@ export function UsersListClient({
 }: Props) {
   const { push } = useRouter()
   const pathname = usePathname()
+
+  const handleUserClick = useCallback((user: InstituteUser) => {
+    if (user.username?.trim()) {
+      push(`/u/${user.username.trim()}`)
+    } else {
+      toast.error("User has not set up a username yet")
+    }
+  }, [push])
 
   const [isPending, startTransition] = useTransition()
 
@@ -464,7 +473,11 @@ export function UsersListClient({
             <TableBody>
               {paginatedUsers.length > 0 ? (
                 paginatedUsers.map((user) => (
-                  <TableRow key={user.id}>
+                  <TableRow
+                    key={user.id}
+                    onClick={() => handleUserClick(user)}
+                    className="cursor-pointer hover:bg-muted/60 transition-colors"
+                  >
                     <TableCell className="overflow-hidden text-ellipsis">
                       <div className="flex items-center gap-3 min-w-0">
                         <Avatar className="size-8 shrink-0">
@@ -530,7 +543,11 @@ export function UsersListClient({
         {paginatedUsers.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 md:hidden">
             {paginatedUsers.map((user) => (
-              <div key={user.id} className="rounded-lg border bg-card p-4 shadow-xs space-y-3">
+              <div
+                key={user.id}
+                onClick={() => handleUserClick(user)}
+                className="rounded-lg border bg-card p-4 shadow-xs space-y-3 cursor-pointer hover:bg-muted/50 transition-colors"
+              >
                 <div className="flex items-center gap-3 min-w-0">
                   <Avatar className="size-10 shrink-0">
                     <AvatarImage src={user.avatar_path || undefined} />
