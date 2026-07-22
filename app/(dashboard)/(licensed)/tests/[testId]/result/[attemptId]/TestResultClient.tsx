@@ -36,7 +36,7 @@ import {
   Trophy,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { MathText } from "@/components/ui/math-text"
+import { MathText } from "@/components/others/latex-renderer"
 import type {
   CandidateTestDetail,
   CandidateAttemptDetail,
@@ -169,10 +169,10 @@ function QuestionReviewItem({
                         : "border-destructive/20 text-destructive"
                   )}
                 >
-                  {isCorrect 
-                    ? "Correct" 
-                    : (answer.marks_awarded ?? 0) > 0 
-                      ? "Partially Correct" 
+                  {isCorrect
+                    ? "Correct"
+                    : (answer.marks_awarded ?? 0) > 0
+                      ? "Partially Correct"
                       : "Incorrect"} · {answer.marks_awarded ?? 0}/
                   {answer.marks} pts
                 </Badge>
@@ -298,153 +298,153 @@ export function TestResultClient({ test, attempt, accountType, serverNow }: Prop
               Live
             </Badge>
           )}
-            {isNotYetOpen && (
-              <Badge variant="secondary" className="h-5 gap-1 border border-amber-200/50 bg-amber-50 px-2 text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">
-                <CalendarClock className="h-3 w-3" />
-                Upcoming
-              </Badge>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-            {attempt.student_name && (
-              <span className="font-medium text-foreground">
-                {attempt.student_name}
-              </span>
-            )}
-            {attempt.student_name && <Separator orientation="vertical" className="h-3 hidden sm:block" />}
-            {test.description && (
-              <p className="max-w-2xl line-clamp-1">
-                {test.description}
-              </p>
-            )}
-          </div>
+          {isNotYetOpen && (
+            <Badge variant="secondary" className="h-5 gap-1 border border-amber-200/50 bg-amber-50 px-2 text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">
+              <CalendarClock className="h-3 w-3" />
+              Upcoming
+            </Badge>
+          )}
         </div>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+          {attempt.student_name && (
+            <span className="font-medium text-foreground">
+              {attempt.student_name}
+            </span>
+          )}
+          {attempt.student_name && <Separator orientation="vertical" className="h-3 hidden sm:block" />}
+          {test.description && (
+            <p className="max-w-2xl line-clamp-1">
+              {test.description}
+            </p>
+          )}
+        </div>
+      </div>
 
-        {/* ── Results hidden ──────────────────────────────────────────────── */}
-        {!test.results_available && accountType === "institute_candidate" ? (
-          <Card className="rounded-xl p-0">
-            <CardContent className="space-y-2.5 p-5">
-              <div className="flex items-start gap-2">
-                <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                <p className="text-sm font-medium text-foreground">Submitted Successfully</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">
-                  Recorded on{" "}
-                  {attempt.submitted_at ? formatDateTime(attempt.submitted_at) : "just now"}.
-                  Results are currently hidden by the instructor.
+      {/* ── Results hidden ──────────────────────────────────────────────── */}
+      {!test.results_available && accountType === "institute_candidate" ? (
+        <Card className="rounded-xl p-0">
+          <CardContent className="space-y-2.5 p-5">
+            <div className="flex items-start gap-2">
+              <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <p className="text-sm font-medium text-foreground">Submitted Successfully</p>
+            </div>
+            <div className="flex items-start gap-2">
+              <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">
+                Recorded on{" "}
+                {attempt.submitted_at ? formatDateTime(attempt.submitted_at) : "just now"}.
+                Results are currently hidden by the instructor.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {!test.results_available && (accountType === "institute" || accountType === "recruiter") && (
+            <Alert className="mb-6">
+              <EyeOff className="h-4 w-4" />
+              <AlertTitle>Results Hidden from Candidates</AlertTitle>
+              <AlertDescription>
+                Instructors can see these results, but students cannot view their scores or answers yet.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* ── Score card ──────────────────────────────────────────────── */}
+          <div className="rounded-xl border bg-card p-5 space-y-4">
+
+            {/* Top row: percentage + time badge */}
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Score
                 </p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            {!test.results_available && (accountType === "institute" || accountType === "recruiter") && (
-              <Alert className="mb-6">
-                <EyeOff className="h-4 w-4" />
-                <AlertTitle>Results Hidden from Candidates</AlertTitle>
-                <AlertDescription>
-                  Instructors can see these results, but students cannot view their scores or answers yet.
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* ── Score card ──────────────────────────────────────────────── */}
-            <div className="rounded-xl border bg-card p-5 space-y-4">
-
-              {/* Top row: percentage + time badge */}
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Score
+                <p className={cn("mt-1 text-4xl font-bold tabular-nums tracking-tight", pctColorClass)}>
+                  {pct.toFixed(2)}%
+                </p>
+                {attempt.score != null && attempt.total_marks != null && (
+                  <p className="mt-0.5 text-sm tabular-nums text-muted-foreground">
+                    {attempt.score} / {attempt.total_marks} pts
                   </p>
-                  <p className={cn("mt-1 text-4xl font-bold tabular-nums tracking-tight", pctColorClass)}>
-                    {pct.toFixed(2)}%
-                  </p>
-                  {attempt.score != null && attempt.total_marks != null && (
-                    <p className="mt-0.5 text-sm tabular-nums text-muted-foreground">
-                      {attempt.score} / {attempt.total_marks} pts
-                    </p>
-                  )}
-                </div>
-
-                {(attempt.time_spent_seconds != null || attempt.tab_switch_count != null) && (
-                  <div className="flex flex-col items-end gap-2 shrink-0">
-                    {attempt.time_spent_seconds != null && (
-                      <div className="flex items-center gap-1.5 rounded-lg bg-muted/50 px-2.5 py-1.5 text-xs font-medium text-muted-foreground">
-                        <Timer className="h-3.5 w-3.5 shrink-0" />
-                        <span className="tabular-nums">{formatSeconds(attempt.time_spent_seconds)}</span>
-                      </div>
-                    )}
-                    {attempt.tab_switch_count != null && attempt.tab_switch_count > 0 && (
-                      <div className="flex items-center gap-1.5 rounded-lg border-destructive/20 bg-destructive/10 px-2.5 py-1.5 text-[10px] font-semibold text-destructive max-w-full">
-                        <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                        <span className="truncate">{attempt.tab_switch_count} System Violation{attempt.tab_switch_count !== 1 && "s"}</span>
-                      </div>
-                    )}
-                  </div>
                 )}
               </div>
 
-              <Separator />
-
-              {/* Bottom row: correct · incorrect · skipped */}
-              <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
-                <span>
-                  <span className="font-semibold tabular-nums text-emerald-600 dark:text-emerald-500">
-                    {correctCount}
-                  </span>
-                  <span className="ml-1 text-muted-foreground">correct</span>
-                </span>
-                <Separator orientation="vertical" className="h-3.5" />
-                <span>
-                  <span className="font-semibold tabular-nums text-amber-600 dark:text-amber-500">
-                    {partialCount}
-                  </span>
-                  <span className="ml-1 text-muted-foreground">partial</span>
-                </span>
-                <Separator orientation="vertical" className="h-3.5" />
-                <span>
-                  <span className="font-semibold tabular-nums text-destructive">
-                    {incorrectCount}
-                  </span>
-                  <span className="ml-1 text-muted-foreground">incorrect</span>
-                </span>
-                <Separator orientation="vertical" className="h-3.5" />
-                <span>
-                  <span className="font-semibold tabular-nums text-muted-foreground">
-                    {skippedCount}
-                  </span>
-                  <span className="ml-1 text-muted-foreground">skipped</span>
-                </span>
-              </div>
-
+              {(attempt.time_spent_seconds != null || attempt.tab_switch_count != null) && (
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  {attempt.time_spent_seconds != null && (
+                    <div className="flex items-center gap-1.5 rounded-lg bg-muted/50 px-2.5 py-1.5 text-xs font-medium text-muted-foreground">
+                      <Timer className="h-3.5 w-3.5 shrink-0" />
+                      <span className="tabular-nums">{formatSeconds(attempt.time_spent_seconds)}</span>
+                    </div>
+                  )}
+                  {attempt.tab_switch_count != null && attempt.tab_switch_count > 0 && (
+                    <div className="flex items-center gap-1.5 rounded-lg border-destructive/20 bg-destructive/10 px-2.5 py-1.5 text-[10px] font-semibold text-destructive max-w-full">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{attempt.tab_switch_count} System Violation{attempt.tab_switch_count !== 1 && "s"}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* ── Question Review ──────────────────────────────────────────── */}
-            {displayAnswers.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">
-                    <span className="font-medium text-foreground">{displayAnswers.length}</span>{" "}
-                    question{displayAnswers.length !== 1 ? "s" : ""}
-                  </p>
-                  <Badge variant="outline" className="gap-1 text-xs">
-                    <BookOpen className="h-3 w-3" />
-                    Review
-                  </Badge>
-                </div>
-                <Accordion type="multiple" className="space-y-2">
-                  {displayAnswers.map((a, i) => (
-                    <QuestionReviewItem key={a.question_id} answer={a} index={i} />
-                  ))}
-                </Accordion>
-              </div>
-            )}
-          </>
-        )}
+            <Separator />
 
-      </div>
+            {/* Bottom row: correct · incorrect · skipped */}
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
+              <span>
+                <span className="font-semibold tabular-nums text-emerald-600 dark:text-emerald-500">
+                  {correctCount}
+                </span>
+                <span className="ml-1 text-muted-foreground">correct</span>
+              </span>
+              <Separator orientation="vertical" className="h-3.5" />
+              <span>
+                <span className="font-semibold tabular-nums text-amber-600 dark:text-amber-500">
+                  {partialCount}
+                </span>
+                <span className="ml-1 text-muted-foreground">partial</span>
+              </span>
+              <Separator orientation="vertical" className="h-3.5" />
+              <span>
+                <span className="font-semibold tabular-nums text-destructive">
+                  {incorrectCount}
+                </span>
+                <span className="ml-1 text-muted-foreground">incorrect</span>
+              </span>
+              <Separator orientation="vertical" className="h-3.5" />
+              <span>
+                <span className="font-semibold tabular-nums text-muted-foreground">
+                  {skippedCount}
+                </span>
+                <span className="ml-1 text-muted-foreground">skipped</span>
+              </span>
+            </div>
+
+          </div>
+
+          {/* ── Question Review ──────────────────────────────────────────── */}
+          {displayAnswers.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">{displayAnswers.length}</span>{" "}
+                  question{displayAnswers.length !== 1 ? "s" : ""}
+                </p>
+                <Badge variant="outline" className="gap-1 text-xs">
+                  <BookOpen className="h-3 w-3" />
+                  Review
+                </Badge>
+              </div>
+              <Accordion type="multiple" className="space-y-2">
+                {displayAnswers.map((a, i) => (
+                  <QuestionReviewItem key={a.question_id} answer={a} index={i} />
+                ))}
+              </Accordion>
+            </div>
+          )}
+        </>
+      )}
+
+    </div>
   )
 }

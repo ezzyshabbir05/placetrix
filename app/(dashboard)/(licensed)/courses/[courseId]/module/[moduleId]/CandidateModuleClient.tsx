@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { cn, formatDuration, parseDurationToMinutes } from "@/lib/utils"
 import { toast } from "sonner"
 import { toggleModuleCompletionAction } from "../../../actions"
-import { LatexRenderer } from "@/components/ui/latex-renderer"
+import { LatexRenderer } from "@/components/others/latex-renderer"
 
 interface Module {
   id: string;

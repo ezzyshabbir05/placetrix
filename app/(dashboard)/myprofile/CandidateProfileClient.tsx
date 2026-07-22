@@ -243,7 +243,7 @@ const DEVICON_SUFFIXES: Record<string, string> = {
 
 function getSkillIconClass(skillName: string): string | null {
   const normalized = skillName.toLowerCase().trim();
-  
+
   const map: Record<string, string> = {
     "c++": "cplusplus",
     "c#": "csharp",
@@ -373,7 +373,7 @@ function getSkillIconClass(skillName: string): string | null {
 
 function SkillIcon({ name, className }: { name: string; className?: string }) {
   const iconClass = getSkillIconClass(name);
-  
+
   // Align sizes dynamically based on target classes
   let sizeClass = "w-4 h-4 text-base"; // default 16px
   if (className?.includes("text-[11px]") || className?.includes("text-[10px]") || className?.includes("text-[10px]")) {
@@ -2034,8 +2034,8 @@ export function CandidateProfileClient({
                           selected={dateOfBirth}
                           defaultMonth={dateOfBirth ?? defaultDobDate}
                           captionLayout="dropdown"
-                          fromYear={1950}
-                          toYear={2010}
+                          startMonth={new Date(1950, 0)}
+                          endMonth={new Date(2010, 11)}
                           onSelect={(date) => { setDateOfBirth(date); setDobOpen(false); }}
                         />
                       </PopoverContent>

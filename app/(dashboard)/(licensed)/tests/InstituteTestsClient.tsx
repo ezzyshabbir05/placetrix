@@ -7,6 +7,7 @@
 import { useState, useMemo, useCallback, useEffect, useTransition, useRef } from "react"
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
+import { toast } from "sonner"
 import {
   Sheet,
   SheetContent,
@@ -20,6 +21,13 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent, EmptyMedia } from "@/components/ui/empty"
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import {
   Select,
   SelectContent,
@@ -243,11 +251,13 @@ function StatChip({
 }
 function TestCard({ test }: { test: InstituteTest }) {
   return (
-    <Card className="overflow-hidden border-border/70 bg-card p-0 shadow-xs">
-      <Link 
-        href={`tests/${test.id}`}
-        className="block hover:bg-muted/30 transition-colors"
-      >
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <Card className="overflow-hidden border-border/70 bg-card p-0 shadow-xs cursor-context-menu">
+          <Link 
+            href={`tests/${test.id}`}
+            className="block transition-all hover:bg-muted/30 focus-visible:outline-none"
+          >
         {/* Mobile Compact View */}
         <div className="block md:hidden p-3.5">
           <div className="flex items-center justify-between gap-3">
@@ -375,7 +385,20 @@ function TestCard({ test }: { test: InstituteTest }) {
           </div>
         </div>
       </Link>
-    </Card>
+        </Card>
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-48">
+        <ContextMenuItem onClick={() => window.open(`tests/${test.id}`, "_blank")}>
+          Open Test Details
+        </ContextMenuItem>
+        <ContextMenuItem onClick={() => { navigator.clipboard.writeText(window.location.origin + `/tests/${test.id}`); toast.success("Test link copied"); }}>
+          Copy Test Link
+        </ContextMenuItem>
+        <ContextMenuItem onClick={() => window.location.href = `tests/${test.id}/edit`}>
+          Edit Test Settings
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   )
 }
 
@@ -659,11 +682,16 @@ export function InstituteTestsClient({
                 <div className="px-6 py-4 space-y-6">
                   <div className="space-y-3">
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</h3>
-                    <div className="flex flex-col gap-2">
+                    <ToggleGroup
+                      type="single"
+                      value={activeTab}
+                      onValueChange={(val) => { if (val) updateParams({ tab: val }) }}
+                      className="flex flex-col gap-1.5 w-full items-stretch"
+                    >
                       {tabConfig.map(({ value, label, icon, count }) => (
-                        <button
+                        <ToggleGroupItem
                           key={value}
-                          onClick={() => updateParams({ tab: value })}
+                          value={value}
                           className={cn(
                             "flex items-center justify-between w-full px-3 py-2 text-sm rounded-lg border text-left transition-colors",
                             activeTab === value
@@ -678,9 +706,9 @@ export function InstituteTestsClient({
                           <span className="text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full bg-muted">
                             {count}
                           </span>
-                        </button>
+                        </ToggleGroupItem>
                       ))}
-                    </div>
+                    </ToggleGroup>
                   </div>
                 </div>
               </SheetContent>

@@ -31,7 +31,7 @@ import {
   ListChecks,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { MathText } from "@/components/ui/math-text"
+import { MathText } from "@/components/others/latex-renderer"
 import type {
   CandidateTestDetail,
   CandidateAttemptDetail,

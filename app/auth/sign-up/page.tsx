@@ -21,7 +21,7 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group";
-import { OTPInput } from "@/components/ui/otp-input";
+import { OTPInput } from "@/components/others/otp-input";
 import { Separator } from "@/components/ui/separator";
 import {
   AtSignIcon,
@@ -403,9 +403,8 @@ function SignUpContent() {
         Already have an account?{" "}
         <Link
           href={isLoading || isGoogleLoading ? "#" : "/auth/login"}
-          className={`underline underline-offset-4 hover:text-primary transition-all ${
-            isLoading || isGoogleLoading ? "pointer-events-none opacity-50" : ""
-          }`}
+          className={`underline underline-offset-4 hover:text-primary transition-all ${isLoading || isGoogleLoading ? "pointer-events-none opacity-50" : ""
+            }`}
         >
           Sign in
         </Link>

@@ -25,7 +25,7 @@ import type { UserProfile } from "@/lib/supabase/profile";
 import { getUserProfileAction } from "@/lib/supabase/profile";
 import { buildStorageUrl } from "@/lib/storage";
 
-const Galaxy = dynamic(() => import("@/components/Galaxy"), {
+const Galaxy = dynamic(() => import("@/components/landing_allied/Galaxy"), {
   ssr: false,
   loading: () => (
     <div className="absolute inset-0 bg-transparent" aria-hidden="true" />

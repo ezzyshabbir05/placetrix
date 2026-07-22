@@ -12,7 +12,7 @@
 
 import { Suspense } from "react";
 import Image from "next/image";
-import { FloatingPaths } from "@/components/ui/auth_page/floating-paths";
+import { FloatingPaths } from "@/components/auth/floating-paths";
 import Link from "next/link";
 import PlaceTrixLogo from "@/assets/placetrix.svg";
 

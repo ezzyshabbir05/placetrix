@@ -4,13 +4,9 @@ import { Slot } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 
-const Breadcrumb = React.forwardRef<
-  HTMLElement,
-  React.ComponentProps<"nav">
->(({ ...props }, ref) => (
-  <nav ref={ref} aria-label="breadcrumb" data-slot="breadcrumb" {...props} />
-))
-Breadcrumb.displayName = "Breadcrumb"
+function Breadcrumb({ ...props }: React.ComponentProps<"nav">) {
+  return <nav aria-label="breadcrumb" data-slot="breadcrumb" {...props} />
+}
 
 function BreadcrumbList({ className, ...props }: React.ComponentProps<"ol">) {
   return (

@@ -31,8 +31,17 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import {
+  Attachment,
+  AttachmentMedia,
+  AttachmentContent,
+  AttachmentTitle,
+  AttachmentDescription,
+  AttachmentActions,
+  AttachmentAction,
+} from "@/components/ui/attachment"
 import { analyzeResumeAction, type AnalysisResult } from "./actions"
-import { GenerateButton } from "@/components/ui/generate-button"
+import { GenerateButton } from "@/components/others/generate-button"
 
 // ─────────────────────────────────────────────
 // localStorage helpers
@@ -70,7 +79,7 @@ function saveToHistory(r: AnalysisResult) {
       }
       localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 15))) // Keep last 15 reports
     }
-  } catch {}
+  } catch { }
 }
 
 // ─────────────────────────────────────────────
@@ -169,8 +178,8 @@ function FileDropZone({ file, onFileChange }: { file: File | null; onFileChange:
     <div
       className={cn(
         "relative flex items-center gap-4 rounded-xl border border-dashed p-4 transition-all duration-200 cursor-pointer w-full select-none",
-        dragging 
-          ? "border-primary bg-primary/5 scale-[1.005] ring-2 ring-primary/10" 
+        dragging
+          ? "border-primary bg-primary/5 scale-[1.005] ring-2 ring-primary/10"
           : "border-border/60 bg-muted/20 hover:border-primary/50 hover:bg-primary/5 hover:shadow-sm"
       )}
       onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
@@ -180,26 +189,23 @@ function FileDropZone({ file, onFileChange }: { file: File | null; onFileChange:
     >
       <input ref={inputRef} type="file" accept=".pdf,.docx" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) validateAndSet(f) }} />
       {file ? (
-        <div className="flex items-center gap-3 w-full justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <FileIcon className="size-5" />
-            </div>
-            <div className="flex flex-col text-left min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">{file.name}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{(file.size / 1024).toFixed(0)} KB · Ready to analyze</p>
-            </div>
-          </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-8 px-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-1 shrink-0" 
-            onClick={(e) => { e.stopPropagation(); onFileChange(null) }}
-          >
-            <IconX className="size-3.5" />
-            <span className="hidden sm:inline">Remove</span>
-          </Button>
-        </div>
+        <Attachment size="default" className="w-full">
+          <AttachmentMedia>
+            <FileIcon className="size-4" />
+          </AttachmentMedia>
+          <AttachmentContent>
+            <AttachmentTitle>{file.name}</AttachmentTitle>
+            <AttachmentDescription>{(file.size / 1024).toFixed(0)} KB · Ready to analyze</AttachmentDescription>
+          </AttachmentContent>
+          <AttachmentActions>
+            <AttachmentAction
+              variant="ghost"
+              onClick={(e) => { e.stopPropagation(); onFileChange(null) }}
+            >
+              <IconX className="size-3.5" />
+            </AttachmentAction>
+          </AttachmentActions>
+        </Attachment>
       ) : (
         <div className="flex items-center gap-3 w-full justify-between">
           <div className="flex items-center gap-3">
@@ -290,7 +296,7 @@ export function ResumeAnalyzerClient() {
       if (result && result.analyzedAt === r.analyzedAt) {
         setResult(null)
       }
-    } catch {}
+    } catch { }
   }
 
   // Safely access verdict fields (handles both string legacy and object format)
@@ -699,8 +705,8 @@ export function ResumeAnalyzerClient() {
                               check.status === "Passed"
                                 ? "text-emerald-700 dark:text-emerald-400"
                                 : check.status === "Warning"
-                                ? "text-amber-700 dark:text-amber-400"
-                                : "text-rose-700 dark:text-rose-400"
+                                  ? "text-amber-700 dark:text-amber-400"
+                                  : "text-rose-700 dark:text-rose-400"
 
                             return (
                               <div key={i} className="flex items-start gap-2 text-xs border-b border-border/20 last:border-0 pb-2 last:pb-0">

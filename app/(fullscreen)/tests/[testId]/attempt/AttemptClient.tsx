@@ -50,7 +50,7 @@ import {
     MessageSquare,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { MathText } from "@/components/ui/math-text"
+import { MathText } from "@/components/others/latex-renderer"
 import { Textarea } from "@/components/ui/textarea"
 import type { AttemptTest, AttemptQuestion, AttemptInfo, SavedAnswer } from "./_types"
 

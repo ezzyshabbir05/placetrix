@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent, EmptyMedia } from "@/components/ui/empty"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet"
+import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card"
 import { 
   Briefcase, Search, MapPin, Calendar, CheckCircle2, 
   Clock, X, SlidersHorizontal, Loader2
@@ -169,10 +170,37 @@ function OpportunityCard({
             </div>
 
             <p className={cn(
-              "mt-1 text-xs leading-5",
+              "mt-1 text-xs leading-5 flex items-center gap-1",
               opp.job_role ? "text-muted-foreground" : "italic text-muted-foreground/60"
             )}>
-              {companyName} • {opp.job_role || "No job role provided"}
+              <HoverCard>
+                <HoverCardTrigger asChild>
+                  <span className="font-medium text-foreground hover:underline cursor-pointer">
+                    {companyName}
+                  </span>
+                </HoverCardTrigger>
+                <HoverCardContent className="w-64">
+                  <div className="flex gap-3">
+                    <Avatar className="size-10">
+                      <AvatarImage src={opp.company?.logo_url || undefined} />
+                      <AvatarFallback className="text-xs">{companyName.slice(0, 2).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-semibold">{companyName}</h4>
+                      <p className="text-[11px] text-muted-foreground">
+                        {(opp.company as { industry?: string })?.industry || "Hiring Partner"}
+                      </p>
+                      {opp.location && (
+                        <p className="text-[10px] text-muted-foreground pt-1">
+                          📍 {opp.location}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </HoverCardContent>
+              </HoverCard>
+              <span>•</span>
+              <span>{opp.job_role || "No job role provided"}</span>
             </p>
 
             <div className="mt-3 flex flex-wrap gap-2">

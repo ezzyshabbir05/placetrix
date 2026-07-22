@@ -14,6 +14,19 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -562,60 +575,70 @@ export function UsersListClient({
             <TableBody>
               {paginatedUsers.length > 0 ? (
                 paginatedUsers.map((user) => (
-                  <TableRow
-                    key={user.id}
-                    onClick={() => handleUserClick(user)}
-                    className="cursor-pointer hover:bg-muted/60 transition-colors"
-                  >
-                    <TableCell className="overflow-hidden text-ellipsis">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <Avatar className="size-8 shrink-0">
-                          <AvatarImage src={user.avatar_path || undefined} />
-                          <AvatarFallback className="text-[10px] bg-primary/5 text-primary">
-                            {(user.full_name || user.email || "U").charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-sm font-medium truncate">{user.full_name || "Unknown User"}</span>
-                          <span className="text-[11px] text-muted-foreground truncate">{user.email}</span>
-                        </div>
-                      </div>
-                    </TableCell>
+                  <ContextMenu key={user.id}>
+                    <ContextMenuTrigger asChild>
+                      <TableRow className="cursor-context-menu">
+                        <TableCell className="overflow-hidden text-ellipsis">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <Avatar className="size-8 shrink-0">
+                              <AvatarImage src={user.avatar_path || undefined} />
+                              <AvatarFallback className="text-[10px] bg-primary/5 text-primary">
+                                {(user.full_name || user.email || "U").charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-sm font-medium truncate">{user.full_name || "Unknown User"}</span>
+                              <span className="text-[11px] text-muted-foreground truncate">{user.email}</span>
+                            </div>
+                          </div>
+                        </TableCell>
 
-                    <TableCell className="overflow-hidden text-ellipsis">
-                      {user.account_type === "institute_candidate" && (
-                        <Badge variant="outline" className="gap-1 text-[10px] font-normal text-sky-600 bg-sky-50 dark:bg-sky-950/20 dark:text-sky-400 border-sky-200/50 dark:border-sky-800/30">
-                          <GraduationCap className="size-3" />
-                          Student
-                        </Badge>
-                      )}
-                      {user.account_type === "institute_staff" && (
-                        <Badge variant="outline" className="gap-1 text-[10px] font-normal text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-800/30">
-                          <Briefcase className="size-3" />
-                          Staff
-                        </Badge>
-                      )}
-                      {user.account_type === "institute_placement_officer" && (
-                        <Badge variant="outline" className="gap-1 text-[10px] font-normal text-violet-600 bg-violet-50 dark:bg-violet-950/20 dark:text-violet-400 border-violet-200/50 dark:border-violet-800/30">
-                          <UserCheck className="size-3" />
-                          TPO
-                        </Badge>
-                      )}
-                    </TableCell>
+                        <TableCell className="overflow-hidden text-ellipsis">
+                          {user.account_type === "institute_candidate" && (
+                            <Badge variant="outline" className="gap-1 text-[10px] font-normal text-sky-600 bg-sky-50 dark:bg-sky-950/20 dark:text-sky-400 border-sky-200/50 dark:border-sky-800/30">
+                              <GraduationCap className="size-3" />
+                              Student
+                            </Badge>
+                          )}
+                          {user.account_type === "institute_staff" && (
+                            <Badge variant="outline" className="gap-1 text-[10px] font-normal text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-800/30">
+                              <Briefcase className="size-3" />
+                              Staff
+                            </Badge>
+                          )}
+                          {user.account_type === "institute_placement_officer" && (
+                            <Badge variant="outline" className="gap-1 text-[10px] font-normal text-violet-600 bg-violet-50 dark:bg-violet-950/20 dark:text-violet-400 border-violet-200/50 dark:border-violet-800/30">
+                              <UserCheck className="size-3" />
+                              TPO
+                            </Badge>
+                          )}
+                        </TableCell>
 
-                    <TableCell className="overflow-hidden text-ellipsis">
-                      {user.account_type === "institute_candidate" ? (
-                        <div className="flex flex-col min-w-0 text-xs">
-                          <span className="truncate">{user.course_name || "—"}</span>
-                          <span className="text-[10px] text-muted-foreground font-mono mt-0.5">
-                            Batch: {user.passout_year || "—"}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-xs italic text-muted-foreground/60">—</span>
+                        <TableCell className="overflow-hidden text-ellipsis">
+                          {user.account_type === "institute_candidate" ? (
+                            <div className="flex flex-col min-w-0 text-xs">
+                              <span className="truncate">{user.course_name || "—"}</span>
+                              <span className="text-[10px] text-muted-foreground font-mono mt-0.5">
+                                Batch: {user.passout_year || "—"}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xs italic text-muted-foreground/60">—</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem onClick={() => { navigator.clipboard.writeText(user.email); toast.success("Email copied to clipboard"); }}>
+                        Copy Email
+                      </ContextMenuItem>
+                      {user.full_name && (
+                        <ContextMenuItem onClick={() => { navigator.clipboard.writeText(user.full_name!); toast.success("Name copied"); }}>
+                          Copy Name
+                        </ContextMenuItem>
                       )}
-                    </TableCell>
-                  </TableRow>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 ))
               ) : (
                 <TableRow>
@@ -708,56 +731,28 @@ export function UsersListClient({
                 </Select>
               </div>
 
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="size-8"
-                  onClick={() => updateParams({ page: 1 })}
-                  disabled={activePage === 1}
-                >
-                  <ChevronsLeft className="size-4" />
-                  <span className="sr-only">First page</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="size-8"
-                  onClick={() => updateParams({ page: Math.max(1, activePage - 1) })}
-                  disabled={activePage === 1}
-                >
-                  <ChevronLeft className="size-4" />
-                  <span className="sr-only">Previous page</span>
-                </Button>
-
-                <div className="flex items-center justify-center text-xs font-medium min-w-[80px]">
-                  Page {activePage} of {totalPages}
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="size-8"
-                  onClick={() => updateParams({ page: Math.min(totalPages, activePage + 1) })}
-                  disabled={activePage === totalPages || totalPages === 0}
-                >
-                  <ChevronRight className="size-4" />
-                  <span className="sr-only">Next page</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="size-8"
-                  onClick={() => updateParams({ page: totalPages })}
-                  disabled={activePage === totalPages || totalPages === 0}
-                >
-                  <ChevronsRight className="size-4" />
-                  <span className="sr-only">Last page</span>
-                </Button>
+              <Pagination className="w-auto mx-0">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={(e) => { e.preventDefault(); if (activePage > 1) updateParams({ page: activePage - 1 }) }}
+                      className={cn("cursor-pointer", activePage === 1 && "pointer-events-none opacity-50")}
+                    />
+                  </PaginationItem>
+                  <PaginationItem>
+                    <span className="text-xs font-medium px-2">Page {activePage} of {totalPages}</span>
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={(e) => { e.preventDefault(); if (activePage < totalPages) updateParams({ page: activePage + 1 }) }}
+                      className={cn("cursor-pointer", (activePage === totalPages || totalPages === 0) && "pointer-events-none opacity-50")}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
       </div>
     </div>

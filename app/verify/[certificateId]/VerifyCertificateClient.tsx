@@ -6,7 +6,7 @@ import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, AlertTriangle, Download, ArrowLeft, Calendar, User, Award, Shield } from "lucide-react"
-import BorderGlow from "@/components/BorderGlow"
+import BorderGlow from "@/components/landing_allied/BorderGlow"
 import PlaceTrixLogo from "@/assets/placetrix.svg"
 
 interface VerifyCertificateClientProps {
@@ -32,8 +32,8 @@ export default function VerifyCertificateClient({
 }: VerifyCertificateClientProps) {
   const issueDateStr = certificate
     ? new Date(certificate.issued_at).toLocaleDateString("en-IN", {
-        dateStyle: "long",
-      })
+      dateStyle: "long",
+    })
     : ""
 
   return (
@@ -43,7 +43,7 @@ export default function VerifyCertificateClient({
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col justify-center items-center max-w-lg mx-auto w-full z-10 space-y-6">
-        
+
         {/* Brand Header */}
         <div className="text-center select-none">
           <Link href="/" className="inline-flex items-center gap-2.5 group">
@@ -117,7 +117,7 @@ export default function VerifyCertificateClient({
 
               <div className="space-y-6">
                 <div className="border rounded-xl bg-muted/20 overflow-hidden text-sm divide-y">
-                  
+
                   {/* Recipient */}
                   <div className="p-3.5 flex items-center justify-between gap-4 hover:bg-muted/10 transition-colors">
                     <div className="flex items-center gap-2 text-muted-foreground">

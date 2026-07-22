@@ -33,7 +33,7 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group";
-import { OTPInput } from "@/components/ui/otp-input";
+import { OTPInput } from "@/components/others/otp-input";
 import { Separator } from "@/components/ui/separator";
 import {
   AtSignIcon,
@@ -45,7 +45,7 @@ import {
   ShieldCheckIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { GoogleOneTap } from "@/components/google-one-tap";
+import { GoogleOneTap } from "@/components/auth/google-one-tap";
 
 type PageState = "login-form" | "otp-entry" | "mfa-challenge";
 
@@ -553,9 +553,8 @@ function LoginContent() {
           <div className="flex justify-between items-center text-xs">
             <Link
               href={isLoading || isGoogleLoading ? "#" : "/auth/sign-up"}
-              className={`text-muted-foreground underline underline-offset-4 hover:text-primary transition-all ${
-                isLoading || isGoogleLoading ? "pointer-events-none opacity-50" : ""
-              }`}
+              className={`text-muted-foreground underline underline-offset-4 hover:text-primary transition-all ${isLoading || isGoogleLoading ? "pointer-events-none opacity-50" : ""
+                }`}
             >
               Don&apos;t have an account? Sign up
             </Link>
@@ -563,9 +562,8 @@ function LoginContent() {
             {loginMethod === "password" && (
               <Link
                 href={isLoading || isGoogleLoading ? "#" : "/auth/reset-password"}
-                className={`text-muted-foreground underline underline-offset-4 hover:text-primary ${
-                  isLoading || isGoogleLoading ? "pointer-events-none opacity-50" : ""
-                }`}
+                className={`text-muted-foreground underline underline-offset-4 hover:text-primary ${isLoading || isGoogleLoading ? "pointer-events-none opacity-50" : ""
+                  }`}
               >
                 Forgot password?
               </Link>

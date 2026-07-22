@@ -13,7 +13,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { OTPInput } from "@/components/ui/otp-input";
+import { OTPInput } from "@/components/others/otp-input";
 import { Button } from "@/components/ui/button";
 import { Loader2Icon, LogOutIcon } from "lucide-react";
 import Link from "next/link";

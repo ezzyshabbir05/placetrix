@@ -21,15 +21,15 @@ import {
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion"
-import { MathText } from "@/components/ui/math-text"
+import { MathText } from "@/components/others/latex-renderer"
 import { cn } from "@/lib/utils"
 import {
   Loader2, Save, Send, AlertCircle, AlertTriangle, BookOpen, CheckCircle2, Circle, Plus, Tag, X,
   PlusCircle, Sparkles, Upload, Trash2, Pencil, ChevronDown, ChevronUp, Info, FileJson, Image
 } from "lucide-react"
-import { CohortSelector } from "@/components/cohort-selector"
+import { CohortSelector } from "@/app/(dashboard)/(licensed)/cohorts/cohort-selector"
 import type { CohortOption } from "@/app/(dashboard)/(licensed)/cohorts/types"
-import { GenerateButton } from "@/components/ui/generate-button"
+import { GenerateButton } from "@/components/others/generate-button"
 
 import type {
   SettingsForm,
@@ -380,7 +380,7 @@ function SettingsFormComponent({ values, onChange, cohortOptions }: SettingsForm
             </div>
             <CohortSelector
               selectedCohortIds={values.cohort_ids || []}
-              onChange={(ids) => onChange({ ...values, cohort_ids: ids })}
+              onChange={(ids: string[]) => onChange({ ...values, cohort_ids: ids })}
               cohorts={cohortOptions}
             />
           </div>

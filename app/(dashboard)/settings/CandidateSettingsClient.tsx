@@ -24,7 +24,7 @@ import {
   Monitor, Smartphone, Tablet, RefreshCw, LogOut, MapPin,
   ShieldAlert, CalendarClock, Building2,
 } from "lucide-react";
-import { MfaTwoFactor } from "@/components/ui/mfa-two-factor";
+import { MfaTwoFactor } from "@/components/others/mfa-two-factor";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -175,9 +175,9 @@ export function CandidateSettingsClient({ userProfile, initialData }: Props) {
       const { data, error: authError } = await supabase.auth.getClaims();
       const user = data?.claims as any;
       if (!user || authError) { setSessions([]); return; }
-      
+
       if (user.session_id) setCurrentSessionId(user.session_id);
-      
+
       const { data: sessionData, error } = await (supabase as any)
         .from("user_sessions")
         .select("id, created_at, updated_at, not_after, ip, user_agent")

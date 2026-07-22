@@ -24,7 +24,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { parseUserAgent } from "@/lib/ua-parser"
-import { MfaTwoFactor } from "@/components/ui/mfa-two-factor"
+import { MfaTwoFactor } from "@/components/others/mfa-two-factor"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -206,20 +206,20 @@ export function InstituteSettingsClient({ userProfile, initialData }: Props) {
     if (activeTab !== "billing" || licenseFetched) return
     if (!userProfile.institute_id) { setLicenseFetched(true); return }
     setLicenseLoading(true)
-    ;(supabase as any)
-      .from("institute_licenses")
-      .select("plan_name, status, starts_at, ends_at, notes")
-      .eq("institute_id", userProfile.institute_id)
-      .maybeSingle()
-      .then(({ data }: { data: any }) => {
-        setLicenseData(data ?? null)
-        setLicenseFetched(true)
-        setLicenseLoading(false)
-      })
-      .catch(() => {
-        setLicenseFetched(true)
-        setLicenseLoading(false)
-      })
+      ; (supabase as any)
+        .from("institute_licenses")
+        .select("plan_name, status, starts_at, ends_at, notes")
+        .eq("institute_id", userProfile.institute_id)
+        .maybeSingle()
+        .then(({ data }: { data: any }) => {
+          setLicenseData(data ?? null)
+          setLicenseFetched(true)
+          setLicenseLoading(false)
+        })
+        .catch(() => {
+          setLicenseFetched(true)
+          setLicenseLoading(false)
+        })
   }, [activeTab, licenseFetched, userProfile.institute_id, supabase])
 
   async function handleRevokeSession(sessionId: string) {
@@ -550,7 +550,7 @@ export function InstituteSettingsClient({ userProfile, initialData }: Props) {
                     {(() => {
                       const s = licenseData.status?.toLowerCase()
                       const cfg: Record<string, { label: string; classes: string }> = {
-                        active:  { label: "Active",  classes: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800" },
+                        active: { label: "Active", classes: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800" },
                         expired: { label: "Expired", classes: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800" },
                         pending: { label: "Pending", classes: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800" },
                         revoked: { label: "Revoked", classes: "bg-zinc-100 text-zinc-600 border-zinc-300 dark:bg-zinc-800/50 dark:text-zinc-400 dark:border-zinc-700" },

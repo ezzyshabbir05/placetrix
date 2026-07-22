@@ -27,7 +27,7 @@ import { createEventAction, updateEventAction } from "../../actions"
 import type { EventFormData, EventStatus, EventTargetingRules } from "../../types"
 import { createClient } from "@/lib/supabase/client"
 import { buildStorageUrl } from "@/lib/storage"
-import { CohortSelector } from "@/components/cohort-selector"
+import { CohortSelector } from "@/app/(dashboard)/(licensed)/cohorts/cohort-selector"
 import type { CohortOption } from "@/app/(dashboard)/(licensed)/cohorts/types"
 
 const BRANCHES = [

@@ -26,10 +26,10 @@ import {
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import {
-  Group as PanelGroup,
-  Panel,
-  Separator as PanelResizeHandle,
-} from "react-resizable-panels";
+  ResizablePanelGroup as PanelGroup,
+  ResizablePanel as Panel,
+  ResizableHandle as PanelResizeHandle,
+} from "@/components/ui/resizable"
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import {
@@ -61,7 +61,7 @@ interface PlaygroundWorkspaceClientProps {
   userId?: string;
 }
 
-export default function PlaygroundWorkspaceClient({ userId }: PlaygroundWorkspaceClientProps)  {
+export default function PlaygroundWorkspaceClient({ userId }: PlaygroundWorkspaceClientProps) {
   const { resolvedTheme } = useTheme();
   const monacoTheme = resolvedTheme === "light" ? "vs" : "vs-dark";
 
@@ -135,8 +135,8 @@ export default function PlaygroundWorkspaceClient({ userId }: PlaygroundWorkspac
   }, []);
 
   useEffect(() => {
-    const key = userId 
-      ? `logiclab_playground_code_${userId}_${selectedLang.value}` 
+    const key = userId
+      ? `logiclab_playground_code_${userId}_${selectedLang.value}`
       : `logiclab_playground_code_${selectedLang.value}`;
     const saved = localStorage.getItem(key);
     setCode(saved ?? CODE_TEMPLATES[selectedLang.value]);
@@ -144,8 +144,8 @@ export default function PlaygroundWorkspaceClient({ userId }: PlaygroundWorkspac
 
   useEffect(() => {
     if (code) {
-      const key = userId 
-        ? `logiclab_playground_code_${userId}_${selectedLang.value}` 
+      const key = userId
+        ? `logiclab_playground_code_${userId}_${selectedLang.value}`
         : `logiclab_playground_code_${selectedLang.value}`;
       localStorage.setItem(key, code);
     }
@@ -219,7 +219,7 @@ export default function PlaygroundWorkspaceClient({ userId }: PlaygroundWorkspac
     setResults(null);
     try {
       let processedCode = code;
-      
+
       // Fix for Java: Online compilers (Judge0) strictly execute 'java Main'.
       // If the user names their class something else (e.g., public class Pyramid), it compiles but fails to run.
       // We automatically find the first class declaration and forcefully rename it to 'class Main'.

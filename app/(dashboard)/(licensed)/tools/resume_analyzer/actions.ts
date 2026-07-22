@@ -158,7 +158,6 @@ export async function analyzeResumeAction(formData: FormData): Promise<AnalysisR
     .trim()
 
   const localAnalysis = performLocalAnalysis(cleanedText)
-  const truncatedText = cleanedText.slice(0, 8000)
   const hasJD = jobDescription.trim().length > 20
 
   const ai = new GoogleGenAI({ apiKey })
@@ -258,12 +257,12 @@ Output ONLY a single raw JSON object matching the JSON schema. No markdown code 
 }
 
 RESUME TEXT:
-${truncatedText}${
+${cleanedText}${
   hasJD
     ? `
 
 JOB DESCRIPTION:
-${jobDescription.slice(0, 3000)}
+${jobDescription.trim()}
 
 Focus suggestions on bridging the gap between this resume and the target Job Description requirements.`
     : ""
@@ -272,7 +271,7 @@ Focus suggestions on bridging the gap between this resume and the target Job Des
   const config = {
     systemInstruction: systemPrompt,
     temperature: 0.1,
-    maxOutputTokens: 3500,
+    maxOutputTokens: 8192,
     responseMimeType: "application/json",
     responseSchema: {
       type: "object",
@@ -370,7 +369,13 @@ Focus suggestions on bridging the gap between this resume and the target Job Des
     }
   }
 
-  const MODEL_FALLBACK_CHAIN = ["gemini-3.5-flash", "gemini-3.1-flash-lite"]
+  const MODEL_FALLBACK_CHAIN = [
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+    "gemini-2.5-pro",
+    "gemini-1.5-pro",
+  ]
   let content = ""
   let lastError: unknown
 
@@ -395,10 +400,15 @@ Focus suggestions on bridging the gap between this resume and the target Job Des
 
   let parsed: Omit<AnalysisResult, "fileName" | "analyzedAt">
   try {
-    const jsonMatch = content.match(/\{[\s\S]*\}/)
+    let cleanContent = content.trim()
+    if (cleanContent.startsWith("```")) {
+      cleanContent = cleanContent.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim()
+    }
+    const jsonMatch = cleanContent.match(/\{[\s\S]*\}/)
     if (!jsonMatch) throw new Error("No JSON found in AI response")
     parsed = JSON.parse(jsonMatch[0])
-  } catch {
+  } catch (parseErr) {
+    console.error("[analyzeResumeAction] Failed to parse AI response JSON:", parseErr, "Raw content preview:", content.slice(0, 500))
     throw new Error("AI returned an invalid response. Please try again.")
   }
 

@@ -94,7 +94,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { MathText } from "@/components/ui/math-text"
+import { MathText } from "@/components/others/latex-renderer"
 import type { InstituteTestDetail, InstituteQuestion, InstituteAttemptRow } from "./_types"
 import { formatDuration, formatDateTime, formatSeconds, resolvePct } from "./_types"
 import { ExportTestParticipantsModal } from "./ExportTestParticipantsModal"
@@ -550,9 +550,9 @@ const MobileAttemptRow = React.memo(function MobileAttemptRow({
                 <ExternalLink className="ml-auto h-3.5 w-3.5 opacity-50" />
               </Link>
             </Button>
-            <Button 
-              variant="outline" 
-              size="lg" 
+            <Button
+              variant="outline"
+              size="lg"
               className="px-3 text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 shadow-sm"
               onClick={() => onDelete(attempt)}
             >
@@ -675,19 +675,19 @@ const SORT_COL_MAP: Record<SortColumn, string> = {
 
 // ─── Attempts Tab ─────────────────────────────────────────────────────────────
 
-function AttemptsTab({ 
-  test, 
+function AttemptsTab({
+  test,
   pageRows,
   totalCount,
   stats,
-  totalMarks, 
+  totalMarks,
   getNowOnServer,
   onDeleteAttempt,
   onDeleteSuccess,
   onFetchPage,
   onFetchStats,
   onFetchAllForExport,
-}: { 
+}: {
   test: InstituteTestDetail
   pageRows: InstituteAttemptRow[]
   totalCount: number
@@ -763,7 +763,7 @@ function AttemptsTab({
   }, [debouncedSearch, statusFilter, scoreFilter, sortCol, sortDir, page, onFetchPage])
 
   const handleSort = useCallback((col: SortColumn) => {
-    const newDir = sortCol === col ? (sortDir === "asc" ? "desc" : "asc") : 
+    const newDir = sortCol === col ? (sortDir === "asc" ? "desc" : "asc") :
       ["student_name", "education", "status", "started", "submitted"].includes(col) ? "asc" : "desc"
     const newPage = 0
     setSortCol(col)
@@ -796,7 +796,7 @@ function AttemptsTab({
     setIsLoadingPage(true)
     onFetchPage({ search: debouncedSearch.trim(), statusFilter, scoreFilter, sortCol, sortDir, page: 0 })
       .finally(() => setIsLoadingPage(false))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch])
 
   // Navigate pages using scroll-to-load
@@ -1197,7 +1197,7 @@ function AttemptsTab({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete student attempt?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete <span className="font-semibold text-foreground">{attemptToDelete?.student_name}</span>'s attempt? 
+              Are you sure you want to delete <span className="font-semibold text-foreground">{attemptToDelete?.student_name}</span>'s attempt?
               This will permanently remove their score and all answers.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -1447,7 +1447,7 @@ function mapRawAttempt(a: any): InstituteAttemptRow {
   const cad = Array.isArray(a.profile?.candidate_academic_details)
     ? a.profile?.candidate_academic_details[0]
     : a.profile?.candidate_academic_details
-  
+
   const courseName = Array.isArray(cad?.course)
     ? cad?.course[0]?.course_name
     : cad?.course?.course_name
@@ -1573,288 +1573,288 @@ export function InstituteTestDetailClient({
   return (
     <div className="flex flex-col gap-6 px-4 py-8 md:px-8">
 
-        {/* ── Page Header ─────────────────────────────────────────────────── */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex flex-col gap-1.5 min-w-0">
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <h1 className="text-3xl font-bold font-cirka tracking-tight text-foreground">
-                {test.title}
-              </h1>
-              <Badge
-                variant={test.status === "published" ? "default" : "secondary"}
-                className="text-xs"
-              >
-                {test.status === "published" ? "Published" : "Draft"}
+      {/* ── Page Header ─────────────────────────────────────────────────── */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-1.5 min-w-0">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <h1 className="text-3xl font-bold font-cirka tracking-tight text-foreground">
+              {test.title}
+            </h1>
+            <Badge
+              variant={test.status === "published" ? "default" : "secondary"}
+              className="text-xs"
+            >
+              {test.status === "published" ? "Published" : "Draft"}
+            </Badge>
+            {test.results_available && (
+              <Badge variant="secondary" className="text-xs">
+                Results Live
               </Badge>
-              {test.results_available && (
-                <Badge variant="secondary" className="text-xs">
-                  Results Live
-                </Badge>
-              )}
-            </div>
-            {test.institute_name && (
-              <p className="text-sm text-muted-foreground">
-                Published by {test.institute_name}
-              </p>
-            )}
-            {test.description && (
-              <p className="max-w-2xl text-sm text-muted-foreground line-clamp-2">
-                {test.description}
-              </p>
             )}
           </div>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full gap-1.5 sm:w-auto"
-                disabled={anyLoading}
-              >
-                {anyLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <MoreHorizontal className="h-4 w-4" />
-                )}
-                Actions
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem
-                onClick={() => router.push(`/tests/${test.id}/edit`)}
-                disabled={anyLoading}
-              >
-                <Pencil className="mr-2 h-3.5 w-3.5" />
-                Edit Test
-              </DropdownMenuItem>
-
-              <DropdownMenuSeparator />
-
-              <DropdownMenuItem
-                onClick={() => run("togglePublish", onTogglePublish)}
-                disabled={anyLoading}
-              >
-                {isLoading("togglePublish") ? (
-                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                ) : test.status === "published" ? (
-                  <EyeOff className="mr-2 h-3.5 w-3.5" />
-                ) : (
-                  <Eye className="mr-2 h-3.5 w-3.5" />
-                )}
-                {isLoading("togglePublish")
-                  ? "Saving…"
-                  : test.status === "published"
-                    ? "Unpublish"
-                    : "Publish"}
-              </DropdownMenuItem>
-
-              <DropdownMenuItem
-                onClick={() => run("toggleResults", onToggleResults)}
-                disabled={anyLoading}
-              >
-                {isLoading("toggleResults") ? (
-                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                ) : test.results_available ? (
-                  <EyeOff className="mr-2 h-3.5 w-3.5" />
-                ) : (
-                  <Eye className="mr-2 h-3.5 w-3.5" />
-                )}
-                {isLoading("toggleResults")
-                  ? "Saving…"
-                  : test.results_available
-                    ? "Hide Results"
-                    : "Release Results"}
-              </DropdownMenuItem>
-
-              <DropdownMenuSeparator />
-
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <DropdownMenuItem
-                    variant="destructive"
-                    onSelect={(e) => e.preventDefault()}
-                    disabled={anyLoading || test.attemptStats.total === 0}
-                  >
-                    <RotateCw className="mr-2 h-3.5 w-3.5" />
-                    Clear All Attempts
-                  </DropdownMenuItem>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Clear {test.attemptStats.total} Attempts?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This permanently deletes all student attempts, answers, and scores for this test.
-                      This is useful if you are reusing this test for a new cohort and want to start fresh.
-                      This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel disabled={isLoading("clearAttempts")}>
-                      Cancel
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                      variant="destructive"
-                      disabled={isLoading("clearAttempts")}
-                      onClick={(e) => {
-                        e.preventDefault()
-                        run("clearAttempts", onClearAllAttempts)
-                      }}
-                    >
-                      {isLoading("clearAttempts") ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        "Yes, Clear Attempts"
-                      )}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-
-              <DropdownMenuSeparator />
-
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <DropdownMenuItem
-                    variant="destructive"
-                    onSelect={(e) => e.preventDefault()}
-                    disabled={anyLoading}
-                  >
-                    <Trash2 className="mr-2 h-3.5 w-3.5" />
-                    Delete Test
-                  </DropdownMenuItem>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete "{test.title}"?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This permanently deletes the test, all questions, and all student
-                      attempts. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel disabled={isLoading("deleteTest")}>
-                      Cancel
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                      variant="destructive"
-                      disabled={isLoading("deleteTest")}
-                      onClick={(e) => {
-                        e.preventDefault()
-                        run("deleteTest", async () => {
-                          await onDeleteTest?.()
-                          toast.success("Test deleted successfully")
-                        })
-                      }}
-                    >
-                      {isLoading("deleteTest") ? (
-                        <>
-                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                          Deleting…
-                        </>
-                      ) : (
-                        "Delete permanently"
-                      )}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {test.institute_name && (
+            <p className="text-sm text-muted-foreground">
+              Published by {test.institute_name}
+            </p>
+          )}
+          {test.description && (
+            <p className="max-w-2xl text-sm text-muted-foreground line-clamp-2">
+              {test.description}
+            </p>
+          )}
         </div>
 
-        {/* ── Stats ───────────────────────────────────────────────────────── */}
-        <StatsBar test={test} stats={liveStats} totalMarks={totalMarks} />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-1.5 sm:w-auto"
+              disabled={anyLoading}
+            >
+              {anyLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <MoreHorizontal className="h-4 w-4" />
+              )}
+              Actions
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem
+              onClick={() => router.push(`/tests/${test.id}/edit`)}
+              disabled={anyLoading}
+            >
+              <Pencil className="mr-2 h-3.5 w-3.5" />
+              Edit Test
+            </DropdownMenuItem>
 
-        {/* ── Tabs ────────────────────────────────────────────────────────── */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <div className="overflow-x-auto">
-            <TabsList className="inline-flex h-9 gap-0.5 rounded-lg bg-muted p-1">
-              {[
-                { value: "overview", label: "Overview", icon: <Info className="h-3.5 w-3.5" />, count: null },
-                { value: "questions", label: "Questions", icon: <ListChecks className="h-3.5 w-3.5" />, count: test.questions.length },
-                { value: "attempts", label: "Attempts", icon: <Users className="h-3.5 w-3.5" />, count: liveStats.total },
-                { value: "analytics", label: "Analytics", icon: <BarChart2 className="h-3.5 w-3.5" />, count: null },
-                { value: "feedback", label: "Feedback", icon: <RotateCw className="h-3.5 w-3.5" />, count: test.feedbacks?.length || null },
-              ].map(({ value, label, icon, count }) => (
-                <TabsTrigger
-                  key={value}
-                  value={value}
-                  className="gap-1.5 rounded-md px-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem
+              onClick={() => run("togglePublish", onTogglePublish)}
+              disabled={anyLoading}
+            >
+              {isLoading("togglePublish") ? (
+                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+              ) : test.status === "published" ? (
+                <EyeOff className="mr-2 h-3.5 w-3.5" />
+              ) : (
+                <Eye className="mr-2 h-3.5 w-3.5" />
+              )}
+              {isLoading("togglePublish")
+                ? "Saving…"
+                : test.status === "published"
+                  ? "Unpublish"
+                  : "Publish"}
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={() => run("toggleResults", onToggleResults)}
+              disabled={anyLoading}
+            >
+              {isLoading("toggleResults") ? (
+                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+              ) : test.results_available ? (
+                <EyeOff className="mr-2 h-3.5 w-3.5" />
+              ) : (
+                <Eye className="mr-2 h-3.5 w-3.5" />
+              )}
+              {isLoading("toggleResults")
+                ? "Saving…"
+                : test.results_available
+                  ? "Hide Results"
+                  : "Release Results"}
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <DropdownMenuItem
+                  variant="destructive"
+                  onSelect={(e) => e.preventDefault()}
+                  disabled={anyLoading || test.attemptStats.total === 0}
                 >
-                  {icon}
-                  <span>{label}</span>
-                  {count != null && count > 0 && (
-                    <span
-                      className={cn(
-                        "inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold tabular-nums",
-                        activeTab === value
-                          ? "bg-foreground text-background"
-                          : "bg-muted-foreground/20 text-muted-foreground"
-                      )}
-                    >
-                      {count}
-                    </span>
-                  )}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </div>
+                  <RotateCw className="mr-2 h-3.5 w-3.5" />
+                  Clear All Attempts
+                </DropdownMenuItem>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Clear {test.attemptStats.total} Attempts?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This permanently deletes all student attempts, answers, and scores for this test.
+                    This is useful if you are reusing this test for a new cohort and want to start fresh.
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isLoading("clearAttempts")}>
+                    Cancel
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    variant="destructive"
+                    disabled={isLoading("clearAttempts")}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      run("clearAttempts", onClearAllAttempts)
+                    }}
+                  >
+                    {isLoading("clearAttempts") ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      "Yes, Clear Attempts"
+                    )}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
 
-          <TabsContent value="overview" className="m-0">
-            <OverviewTab
-              test={test}
-              onToggleResults={() => run("toggleResults", async () => {
-                await onToggleResults?.()
-                toast.success(`Results are now ${!test.results_available ? "visible" : "hidden"} to candidates`)
-              })}
-              onTogglePublish={() => run("togglePublish", async () => {
-                await onTogglePublish?.()
-                toast.success(`Test is now ${test.status === "draft" ? "published" : "drafted"}`)
-              })}
-              isToggleResultsLoading={isLoading("toggleResults")}
-              isTogglePublishLoading={isLoading("togglePublish")}
-              anyLoading={anyLoading}
-            />
-          </TabsContent>
+            <DropdownMenuSeparator />
 
-          <TabsContent value="questions" className="m-0">
-            <QuestionsTab questions={test.questions} />
-          </TabsContent>
-
-          <TabsContent value="attempts" className="m-0">
-            <AttemptsTab 
-              test={test}
-              pageRows={pageRows}
-              totalCount={totalCount}
-              stats={liveStats}
-              totalMarks={totalMarks}
-              getNowOnServer={getNowOnServer}
-              onDeleteAttempt={onDeleteAttempt}
-              onDeleteSuccess={(id) => {
-                setPageRows((prev) => prev.filter((a) => a.id !== id))
-                setLiveStats((prev) => ({
-                  ...prev,
-                  total: Math.max(0, prev.total - 1),
-                  submitted: prev.submitted > 0 ? prev.submitted - 1 : 0,
-                }))
-                setTotalCount((c) => Math.max(0, c - 1))
-              }}
-              onFetchPage={handleFetchPage}
-              onFetchStats={refreshStats}
-              onFetchAllForExport={handleFetchAllForExport}
-            />
-          </TabsContent>
-
-          <TabsContent value="analytics" className="m-0">
-            <AnalyticsTab test={test} />
-          </TabsContent>
-
-          <TabsContent value="feedback" className="m-0">
-            <FeedbackTab test={test} />
-          </TabsContent>
-        </Tabs>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <DropdownMenuItem
+                  variant="destructive"
+                  onSelect={(e) => e.preventDefault()}
+                  disabled={anyLoading}
+                >
+                  <Trash2 className="mr-2 h-3.5 w-3.5" />
+                  Delete Test
+                </DropdownMenuItem>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete "{test.title}"?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This permanently deletes the test, all questions, and all student
+                    attempts. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isLoading("deleteTest")}>
+                    Cancel
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    variant="destructive"
+                    disabled={isLoading("deleteTest")}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      run("deleteTest", async () => {
+                        await onDeleteTest?.()
+                        toast.success("Test deleted successfully")
+                      })
+                    }}
+                  >
+                    {isLoading("deleteTest") ? (
+                      <>
+                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        Deleting…
+                      </>
+                    ) : (
+                      "Delete permanently"
+                    )}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
+
+      {/* ── Stats ───────────────────────────────────────────────────────── */}
+      <StatsBar test={test} stats={liveStats} totalMarks={totalMarks} />
+
+      {/* ── Tabs ────────────────────────────────────────────────────────── */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <div className="overflow-x-auto">
+          <TabsList className="inline-flex h-9 gap-0.5 rounded-lg bg-muted p-1">
+            {[
+              { value: "overview", label: "Overview", icon: <Info className="h-3.5 w-3.5" />, count: null },
+              { value: "questions", label: "Questions", icon: <ListChecks className="h-3.5 w-3.5" />, count: test.questions.length },
+              { value: "attempts", label: "Attempts", icon: <Users className="h-3.5 w-3.5" />, count: liveStats.total },
+              { value: "analytics", label: "Analytics", icon: <BarChart2 className="h-3.5 w-3.5" />, count: null },
+              { value: "feedback", label: "Feedback", icon: <RotateCw className="h-3.5 w-3.5" />, count: test.feedbacks?.length || null },
+            ].map(({ value, label, icon, count }) => (
+              <TabsTrigger
+                key={value}
+                value={value}
+                className="gap-1.5 rounded-md px-3 text-xs font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              >
+                {icon}
+                <span>{label}</span>
+                {count != null && count > 0 && (
+                  <span
+                    className={cn(
+                      "inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold tabular-nums",
+                      activeTab === value
+                        ? "bg-foreground text-background"
+                        : "bg-muted-foreground/20 text-muted-foreground"
+                    )}
+                  >
+                    {count}
+                  </span>
+                )}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+
+        <TabsContent value="overview" className="m-0">
+          <OverviewTab
+            test={test}
+            onToggleResults={() => run("toggleResults", async () => {
+              await onToggleResults?.()
+              toast.success(`Results are now ${!test.results_available ? "visible" : "hidden"} to candidates`)
+            })}
+            onTogglePublish={() => run("togglePublish", async () => {
+              await onTogglePublish?.()
+              toast.success(`Test is now ${test.status === "draft" ? "published" : "drafted"}`)
+            })}
+            isToggleResultsLoading={isLoading("toggleResults")}
+            isTogglePublishLoading={isLoading("togglePublish")}
+            anyLoading={anyLoading}
+          />
+        </TabsContent>
+
+        <TabsContent value="questions" className="m-0">
+          <QuestionsTab questions={test.questions} />
+        </TabsContent>
+
+        <TabsContent value="attempts" className="m-0">
+          <AttemptsTab
+            test={test}
+            pageRows={pageRows}
+            totalCount={totalCount}
+            stats={liveStats}
+            totalMarks={totalMarks}
+            getNowOnServer={getNowOnServer}
+            onDeleteAttempt={onDeleteAttempt}
+            onDeleteSuccess={(id) => {
+              setPageRows((prev) => prev.filter((a) => a.id !== id))
+              setLiveStats((prev) => ({
+                ...prev,
+                total: Math.max(0, prev.total - 1),
+                submitted: prev.submitted > 0 ? prev.submitted - 1 : 0,
+              }))
+              setTotalCount((c) => Math.max(0, c - 1))
+            }}
+            onFetchPage={handleFetchPage}
+            onFetchStats={refreshStats}
+            onFetchAllForExport={handleFetchAllForExport}
+          />
+        </TabsContent>
+
+        <TabsContent value="analytics" className="m-0">
+          <AnalyticsTab test={test} />
+        </TabsContent>
+
+        <TabsContent value="feedback" className="m-0">
+          <FeedbackTab test={test} />
+        </TabsContent>
+      </Tabs>
+    </div>
   )
 }
 
@@ -1871,7 +1871,7 @@ function AnalyticsTab({ test }: { test: InstituteTestDetail }) {
           .select("percentage")
           .eq("test_id", test.id)
           .in("status", ["submitted", "auto_submitted"])
-        
+
         if (data) {
           const counts = new Array(10).fill(0)
           data.forEach((att: any) => {

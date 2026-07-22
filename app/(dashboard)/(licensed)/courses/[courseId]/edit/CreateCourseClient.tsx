@@ -28,7 +28,7 @@ import { Separator } from "@/components/ui/separator"
 import { cn, parseDurationToMinutes } from "@/lib/utils"
 import { toast } from "sonner"
 import { createCourseAction, updateCourseAction, AdminCourseInput, AdminModuleInput } from "../../actions"
-import { LatexRenderer } from "@/components/ui/latex-renderer"
+import { LatexRenderer } from "@/components/others/latex-renderer"
 
 interface Props {
   initialCourse?: {
@@ -55,7 +55,7 @@ interface Props {
 function extractAttachmentPaths(text: string): string[] {
   if (!text) return []
   const paths: string[] = []
-  
+
   // 1. Check LaTeX \includegraphics
   const reLatex = /\\includegraphics(?:\[.*?\])?\{([^}]+)\}/g
   let match
@@ -80,7 +80,7 @@ function extractAttachmentPaths(text: string): string[] {
       }
     }
   }
-  
+
   return paths
 }
 
@@ -250,7 +250,7 @@ export function CreateCourseClient({ initialCourse, initialModules = [], adminPr
     if (direction === "down" && index === modules.length - 1) return
     const updated = [...modules]
     const target = direction === "up" ? index - 1 : index + 1
-    ;[updated[index], updated[target]] = [updated[target], updated[index]]
+      ;[updated[index], updated[target]] = [updated[target], updated[index]]
     setModules(updated)
   }
 
@@ -280,14 +280,14 @@ export function CreateCourseClient({ initialCourse, initialModules = [], adminPr
           const fileExt = coverImageFile.name.split(".").pop()
           const fileName = `${crypto.randomUUID()}.${fileExt}`
           const filePath = `covers/${fileName}`
-          
+
           const { error: uploadError } = await supabase.storage
             .from("course-covers")
             .upload(filePath, coverImageFile)
-            
+
           if (uploadError) throw uploadError
           finalCoverPath = filePath
-          
+
           // Delete old cover image if it existed
           if (initialCourse?.cover_image_path) {
             await supabase.storage
@@ -305,24 +305,24 @@ export function CreateCourseClient({ initialCourse, initialModules = [], adminPr
         const updatedModules = [...modules]
         for (let idx = 0; idx < updatedModules.length; idx++) {
           let content = updatedModules[idx].content ?? ""
-          
+
           const localUrlsUsed = Object.keys(pendingUploads).filter((localUrl) =>
             content.includes(localUrl)
           )
-          
+
           for (const localUrl of localUrlsUsed) {
             const { file, filePath } = pendingUploads[localUrl]
-            
+
             const { error: uploadError } = await supabase.storage
               .from("course-attachments")
               .upload(filePath, file)
-              
+
             if (uploadError) throw uploadError
-            
+
             const finalUrl = buildStorageUrl("course-attachments", filePath) || ""
             content = content.replaceAll(localUrl, finalUrl)
           }
-          
+
           updatedModules[idx].content = content
         }
 
@@ -330,7 +330,7 @@ export function CreateCourseClient({ initialCourse, initialModules = [], adminPr
         const originalPaths = initialModules.flatMap((mod) => extractAttachmentPaths(mod.content ?? ""))
         const finalPaths = updatedModules.flatMap((mod) => extractAttachmentPaths(mod.content ?? ""))
         const deletedPaths = originalPaths.filter((path) => !finalPaths.includes(path))
-        
+
         if (deletedPaths.length > 0) {
           const { error: deleteError } = await supabase.storage
             .from("course-attachments")

@@ -1104,7 +1104,7 @@ export function LogicLabDashboardClient({
                 {/* Table Header */}
                 <div className={cn('hidden', 'md:flex', 'items-center', 'gap-3', 'px-4', 'py-3.5', 'bg-muted/40', 'border-b', 'border-border', 'text-xs', 'font-bold', 'text-muted-foreground', 'uppercase', 'tracking-wider', 'select-none')}>
                   <div className={cn('w-14', 'shrink-0', 'text-center')}>Status</div>
-                  
+
                   <div className={cn('flex-1', 'min-w-0', 'pl-4')}>Title</div>
                   <div className={cn('w-[130px]', 'shrink-0', 'pl-4')}>Acceptance</div>
                   <div className={cn('w-[120px]', 'shrink-0', 'pl-4')}>Difficulty</div>

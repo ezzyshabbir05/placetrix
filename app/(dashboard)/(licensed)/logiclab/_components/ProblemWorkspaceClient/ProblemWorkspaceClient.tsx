@@ -60,10 +60,10 @@ import "prismjs/components/prism-typescript";
 import { buildStorageUrl } from "@/lib/storage";
 import { useMonaco } from "@monaco-editor/react";
 import {
-  Group as PanelGroup,
-  Panel,
-  Separator as PanelResizeHandle,
-} from "react-resizable-panels";
+  ResizablePanelGroup as PanelGroup,
+  ResizablePanel as Panel,
+  ResizableHandle as PanelResizeHandle,
+} from "@/components/ui/resizable";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -148,7 +148,7 @@ const truncateText = (text: string | null | undefined, limit = 5000) => {
 const renderTestcaseValue = (valStr: string) => {
   try {
     const parsed = JSON.parse(valStr);
-    
+
     // 2D Array
     if (Array.isArray(parsed) && parsed.length > 0 && Array.isArray(parsed[0])) {
       return (
@@ -157,8 +157,8 @@ const renderTestcaseValue = (valStr: string) => {
             {parsed.map((row, i) => (
               <div key={i} className="flex gap-[2px]">
                 {Array.isArray(row) ? row.map((cell: any, j: number) => (
-                  <div 
-                    key={j} 
+                  <div
+                    key={j}
                     className="flex items-center justify-center min-w-[2.5rem] h-9 px-2 bg-white dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 rounded-[4px] font-mono text-[15px] text-zinc-800 dark:text-zinc-200 shadow-sm"
                   >
                     {(typeof cell === 'string' && cell === '.') || cell === null ? <span className="text-zinc-400">{cell === null ? 'null' : '.'}</span> : String(cell)}
@@ -174,7 +174,7 @@ const renderTestcaseValue = (valStr: string) => {
         </div>
       );
     }
-    
+
     // 1D Array
     if (Array.isArray(parsed)) {
       if (parsed.length === 0) {
@@ -184,8 +184,8 @@ const renderTestcaseValue = (valStr: string) => {
         <div className="mt-2 mb-3 overflow-x-auto w-full">
           <div className="inline-flex flex-row gap-[2px] py-1">
             {parsed.map((cell: any, j: number) => (
-              <div 
-                key={j} 
+              <div
+                key={j}
                 className="flex items-center justify-center min-w-[2.5rem] h-9 px-2 bg-white dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 rounded-[4px] font-mono text-[15px] text-zinc-800 dark:text-zinc-200 shadow-sm"
               >
                 {(typeof cell === 'string' && cell === '.') || cell === null ? <span className="text-zinc-400">{cell === null ? 'null' : '.'}</span> : String(cell)}
@@ -195,12 +195,12 @@ const renderTestcaseValue = (valStr: string) => {
         </div>
       );
     }
-    
+
     // Fallback for strings and primitives: add a nice styling for strings to show quotes
     if (typeof parsed === 'string') {
       return <span className="break-all whitespace-pre-wrap font-mono text-emerald-600 dark:text-emerald-400">"{parsed}"</span>;
     }
-    
+
     // Booleans and numbers
     if (typeof parsed === 'boolean') {
       return <span className="font-mono text-blue-600 dark:text-blue-400">{String(parsed)}</span>;
@@ -208,8 +208,8 @@ const renderTestcaseValue = (valStr: string) => {
     if (typeof parsed === 'number') {
       return <span className="font-mono text-amber-600 dark:text-amber-400">{String(parsed)}</span>;
     }
-    
-  } catch(e) {}
+
+  } catch (e) { }
   return <span className="break-all whitespace-pre-wrap">{valStr}</span>;
 };
 
@@ -286,7 +286,7 @@ export function ProblemWorkspaceClient({
       const key = isDailyChallenge
         ? `logiclab_daily_challenge_${dailyChallengeId}_code_${selectedLang.value}`
         : `logiclab_problem_${targetId}_code_${selectedLang.value}`;
-      
+
       const savedData = localStorage.getItem(key);
       let loadedCode = null;
       if (savedData) {
@@ -570,7 +570,7 @@ export function ProblemWorkspaceClient({
     formatted = formatted.replace(/Main\.java:/g, 'Main.java:');
     formatted = formatted.replace(/script\.js:/g, 'main.js:');
     formatted = formatted.replace(/script\.ts:/g, 'main.ts:');
-    
+
     return formatted;
   };
 
@@ -609,77 +609,77 @@ export function ProblemWorkspaceClient({
     } else if (runResult && !runResult.success) {
       lineOffset = runResult.lineOffset || 0;
       if (runResult.compile_output || runResult.stderr) {
-         targetText = runResult.compile_output || runResult.stderr || "";
+        targetText = runResult.compile_output || runResult.stderr || "";
       } else if (runResult.cases && runResult.cases.length > 0) {
-         const failedCase = runResult.cases.find((c: any) => !c.passed && (c.compile_output || c.stderr));
-         if (failedCase) targetText = failedCase.compile_output || failedCase.stderr || "";
+        const failedCase = runResult.cases.find((c: any) => !c.passed && (c.compile_output || c.stderr));
+        if (failedCase) targetText = failedCase.compile_output || failedCase.stderr || "";
       }
     }
 
     if (targetText) {
-       const parsedLine = extractErrorLine(targetText, selectedLang.name);
-       if (parsedLine !== null) {
-          errorLine = Math.max(1, parsedLine - lineOffset);
-       }
-       errorText = targetText;
+      const parsedLine = extractErrorLine(targetText, selectedLang.name);
+      if (parsedLine !== null) {
+        errorLine = Math.max(1, parsedLine - lineOffset);
+      }
+      errorText = targetText;
     }
 
     const clearDecorations = () => {
-       if (errorDecorationsRef.current) {
-           if (editor.createDecorationsCollection) {
-               errorDecorationsRef.current.clear();
-           } else {
-               editor.deltaDecorations(errorDecorationsRef.current, []);
-           }
-           errorDecorationsRef.current = null;
-       }
+      if (errorDecorationsRef.current) {
+        if (editor.createDecorationsCollection) {
+          errorDecorationsRef.current.clear();
+        } else {
+          editor.deltaDecorations(errorDecorationsRef.current, []);
+        }
+        errorDecorationsRef.current = null;
+      }
     };
 
     if (errorLine) {
-       const newDecorations = [
-          {
-             range: new monaco.Range(errorLine, 1, errorLine, 1),
-             options: {
-                isWholeLine: true,
-                className: 'monaco-error-line-bg',
-                marginClassName: 'monaco-error-line-number',
-             }
-          },
-          {
-             range: new monaco.Range(errorLine, 1, errorLine, 100),
-             options: {
-                inlineClassName: 'decoration-rose-500 decoration-wavy underline decoration-[1.5px] underline-offset-2',
-                hoverMessage: { value: '```text\n' + errorText + '\n```' }
-             }
+      const newDecorations = [
+        {
+          range: new monaco.Range(errorLine, 1, errorLine, 1),
+          options: {
+            isWholeLine: true,
+            className: 'monaco-error-line-bg',
+            marginClassName: 'monaco-error-line-number',
           }
-       ];
-       if (!errorDecorationsRef.current) {
-          if (editor.createDecorationsCollection) {
-             errorDecorationsRef.current = editor.createDecorationsCollection(newDecorations);
-          } else {
-             errorDecorationsRef.current = editor.deltaDecorations([], newDecorations);
+        },
+        {
+          range: new monaco.Range(errorLine, 1, errorLine, 100),
+          options: {
+            inlineClassName: 'decoration-rose-500 decoration-wavy underline decoration-[1.5px] underline-offset-2',
+            hoverMessage: { value: '```text\n' + errorText + '\n```' }
           }
-       } else {
-          if (editor.createDecorationsCollection) {
-             errorDecorationsRef.current.set(newDecorations);
-          } else {
-             errorDecorationsRef.current = editor.deltaDecorations(errorDecorationsRef.current, newDecorations);
-          }
-       }
+        }
+      ];
+      if (!errorDecorationsRef.current) {
+        if (editor.createDecorationsCollection) {
+          errorDecorationsRef.current = editor.createDecorationsCollection(newDecorations);
+        } else {
+          errorDecorationsRef.current = editor.deltaDecorations([], newDecorations);
+        }
+      } else {
+        if (editor.createDecorationsCollection) {
+          errorDecorationsRef.current.set(newDecorations);
+        } else {
+          errorDecorationsRef.current = editor.deltaDecorations(errorDecorationsRef.current, newDecorations);
+        }
+      }
     } else {
-       clearDecorations();
+      clearDecorations();
     }
   }, [submitResult, runResult, selectedLang]);
 
   // Clear decorations when code changes
   React.useEffect(() => {
     if (errorDecorationsRef.current && editorRef.current) {
-       if (editorRef.current.createDecorationsCollection) {
-           errorDecorationsRef.current.clear();
-       } else {
-           editorRef.current.deltaDecorations(errorDecorationsRef.current, []);
-       }
-       errorDecorationsRef.current = null;
+      if (editorRef.current.createDecorationsCollection) {
+        errorDecorationsRef.current.clear();
+      } else {
+        editorRef.current.deltaDecorations(errorDecorationsRef.current, []);
+      }
+      errorDecorationsRef.current = null;
     }
   }, [code]);
 
@@ -753,7 +753,7 @@ export function ProblemWorkspaceClient({
   React.useEffect(() => {
     const el = sentinelRef.current;
     if (!el || !isProblemListOpen) return;
-    
+
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
@@ -814,7 +814,7 @@ export function ProblemWorkspaceClient({
     const key = isDailyChallenge
       ? `logiclab_daily_challenge_${dailyChallengeId}_code_${selectedLang.value}`
       : `logiclab_problem_${problem.id}_code_${selectedLang.value}`;
-      
+
     const savedData = localStorage.getItem(key);
     let loadedCode = null;
     if (savedData) {
@@ -1027,12 +1027,12 @@ export function ProblemWorkspaceClient({
   const getHighlightedCode = (codeText: string, langId: number) => {
     const langObj = LANGUAGES.find((l) => l.id === langId);
     let lang = langObj ? langObj.value : "javascript";
-    
+
     if (lang === 'js') lang = 'javascript';
     if (lang === 'ts') lang = 'typescript';
     if (lang === 'py') lang = 'python';
     if (lang === 'c++') lang = 'cpp';
-    
+
     try {
       if (Prism.languages[lang]) {
         return Prism.highlight(codeText, Prism.languages[lang], lang);
@@ -1070,7 +1070,7 @@ export function ProblemWorkspaceClient({
     setActiveOutputTab("result");
     try {
       let processedCode = code;
-      
+
       // Fix for Java: Online compilers require the filename to match the class name if the class is public.
       // In Problem Mode, the user MUST write 'class Solution' and MUST use the exact function name.
       // We strip 'public' just in case they wrote 'public class Solution' to prevent compilation errors.
@@ -1156,7 +1156,7 @@ export function ProblemWorkspaceClient({
       data.submitted_code = code;
       data.submitted_language = selectedLang;
       setSubmitResult(data);
-      
+
       if (data.save_error) {
         toast.error(`Database save error: ${data.save_error}`);
       }
@@ -1587,8 +1587,8 @@ export function ProblemWorkspaceClient({
             <IconHistory className={cn('h-3.5', 'w-3.5', 'mr-1.5')} /> Submissions (
             {submissions.length})
           </TabsTrigger>
-          <TabsTrigger 
-            value="notes" 
+          <TabsTrigger
+            value="notes"
             className={cn('flex', 'items-center', 'px-4', 'h-full', 'text-[11px]', 'font-bold', 'uppercase', 'tracking-widest', 'transition-colors', 'cursor-pointer', 'data-[state=active]:text-foreground', 'data-[state=active]:border-b-2', 'data-[state=active]:border-foreground', 'data-[state=active]:!bg-transparent', 'dark:data-[state=active]:!bg-transparent', 'data-[state=active]:!border-t-transparent', 'data-[state=active]:!border-x-transparent', 'dark:data-[state=active]:!border-t-transparent', 'dark:data-[state=active]:!border-x-transparent', 'data-[state=active]:shadow-none', 'text-zinc-550 dark:text-muted-foreground/80', 'hover:text-foreground/80', '!rounded-none', 'border-b-2', 'border-transparent', 'focus-visible:ring-0', 'focus-visible:outline-none')}
           >
             <IconFileText className={cn('h-3.5', 'w-3.5', 'mr-1.5')} /> Notes
@@ -1600,283 +1600,283 @@ export function ProblemWorkspaceClient({
           <TabsContent value="description" className={cn('mt-0', 'outline-none', 'flex-1', 'w-full', 'min-h-0', 'flex', 'flex-col')}>
             <div className="flex-1 w-full overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               <div className="p-5">
-              {isTransitioning ? (
-                <div className={cn('flex', 'flex-col', 'w-full', 'space-y-4', 'pt-2')}>
-                  <div className={cn('h-6', 'animate-shimmer', 'rounded-md', 'w-1/3', 'mb-4')} />
-                  <div className={cn('h-3.5', 'animate-shimmer', 'rounded-md', 'w-5/6')} />
-                  <div className={cn('h-3.5', 'animate-shimmer', 'rounded-md', 'w-4/5')} />
-                  <div className={cn('h-3.5', 'animate-shimmer', 'rounded-md', 'w-full')} />
-                  <div className={cn('h-3.5', 'animate-shimmer', 'rounded-md', 'w-2/3')} />
-                  <div className={cn('h-3.5', 'animate-shimmer', 'rounded-md', 'w-3/4', 'mt-8')} />
-                  <div className={cn('h-24', 'animate-shimmer', 'rounded-lg', 'w-full', 'mt-2')} />
-                </div>
-              ) : (
-                <div className="space-y-5">
-                  {/* Title and Badges */}
-                  <div className={cn('space-y-4', 'pt-1')}>
-                    <h1 className={cn('text-xl', 'font-bold', 'text-foreground', 'tracking-tight')}>
-                      {problem.number ? `${problem.number}. ` : ""}
-                      {problem.title}
-                    </h1>
-                    <div className={cn('flex', 'flex-wrap', 'items-center', 'gap-2', 'select-none')}>
-                      <span
-                        className={cn(
-                          "px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide border",
-                          problem.difficulty === "Easy"
-                            ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
-                            : problem.difficulty === "Medium"
-                              ? "text-amber-500 bg-amber-500/10 border-amber-500/20"
-                              : "text-rose-500 bg-rose-500/10 border-rose-500/20",
-                        )}
-                      >
-                        {problem.difficulty || "Hard"}
-                      </span>
-                      {problem.tags && problem.tags.length > 0 && problem.tags.map((tag: string, i: number) => (
-                        <span key={i} className={cn('px-2.5', 'py-0.5', 'bg-muted/50', 'border', 'border-border/50', 'text-zinc-600 dark:text-muted-foreground', 'rounded-full', 'text-[11px]', 'font-semibold', 'tracking-wide')}>
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
+                {isTransitioning ? (
+                  <div className={cn('flex', 'flex-col', 'w-full', 'space-y-4', 'pt-2')}>
+                    <div className={cn('h-6', 'animate-shimmer', 'rounded-md', 'w-1/3', 'mb-4')} />
+                    <div className={cn('h-3.5', 'animate-shimmer', 'rounded-md', 'w-5/6')} />
+                    <div className={cn('h-3.5', 'animate-shimmer', 'rounded-md', 'w-4/5')} />
+                    <div className={cn('h-3.5', 'animate-shimmer', 'rounded-md', 'w-full')} />
+                    <div className={cn('h-3.5', 'animate-shimmer', 'rounded-md', 'w-2/3')} />
+                    <div className={cn('h-3.5', 'animate-shimmer', 'rounded-md', 'w-3/4', 'mt-8')} />
+                    <div className={cn('h-24', 'animate-shimmer', 'rounded-lg', 'w-full', 'mt-2')} />
                   </div>
-
-                  {/* Description */}
-                  <div className={cn('text-sm', 'text-zinc-900 dark:text-foreground/90', 'leading-relaxed', 'mt-4')}>
-                    <ProblemDescriptionViewer content={problem.description} />
-                    {/* Sample Test Cases */}
-                    {sampleTestCases.length > 0 && (
-                      <div className={cn('space-y-6', 'mt-8')}>
-                        {sampleTestCases.map((tc, idx) => {
-                          const paramNames = getParamNames();
-                          return (
-                            <div key={tc.id} className="space-y-3">
-                              <p className={cn('text-sm', 'font-bold', 'text-foreground')}>
-                                Example {idx + 1}:
-                              </p>
-                              <div className={cn('pl-3', 'border-l-2', 'border-zinc-300 dark:border-muted-foreground/30', 'py-1.5', 'font-mono', 'text-[13px]', 'text-zinc-900 dark:text-foreground/90', 'space-y-1.5', 'bg-zinc-100/40 dark:bg-muted/5', 'rounded-r-md')}>
-                                <div>
-                                  <span className="font-bold">Input: </span>
-                                  <div className="flex flex-col space-y-2 mt-1">
-                                    {tc.input.trim().split("\n").map((val: string, i: number) => (
-                                      <div key={i} className={val.startsWith("[") ? "flex flex-col mt-1" : "flex items-center"}>
-                                        <span className="font-semibold mr-2 text-zinc-700 dark:text-muted-foreground whitespace-nowrap">{paramNames[i] || `param${i + 1}`} =</span>
-                                        {renderTestcaseValue(val)}
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                                <div>
-                                  <span className="font-bold mr-2 block mb-1">Output:</span>
-                                  {renderTestcaseValue(tc.expected_output)}
-                                </div>
-                                {tc.explanation && (
-                                  <div className="text-zinc-650 dark:text-muted-foreground/90">
-                                    <span className={cn('font-bold', 'text-zinc-900 dark:text-foreground/90')}>
-                                      Explanation:{" "}
-                                    </span>
-                                    <span>{tc.explanation}</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
+                ) : (
+                  <div className="space-y-5">
+                    {/* Title and Badges */}
+                    <div className={cn('space-y-4', 'pt-1')}>
+                      <h1 className={cn('text-xl', 'font-bold', 'text-foreground', 'tracking-tight')}>
+                        {problem.number ? `${problem.number}. ` : ""}
+                        {problem.title}
+                      </h1>
+                      <div className={cn('flex', 'flex-wrap', 'items-center', 'gap-2', 'select-none')}>
+                        <span
+                          className={cn(
+                            "px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide border",
+                            problem.difficulty === "Easy"
+                              ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
+                              : problem.difficulty === "Medium"
+                                ? "text-amber-500 bg-amber-500/10 border-amber-500/20"
+                                : "text-rose-500 bg-rose-500/10 border-rose-500/20",
+                          )}
+                        >
+                          {problem.difficulty || "Hard"}
+                        </span>
+                        {problem.tags && problem.tags.length > 0 && problem.tags.map((tag: string, i: number) => (
+                          <span key={i} className={cn('px-2.5', 'py-0.5', 'bg-muted/50', 'border', 'border-border/50', 'text-zinc-600 dark:text-muted-foreground', 'rounded-full', 'text-[11px]', 'font-semibold', 'tracking-wide')}>
+                            {tag}
+                          </span>
+                        ))}
                       </div>
-                    )}
-                    {/* Constraints & Limits */}
-                    <div className={cn('mt-8', 'space-y-4')}>
-                      {problem.constraints && problem.constraints.length > 0 && (
-                        <div className="space-y-3">
-                          <p className={cn('text-sm', 'font-bold', 'text-foreground')}>
-                            Constraints:
-                          </p>
-                          <ul className={cn('list-disc', 'pl-5', 'space-y-2', 'text-sm', 'text-zinc-800 dark:text-foreground/80')}>
-                            {problem.constraints.map((c: string, i: number) => (
-                              <li key={i}>
-                                <code className={cn('px-1.5', 'py-0.5', 'bg-zinc-100 dark:bg-muted/40', 'rounded-md', 'text-xs', 'font-mono', 'border', 'border-border/50')}>
-                                  {c}
-                                </code>
-                              </li>
-                            ))}
-                          </ul>
+                    </div>
+
+                    {/* Description */}
+                    <div className={cn('text-sm', 'text-zinc-900 dark:text-foreground/90', 'leading-relaxed', 'mt-4')}>
+                      <ProblemDescriptionViewer content={problem.description} />
+                      {/* Sample Test Cases */}
+                      {sampleTestCases.length > 0 && (
+                        <div className={cn('space-y-6', 'mt-8')}>
+                          {sampleTestCases.map((tc, idx) => {
+                            const paramNames = getParamNames();
+                            return (
+                              <div key={tc.id} className="space-y-3">
+                                <p className={cn('text-sm', 'font-bold', 'text-foreground')}>
+                                  Example {idx + 1}:
+                                </p>
+                                <div className={cn('pl-3', 'border-l-2', 'border-zinc-300 dark:border-muted-foreground/30', 'py-1.5', 'font-mono', 'text-[13px]', 'text-zinc-900 dark:text-foreground/90', 'space-y-1.5', 'bg-zinc-100/40 dark:bg-muted/5', 'rounded-r-md')}>
+                                  <div>
+                                    <span className="font-bold">Input: </span>
+                                    <div className="flex flex-col space-y-2 mt-1">
+                                      {tc.input.trim().split("\n").map((val: string, i: number) => (
+                                        <div key={i} className={val.startsWith("[") ? "flex flex-col mt-1" : "flex items-center"}>
+                                          <span className="font-semibold mr-2 text-zinc-700 dark:text-muted-foreground whitespace-nowrap">{paramNames[i] || `param${i + 1}`} =</span>
+                                          {renderTestcaseValue(val)}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <span className="font-bold mr-2 block mb-1">Output:</span>
+                                    {renderTestcaseValue(tc.expected_output)}
+                                  </div>
+                                  {tc.explanation && (
+                                    <div className="text-zinc-650 dark:text-muted-foreground/90">
+                                      <span className={cn('font-bold', 'text-zinc-900 dark:text-foreground/90')}>
+                                        Explanation:{" "}
+                                      </span>
+                                      <span>{tc.explanation}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
-                      
-                      <div className="flex flex-wrap items-center gap-4 pt-2">
-                        {problem.time_limit && (
-                          <div className="text-[13px] font-mono text-zinc-600 dark:text-zinc-400">
-                            Time Limit: {problem.time_limit}s
+                      {/* Constraints & Limits */}
+                      <div className={cn('mt-8', 'space-y-4')}>
+                        {problem.constraints && problem.constraints.length > 0 && (
+                          <div className="space-y-3">
+                            <p className={cn('text-sm', 'font-bold', 'text-foreground')}>
+                              Constraints:
+                            </p>
+                            <ul className={cn('list-disc', 'pl-5', 'space-y-2', 'text-sm', 'text-zinc-800 dark:text-foreground/80')}>
+                              {problem.constraints.map((c: string, i: number) => (
+                                <li key={i}>
+                                  <code className={cn('px-1.5', 'py-0.5', 'bg-zinc-100 dark:bg-muted/40', 'rounded-md', 'text-xs', 'font-mono', 'border', 'border-border/50')}>
+                                    {c}
+                                  </code>
+                                </li>
+                              ))}
+                            </ul>
                           </div>
                         )}
-                        {problem.memory_limit && (
-                          <div className="text-[13px] font-mono text-zinc-600 dark:text-zinc-400">
-                            Memory Limit: {problem.memory_limit}MB
-                          </div>
-                        )}
-                      </div>
-                    </div>{" "}
+
+                        <div className="flex flex-wrap items-center gap-4 pt-2">
+                          {problem.time_limit && (
+                            <div className="text-[13px] font-mono text-zinc-600 dark:text-zinc-400">
+                              Time Limit: {problem.time_limit}s
+                            </div>
+                          )}
+                          {problem.memory_limit && (
+                            <div className="text-[13px] font-mono text-zinc-600 dark:text-zinc-400">
+                              Memory Limit: {problem.memory_limit}MB
+                            </div>
+                          )}
+                        </div>
+                      </div>{" "}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
               </div>
             </div>
           </TabsContent>
           <TabsContent value="submissions" className={cn('container-pane-submissions', 'mt-0', 'outline-none', 'flex-1', 'w-full', 'min-h-0', 'flex', 'flex-col')}>
             <ScrollArea className="flex-1 w-full [&_[data-slot=scroll-area-scrollbar]]:hidden">
               <div className="p-5">
-              {isTransitioning ? (
-                <div className={cn('flex', 'flex-col', 'w-full', 'space-y-4', 'pt-2')}>
-                  <div className={cn('h-16', 'animate-shimmer', 'rounded-lg', 'w-full', 'mb-2')} />
-                  <div className={cn('h-16', 'animate-shimmer', 'rounded-lg', 'w-full', 'mb-2')} />
-                  <div className={cn('h-16', 'animate-shimmer', 'rounded-lg', 'w-full', 'mb-2')} />
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {submissions.length > 0 ? (
-                    submissions.map((sub) => {
-                      const isExpanded = viewingSubmission?.id === sub.id;
-                      const canViewCode = sub.status === "Accepted";
-                      return (
-                        <div key={sub.id} className="space-y-1">
-                          <div
-                            onClick={() => {
-                              if (canViewCode) {
-                                if (isExpanded) {
-                                  setViewingSubmission(null);
-                                } else {
-                                  handleViewPastSubmission(sub);
+                {isTransitioning ? (
+                  <div className={cn('flex', 'flex-col', 'w-full', 'space-y-4', 'pt-2')}>
+                    <div className={cn('h-16', 'animate-shimmer', 'rounded-lg', 'w-full', 'mb-2')} />
+                    <div className={cn('h-16', 'animate-shimmer', 'rounded-lg', 'w-full', 'mb-2')} />
+                    <div className={cn('h-16', 'animate-shimmer', 'rounded-lg', 'w-full', 'mb-2')} />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {submissions.length > 0 ? (
+                      submissions.map((sub) => {
+                        const isExpanded = viewingSubmission?.id === sub.id;
+                        const canViewCode = sub.status === "Accepted";
+                        return (
+                          <div key={sub.id} className="space-y-1">
+                            <div
+                              onClick={() => {
+                                if (canViewCode) {
+                                  if (isExpanded) {
+                                    setViewingSubmission(null);
+                                  } else {
+                                    handleViewPastSubmission(sub);
+                                  }
                                 }
+                              }}
+                              className={`flex items-center justify-between row-submission-item p-3 rounded-lg border ${sub.status === "Accepted" ? "bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/5 cursor-pointer" : "bg-card border-border hover:bg-muted/60"} transition-all group`}
+                              title={
+                                canViewCode
+                                  ? "Click to view submitted code"
+                                  : "Code not stored for unsuccessful submissions"
                               }
-                            }}
-                            className={`flex items-center justify-between row-submission-item p-3 rounded-lg border ${sub.status === "Accepted" ? "bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/5 cursor-pointer" : "bg-card border-border hover:bg-muted/60"} transition-all group`}
-                            title={
-                              canViewCode
-                                ? "Click to view submitted code"
-                                : "Code not stored for unsuccessful submissions"
-                            }
-                          >
-                            <div className={cn('flex', 'items-center', 'gap-3')}>
-                              {sub.status === "Accepted" ? (
-                                <IconCircleCheck className={cn('h-4', 'w-4', 'text-emerald-500', 'shrink-0')} />
-                              ) : (
-                                <IconCircleX className={cn('h-4', 'w-4', 'text-rose-500', 'shrink-0')} />
-                              )}
-                              <div>
-                                <p
-                                  className={`text-xs font-bold ${sub.status === "Accepted" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"} flex items-center gap-1.5`}
-                                >
-                                  {sub.status}
-                                  {canViewCode && (
-                                    <span className={cn('text-[9px]', 'text-zinc-550 dark:text-muted-foreground/80', 'font-normal', 'group-hover:text-emerald-600', 'dark:group-hover:text-emerald-400', 'transition-colors')}>
-                                      {isExpanded
-                                        ? "(Hide code)"
-                                        : "(View code →)"}
+                            >
+                              <div className={cn('flex', 'items-center', 'gap-3')}>
+                                {sub.status === "Accepted" ? (
+                                  <IconCircleCheck className={cn('h-4', 'w-4', 'text-emerald-500', 'shrink-0')} />
+                                ) : (
+                                  <IconCircleX className={cn('h-4', 'w-4', 'text-rose-500', 'shrink-0')} />
+                                )}
+                                <div>
+                                  <p
+                                    className={`text-xs font-bold ${sub.status === "Accepted" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"} flex items-center gap-1.5`}
+                                  >
+                                    {sub.status}
+                                    {canViewCode && (
+                                      <span className={cn('text-[9px]', 'text-zinc-550 dark:text-muted-foreground/80', 'font-normal', 'group-hover:text-emerald-600', 'dark:group-hover:text-emerald-400', 'transition-colors')}>
+                                        {isExpanded
+                                          ? "(Hide code)"
+                                          : "(View code →)"}
+                                      </span>
+                                    )}
+                                  </p>
+                                  <p className={cn('text-[10px]', 'text-zinc-500 dark:text-muted-foreground/60')}>
+                                    {sub.passed_count}/{sub.total_count} passed ·{" "}
+                                    {LANGUAGES.find(
+                                      (l) => l.id === sub.language_id,
+                                    )?.name || "Unknown"}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className={cn('flex', 'items-center', 'gap-3', 'text-[10px]', 'text-zinc-600 dark:text-muted-foreground/80')}>
+                                  {sub.runtime !== null && (
+                                    <span className={cn('flex', 'items-center', 'gap-0.5')}>
+                                      <IconClock className={cn('h-3', 'w-3')} />
+                                      {sub.runtime}s
                                     </span>
                                   )}
-                                </p>
-                                <p className={cn('text-[10px]', 'text-zinc-500 dark:text-muted-foreground/60')}>
-                                  {sub.passed_count}/{sub.total_count} passed ·{" "}
-                                  {LANGUAGES.find(
-                                    (l) => l.id === sub.language_id,
-                                  )?.name || "Unknown"}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className={cn('flex', 'items-center', 'gap-3', 'text-[10px]', 'text-zinc-600 dark:text-muted-foreground/80')}>
-                                {sub.runtime !== null && (
-                                  <span className={cn('flex', 'items-center', 'gap-0.5')}>
-                                    <IconClock className={cn('h-3', 'w-3')} />
-                                    {sub.runtime}s
-                                  </span>
-                                )}
-                                {sub.memory !== null && (
-                                  <span className={cn('flex', 'items-center', 'gap-0.5')}>
-                                    <IconCpu className={cn('h-3', 'w-3')} />
-                                    {formatMemory(sub.memory, true)}
-                                  </span>
-                                )}
-                              </div>
-                              <p className={cn('text-[9px]', 'text-zinc-500 dark:text-muted-foreground/40', 'mt-0.5')}>
-                                {new Date(sub.created_at).toLocaleString()}
-                              </p>
-                            </div>
-                          </div>
-                          {isExpanded && (
-                            <div className={cn('border', 'border-border/60', 'rounded-lg', 'overflow-hidden', 'animate-in', 'slide-in-from-top-1', 'fade-in', 'duration-200', 'shadow-sm', 'mt-1')}>
-                              {loadingCode ? (
-                                <div className={cn('p-6', 'text-center', 'text-[10px]', 'uppercase', 'tracking-widest', 'font-bold', 'text-zinc-600 dark:text-zinc-500', 'animate-pulse', 'bg-zinc-100 dark:bg-zinc-900')}>
-                                  Loading code...
+                                  {sub.memory !== null && (
+                                    <span className={cn('flex', 'items-center', 'gap-0.5')}>
+                                      <IconCpu className={cn('h-3', 'w-3')} />
+                                      {formatMemory(sub.memory, true)}
+                                    </span>
+                                  )}
                                 </div>
-                              ) : (
-                                <div className={cn('h-[400px]', 'w-full', 'relative', 'bg-background', 'group/editor', 'overflow-hidden')}>
-                                  <Editor
-                                    height="100%"
-                                    language={
-                                      LANGUAGES.find(
-                                        (l) => l.id === sub.language_id,
-                                      )?.value || "javascript"
-                                    }
-                                    value={
-                                      viewingCode || "// Code not available"
-                                    }
-                                    theme={monacoTheme}
-                                    options={{
-                                      readOnly: true,
-                                      fontSize: 11.5,
-                                      minimap: { enabled: false },
-                                      scrollBeyondLastLine: false,
-                                      wordWrap: "on",
-                                      padding: { top: 12, bottom: 12 },
-                                      scrollbar: {
-                                        vertical: "hidden",
-                                        verticalScrollbarSize: 0,
-                                        horizontal: "hidden",
-                                        horizontalScrollbarSize: 0,
-                                      },
-                                    }}
-                                  />
-                                  <div className={cn('absolute', 'top-3', 'right-4', 'flex', 'gap-2', 'opacity-0', 'group-hover/editor:opacity-100', 'transition-opacity')}>
-                                    <button
-                                      onClick={() => {
-                                        setCode(viewingCode);
-                                        const lang = LANGUAGES.find(
-                                          (l) =>
-                                            l.id ===
-                                            viewingSubmission?.language_id,
-                                        );
-                                        if (lang) {
-                                          setSelectedLang(lang);
-                                        }
-                                        toast.success("Restored to workspace!");
-                                      }}
-                                      className={cn('bg-emerald-500/10', 'hover:bg-emerald-500/20', 'text-emerald-500', 'border', 'border-emerald-500/20', 'px-2.5', 'py-1', 'rounded-md', 'text-[10px]', 'font-bold', 'transition-all', 'shadow-sm')}
-                                    >
-                                      Restore
-                                    </button>
-                                    <button
-                                      onClick={() => handleCopyToClipboard(viewingCode)}
-                                      className={cn('bg-muted', 'hover:bg-accent', 'text-foreground', 'border', 'border-border', 'px-2.5', 'py-1', 'rounded-md', 'text-[10px]', 'font-bold', 'transition-all', 'shadow-sm')}
-                                    >
-                                      Copy
-                                    </button>
+                                <p className={cn('text-[9px]', 'text-zinc-500 dark:text-muted-foreground/40', 'mt-0.5')}>
+                                  {new Date(sub.created_at).toLocaleString()}
+                                </p>
+                              </div>
+                            </div>
+                            {isExpanded && (
+                              <div className={cn('border', 'border-border/60', 'rounded-lg', 'overflow-hidden', 'animate-in', 'slide-in-from-top-1', 'fade-in', 'duration-200', 'shadow-sm', 'mt-1')}>
+                                {loadingCode ? (
+                                  <div className={cn('p-6', 'text-center', 'text-[10px]', 'uppercase', 'tracking-widest', 'font-bold', 'text-zinc-600 dark:text-zinc-500', 'animate-pulse', 'bg-zinc-100 dark:bg-zinc-900')}>
+                                    Loading code...
                                   </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className={cn('flex', 'flex-col', 'items-center', 'justify-center', 'py-12', 'gap-2', 'select-none')}>
-                      <IconHistory className={cn('h-8', 'w-8', 'text-muted-foreground/20')} />
-                      <p className={cn('text-[10px]', 'text-zinc-500 dark:text-muted-foreground/40', 'uppercase', 'font-bold', 'tracking-widest')}>
-                        No submissions yet
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
+                                ) : (
+                                  <div className={cn('h-[400px]', 'w-full', 'relative', 'bg-background', 'group/editor', 'overflow-hidden')}>
+                                    <Editor
+                                      height="100%"
+                                      language={
+                                        LANGUAGES.find(
+                                          (l) => l.id === sub.language_id,
+                                        )?.value || "javascript"
+                                      }
+                                      value={
+                                        viewingCode || "// Code not available"
+                                      }
+                                      theme={monacoTheme}
+                                      options={{
+                                        readOnly: true,
+                                        fontSize: 11.5,
+                                        minimap: { enabled: false },
+                                        scrollBeyondLastLine: false,
+                                        wordWrap: "on",
+                                        padding: { top: 12, bottom: 12 },
+                                        scrollbar: {
+                                          vertical: "hidden",
+                                          verticalScrollbarSize: 0,
+                                          horizontal: "hidden",
+                                          horizontalScrollbarSize: 0,
+                                        },
+                                      }}
+                                    />
+                                    <div className={cn('absolute', 'top-3', 'right-4', 'flex', 'gap-2', 'opacity-0', 'group-hover/editor:opacity-100', 'transition-opacity')}>
+                                      <button
+                                        onClick={() => {
+                                          setCode(viewingCode);
+                                          const lang = LANGUAGES.find(
+                                            (l) =>
+                                              l.id ===
+                                              viewingSubmission?.language_id,
+                                          );
+                                          if (lang) {
+                                            setSelectedLang(lang);
+                                          }
+                                          toast.success("Restored to workspace!");
+                                        }}
+                                        className={cn('bg-emerald-500/10', 'hover:bg-emerald-500/20', 'text-emerald-500', 'border', 'border-emerald-500/20', 'px-2.5', 'py-1', 'rounded-md', 'text-[10px]', 'font-bold', 'transition-all', 'shadow-sm')}
+                                      >
+                                        Restore
+                                      </button>
+                                      <button
+                                        onClick={() => handleCopyToClipboard(viewingCode)}
+                                        className={cn('bg-muted', 'hover:bg-accent', 'text-foreground', 'border', 'border-border', 'px-2.5', 'py-1', 'rounded-md', 'text-[10px]', 'font-bold', 'transition-all', 'shadow-sm')}
+                                      >
+                                        Copy
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className={cn('flex', 'flex-col', 'items-center', 'justify-center', 'py-12', 'gap-2', 'select-none')}>
+                        <IconHistory className={cn('h-8', 'w-8', 'text-muted-foreground/20')} />
+                        <p className={cn('text-[10px]', 'text-zinc-500 dark:text-muted-foreground/40', 'uppercase', 'font-bold', 'tracking-widest')}>
+                          No submissions yet
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </ScrollArea>
           </TabsContent>
@@ -1886,656 +1886,656 @@ export function ProblemWorkspaceClient({
           >
             <ScrollArea className="flex-1 w-full [&_[data-slot=scroll-area-scrollbar]]:hidden">
               <div className="p-5">
-              {submitting ? (
-                <div className={cn('flex', 'flex-col', 'items-center', 'justify-center', 'py-20', 'gap-4', 'animate-pulse', 'select-none')}>
-                  <div className="relative">
-                    <div className={cn('h-14', 'w-14', 'border-2', 'border-emerald-500/20', 'border-t-emerald-400', 'rounded-full', 'animate-spin')} />
-                    <div className={cn('absolute', 'inset-0', 'flex', 'items-center', 'justify-center')}>
-                      <IconTerminal2 className={cn('h-6', 'w-6', 'text-emerald-400')} />
+                {submitting ? (
+                  <div className={cn('flex', 'flex-col', 'items-center', 'justify-center', 'py-20', 'gap-4', 'animate-pulse', 'select-none')}>
+                    <div className="relative">
+                      <div className={cn('h-14', 'w-14', 'border-2', 'border-emerald-500/20', 'border-t-emerald-400', 'rounded-full', 'animate-spin')} />
+                      <div className={cn('absolute', 'inset-0', 'flex', 'items-center', 'justify-center')}>
+                        <IconTerminal2 className={cn('h-6', 'w-6', 'text-emerald-400')} />
+                      </div>
+                    </div>
+                    <div className={cn('text-center', 'space-y-1.5')}>
+                      <p className={cn('text-base', 'font-bold', 'text-emerald-500', 'uppercase', 'tracking-widest', 'shadow-emerald-500')}>
+                        Judging Submission...
+                      </p>
+                      <p className={cn('text-xs', 'text-zinc-600 dark:text-muted-foreground/80', 'font-medium')}>
+                        Running against hidden test cases
+                      </p>
                     </div>
                   </div>
-                  <div className={cn('text-center', 'space-y-1.5')}>
-                    <p className={cn('text-base', 'font-bold', 'text-emerald-500', 'uppercase', 'tracking-widest', 'shadow-emerald-500')}>
-                      Judging Submission...
-                    </p>
-                    <p className={cn('text-xs', 'text-zinc-600 dark:text-muted-foreground/80', 'font-medium')}>
-                      Running against hidden test cases
-                    </p>
-                  </div>
-                </div>
-              ) : submitResult?.status === "Accepted" ? (
-                (() => {
-                  let points: any[] = [];
-                  if (submitResult?.time_series) {
-                    points = [...submitResult.time_series];
-                  } else if (submitResult?.failed_test_case_info?.time_series) {
-                    points = [...submitResult.failed_test_case_info.time_series];
-                  } else {
-                    const baseTime = submitResult?.runtime ? Math.round(submitResult.runtime * 1000) : 45;
-                    const baseMemory = submitResult?.memory ? Math.round(submitResult.memory * 1024) : 32000;
-                    const tcCount = submitResult?.total_count || 10;
-                    for (let i = 1; i <= tcCount; i++) {
-                      points.push({
-                        index: i,
-                        inputSize: i * 15,
-                        time: Math.round(baseTime * (0.7 + (i / tcCount) * 0.45)),
-                        memory: Math.round(baseMemory * (0.95 + (i / tcCount) * 0.1)),
-                        passed: true
-                      });
-                    }
-                  }
-                  points.sort((a, b) => a.inputSize - b.inputSize);
-
-                  const analyzeCodeComplexity = (codeStr: string, langVal: string) => {
-                    if (!codeStr) return "O(1)";
-                    let clean = codeStr.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*/g, "").replace(/#.*/g, "");
-                    const normalized = clean.toLowerCase();
-                    let maxDepth = 0;
-                    let currentDepth = 0;
-                    const tokens = normalized.match(/for\b|while\b|foreach\b|\{|\}/g) || [];
-                    for (const token of tokens) {
-                      if (token === "for" || token === "while" || token === "foreach") {
-                        currentDepth++;
-                        if (currentDepth > maxDepth) maxDepth = currentDepth;
-                      } else if (token === "}") {
-                        if (currentDepth > 0) currentDepth--;
+                ) : submitResult?.status === "Accepted" ? (
+                  (() => {
+                    let points: any[] = [];
+                    if (submitResult?.time_series) {
+                      points = [...submitResult.time_series];
+                    } else if (submitResult?.failed_test_case_info?.time_series) {
+                      points = [...submitResult.failed_test_case_info.time_series];
+                    } else {
+                      const baseTime = submitResult?.runtime ? Math.round(submitResult.runtime * 1000) : 45;
+                      const baseMemory = submitResult?.memory ? Math.round(submitResult.memory * 1024) : 32000;
+                      const tcCount = submitResult?.total_count || 10;
+                      for (let i = 1; i <= tcCount; i++) {
+                        points.push({
+                          index: i,
+                          inputSize: i * 15,
+                          time: Math.round(baseTime * (0.7 + (i / tcCount) * 0.45)),
+                          memory: Math.round(baseMemory * (0.95 + (i / tcCount) * 0.1)),
+                          passed: true
+                        });
                       }
                     }
-                    if (langVal === "python" || langVal === "71" || normalized.includes("def ")) {
-                      const lines = clean.split("\n");
-                      let loopIndents: number[] = [];
-                      for (const line of lines) {
-                        const trimmed = line.trim();
-                        if (trimmed.startsWith("for ") || trimmed.startsWith("while ")) {
-                          const indent = line.length - line.trimStart().length;
-                          loopIndents = loopIndents.filter((idx) => idx < indent);
-                          loopIndents.push(indent);
-                          if (loopIndents.length > maxDepth) maxDepth = loopIndents.length;
+                    points.sort((a, b) => a.inputSize - b.inputSize);
+
+                    const analyzeCodeComplexity = (codeStr: string, langVal: string) => {
+                      if (!codeStr) return "O(1)";
+                      let clean = codeStr.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*/g, "").replace(/#.*/g, "");
+                      const normalized = clean.toLowerCase();
+                      let maxDepth = 0;
+                      let currentDepth = 0;
+                      const tokens = normalized.match(/for\b|while\b|foreach\b|\{|\}/g) || [];
+                      for (const token of tokens) {
+                        if (token === "for" || token === "while" || token === "foreach") {
+                          currentDepth++;
+                          if (currentDepth > maxDepth) maxDepth = currentDepth;
+                        } else if (token === "}") {
+                          if (currentDepth > 0) currentDepth--;
                         }
                       }
-                    }
-                    const hasBinarySearch = normalized.includes("binarysearch") || (normalized.includes("mid =") && (normalized.includes("/ 2") || normalized.includes(">> 1"))) || (normalized.includes("low <=") && normalized.includes("high ="));
-                    const hasSort = normalized.includes(".sort(") || normalized.includes("sort(") || normalized.includes("sorted(");
-                    if (maxDepth >= 2) return "O(N²)";
-                    else if (maxDepth === 1) {
-                      if (hasBinarySearch) return "O(log N)";
-                      if (hasSort) return "O(N log N)";
-                      return "O(N)";
-                    } else {
-                      if (hasBinarySearch) return "O(log N)";
-                      if (hasSort) return "O(N log N)";
-                      return "O(1)";
-                    }
-                  };
+                      if (langVal === "python" || langVal === "71" || normalized.includes("def ")) {
+                        const lines = clean.split("\n");
+                        let loopIndents: number[] = [];
+                        for (const line of lines) {
+                          const trimmed = line.trim();
+                          if (trimmed.startsWith("for ") || trimmed.startsWith("while ")) {
+                            const indent = line.length - line.trimStart().length;
+                            loopIndents = loopIndents.filter((idx) => idx < indent);
+                            loopIndents.push(indent);
+                            if (loopIndents.length > maxDepth) maxDepth = loopIndents.length;
+                          }
+                        }
+                      }
+                      const hasBinarySearch = normalized.includes("binarysearch") || (normalized.includes("mid =") && (normalized.includes("/ 2") || normalized.includes(">> 1"))) || (normalized.includes("low <=") && normalized.includes("high ="));
+                      const hasSort = normalized.includes(".sort(") || normalized.includes("sort(") || normalized.includes("sorted(");
+                      if (maxDepth >= 2) return "O(N²)";
+                      else if (maxDepth === 1) {
+                        if (hasBinarySearch) return "O(log N)";
+                        if (hasSort) return "O(N log N)";
+                        return "O(N)";
+                      } else {
+                        if (hasBinarySearch) return "O(log N)";
+                        if (hasSort) return "O(N log N)";
+                        return "O(1)";
+                      }
+                    };
 
-                  const complexitySymbol = analyzeCodeComplexity(submitResult?.submitted_code || code, submitResult?.submitted_language?.value || selectedLang.value);
-                  let estimatedComplexity = "O(1) - Constant Time";
-                  if (complexitySymbol === "O(log N)") estimatedComplexity = "O(log N) - Logarithmic Time";
-                  if (complexitySymbol === "O(N)") estimatedComplexity = "O(N) - Linear Time";
-                  if (complexitySymbol === "O(N log N)") estimatedComplexity = "O(N log N) - Linearithmic Time";
-                  if (complexitySymbol === "O(N²)") estimatedComplexity = "O(N²) - Quadratic Time";
+                    const complexitySymbol = analyzeCodeComplexity(submitResult?.submitted_code || code, submitResult?.submitted_language?.value || selectedLang.value);
+                    let estimatedComplexity = "O(1) - Constant Time";
+                    if (complexitySymbol === "O(log N)") estimatedComplexity = "O(log N) - Logarithmic Time";
+                    if (complexitySymbol === "O(N)") estimatedComplexity = "O(N) - Linear Time";
+                    if (complexitySymbol === "O(N log N)") estimatedComplexity = "O(N log N) - Linearithmic Time";
+                    if (complexitySymbol === "O(N²)") estimatedComplexity = "O(N²) - Quadratic Time";
 
-                  const minX = points.length > 0 ? points[0].inputSize : 0;
-                  const maxX = points.length > 0 ? points[points.length - 1].inputSize : 100;
-                  const minTime = points.length > 0 ? Math.min(...points.map((p) => p.time)) : 0;
-                  const maxTime = points.length > 0 ? Math.max(...points.map((p) => p.time)) : 10;
-                  const deltaActual = maxTime - minTime;
-                  let deltaModel = 0;
-                  if (complexitySymbol === "O(log N)") deltaModel = 5;
-                  else if (complexitySymbol === "O(N)") deltaModel = 10;
-                  else if (complexitySymbol === "O(N log N)") deltaModel = 15;
-                  else if (complexitySymbol === "O(N²)") deltaModel = 30;
-                  const shouldModel = deltaActual < 15 && maxX < 150;
-                  
-                  const calibratedPoints = points.map((pt, idx) => {
-                    if (!shouldModel) return pt;
-                    let ratio = 0;
-                    if (maxX > minX) {
-                      const xVal = pt.inputSize;
-                      if (complexitySymbol === "O(log N)") ratio = (Math.log2(xVal + 1) - Math.log2(minX + 1)) / (Math.log2(maxX + 1) - Math.log2(minX + 1));
-                      else if (complexitySymbol === "O(N)") ratio = (xVal - minX) / (maxX - minX);
-                      else if (complexitySymbol === "O(N log N)") { const f = (x: number) => x * Math.log2(x + 1); ratio = (f(xVal) - f(minX)) / (f(maxX) - f(minX)); }
-                      else if (complexitySymbol === "O(N²)") ratio = (xVal * xVal - minX * minX) / (maxX * maxX - minX * minX);
-                    } else ratio = idx / Math.max(1, points.length - 1);
-                    const jitter = (idx % 3 === 0 ? 1 : idx % 3 === 1 ? -1 : 0);
-                    return { ...pt, time: Math.max(0, Math.round(minTime + ratio * deltaModel + jitter)) };
-                  });
+                    const minX = points.length > 0 ? points[0].inputSize : 0;
+                    const maxX = points.length > 0 ? points[points.length - 1].inputSize : 100;
+                    const minTime = points.length > 0 ? Math.min(...points.map((p) => p.time)) : 0;
+                    const maxTime = points.length > 0 ? Math.max(...points.map((p) => p.time)) : 10;
+                    const deltaActual = maxTime - minTime;
+                    let deltaModel = 0;
+                    if (complexitySymbol === "O(log N)") deltaModel = 5;
+                    else if (complexitySymbol === "O(N)") deltaModel = 10;
+                    else if (complexitySymbol === "O(N log N)") deltaModel = 15;
+                    else if (complexitySymbol === "O(N²)") deltaModel = 30;
+                    const shouldModel = deltaActual < 15 && maxX < 150;
 
-                  const timesFinal = calibratedPoints.map((p) => p.time);
-                  const peakTime = timesFinal.length > 0 ? Math.max(...timesFinal) : 0;
-                  const memoriesFinal = calibratedPoints.map((p) => p.memory);
-                  const peakMemory = memoriesFinal.length > 0 ? Math.max(...memoriesFinal) : 0;
-                  const runtimeMs = submitResult?.runtime ? Math.round(submitResult.runtime * 1000) : peakTime || 45;
-                  const memoryMb = submitResult?.memory ?? (peakMemory ? (peakMemory / 1024) : 36.81);
+                    const calibratedPoints = points.map((pt, idx) => {
+                      if (!shouldModel) return pt;
+                      let ratio = 0;
+                      if (maxX > minX) {
+                        const xVal = pt.inputSize;
+                        if (complexitySymbol === "O(log N)") ratio = (Math.log2(xVal + 1) - Math.log2(minX + 1)) / (Math.log2(maxX + 1) - Math.log2(minX + 1));
+                        else if (complexitySymbol === "O(N)") ratio = (xVal - minX) / (maxX - minX);
+                        else if (complexitySymbol === "O(N log N)") { const f = (x: number) => x * Math.log2(x + 1); ratio = (f(xVal) - f(minX)) / (f(maxX) - f(minX)); }
+                        else if (complexitySymbol === "O(N²)") ratio = (xVal * xVal - minX * minX) / (maxX * maxX - minX * minX);
+                      } else ratio = idx / Math.max(1, points.length - 1);
+                      const jitter = (idx % 3 === 0 ? 1 : idx % 3 === 1 ? -1 : 0);
+                      return { ...pt, time: Math.max(0, Math.round(minTime + ratio * deltaModel + jitter)) };
+                    });
 
-                  const hashString = (str: string) => {
-                    let h = 0;
-                    for (let i = 0; i < str.length; i++) {
-                      h = (h << 5) - h + str.charCodeAt(i);
-                      h |= 0;
-                    }
-                    return Math.abs(h);
-                  };
-                  const seed = hashString(
-                    problem.id + String(runtimeMs) + String(memoryMb),
-                  );
-                  const runtimeBeats = (
-                    70 +
-                    (seed % 28) +
-                    (seed % 100) / 100
-                  ).toFixed(2);
-                  const memoryBeats = (
-                    12 +
-                    (seed % 15) +
-                    (seed % 100) / 100
-                  ).toFixed(2);
+                    const timesFinal = calibratedPoints.map((p) => p.time);
+                    const peakTime = timesFinal.length > 0 ? Math.max(...timesFinal) : 0;
+                    const memoriesFinal = calibratedPoints.map((p) => p.memory);
+                    const peakMemory = memoriesFinal.length > 0 ? Math.max(...memoriesFinal) : 0;
+                    const runtimeMs = submitResult?.runtime ? Math.round(submitResult.runtime * 1000) : peakTime || 45;
+                    const memoryMb = submitResult?.memory ?? (peakMemory ? (peakMemory / 1024) : 36.81);
 
-                  const displayName = userProfile?.full_name || userProfile?.email?.split("@")[0] || "Active User";
-                  const initials = displayName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
-                  const submissionTimeStr = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) + " " + new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
-                  const avatarUrl = buildStorageUrl("avatars", userProfile?.avatar_path) || "";
+                    const hashString = (str: string) => {
+                      let h = 0;
+                      for (let i = 0; i < str.length; i++) {
+                        h = (h << 5) - h + str.charCodeAt(i);
+                        h |= 0;
+                      }
+                      return Math.abs(h);
+                    };
+                    const seed = hashString(
+                      problem.id + String(runtimeMs) + String(memoryMb),
+                    );
+                    const runtimeBeats = (
+                      70 +
+                      (seed % 28) +
+                      (seed % 100) / 100
+                    ).toFixed(2);
+                    const memoryBeats = (
+                      12 +
+                      (seed % 15) +
+                      (seed % 100) / 100
+                    ).toFixed(2);
 
-                  const svgWidth = 500;
-                  const svgHeight = 160;
-                  const paddingLeft = 38;
-                  const paddingRight = 10;
-                  const paddingTop = 15;
-                  const paddingBottom = 25;
+                    const displayName = userProfile?.full_name || userProfile?.email?.split("@")[0] || "Active User";
+                    const initials = displayName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
+                    const submissionTimeStr = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) + " " + new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+                    const avatarUrl = buildStorageUrl("avatars", userProfile?.avatar_path) || "";
 
-                  const chartWidth = svgWidth - paddingLeft - paddingRight;
-                  const chartHeight = svgHeight - paddingTop - paddingBottom;
+                    const svgWidth = 500;
+                    const svgHeight = 160;
+                    const paddingLeft = 38;
+                    const paddingRight = 10;
+                    const paddingTop = 15;
+                    const paddingBottom = 25;
 
-                  const getX = (pt: any, idx: number) => {
-                    if (maxX === minX) {
-                      return paddingLeft + (idx / Math.max(1, calibratedPoints.length - 1)) * chartWidth;
-                    }
-                    return paddingLeft + ((pt.inputSize - minX) / (maxX - minX)) * chartWidth;
-                  };
+                    const chartWidth = svgWidth - paddingLeft - paddingRight;
+                    const chartHeight = svgHeight - paddingTop - paddingBottom;
 
-                  const yMaxVal = Math.max(10, peakTime * 1.15);
-                  const getY = (pt: any) => {
-                    return paddingTop + chartHeight - (pt.time / yMaxVal) * chartHeight;
-                  };
+                    const getX = (pt: any, idx: number) => {
+                      if (maxX === minX) {
+                        return paddingLeft + (idx / Math.max(1, calibratedPoints.length - 1)) * chartWidth;
+                      }
+                      return paddingLeft + ((pt.inputSize - minX) / (maxX - minX)) * chartWidth;
+                    };
 
-                  // Construct chart paths
-                  const linePath = calibratedPoints.length > 0
-                    ? calibratedPoints.map((pt, i) => `${i === 0 ? "M" : "L"} ${getX(pt, i)} ${getY(pt)}`).join(" ")
-                    : "";
+                    const yMaxVal = Math.max(10, peakTime * 1.15);
+                    const getY = (pt: any) => {
+                      return paddingTop + chartHeight - (pt.time / yMaxVal) * chartHeight;
+                    };
 
-                  const areaPath = calibratedPoints.length > 0
-                    ? `${linePath} L ${getX(calibratedPoints[calibratedPoints.length - 1], calibratedPoints.length - 1)} ${paddingTop + chartHeight} L ${getX(calibratedPoints[0], 0)} ${paddingTop + chartHeight} Z`
-                    : "";
+                    // Construct chart paths
+                    const linePath = calibratedPoints.length > 0
+                      ? calibratedPoints.map((pt, i) => `${i === 0 ? "M" : "L"} ${getX(pt, i)} ${getY(pt)}`).join(" ")
+                      : "";
 
-                  const activeDetailPoint = hoveredScalingPoint
-                    ? calibratedPoints.find(p => p.index === hoveredScalingPoint.index)
-                    : (calibratedPoints.length > 0 ? calibratedPoints[calibratedPoints.length - 1] : null);
+                    const areaPath = calibratedPoints.length > 0
+                      ? `${linePath} L ${getX(calibratedPoints[calibratedPoints.length - 1], calibratedPoints.length - 1)} ${paddingTop + chartHeight} L ${getX(calibratedPoints[0], 0)} ${paddingTop + chartHeight} Z`
+                      : "";
 
-                  return (
-                    <div className={cn('container-pane-accepted', 'space-y-4', 'select-none', 'animate-in', 'fade-in-50', 'duration-300', 'pr-1', 'select-text')}>
-                      {/* Header row */}
-                      <div className={cn('flex', 'flex-col', 'sm:flex-row', 'sm:items-center', 'justify-between', 'gap-3', 'border-b', 'border-border/40', 'pb-3', 'select-none')}>
-                        <div className="space-y-1">
-                          <div className={cn('flex', 'items-center', 'gap-2')}>
-                            <span className={cn('text-emerald-500', 'font-extrabold', 'text-lg', 'tracking-tight', 'uppercase', 'flex', 'items-center', 'gap-1.5', 'animate-pulse')}>
-                              Accepted
-                            </span>
-                            <span className={cn('text-zinc-600 dark:text-muted-foreground/80', 'text-xs', 'font-semibold')}>
-                              {submitResult?.passed_count || totalTestCases}/
-                              {submitResult?.total_count || totalTestCases}{" "}
-                              testcases passed
-                            </span>
-                          </div>
+                    const activeDetailPoint = hoveredScalingPoint
+                      ? calibratedPoints.find(p => p.index === hoveredScalingPoint.index)
+                      : (calibratedPoints.length > 0 ? calibratedPoints[calibratedPoints.length - 1] : null);
 
-                          <div className={cn('flex', 'items-center', 'gap-2', 'text-xs', 'text-zinc-600 dark:text-muted-foreground')}>
-                            <Avatar className={cn('h-5', 'w-5', 'shrink-0', 'border', 'border-border')}>
-                              <AvatarImage src={avatarUrl} alt={displayName} />
-                              <AvatarFallback className={cn('bg-indigo-500/10', 'text-indigo-400', 'text-[8px]', 'font-extrabold', 'border', 'border-indigo-500/30')}>
-                                {initials}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className={cn('font-semibold', 'text-foreground/90')}>
-                              {displayName}
-                            </span>
-                            <span>submitted at {submissionTimeStr}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Metrics cards row */}
-                      <div className={cn('grid', 'grid-cols-2', 'grid-metrics-accepted', 'gap-4', 'select-none')}>
-                        {/* Runtime Card */}
-                        <div className={cn('bg-zinc-100/70 dark:bg-zinc-900/45', 'border', 'border-border/60', 'rounded-lg', 'p-3.5', 'flex', 'flex-col', 'gap-1', 'hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors shadow-sm')}>
-                          <span className={cn('text-zinc-500 dark:text-muted-foreground/60', 'text-[10px]', 'font-bold', 'uppercase', 'tracking-wider', 'flex', 'items-center', 'gap-1')}>
-                            <IconClock className={cn('h-3.5', 'w-3.5', 'text-zinc-500 dark:text-muted-foreground/80')} />
-                            Runtime
-                          </span>
-                          <div className={cn('flex', 'items-baseline', 'gap-2')}>
-                            <span className={cn('text-foreground', 'font-black', 'text-2xl', 'tracking-tight')}>
-                              {runtimeMs}{" "}
-                              <span className={cn('text-xs', 'font-semibold', 'text-zinc-600 dark:text-muted-foreground')}>
-                                ms
+                    return (
+                      <div className={cn('container-pane-accepted', 'space-y-4', 'select-none', 'animate-in', 'fade-in-50', 'duration-300', 'pr-1', 'select-text')}>
+                        {/* Header row */}
+                        <div className={cn('flex', 'flex-col', 'sm:flex-row', 'sm:items-center', 'justify-between', 'gap-3', 'border-b', 'border-border/40', 'pb-3', 'select-none')}>
+                          <div className="space-y-1">
+                            <div className={cn('flex', 'items-center', 'gap-2')}>
+                              <span className={cn('text-emerald-500', 'font-extrabold', 'text-lg', 'tracking-tight', 'uppercase', 'flex', 'items-center', 'gap-1.5', 'animate-pulse')}>
+                                Accepted
                               </span>
-                            </span>
-                            <span className={cn('text-[11px]', 'font-bold', 'text-zinc-600 dark:text-muted-foreground/80', 'pl-2', 'border-l', 'border-border/60', 'flex', 'items-center', 'gap-1')}>
-                              Beats{" "}
-                              <span className={cn('text-emerald-500', 'dark:text-emerald-400', 'font-extrabold')}>
-                                {runtimeBeats}%
+                              <span className={cn('text-zinc-600 dark:text-muted-foreground/80', 'text-xs', 'font-semibold')}>
+                                {submitResult?.passed_count || totalTestCases}/
+                                {submitResult?.total_count || totalTestCases}{" "}
+                                testcases passed
                               </span>
-                            </span>
+                            </div>
+
+                            <div className={cn('flex', 'items-center', 'gap-2', 'text-xs', 'text-zinc-600 dark:text-muted-foreground')}>
+                              <Avatar className={cn('h-5', 'w-5', 'shrink-0', 'border', 'border-border')}>
+                                <AvatarImage src={avatarUrl} alt={displayName} />
+                                <AvatarFallback className={cn('bg-indigo-500/10', 'text-indigo-400', 'text-[8px]', 'font-extrabold', 'border', 'border-indigo-500/30')}>
+                                  {initials}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className={cn('font-semibold', 'text-foreground/90')}>
+                                {displayName}
+                              </span>
+                              <span>submitted at {submissionTimeStr}</span>
+                            </div>
                           </div>
                         </div>
 
-                        {/* Memory Card */}
-                        <div className={cn('bg-zinc-100/70 dark:bg-zinc-900/45', 'border', 'border-border/60', 'rounded-lg', 'p-3.5', 'flex', 'flex-col', 'gap-1', 'hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors shadow-sm')}>
-                          <span className={cn('text-zinc-500 dark:text-muted-foreground/60', 'text-[10px]', 'font-bold', 'uppercase', 'tracking-wider', 'flex', 'items-center', 'gap-1')}>
-                            <IconCpu className={cn('h-3.5', 'w-3.5', 'text-zinc-500 dark:text-muted-foreground/80')} />
-                            Memory
-                          </span>
-                          <div className={cn('flex', 'items-baseline', 'gap-2')}>
-                            <span className={cn('text-foreground', 'font-black', 'text-2xl', 'tracking-tight')}>
-                              {memoryMb.toFixed(2)}{" "}
-                              <span className={cn('text-xs', 'font-semibold', 'text-zinc-600 dark:text-muted-foreground')}>
-                                MB
-                              </span>
+                        {/* Metrics cards row */}
+                        <div className={cn('grid', 'grid-cols-2', 'grid-metrics-accepted', 'gap-4', 'select-none')}>
+                          {/* Runtime Card */}
+                          <div className={cn('bg-zinc-100/70 dark:bg-zinc-900/45', 'border', 'border-border/60', 'rounded-lg', 'p-3.5', 'flex', 'flex-col', 'gap-1', 'hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors shadow-sm')}>
+                            <span className={cn('text-zinc-500 dark:text-muted-foreground/60', 'text-[10px]', 'font-bold', 'uppercase', 'tracking-wider', 'flex', 'items-center', 'gap-1')}>
+                              <IconClock className={cn('h-3.5', 'w-3.5', 'text-zinc-500 dark:text-muted-foreground/80')} />
+                              Runtime
                             </span>
-                            <span className={cn('text-[11px]', 'font-bold', 'text-zinc-600 dark:text-muted-foreground/80', 'pl-2', 'border-l', 'border-border/60', 'flex', 'items-center', 'gap-1')}>
-                              Beats{" "}
-                              <span className={cn('text-emerald-500', 'dark:text-emerald-400', 'font-extrabold')}>
-                                {memoryBeats}%
+                            <div className={cn('flex', 'items-baseline', 'gap-2')}>
+                              <span className={cn('text-foreground', 'font-black', 'text-2xl', 'tracking-tight')}>
+                                {runtimeMs}{" "}
+                                <span className={cn('text-xs', 'font-semibold', 'text-zinc-600 dark:text-muted-foreground')}>
+                                  ms
+                                </span>
                               </span>
+                              <span className={cn('text-[11px]', 'font-bold', 'text-zinc-600 dark:text-muted-foreground/80', 'pl-2', 'border-l', 'border-border/60', 'flex', 'items-center', 'gap-1')}>
+                                Beats{" "}
+                                <span className={cn('text-emerald-500', 'dark:text-emerald-400', 'font-extrabold')}>
+                                  {runtimeBeats}%
+                                </span>
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Memory Card */}
+                          <div className={cn('bg-zinc-100/70 dark:bg-zinc-900/45', 'border', 'border-border/60', 'rounded-lg', 'p-3.5', 'flex', 'flex-col', 'gap-1', 'hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors shadow-sm')}>
+                            <span className={cn('text-zinc-500 dark:text-muted-foreground/60', 'text-[10px]', 'font-bold', 'uppercase', 'tracking-wider', 'flex', 'items-center', 'gap-1')}>
+                              <IconCpu className={cn('h-3.5', 'w-3.5', 'text-zinc-500 dark:text-muted-foreground/80')} />
+                              Memory
                             </span>
+                            <div className={cn('flex', 'items-baseline', 'gap-2')}>
+                              <span className={cn('text-foreground', 'font-black', 'text-2xl', 'tracking-tight')}>
+                                {memoryMb.toFixed(2)}{" "}
+                                <span className={cn('text-xs', 'font-semibold', 'text-zinc-600 dark:text-muted-foreground')}>
+                                  MB
+                                </span>
+                              </span>
+                              <span className={cn('text-[11px]', 'font-bold', 'text-zinc-600 dark:text-muted-foreground/80', 'pl-2', 'border-l', 'border-border/60', 'flex', 'items-center', 'gap-1')}>
+                                Beats{" "}
+                                <span className={cn('text-emerald-500', 'dark:text-emerald-400', 'font-extrabold')}>
+                                  {memoryBeats}%
+                                </span>
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* SVG Algorithmic Scaling Curve */}
-                      <div className={cn('bg-zinc-100/80 dark:bg-zinc-900/20', 'border', 'border-border/50', 'rounded-lg', 'p-4', 'space-y-3.5', 'relative', 'overflow-hidden', 'select-none')}>
-                        <div className="flex items-center justify-between">
-                          <p className={cn('text-[9px]', 'text-zinc-500 dark:text-muted-foreground/60', 'uppercase', 'tracking-widest', 'font-extrabold')}>
-                            Algorithmic Scaling Curve (Time vs. Input)
-                          </p>
-                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-extrabold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/25">
-                            {estimatedComplexity}
-                          </span>
-                        </div>
+                        {/* SVG Algorithmic Scaling Curve */}
+                        <div className={cn('bg-zinc-100/80 dark:bg-zinc-900/20', 'border', 'border-border/50', 'rounded-lg', 'p-4', 'space-y-3.5', 'relative', 'overflow-hidden', 'select-none')}>
+                          <div className="flex items-center justify-between">
+                            <p className={cn('text-[9px]', 'text-zinc-500 dark:text-muted-foreground/60', 'uppercase', 'tracking-widest', 'font-extrabold')}>
+                              Algorithmic Scaling Curve (Time vs. Input)
+                            </p>
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-extrabold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/25">
+                              {estimatedComplexity}
+                            </span>
+                          </div>
 
-                        <div className={cn('relative', 'w-full', 'h-[160px]')}>
-                          <svg
-                            className={cn('w-full', 'h-full')}
-                            viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-                          >
-                            <defs>
-                              <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
-                                <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
-                              </linearGradient>
-                            </defs>
+                          <div className={cn('relative', 'w-full', 'h-[160px]')}>
+                            <svg
+                              className={cn('w-full', 'h-full')}
+                              viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+                            >
+                              <defs>
+                                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
+                                  <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+                                </linearGradient>
+                              </defs>
 
-                            {/* Horizontal Grid lines & Ticks */}
-                            {[0, 0.5, 1.0].map((ratio, i) => {
-                              const y = paddingTop + chartHeight * (1 - ratio);
-                              const tickVal = Math.round(yMaxVal * ratio);
-                              return (
-                                <g key={i}>
-                                  <line
-                                    x1={paddingLeft}
-                                    y1={y}
-                                    x2={svgWidth - paddingRight}
-                                    y2={y}
-                                    stroke="currentColor"
-                                    strokeDasharray="4 4"
-                                    className="text-zinc-200 dark:text-zinc-800/80"
-                                    strokeWidth="1"
-                                  />
+                              {/* Horizontal Grid lines & Ticks */}
+                              {[0, 0.5, 1.0].map((ratio, i) => {
+                                const y = paddingTop + chartHeight * (1 - ratio);
+                                const tickVal = Math.round(yMaxVal * ratio);
+                                return (
+                                  <g key={i}>
+                                    <line
+                                      x1={paddingLeft}
+                                      y1={y}
+                                      x2={svgWidth - paddingRight}
+                                      y2={y}
+                                      stroke="currentColor"
+                                      strokeDasharray="4 4"
+                                      className="text-zinc-200 dark:text-zinc-800/80"
+                                      strokeWidth="1"
+                                    />
+                                    <text
+                                      x={paddingLeft - 8}
+                                      y={y + 3}
+                                      textAnchor="end"
+                                      className="text-[8px] font-mono fill-zinc-400"
+                                    >
+                                      {tickVal}ms
+                                    </text>
+                                  </g>
+                                );
+                              })}
+
+                              {/* X-axis Ticks */}
+                              {calibratedPoints.length > 0 && (
+                                <>
                                   <text
-                                    x={paddingLeft - 8}
-                                    y={y + 3}
-                                    textAnchor="end"
+                                    x={getX(calibratedPoints[0], 0)}
+                                    y={svgHeight - 10}
+                                    textAnchor="middle"
                                     className="text-[8px] font-mono fill-zinc-400"
                                   >
-                                    {tickVal}ms
+                                    N={minX}
                                   </text>
-                                </g>
-                              );
-                            })}
+                                  <text
+                                    x={getX(calibratedPoints[calibratedPoints.length - 1], calibratedPoints.length - 1)}
+                                    y={svgHeight - 10}
+                                    textAnchor="middle"
+                                    className="text-[8px] font-mono fill-zinc-400"
+                                  >
+                                    N={maxX}
+                                  </text>
+                                </>
+                              )}
 
-                            {/* X-axis Ticks */}
-                            {calibratedPoints.length > 0 && (
-                              <>
-                                <text
-                                  x={getX(calibratedPoints[0], 0)}
-                                  y={svgHeight - 10}
-                                  textAnchor="middle"
-                                  className="text-[8px] font-mono fill-zinc-400"
-                                >
-                                  N={minX}
-                                </text>
-                                <text
-                                  x={getX(calibratedPoints[calibratedPoints.length - 1], calibratedPoints.length - 1)}
-                                  y={svgHeight - 10}
-                                  textAnchor="middle"
-                                  className="text-[8px] font-mono fill-zinc-400"
-                                >
-                                  N={maxX}
-                                </text>
-                              </>
-                            )}
+                              {/* Shaded Area Under Line */}
+                              {areaPath && (
+                                <path
+                                  d={areaPath}
+                                  fill="url(#chartGradient)"
+                                />
+                              )}
 
-                            {/* Shaded Area Under Line */}
-                            {areaPath && (
-                              <path
-                                d={areaPath}
-                                fill="url(#chartGradient)"
-                              />
-                            )}
+                              {/* Curve Line */}
+                              {linePath && (
+                                <path
+                                  d={linePath}
+                                  fill="none"
+                                  stroke="#10b981"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              )}
 
-                            {/* Curve Line */}
-                            {linePath && (
-                              <path
-                                d={linePath}
-                                fill="none"
-                                stroke="#10b981"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            )}
+                              {/* Vertical Highlight Indicator Line for hovered node */}
+                              {hoveredScalingPoint && (
+                                <line
+                                  x1={getX(hoveredScalingPoint, calibratedPoints.indexOf(hoveredScalingPoint))}
+                                  y1={paddingTop}
+                                  x2={getX(hoveredScalingPoint, calibratedPoints.indexOf(hoveredScalingPoint))}
+                                  y2={paddingTop + chartHeight}
+                                  stroke="#10b981"
+                                  strokeWidth="1"
+                                  strokeDasharray="3 3"
+                                  opacity="0.6"
+                                />
+                              )}
 
-                            {/* Vertical Highlight Indicator Line for hovered node */}
-                            {hoveredScalingPoint && (
-                              <line
-                                x1={getX(hoveredScalingPoint, calibratedPoints.indexOf(hoveredScalingPoint))}
-                                y1={paddingTop}
-                                x2={getX(hoveredScalingPoint, calibratedPoints.indexOf(hoveredScalingPoint))}
-                                y2={paddingTop + chartHeight}
-                                stroke="#10b981"
-                                strokeWidth="1"
-                                strokeDasharray="3 3"
-                                opacity="0.6"
-                              />
-                            )}
-
-                            {/* Data points/nodes */}
-                            {calibratedPoints.map((pt, i) => {
-                              const cx = getX(pt, i);
-                              const cy = getY(pt);
-                              const isHovered = hoveredScalingPoint?.index === pt.index;
-                              return (
-                                <g key={i}>
-                                  {isHovered && (
+                              {/* Data points/nodes */}
+                              {calibratedPoints.map((pt, i) => {
+                                const cx = getX(pt, i);
+                                const cy = getY(pt);
+                                const isHovered = hoveredScalingPoint?.index === pt.index;
+                                return (
+                                  <g key={i}>
+                                    {isHovered && (
+                                      <circle
+                                        cx={cx}
+                                        cy={cy}
+                                        r={7}
+                                        fill="#10b981"
+                                        opacity="0.3"
+                                        className="animate-ping"
+                                      />
+                                    )}
                                     <circle
                                       cx={cx}
                                       cy={cy}
-                                      r={7}
-                                      fill="#10b981"
-                                      opacity="0.3"
-                                      className="animate-ping"
+                                      r={isHovered ? 5 : 3.5}
+                                      fill={isHovered ? "#10b981" : "#18181b"}
+                                      stroke="#10b981"
+                                      strokeWidth={1.5}
+                                      className="transition-all"
                                     />
-                                  )}
-                                  <circle
-                                    cx={cx}
-                                    cy={cy}
-                                    r={isHovered ? 5 : 3.5}
-                                    fill={isHovered ? "#10b981" : "#18181b"}
-                                    stroke="#10b981"
-                                    strokeWidth={1.5}
-                                    className="transition-all"
-                                  />
-                                  {/* Hover trigger overlay */}
-                                  <circle
-                                    cx={cx}
-                                    cy={cy}
-                                    r={12}
-                                    fill="transparent"
-                                    className="cursor-pointer"
-                                    onMouseEnter={() => setHoveredScalingPoint(pt)}
-                                    onMouseLeave={() => setHoveredScalingPoint(null)}
-                                  />
-                                </g>
-                              );
-                            })}
-                          </svg>
-                        </div>
+                                    {/* Hover trigger overlay */}
+                                    <circle
+                                      cx={cx}
+                                      cy={cy}
+                                      r={12}
+                                      fill="transparent"
+                                      className="cursor-pointer"
+                                      onMouseEnter={() => setHoveredScalingPoint(pt)}
+                                      onMouseLeave={() => setHoveredScalingPoint(null)}
+                                    />
+                                  </g>
+                                );
+                              })}
+                            </svg>
+                          </div>
 
-                        {/* Interactive Profiler Summary Bar */}
-                        <div className="grid grid-cols-4 grid-summary-accepted gap-2 pt-2.5 border-t border-border/40 text-center text-xs select-none">
-                          <div className="flex flex-col items-center">
-                            <span className="text-zinc-500 dark:text-muted-foreground/60 text-[9px] uppercase font-bold tracking-wider">
-                              {hoveredScalingPoint ? `Test Case #${activeDetailPoint.index}` : "Peak Test Case"}
-                            </span>
-                            <span className="font-mono font-bold text-zinc-700 dark:text-zinc-300 mt-0.5">
-                              N = {activeDetailPoint?.inputSize ?? "—"}
-                            </span>
-                          </div>
-                          <div className="flex flex-col items-center">
-                            <span className="text-zinc-500 dark:text-muted-foreground/60 text-[9px] uppercase font-bold tracking-wider">
-                              Execution Time
-                            </span>
-                            <span className="font-mono font-extrabold text-emerald-500 mt-0.5">
-                              {activeDetailPoint ? `${activeDetailPoint.time} ms` : "—"}
-                            </span>
-                          </div>
-                          <div className="flex flex-col items-center">
-                            <span className="text-zinc-500 dark:text-muted-foreground/60 text-[9px] uppercase font-bold tracking-wider">
-                              Memory Footprint
-                            </span>
-                            <span className="font-mono font-bold text-indigo-500 mt-0.5">
-                              {activeDetailPoint ? formatMemory(activeDetailPoint.memory, false) : "—"}
-                            </span>
-                          </div>
-                          <div className="flex flex-col items-center">
-                            <span className="text-zinc-500 dark:text-muted-foreground/60 text-[9px] uppercase font-bold tracking-wider">
-                              Scaling Growth
-                            </span>
-                            <span className="font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                              {estimatedComplexity.split(" - ")[0]}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Submitted Code Editor */}
-                      <div className={cn('mt-5', 'pt-4', 'border-t', 'border-border/60')}>
-                        <div className={cn('rounded-xl', 'border', 'border-border/60', 'overflow-hidden', 'shadow-sm', 'bg-card')}>
-                          {/* Card Header */}
-                          <div className={cn('flex', 'items-center', 'justify-between', 'px-3', 'py-2', 'bg-muted/40', 'border-b', 'border-border/50', 'select-none')}>
-                            <div className={cn('flex', 'items-center', 'gap-2')}>
-                              <IconCode className={cn('h-3.5', 'w-3.5', 'text-zinc-500 dark:text-muted-foreground/70')} />
-                              <span className={cn('text-[10px]', 'font-extrabold', 'uppercase', 'tracking-widest', 'text-zinc-600 dark:text-muted-foreground/80')}>Submitted Code</span>
-                              <span className={cn('px-2', 'py-0.5', 'rounded-full', 'bg-emerald-500/10', 'border', 'border-emerald-500/20', 'text-emerald-600', 'dark:text-emerald-400', 'text-[10px]', 'font-bold')}>
-                                {submitResult?.submitted_language?.name || selectedLang.name}
+                          {/* Interactive Profiler Summary Bar */}
+                          <div className="grid grid-cols-4 grid-summary-accepted gap-2 pt-2.5 border-t border-border/40 text-center text-xs select-none">
+                            <div className="flex flex-col items-center">
+                              <span className="text-zinc-500 dark:text-muted-foreground/60 text-[9px] uppercase font-bold tracking-wider">
+                                {hoveredScalingPoint ? `Test Case #${activeDetailPoint.index}` : "Peak Test Case"}
+                              </span>
+                              <span className="font-mono font-bold text-zinc-700 dark:text-zinc-300 mt-0.5">
+                                N = {activeDetailPoint?.inputSize ?? "—"}
                               </span>
                             </div>
-                            <button
-                              onClick={() => { navigator.clipboard.writeText(submitResult?.submitted_code || code); toast.success('Copied!'); }}
-                              className={cn('flex', 'items-center', 'gap-1', 'px-2', 'py-1', 'rounded-md', 'text-[10px]', 'font-bold', 'text-zinc-500 dark:text-muted-foreground/70', 'hover:text-foreground', 'hover:bg-muted', 'transition-colors')}
-                            >
-                              <IconCopy className={cn('h-3', 'w-3')} />
-                              Copy
-                            </button>
-                          </div>
-                          {/* Editor */}
-                          <div className={cn('h-[240px]', 'overflow-hidden', 'bg-background')}>
-                            <Editor
-                              height="100%"
-                              language={
-                                submitResult?.submitted_language?.value ||
-                                selectedLang.value
-                              }
-                              value={submitResult?.submitted_code || code}
-                              theme={monacoTheme}
-                              options={{
-                                readOnly: true,
-                                fontSize: 12,
-                                minimap: { enabled: false },
-                                scrollBeyondLastLine: false,
-                                wordWrap: "on",
-                                automaticLayout: true,
-                                padding: { top: 10, bottom: 10 },
-                                lineNumbersMinChars: 3,
-                              }}
-                            />
+                            <div className="flex flex-col items-center">
+                              <span className="text-zinc-500 dark:text-muted-foreground/60 text-[9px] uppercase font-bold tracking-wider">
+                                Execution Time
+                              </span>
+                              <span className="font-mono font-extrabold text-emerald-500 mt-0.5">
+                                {activeDetailPoint ? `${activeDetailPoint.time} ms` : "—"}
+                              </span>
+                            </div>
+                            <div className="flex flex-col items-center">
+                              <span className="text-zinc-500 dark:text-muted-foreground/60 text-[9px] uppercase font-bold tracking-wider">
+                                Memory Footprint
+                              </span>
+                              <span className="font-mono font-bold text-indigo-500 mt-0.5">
+                                {activeDetailPoint ? formatMemory(activeDetailPoint.memory, false) : "—"}
+                              </span>
+                            </div>
+                            <div className="flex flex-col items-center">
+                              <span className="text-zinc-500 dark:text-muted-foreground/60 text-[9px] uppercase font-bold tracking-wider">
+                                Scaling Growth
+                              </span>
+                              <span className="font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                                {estimatedComplexity.split(" - ")[0]}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  );
-                })()
-              ) : submitResult ? (
-                <div className={cn('space-y-5', 'animate-in', 'fade-in', 'duration-300', 'pr-1', 'pb-4')}>
-                  <div className={cn('border-b', 'border-border/40', 'pb-4')}>
-                    <h2 className={cn('text-rose-500', 'font-extrabold', 'text-2xl', 'tracking-tight', 'mb-1')}>
-                      {submitResult.status}
-                    </h2>
-                    <p className={cn('text-zinc-650 dark:text-muted-foreground/80', 'text-sm', 'font-semibold')}>
-                      {submitResult.passed_count || 0}/
-                      {submitResult.total_count || totalTestCases} test cases
-                      passed
-                    </p>
-                  </div>
 
-                  {/* Compile Error / Runtime Error specifics */}
-                  {(submitResult.compile_output ||
-                    submitResult.status === "Compile Error" ||
-                    submitResult.status?.includes("Runtime Error") ||
-                    submitResult.status === "Time Limit Exceeded" ||
-                    submitResult.status === "Memory Limit Exceeded") && (
-                      <div className={cn('p-4', 'bg-rose-500/5', 'border', 'border-rose-500/20', 'rounded-xl', 'space-y-2', 'select-text')}>
-                        <p className={cn('text-sm', 'font-bold', 'text-rose-600', 'dark:text-rose-400', 'uppercase', 'tracking-wider', 'flex', 'items-center', 'gap-1.5', 'mb-1')}>
-                          <IconAlertTriangle className={cn('h-4.5', 'w-4.5')} /> Diagnostics
-                        </p>
-                        <pre className={cn('p-4', 'bg-black/40', 'border', 'border-border/80', 'rounded-xl', 'text-rose-400', 'text-[13px]', 'font-mono', 'whitespace-pre-wrap', 'max-h-[400px]', 'overflow-y-auto', 'leading-relaxed', 'shadow-sm')}>
-                          {formatErrorDiagnostic(truncateText(
-                            submitResult.failed_test_case_info?.actual ||
-                            submitResult.compile_output ||
-                            submitResult.stderr ||
-                            submitResult.status,
-                          ))}
-                        </pre>
-                      </div>
-                    )}
-
-                  {/* Failed Test Case details if it's Wrong Answer, TLE, or RE */}
-                  {(submitResult.status === "Wrong Answer" ||
-                    submitResult.status === "Time Limit Exceeded" ||
-                    submitResult.status?.includes("Runtime Error")) &&
-                    submitResult.failed_test_case_info && (
-                      <div className={cn('space-y-2', 'font-mono', 'text-xs', 'select-text')}>
-                        {/* Input */}
-                        <div className={cn('rounded-lg', 'border', 'border-border/50', 'overflow-hidden')}>
-                          <div className={cn('px-3', 'py-1.5', 'bg-muted/40', 'border-b', 'border-border/40', 'select-none')}>
-                            <span className={cn('text-[10px]', 'font-extrabold', 'uppercase', 'tracking-widest', 'text-zinc-500 dark:text-muted-foreground/70')}>Input</span>
-                          </div>
-                          <pre className={cn('p-3', 'bg-muted/20', 'dark:bg-zinc-900/30', 'whitespace-pre-wrap', 'text-foreground/90', 'leading-relaxed')}>
-                            {submitResult.failed_test_case_info.input}
-                          </pre>
-                        </div>
-                        {/* Output */}
-                        <div className={cn('rounded-lg', 'border', 'border-rose-500/25', 'overflow-hidden')}>
-                          <div className={cn('px-3', 'py-1.5', 'bg-rose-500/5', 'border-b', 'border-rose-500/20', 'flex', 'items-center', 'gap-1.5', 'select-none')}>
-                            <IconCircleX className={cn('h-3', 'w-3', 'text-rose-500')} />
-                            <span className={cn('text-[10px]', 'font-extrabold', 'uppercase', 'tracking-widest', 'text-rose-600', 'dark:text-rose-400')}>Output</span>
-                          </div>
-                          <pre className={cn('p-3', 'bg-rose-500/5', 'text-rose-600', 'dark:text-rose-400', 'font-semibold', 'whitespace-pre-wrap', 'leading-relaxed')}>
-                            {truncateText(
-                              submitResult.failed_test_case_info.actual ||
-                              "(empty)",
-                            )}
-                          </pre>
-                        </div>
-                        {/* Expected */}
-                        <div className={cn('rounded-lg', 'border', 'border-emerald-500/25', 'overflow-hidden')}>
-                          <div className={cn('px-3', 'py-1.5', 'bg-emerald-500/5', 'border-b', 'border-emerald-500/20', 'flex', 'items-center', 'gap-1.5', 'select-none')}>
-                            <IconCircleCheck className={cn('h-3', 'w-3', 'text-emerald-500')} />
-                            <span className={cn('text-[10px]', 'font-extrabold', 'uppercase', 'tracking-widest', 'text-emerald-600', 'dark:text-emerald-400')}>Expected</span>
-                          </div>
-                          <pre className={cn('p-3', 'bg-emerald-500/5', 'text-emerald-700', 'dark:text-emerald-400', 'whitespace-pre-wrap', 'leading-relaxed')}>
-                            {truncateText(
-                              submitResult.failed_test_case_info.expected ||
-                              "(none)",
-                            )}
-                          </pre>
-                        </div>
-                        {/* Console Output (if any) */}
-                        {submitResult.failed_test_case_info.console_output && submitResult.failed_test_case_info.console_output.trim() !== "" && (
-                          <div className={cn('mt-4', 'rounded-xl', 'overflow-hidden', 'border', 'border-zinc-800/80', 'bg-[#0a0a0a]', 'shadow-inner')}>
-                            <div className={cn('flex', 'items-center', 'px-3', 'py-2.5', 'bg-[#18181b]', 'border-b', 'border-zinc-800', 'select-none')}>
-                              <div className={cn('flex', 'gap-1.5', 'mr-3')}>
-                                <div className={cn('w-2.5', 'h-2.5', 'rounded-full', 'bg-red-500/80')} />
-                                <div className={cn('w-2.5', 'h-2.5', 'rounded-full', 'bg-yellow-500/80')} />
-                                <div className={cn('w-2.5', 'h-2.5', 'rounded-full', 'bg-emerald-500/80')} />
+                        {/* Submitted Code Editor */}
+                        <div className={cn('mt-5', 'pt-4', 'border-t', 'border-border/60')}>
+                          <div className={cn('rounded-xl', 'border', 'border-border/60', 'overflow-hidden', 'shadow-sm', 'bg-card')}>
+                            {/* Card Header */}
+                            <div className={cn('flex', 'items-center', 'justify-between', 'px-3', 'py-2', 'bg-muted/40', 'border-b', 'border-border/50', 'select-none')}>
+                              <div className={cn('flex', 'items-center', 'gap-2')}>
+                                <IconCode className={cn('h-3.5', 'w-3.5', 'text-zinc-500 dark:text-muted-foreground/70')} />
+                                <span className={cn('text-[10px]', 'font-extrabold', 'uppercase', 'tracking-widest', 'text-zinc-600 dark:text-muted-foreground/80')}>Submitted Code</span>
+                                <span className={cn('px-2', 'py-0.5', 'rounded-full', 'bg-emerald-500/10', 'border', 'border-emerald-500/20', 'text-emerald-600', 'dark:text-emerald-400', 'text-[10px]', 'font-bold')}>
+                                  {submitResult?.submitted_language?.name || selectedLang.name}
+                                </span>
                               </div>
-                              <IconTerminal2 className={cn('h-3.5', 'w-3.5', 'text-zinc-500', 'mr-2')} />
-                              <span className={cn('text-[10px]', 'text-zinc-400', 'uppercase', 'tracking-widest', 'font-bold')}>
-                                Console Output
-                              </span>
+                              <button
+                                onClick={() => { navigator.clipboard.writeText(submitResult?.submitted_code || code); toast.success('Copied!'); }}
+                                className={cn('flex', 'items-center', 'gap-1', 'px-2', 'py-1', 'rounded-md', 'text-[10px]', 'font-bold', 'text-zinc-500 dark:text-muted-foreground/70', 'hover:text-foreground', 'hover:bg-muted', 'transition-colors')}
+                              >
+                                <IconCopy className={cn('h-3', 'w-3')} />
+                                Copy
+                              </button>
                             </div>
-                            <div className={cn('p-4', 'max-h-64', 'overflow-y-auto', 'scrollbar-thin')}>
-                              <pre className={cn('text-zinc-300', 'text-[12px]', 'font-mono', 'whitespace-pre-wrap', 'leading-[1.8]', 'font-medium')}>
-                                {submitResult.failed_test_case_info.console_output}
-                              </pre>
+                            {/* Editor */}
+                            <div className={cn('h-[240px]', 'overflow-hidden', 'bg-background')}>
+                              <Editor
+                                height="100%"
+                                language={
+                                  submitResult?.submitted_language?.value ||
+                                  selectedLang.value
+                                }
+                                value={submitResult?.submitted_code || code}
+                                theme={monacoTheme}
+                                options={{
+                                  readOnly: true,
+                                  fontSize: 12,
+                                  minimap: { enabled: false },
+                                  scrollBeyondLastLine: false,
+                                  wordWrap: "on",
+                                  automaticLayout: true,
+                                  padding: { top: 10, bottom: 10 },
+                                  lineNumbersMinChars: 3,
+                                }}
+                              />
                             </div>
                           </div>
-                        )}
-                      </div>
-                    )}
-
-
-
-                  {/* Submitted Code Editor for reference */}
-                  <div className={cn('mt-5', 'pt-4', 'border-t', 'border-border/60')}>
-                    <div className={cn('rounded-xl', 'border', 'border-border/60', 'overflow-hidden', 'shadow-sm', 'bg-card')}>
-                      {/* Card Header */}
-                      <div className={cn('flex', 'items-center', 'justify-between', 'px-3', 'py-2', 'bg-muted/40', 'border-b', 'border-border/50', 'select-none')}>
-                        <div className={cn('flex', 'items-center', 'gap-2')}>
-                          <IconCode className={cn('h-3.5', 'w-3.5', 'text-zinc-500 dark:text-muted-foreground/70')} />
-                          <span className={cn('text-[10px]', 'font-extrabold', 'uppercase', 'tracking-widest', 'text-zinc-600 dark:text-muted-foreground/80')}>Submitted Code</span>
-                          <span className={cn('px-2', 'py-0.5', 'rounded-full', 'bg-zinc-200/60 dark:bg-zinc-800/60', 'border', 'border-border/50', 'text-zinc-600 dark:text-muted-foreground', 'text-[10px]', 'font-bold')}>
-                            {submitResult?.submitted_language?.name || selectedLang.name}
-                          </span>
                         </div>
-                        <button
-                          onClick={() => { navigator.clipboard.writeText(submitResult?.submitted_code || code); toast.success('Copied!'); }}
-                          className={cn('flex', 'items-center', 'gap-1', 'px-2', 'py-1', 'rounded-md', 'text-[10px]', 'font-bold', 'text-zinc-500 dark:text-muted-foreground/70', 'hover:text-foreground', 'hover:bg-muted', 'transition-colors')}
-                        >
-                          <IconCopy className={cn('h-3', 'w-3')} />
-                          Copy
-                        </button>
                       </div>
-                      {/* Editor */}
-                      <div className={cn('h-[240px]', 'overflow-hidden', 'bg-background')}>
-                        <Editor
-                          height="100%"
-                          language={
-                            submitResult?.submitted_language?.value ||
-                            selectedLang.value
-                          }
-                          value={submitResult?.submitted_code || code}
-                          theme={monacoTheme}
-                          options={{
-                            readOnly: true,
-                            fontSize: 12,
-                            minimap: { enabled: false },
-                            scrollBeyondLastLine: false,
-                            wordWrap: "on",
-                            automaticLayout: true,
-                            padding: { top: 10, bottom: 10 },
-                            lineNumbersMinChars: 3,
-                          }}
-                        />
+                    );
+                  })()
+                ) : submitResult ? (
+                  <div className={cn('space-y-5', 'animate-in', 'fade-in', 'duration-300', 'pr-1', 'pb-4')}>
+                    <div className={cn('border-b', 'border-border/40', 'pb-4')}>
+                      <h2 className={cn('text-rose-500', 'font-extrabold', 'text-2xl', 'tracking-tight', 'mb-1')}>
+                        {submitResult.status}
+                      </h2>
+                      <p className={cn('text-zinc-650 dark:text-muted-foreground/80', 'text-sm', 'font-semibold')}>
+                        {submitResult.passed_count || 0}/
+                        {submitResult.total_count || totalTestCases} test cases
+                        passed
+                      </p>
+                    </div>
+
+                    {/* Compile Error / Runtime Error specifics */}
+                    {(submitResult.compile_output ||
+                      submitResult.status === "Compile Error" ||
+                      submitResult.status?.includes("Runtime Error") ||
+                      submitResult.status === "Time Limit Exceeded" ||
+                      submitResult.status === "Memory Limit Exceeded") && (
+                        <div className={cn('p-4', 'bg-rose-500/5', 'border', 'border-rose-500/20', 'rounded-xl', 'space-y-2', 'select-text')}>
+                          <p className={cn('text-sm', 'font-bold', 'text-rose-600', 'dark:text-rose-400', 'uppercase', 'tracking-wider', 'flex', 'items-center', 'gap-1.5', 'mb-1')}>
+                            <IconAlertTriangle className={cn('h-4.5', 'w-4.5')} /> Diagnostics
+                          </p>
+                          <pre className={cn('p-4', 'bg-black/40', 'border', 'border-border/80', 'rounded-xl', 'text-rose-400', 'text-[13px]', 'font-mono', 'whitespace-pre-wrap', 'max-h-[400px]', 'overflow-y-auto', 'leading-relaxed', 'shadow-sm')}>
+                            {formatErrorDiagnostic(truncateText(
+                              submitResult.failed_test_case_info?.actual ||
+                              submitResult.compile_output ||
+                              submitResult.stderr ||
+                              submitResult.status,
+                            ))}
+                          </pre>
+                        </div>
+                      )}
+
+                    {/* Failed Test Case details if it's Wrong Answer, TLE, or RE */}
+                    {(submitResult.status === "Wrong Answer" ||
+                      submitResult.status === "Time Limit Exceeded" ||
+                      submitResult.status?.includes("Runtime Error")) &&
+                      submitResult.failed_test_case_info && (
+                        <div className={cn('space-y-2', 'font-mono', 'text-xs', 'select-text')}>
+                          {/* Input */}
+                          <div className={cn('rounded-lg', 'border', 'border-border/50', 'overflow-hidden')}>
+                            <div className={cn('px-3', 'py-1.5', 'bg-muted/40', 'border-b', 'border-border/40', 'select-none')}>
+                              <span className={cn('text-[10px]', 'font-extrabold', 'uppercase', 'tracking-widest', 'text-zinc-500 dark:text-muted-foreground/70')}>Input</span>
+                            </div>
+                            <pre className={cn('p-3', 'bg-muted/20', 'dark:bg-zinc-900/30', 'whitespace-pre-wrap', 'text-foreground/90', 'leading-relaxed')}>
+                              {submitResult.failed_test_case_info.input}
+                            </pre>
+                          </div>
+                          {/* Output */}
+                          <div className={cn('rounded-lg', 'border', 'border-rose-500/25', 'overflow-hidden')}>
+                            <div className={cn('px-3', 'py-1.5', 'bg-rose-500/5', 'border-b', 'border-rose-500/20', 'flex', 'items-center', 'gap-1.5', 'select-none')}>
+                              <IconCircleX className={cn('h-3', 'w-3', 'text-rose-500')} />
+                              <span className={cn('text-[10px]', 'font-extrabold', 'uppercase', 'tracking-widest', 'text-rose-600', 'dark:text-rose-400')}>Output</span>
+                            </div>
+                            <pre className={cn('p-3', 'bg-rose-500/5', 'text-rose-600', 'dark:text-rose-400', 'font-semibold', 'whitespace-pre-wrap', 'leading-relaxed')}>
+                              {truncateText(
+                                submitResult.failed_test_case_info.actual ||
+                                "(empty)",
+                              )}
+                            </pre>
+                          </div>
+                          {/* Expected */}
+                          <div className={cn('rounded-lg', 'border', 'border-emerald-500/25', 'overflow-hidden')}>
+                            <div className={cn('px-3', 'py-1.5', 'bg-emerald-500/5', 'border-b', 'border-emerald-500/20', 'flex', 'items-center', 'gap-1.5', 'select-none')}>
+                              <IconCircleCheck className={cn('h-3', 'w-3', 'text-emerald-500')} />
+                              <span className={cn('text-[10px]', 'font-extrabold', 'uppercase', 'tracking-widest', 'text-emerald-600', 'dark:text-emerald-400')}>Expected</span>
+                            </div>
+                            <pre className={cn('p-3', 'bg-emerald-500/5', 'text-emerald-700', 'dark:text-emerald-400', 'whitespace-pre-wrap', 'leading-relaxed')}>
+                              {truncateText(
+                                submitResult.failed_test_case_info.expected ||
+                                "(none)",
+                              )}
+                            </pre>
+                          </div>
+                          {/* Console Output (if any) */}
+                          {submitResult.failed_test_case_info.console_output && submitResult.failed_test_case_info.console_output.trim() !== "" && (
+                            <div className={cn('mt-4', 'rounded-xl', 'overflow-hidden', 'border', 'border-zinc-800/80', 'bg-[#0a0a0a]', 'shadow-inner')}>
+                              <div className={cn('flex', 'items-center', 'px-3', 'py-2.5', 'bg-[#18181b]', 'border-b', 'border-zinc-800', 'select-none')}>
+                                <div className={cn('flex', 'gap-1.5', 'mr-3')}>
+                                  <div className={cn('w-2.5', 'h-2.5', 'rounded-full', 'bg-red-500/80')} />
+                                  <div className={cn('w-2.5', 'h-2.5', 'rounded-full', 'bg-yellow-500/80')} />
+                                  <div className={cn('w-2.5', 'h-2.5', 'rounded-full', 'bg-emerald-500/80')} />
+                                </div>
+                                <IconTerminal2 className={cn('h-3.5', 'w-3.5', 'text-zinc-500', 'mr-2')} />
+                                <span className={cn('text-[10px]', 'text-zinc-400', 'uppercase', 'tracking-widest', 'font-bold')}>
+                                  Console Output
+                                </span>
+                              </div>
+                              <div className={cn('p-4', 'max-h-64', 'overflow-y-auto', 'scrollbar-thin')}>
+                                <pre className={cn('text-zinc-300', 'text-[12px]', 'font-mono', 'whitespace-pre-wrap', 'leading-[1.8]', 'font-medium')}>
+                                  {submitResult.failed_test_case_info.console_output}
+                                </pre>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+
+
+                    {/* Submitted Code Editor for reference */}
+                    <div className={cn('mt-5', 'pt-4', 'border-t', 'border-border/60')}>
+                      <div className={cn('rounded-xl', 'border', 'border-border/60', 'overflow-hidden', 'shadow-sm', 'bg-card')}>
+                        {/* Card Header */}
+                        <div className={cn('flex', 'items-center', 'justify-between', 'px-3', 'py-2', 'bg-muted/40', 'border-b', 'border-border/50', 'select-none')}>
+                          <div className={cn('flex', 'items-center', 'gap-2')}>
+                            <IconCode className={cn('h-3.5', 'w-3.5', 'text-zinc-500 dark:text-muted-foreground/70')} />
+                            <span className={cn('text-[10px]', 'font-extrabold', 'uppercase', 'tracking-widest', 'text-zinc-600 dark:text-muted-foreground/80')}>Submitted Code</span>
+                            <span className={cn('px-2', 'py-0.5', 'rounded-full', 'bg-zinc-200/60 dark:bg-zinc-800/60', 'border', 'border-border/50', 'text-zinc-600 dark:text-muted-foreground', 'text-[10px]', 'font-bold')}>
+                              {submitResult?.submitted_language?.name || selectedLang.name}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => { navigator.clipboard.writeText(submitResult?.submitted_code || code); toast.success('Copied!'); }}
+                            className={cn('flex', 'items-center', 'gap-1', 'px-2', 'py-1', 'rounded-md', 'text-[10px]', 'font-bold', 'text-zinc-500 dark:text-muted-foreground/70', 'hover:text-foreground', 'hover:bg-muted', 'transition-colors')}
+                          >
+                            <IconCopy className={cn('h-3', 'w-3')} />
+                            Copy
+                          </button>
+                        </div>
+                        {/* Editor */}
+                        <div className={cn('h-[240px]', 'overflow-hidden', 'bg-background')}>
+                          <Editor
+                            height="100%"
+                            language={
+                              submitResult?.submitted_language?.value ||
+                              selectedLang.value
+                            }
+                            value={submitResult?.submitted_code || code}
+                            theme={monacoTheme}
+                            options={{
+                              readOnly: true,
+                              fontSize: 12,
+                              minimap: { enabled: false },
+                              scrollBeyondLastLine: false,
+                              wordWrap: "on",
+                              automaticLayout: true,
+                              padding: { top: 10, bottom: 10 },
+                              lineNumbersMinChars: 3,
+                            }}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ) : null}
+                ) : null}
               </div>
             </ScrollArea>
           </TabsContent>
           <TabsContent value="notes" className={cn('mt-0', 'outline-none', 'flex-1', 'w-full', 'overflow-hidden', 'relative', 'flex', 'flex-col')}>
-            <ProblemNotes 
-              problemId={problem.id} 
-              currentCode={code} 
-              currentLanguage={selectedLang.name} 
+            <ProblemNotes
+              problemId={problem.id}
+              currentCode={code}
+              currentLanguage={selectedLang.name}
               submissions={submissions}
               isDailyChallenge={isDailyChallenge}
             />
@@ -3146,8 +3146,8 @@ export function ProblemWorkspaceClient({
                                 onClick={() => setSelectedCaseIndex(index)}
                                 className={cn(
                                   'h-6 px-3.5 text-xs font-bold rounded-lg transition-all',
-                                  isSelected 
-                                    ? isPassed 
+                                  isSelected
+                                    ? isPassed
                                       ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/25 dark:bg-emerald-500/20"
                                       : "bg-rose-500/15 text-rose-700 dark:text-rose-400 hover:bg-rose-500/25 dark:bg-rose-500/20"
                                     : isPassed
@@ -3274,7 +3274,7 @@ export function ProblemWorkspaceClient({
               {problem.number ? `${problem.number}. ` : ""}{problem.title}
             </span>
           </div>
-          
+
           <div className="flex items-center gap-1.5">
             <span
               className={cn(
@@ -3335,10 +3335,10 @@ export function ProblemWorkspaceClient({
         {mobileActiveTab === "notes" ? (
           /* Notes tab: no padding, no scroll wrapper — ProblemNotes manages its own layout */
           <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-            <ProblemNotes 
-              problemId={problem.id} 
-              currentCode={code} 
-              currentLanguage={selectedLang.name} 
+            <ProblemNotes
+              problemId={problem.id}
+              currentCode={code}
+              currentLanguage={selectedLang.name}
               submissions={submissions}
               isDailyChallenge={isDailyChallenge}
             />
@@ -3346,208 +3346,207 @@ export function ProblemWorkspaceClient({
         ) : (
           <div className="flex-1 overflow-y-auto min-h-0 bg-card p-4">
             {mobileActiveTab === "description" && (
-            <div className="space-y-6">
-              {/* Title & Tags */}
-              <div className="space-y-3">
-                <h1 className="text-lg font-bold text-foreground leading-tight">
-                  {problem.number ? `${problem.number}. ` : ""}{problem.title}
-                </h1>
-                <div className="flex flex-wrap items-center gap-1.5 select-none">
-                  {problem.tags && problem.tags.length > 0 && problem.tags.map((tag: string, i: number) => (
-                    <span key={i} className="px-2 py-0.5 bg-muted/60 border border-border/50 text-zinc-650 dark:text-muted-foreground rounded-full text-[10px] font-semibold">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Description Markdown */}
-              <div className="text-sm text-zinc-900 dark:text-foreground/90 leading-relaxed mt-2 select-text">
-                <ProblemDescriptionViewer content={problem.description} />
-              </div>
-
-              {/* Sample Test Cases */}
-              {sampleTestCases.length > 0 && (
-                <div className="space-y-4 pt-4 border-t border-border/40">
-                  <h3 className="text-sm font-bold text-foreground">Examples</h3>
-                  {sampleTestCases.map((tc, idx) => {
-                    const paramNames = getParamNames();
-                    return (
-                      <div key={tc.id} className="space-y-2.5">
-                        <p className="text-xs font-bold text-zinc-550 dark:text-muted-foreground">
-                          Example {idx + 1}:
-                        </p>
-                        <div className="pl-3 border-l-2 border-zinc-300 dark:border-muted-foreground/30 py-1.5 font-mono text-[12px] text-zinc-900 dark:text-foreground/90 space-y-1.5 bg-zinc-100/40 dark:bg-muted/5 rounded-r-md">
-                          <div>
-                            <span className="font-bold text-zinc-850 dark:text-zinc-300">Input: </span>
-                            <div className="flex flex-col space-y-1.5 mt-1">
-                              {tc.input.trim().split("\n").map((val: string, i: number) => (
-                                <div key={i} className={val.startsWith("[") ? "flex flex-col mt-1" : "flex items-center"}>
-                                  <span className="font-semibold mr-1.5 text-zinc-550 dark:text-muted-foreground whitespace-nowrap">{paramNames[i] || `param${i + 1}`} =</span>
-                                  {renderTestcaseValue(val)}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                          <div>
-                            <span className="font-bold text-zinc-850 dark:text-zinc-300 mr-1.5 block mb-1">Output:</span>
-                            {renderTestcaseValue(tc.expected_output)}
-                          </div>
-                          {tc.explanation && (
-                            <div className="text-zinc-650 dark:text-muted-foreground/90">
-                              <span className="font-bold text-zinc-850 dark:text-zinc-300">
-                                Explanation:{" "}
-                              </span>
-                              <span>{tc.explanation}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Constraints */}
-              <div className="space-y-3.5 pt-4 border-t border-border/40">
-                {problem.constraints && problem.constraints.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-xs font-bold text-foreground">
-                      Constraints:
-                    </p>
-                    <ul className="list-disc pl-5 space-y-1.5 text-xs text-zinc-800 dark:text-foreground/80">
-                      {problem.constraints.map((c: string, i: number) => (
-                        <li key={i}>
-                          <code className="px-1.5 py-0.5 bg-zinc-100 dark:bg-muted/40 rounded-md text-[11px] font-mono border border-border/50">
-                            {c}
-                          </code>
-                        </li>
-                      ))}
-                    </ul>
+              <div className="space-y-6">
+                {/* Title & Tags */}
+                <div className="space-y-3">
+                  <h1 className="text-lg font-bold text-foreground leading-tight">
+                    {problem.number ? `${problem.number}. ` : ""}{problem.title}
+                  </h1>
+                  <div className="flex flex-wrap items-center gap-1.5 select-none">
+                    {problem.tags && problem.tags.length > 0 && problem.tags.map((tag: string, i: number) => (
+                      <span key={i} className="px-2 py-0.5 bg-muted/60 border border-border/50 text-zinc-650 dark:text-muted-foreground rounded-full text-[10px] font-semibold">
+                        {tag}
+                      </span>
+                    ))}
                   </div>
-                )}
-                
-                <div className="flex flex-wrap items-center gap-3 pt-1">
-                  {problem.time_limit && (
-                    <div className="text-xs font-mono text-zinc-650 dark:text-zinc-400">
-                      Time Limit: {problem.time_limit}s
-                    </div>
-                  )}
-                  {problem.memory_limit && (
-                    <div className="text-xs font-mono text-zinc-650 dark:text-zinc-400">
-                      Memory Limit: {problem.memory_limit}MB
-                    </div>
-                  )}
                 </div>
-              </div>
-            </div>
-          )}
 
-          {mobileActiveTab === "submissions" && (
-            <div className="container-pane-submissions space-y-2 select-text">
-              {submissions.length > 0 ? (
-                submissions.map((sub) => {
-                  const isExpanded = viewingSubmission?.id === sub.id;
-                  const canViewCode = sub.status === "Accepted";
-                  return (
-                    <div key={sub.id} className="space-y-1">
-                      <div
-                        onClick={() => {
-                          if (canViewCode) {
-                            if (isExpanded) {
-                              setViewingSubmission(null);
-                            } else {
-                              handleViewPastSubmission(sub);
-                            }
-                          }
-                        }}
-                        className={`flex items-center justify-between row-submission-item p-3 rounded-lg border ${sub.status === "Accepted" ? "bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/5 cursor-pointer" : "bg-card border-border hover:bg-muted/60"} transition-all group`}
-                      >
-                        <div className="flex items-center gap-3">
-                          {sub.status === "Accepted" ? (
-                            <IconCircleCheck className="h-4 w-4 text-emerald-500 shrink-0" />
-                          ) : (
-                            <IconCircleX className="h-4 w-4 text-rose-500 shrink-0" />
-                          )}
-                          <div>
-                            <p className={`text-xs font-bold ${sub.status === "Accepted" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"} flex items-center gap-1`}>
-                              {sub.status}
-                              {canViewCode && (
-                                <span className="text-[9px] text-muted-foreground font-normal">
-                                  {isExpanded ? "(Hide)" : "(View code)"}
-                                </span>
-                              )}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground/85">
-                              {sub.passed_count}/{sub.total_count} passed ·{" "}
-                              {LANGUAGES.find((l) => l.id === sub.language_id)?.name || "Unknown"}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                            {sub.runtime !== null && (
-                              <span className="flex items-center gap-0.5">
-                                <IconClock className="h-3 w-3" />
-                                {sub.runtime}s
-                              </span>
-                            )}
-                            {sub.memory !== null && (
-                              <span className="flex items-center gap-0.5">
-                                <IconCpu className="h-3 w-3" />
-                                {formatMemory(sub.memory, true)}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[8px] text-muted-foreground/60 mt-0.5">
-                            {new Date(sub.created_at).toLocaleString()}
+                {/* Description Markdown */}
+                <div className="text-sm text-zinc-900 dark:text-foreground/90 leading-relaxed mt-2 select-text">
+                  <ProblemDescriptionViewer content={problem.description} />
+                </div>
+
+                {/* Sample Test Cases */}
+                {sampleTestCases.length > 0 && (
+                  <div className="space-y-4 pt-4 border-t border-border/40">
+                    <h3 className="text-sm font-bold text-foreground">Examples</h3>
+                    {sampleTestCases.map((tc, idx) => {
+                      const paramNames = getParamNames();
+                      return (
+                        <div key={tc.id} className="space-y-2.5">
+                          <p className="text-xs font-bold text-zinc-550 dark:text-muted-foreground">
+                            Example {idx + 1}:
                           </p>
-                        </div>
-                      </div>
-                      
-                      {isExpanded && (
-                        <div className="border border-border/60 rounded-lg overflow-hidden shadow-sm mt-1">
-                          {loadingCode ? (
-                            <div className="p-4 text-center text-[10px] uppercase tracking-widest font-bold text-muted-foreground animate-pulse bg-zinc-50 dark:bg-zinc-950">
-                              Loading code...
-                            </div>
-                          ) : (
-                            <div className="w-full relative bg-zinc-50 dark:bg-[#0a0a0a] border border-zinc-200 dark:border-zinc-800/80 rounded-lg overflow-hidden">
-                              <pre className="p-4 overflow-auto font-mono text-[11.5px] text-black dark:text-zinc-100 max-h-[300px] whitespace-pre-wrap break-all">
-                                <code
-                                  className={`language-${
-                                    LANGUAGES.find((l) => l.id === sub.language_id)?.value || "javascript"
-                                  }`}
-                                  dangerouslySetInnerHTML={{
-                                    __html: getHighlightedCode(viewingCode || "// Code not available", sub.language_id)
-                                  }}
-                                />
-                              </pre>
-                              <div className="absolute top-2 right-2 flex gap-1.5 opacity-85 hover:opacity-100 transition-opacity">
-                                <button
-                                  onClick={() => handleCopyToClipboard(viewingCode)}
-                                  className="bg-muted hover:bg-accent text-foreground border border-border px-2 py-0.5 rounded text-[9px] font-bold transition-all shadow-sm"
-                                >
-                                  Copy
-                                </button>
+                          <div className="pl-3 border-l-2 border-zinc-300 dark:border-muted-foreground/30 py-1.5 font-mono text-[12px] text-zinc-900 dark:text-foreground/90 space-y-1.5 bg-zinc-100/40 dark:bg-muted/5 rounded-r-md">
+                            <div>
+                              <span className="font-bold text-zinc-850 dark:text-zinc-300">Input: </span>
+                              <div className="flex flex-col space-y-1.5 mt-1">
+                                {tc.input.trim().split("\n").map((val: string, i: number) => (
+                                  <div key={i} className={val.startsWith("[") ? "flex flex-col mt-1" : "flex items-center"}>
+                                    <span className="font-semibold mr-1.5 text-zinc-550 dark:text-muted-foreground whitespace-nowrap">{paramNames[i] || `param${i + 1}`} =</span>
+                                    {renderTestcaseValue(val)}
+                                  </div>
+                                ))}
                               </div>
                             </div>
-                          )}
+                            <div>
+                              <span className="font-bold text-zinc-850 dark:text-zinc-300 mr-1.5 block mb-1">Output:</span>
+                              {renderTestcaseValue(tc.expected_output)}
+                            </div>
+                            {tc.explanation && (
+                              <div className="text-zinc-650 dark:text-muted-foreground/90">
+                                <span className="font-bold text-zinc-850 dark:text-zinc-300">
+                                  Explanation:{" "}
+                                </span>
+                                <span>{tc.explanation}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      )}
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Constraints */}
+                <div className="space-y-3.5 pt-4 border-t border-border/40">
+                  {problem.constraints && problem.constraints.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-bold text-foreground">
+                        Constraints:
+                      </p>
+                      <ul className="list-disc pl-5 space-y-1.5 text-xs text-zinc-800 dark:text-foreground/80">
+                        {problem.constraints.map((c: string, i: number) => (
+                          <li key={i}>
+                            <code className="px-1.5 py-0.5 bg-zinc-100 dark:bg-muted/40 rounded-md text-[11px] font-mono border border-border/50">
+                              {c}
+                            </code>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                  );
-                })
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 gap-2 select-none">
-                  <IconHistory className="h-8 w-8 text-muted-foreground/20" />
-                  <p className="text-[10px] text-muted-foreground/45 uppercase font-bold tracking-widest">
-                    No submissions yet
-                  </p>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-3 pt-1">
+                    {problem.time_limit && (
+                      <div className="text-xs font-mono text-zinc-650 dark:text-zinc-400">
+                        Time Limit: {problem.time_limit}s
+                      </div>
+                    )}
+                    {problem.memory_limit && (
+                      <div className="text-xs font-mono text-zinc-650 dark:text-zinc-400">
+                        Memory Limit: {problem.memory_limit}MB
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+
+            {mobileActiveTab === "submissions" && (
+              <div className="container-pane-submissions space-y-2 select-text">
+                {submissions.length > 0 ? (
+                  submissions.map((sub) => {
+                    const isExpanded = viewingSubmission?.id === sub.id;
+                    const canViewCode = sub.status === "Accepted";
+                    return (
+                      <div key={sub.id} className="space-y-1">
+                        <div
+                          onClick={() => {
+                            if (canViewCode) {
+                              if (isExpanded) {
+                                setViewingSubmission(null);
+                              } else {
+                                handleViewPastSubmission(sub);
+                              }
+                            }
+                          }}
+                          className={`flex items-center justify-between row-submission-item p-3 rounded-lg border ${sub.status === "Accepted" ? "bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/5 cursor-pointer" : "bg-card border-border hover:bg-muted/60"} transition-all group`}
+                        >
+                          <div className="flex items-center gap-3">
+                            {sub.status === "Accepted" ? (
+                              <IconCircleCheck className="h-4 w-4 text-emerald-500 shrink-0" />
+                            ) : (
+                              <IconCircleX className="h-4 w-4 text-rose-500 shrink-0" />
+                            )}
+                            <div>
+                              <p className={`text-xs font-bold ${sub.status === "Accepted" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"} flex items-center gap-1`}>
+                                {sub.status}
+                                {canViewCode && (
+                                  <span className="text-[9px] text-muted-foreground font-normal">
+                                    {isExpanded ? "(Hide)" : "(View code)"}
+                                  </span>
+                                )}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground/85">
+                                {sub.passed_count}/{sub.total_count} passed ·{" "}
+                                {LANGUAGES.find((l) => l.id === sub.language_id)?.name || "Unknown"}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                              {sub.runtime !== null && (
+                                <span className="flex items-center gap-0.5">
+                                  <IconClock className="h-3 w-3" />
+                                  {sub.runtime}s
+                                </span>
+                              )}
+                              {sub.memory !== null && (
+                                <span className="flex items-center gap-0.5">
+                                  <IconCpu className="h-3 w-3" />
+                                  {formatMemory(sub.memory, true)}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[8px] text-muted-foreground/60 mt-0.5">
+                              {new Date(sub.created_at).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+
+                        {isExpanded && (
+                          <div className="border border-border/60 rounded-lg overflow-hidden shadow-sm mt-1">
+                            {loadingCode ? (
+                              <div className="p-4 text-center text-[10px] uppercase tracking-widest font-bold text-muted-foreground animate-pulse bg-zinc-50 dark:bg-zinc-950">
+                                Loading code...
+                              </div>
+                            ) : (
+                              <div className="w-full relative bg-zinc-50 dark:bg-[#0a0a0a] border border-zinc-200 dark:border-zinc-800/80 rounded-lg overflow-hidden">
+                                <pre className="p-4 overflow-auto font-mono text-[11.5px] text-black dark:text-zinc-100 max-h-[300px] whitespace-pre-wrap break-all">
+                                  <code
+                                    className={`language-${LANGUAGES.find((l) => l.id === sub.language_id)?.value || "javascript"
+                                      }`}
+                                    dangerouslySetInnerHTML={{
+                                      __html: getHighlightedCode(viewingCode || "// Code not available", sub.language_id)
+                                    }}
+                                  />
+                                </pre>
+                                <div className="absolute top-2 right-2 flex gap-1.5 opacity-85 hover:opacity-100 transition-opacity">
+                                  <button
+                                    onClick={() => handleCopyToClipboard(viewingCode)}
+                                    className="bg-muted hover:bg-accent text-foreground border border-border px-2 py-0.5 rounded text-[9px] font-bold transition-all shadow-sm"
+                                  >
+                                    Copy
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 gap-2 select-none">
+                    <IconHistory className="h-8 w-8 text-muted-foreground/20" />
+                    <p className="text-[10px] text-muted-foreground/45 uppercase font-bold tracking-widest">
+                      No submissions yet
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -3722,9 +3721,9 @@ export function ProblemWorkspaceClient({
 
       {/* PROBLEM LIST DRAWER */}
       {isProblemListOpen && (
-        <div 
-          className="absolute inset-0 bg-background/40 backdrop-blur-[1px] z-[9998]" 
-          onClick={() => setIsProblemListOpen(false)} 
+        <div
+          className="absolute inset-0 bg-background/40 backdrop-blur-[1px] z-[9998]"
+          onClick={() => setIsProblemListOpen(false)}
         />
       )}
       <div
@@ -3738,10 +3737,10 @@ export function ProblemWorkspaceClient({
           <span className="text-xs text-muted-foreground font-semibold tracking-wide">
             {totalProblemsCount} Problems
           </span>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="absolute right-2 top-2 h-7 w-7 rounded-md opacity-70 transition-opacity hover:opacity-100 text-muted-foreground" 
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 top-2 h-7 w-7 rounded-md opacity-70 transition-opacity hover:opacity-100 text-muted-foreground"
             onClick={() => setIsProblemListOpen(false)}
           >
             <IconX className="h-4 w-4" />
@@ -3845,7 +3844,7 @@ export function ProblemWorkspaceClient({
                     </span>
                   </div>
                 ))}
-                
+
                 {/* Infinite Scroll Sentinel */}
                 <div ref={sentinelRef} className="h-10 flex items-center justify-center">
                   {isNextPageLoading && (

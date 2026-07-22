@@ -186,10 +186,10 @@ function createInitialState(
     principalPhone: initialData?.principal_phone ?? "",
     courses: initialData?.courses?.length
       ? initialData.courses.map((c: any) => ({
-          id: c.id || generateId(),
-          value: c.value ?? c,
-          semesters_count: c.semesters_count ?? 8
-        }))
+        id: c.id || generateId(),
+        value: c.value ?? c,
+        semesters_count: c.semesters_count ?? 8
+      }))
       : [{ id: generateId(), value: "", semesters_count: 8 }],
     socialLinks: initialData?.social_links?.length
       ? initialData.social_links.map((l: string) => ({ id: generateId(), value: l }))
@@ -262,10 +262,10 @@ function profileReducer(state: ProfileState, action: ProfileAction): ProfileStat
       } else if (section === "courses") {
         resetFields.courses = initialData?.courses?.length
           ? initialData.courses.map((c: any) => ({
-              id: c.id || generateId(),
-              value: c.value ?? c,
-              semesters_count: c.semesters_count ?? 8
-            }))
+            id: c.id || generateId(),
+            value: c.value ?? c,
+            semesters_count: c.semesters_count ?? 8
+          }))
           : [{ id: generateId(), value: "", semesters_count: 8 }]
       } else if (section === "social") {
         resetFields.socialLinks = initialData?.social_links?.length
@@ -568,7 +568,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
             pincode: pincode.trim() || null,
             country: country || null,
           }
-          
+
           let instId = initialData?.id;
           const newDisplayName = instituteName.trim() || userProfile.full_name;
 
@@ -632,7 +632,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
 
         else if (section === "courses") {
           if (!initialData?.id) { toast.error("Please save Basic Information first."); return }
-          
+
           // Delete all existing courses for this institute
           const { error: deleteError } = await (supabase as any)
             .from("institute_courses")
@@ -865,7 +865,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row items-center gap-6">
-              <div 
+              <div
                 className="relative group cursor-pointer shrink-0"
                 onClick={() => !isUploadingLogo && logoInputRef.current?.click()}
               >
@@ -894,10 +894,10 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                   onChange={handleLogoFileChange}
                   aria-label="Upload logo"
                 />
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => logoInputRef.current?.click()} 
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => logoInputRef.current?.click()}
                   disabled={isUploadingLogo}
                   className="shadow-sm"
                 >

@@ -29,7 +29,7 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group";
-import { OTPInput } from "@/components/ui/otp-input";
+import { OTPInput } from "@/components/others/otp-input";
 import {
   AtSignIcon,
   CheckCircleIcon,

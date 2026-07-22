@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent, EmptyMedia } from "@/components/ui/empty"
+import { Spinner } from "@/components/ui/spinner"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -316,7 +317,7 @@ export function CohortsClient({ cohorts: initialCohorts, isCandidate = false }: 
               Cancel
             </Button>
             <Button onClick={handleCreate} disabled={isPending} className="gap-1.5">
-              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              {isPending ? <Spinner /> : <Plus className="h-4 w-4" />}
               Create Cohort
             </Button>
           </DialogFooter>

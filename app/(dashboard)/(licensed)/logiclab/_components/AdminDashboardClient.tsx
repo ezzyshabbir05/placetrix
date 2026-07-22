@@ -491,8 +491,8 @@ export function AdminDashboardClient({
                                             className={cn(
                                               "h-2 bg-muted/60 flex-1 min-w-[120px]",
                                               stuPct >= 70 ? "[&>div]:bg-emerald-500 dark:[&>div]:bg-emerald-400" :
-                                              stuPct >= 40 ? "[&>div]:bg-amber-500 dark:[&>div]:bg-amber-400" :
-                                              "[&>div]:bg-rose-500 dark:[&>div]:bg-rose-400"
+                                                stuPct >= 40 ? "[&>div]:bg-amber-500 dark:[&>div]:bg-amber-400" :
+                                                  "[&>div]:bg-rose-500 dark:[&>div]:bg-rose-400"
                                             )}
                                           />
                                           <span className="text-xs font-mono text-muted-foreground shrink-0 font-bold">
