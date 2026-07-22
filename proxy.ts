@@ -111,7 +111,7 @@ function isStatusOnlyPath(pathname: string): boolean {
   return STATUS_ONLY_PREFIXES.some((p) => pathname.startsWith(p));
 }
 
-export async function proxy(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   // 1. Skip middleware entirely for prefetches.
   // Browsers often ignore Set-Cookie on prefetches, so we shouldn't waste
   // CPU or Supabase Auth hits (invocations) on them.
@@ -184,8 +184,7 @@ export const config = {
   matcher: [
     /*
      * Run middleware on all routes except Next.js internals and static files.
-     * This is required so maintenance mode can intercept any page, not just
-     * the protected routes below.
+     * This is required so maintenance mode can intercept any page, not just protected routes.
      */
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|otf)$).*)",
   ],
