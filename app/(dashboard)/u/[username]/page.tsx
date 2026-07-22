@@ -144,7 +144,166 @@ export default async function PublicProfilePage({ params }: PageProps) {
     (r: any) => r.skill_id
   );
 
-  // 7. Build safe public data object — private fields explicitly excluded
+  // 7. Fetch LogicLab performance data for the target candidate
+  const cutOffDate20Weeks = new Date(Date.now() + 5.5 * 60 * 60 * 1000 - 140 * 24 * 60 * 60 * 1000);
+  const cutOffStr20Weeks = cutOffDate20Weeks.toISOString().split("T")[0];
+
+  const [
+    { data: activityRows },
+    { data: streakRows },
+    { data: statsData },
+    { data: standardSolvedSubs },
+    { data: dailySolvedSubs },
+  ] = await Promise.all([
+    (supabase as any)
+      .from("logiclab_daily_challenge_user_activity")
+      .select("activity_date, submission_count, solved, easy_solved, medium_solved, hard_solved, easy_attempted, medium_attempted, hard_attempted")
+      .eq("user_id", targetProfile.id)
+      .gte("activity_date", cutOffStr20Weeks)
+      .order("activity_date", { ascending: true }),
+    (supabase as any)
+      .from("logiclab_daily_challenge_user_activity")
+      .select("activity_date, solved, submission_count")
+      .eq("user_id", targetProfile.id)
+      .order("activity_date", { ascending: true }),
+    (supabase as any).rpc("get_user_global_stats", { p_user_id: targetProfile.id }),
+    (supabase as any)
+      .from("logiclab_problem_submissions")
+      .select("problem_id, status")
+      .eq("user_id", targetProfile.id)
+      .eq("status", "Accepted"),
+    (supabase as any)
+      .from("logiclab_daily_challenge_submissions")
+      .select("problem_id, status")
+      .eq("user_id", targetProfile.id)
+      .eq("status", "Accepted"),
+  ]);
+
+  // Compute streaks accurately across all activity
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const todayIst = new Date(Date.now() + istOffset);
+  const todayStr = todayIst.toISOString().split("T")[0];
+  const yesterdayIst = new Date(todayIst.getTime() - 24 * 60 * 60 * 1000);
+  const yesterdayStr = yesterdayIst.toISOString().split("T")[0];
+
+  const allActiveDates = new Map<string, boolean>();
+  for (const row of streakRows ?? []) {
+    if (row.activity_date && (row.solved || Number(row.submission_count) > 0)) {
+      allActiveDates.set(row.activity_date, true);
+    }
+  }
+
+  const sortedDates = Array.from(allActiveDates.keys()).sort((a, b) => b.localeCompare(a));
+  let currentStreak = 0;
+  let maxStreak = 0;
+
+  if (sortedDates.length > 0) {
+    const ascDates = [...sortedDates].reverse();
+    let prevDate: Date | null = null;
+    let tempStreak = 0;
+
+    for (const dStr of ascDates) {
+      const currentDate = new Date(dStr);
+      if (!prevDate) {
+        tempStreak = 1;
+      } else {
+        const diffTime = Math.abs(currentDate.getTime() - prevDate.getTime());
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays <= 1) {
+          tempStreak++;
+        } else {
+          if (tempStreak > maxStreak) maxStreak = tempStreak;
+          tempStreak = 1;
+        }
+      }
+      prevDate = currentDate;
+    }
+    if (tempStreak > maxStreak) maxStreak = tempStreak;
+
+    const hasActiveStreak = allActiveDates.has(todayStr) || allActiveDates.has(yesterdayStr);
+    if (hasActiveStreak) {
+      const checkDate = allActiveDates.has(todayStr) ? new Date(todayIst) : new Date(yesterdayIst);
+      let checkStr = checkDate.toISOString().split("T")[0];
+      while (allActiveDates.has(checkStr)) {
+        currentStreak++;
+        checkDate.setUTCDate(checkDate.getUTCDate() - 1);
+        checkStr = checkDate.toISOString().split("T")[0];
+      }
+    }
+  }
+  if (currentStreak > maxStreak) maxStreak = currentStreak;
+
+  // Build 140-day (20 weeks) activity calendar
+  const uniqueDatesWithStatus = new Map<string, any>();
+  for (const row of activityRows ?? []) {
+    if (row.activity_date) {
+      uniqueDatesWithStatus.set(row.activity_date, row);
+    }
+  }
+
+  const activityCalendar: any[] = [];
+  for (let i = 139; i >= 0; i--) {
+    const d = new Date(todayIst.getTime() - i * 24 * 60 * 60 * 1000);
+    const dateStr = d.toISOString().split("T")[0];
+    const activity = uniqueDatesWithStatus.get(dateStr);
+    activityCalendar.push({
+      date: dateStr,
+      count: Number(activity?.submission_count || 0),
+      status: activity?.solved ? "solved" : (activity?.submission_count > 0 ? "attempted" : "none"),
+      dayOfWeek: d.getUTCDay(),
+      easySolved: Number(activity?.easy_solved || 0),
+      mediumSolved: Number(activity?.medium_solved || 0),
+      hardSolved: Number(activity?.hard_solved || 0),
+    });
+  }
+
+  // Fetch problem details for unique solved problem IDs to compute topic proficiency
+  const solvedProblemIds = Array.from(
+    new Set([
+      ...(standardSolvedSubs || []).map((s: any) => s.problem_id),
+      ...(dailySolvedSubs || []).map((s: any) => s.problem_id),
+    ].filter(Boolean))
+  );
+
+  let topicCounts: Record<string, number> = {};
+  if (solvedProblemIds.length > 0) {
+    const { data: solvedProblems } = await (supabase as any)
+      .from("logiclab_problems")
+      .select("id, tags")
+      .in("id", solvedProblemIds);
+
+    for (const prob of solvedProblems || []) {
+      if (Array.isArray(prob.tags)) {
+        for (const tag of prob.tags) {
+          if (tag) {
+            topicCounts[tag] = (topicCounts[tag] || 0) + 1;
+          }
+        }
+      }
+    }
+  }
+
+  const sortedTopics = Object.entries(topicCounts)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+
+  const globalStats = statsData || {
+    total: 0,
+    solved: 0,
+    easy: { total: 0, solved: 0 },
+    medium: { total: 0, solved: 0 },
+    hard: { total: 0, solved: 0 },
+  };
+
+  const logicLabData = {
+    streakStats: { currentStreak, maxStreak, totalActiveDays: allActiveDates.size },
+    activityCalendar,
+    globalStats,
+    topics: sortedTopics,
+    uniqueSolvedCount: solvedProblemIds.length,
+  };
+
+  // 8. Build safe public data object — private fields explicitly excluded
   const publicData = {
     profile_id: targetProfile.id,
     full_name: targetProfile.full_name,
@@ -176,6 +335,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
       allSkills={allSkills ?? []}
       selectedSkillIds={selectedSkillIds}
       semestersCount={semestersCount}
+      logicLabData={logicLabData}
     />
   );
 }
