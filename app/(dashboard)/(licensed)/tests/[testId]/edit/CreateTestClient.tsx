@@ -27,7 +27,7 @@ import {
   Loader2, Save, Send, AlertCircle, AlertTriangle, BookOpen, CheckCircle2, Circle, Plus, Tag, X,
   PlusCircle, Sparkles, Upload, Trash2, Pencil, ChevronDown, ChevronUp, Info, FileJson, Image
 } from "lucide-react"
-import { CohortSelector } from "@/app/(dashboard)/(licensed)/cohorts/cohort-selector"
+import { CohortSelector } from "@/app/(dashboard)/(licensed)/cohorts/CohortsClient"
 import type { CohortOption } from "@/app/(dashboard)/(licensed)/cohorts/types"
 import { GenerateButton } from "@/components/others/generate-button"
 

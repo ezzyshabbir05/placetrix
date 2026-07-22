@@ -20,7 +20,7 @@ import type {
   CompanyProfile,
   CompensationType
 } from "./types"
-import { CohortSelector } from "@/app/(dashboard)/(licensed)/cohorts/cohort-selector"
+import { CohortSelector } from "@/app/(dashboard)/(licensed)/cohorts/CohortsClient"
 import type { CohortOption } from "@/app/(dashboard)/(licensed)/cohorts/types"
 
 const COMPENSATION_TYPES: { value: CompensationType; label: string }[] = [

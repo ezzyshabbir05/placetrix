@@ -1,20 +1,54 @@
-// app/auth/layout.tsx
-//
-// Auth shell layout.
-//
-// Middleware (middleware.ts) already redirects authenticated users away from
-// /auth/… routes, so this layout does NOT need to repeat that check.
-// A second getUser() call here would be redundant and waste a round-trip.
-//
-// Exception routes that bypass the middleware redirect:
-//   /auth/callback  — OAuth code exchange (must run even when authenticated)
-//   /auth/confirm   — Link-based token verification (same reason)
+"use client";
 
 import { Suspense } from "react";
 import Image from "next/image";
-import { FloatingPaths } from "@/components/auth/floating-paths";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import PlaceTrixLogo from "@/assets/placetrix.svg";
+
+function FloatingPaths({ position }: { position: number }) {
+  const paths = Array.from({ length: 36 }, (_, i) => ({
+    id: i,
+    d: `M-${380 - i * 5 * position} -${189 + i * 6}C-${380 - i * 5 * position
+      } -${189 + i * 6} -${312 - i * 5 * position} ${216 - i * 6} ${152 - i * 5 * position
+      } ${343 - i * 6}C${616 - i * 5 * position} ${470 - i * 6} ${684 - i * 5 * position
+      } ${875 - i * 6} ${684 - i * 5 * position} ${875 - i * 6}`,
+    color: `rgba(15,23,42,${0.1 + i * 0.03})`,
+    width: 0.5 + i * 0.03,
+  }));
+
+  return (
+    <div className="pointer-events-none absolute inset-0">
+      <svg
+        className="h-full w-full text-primary"
+        fill="none"
+        viewBox="0 0 696 316"
+      >
+        <title>Background Paths</title>
+        {paths.map((path) => (
+          <motion.path
+            animate={{
+              pathLength: 1,
+              opacity: [0.3, 0.6, 0.3],
+              pathOffset: [0, 1, 0],
+            }}
+            d={path.d}
+            initial={{ pathLength: 0.3, opacity: 0.6 }}
+            key={path.id}
+            stroke="currentColor"
+            strokeOpacity={0.1 + path.id * 0.03}
+            strokeWidth={path.width}
+            transition={{
+              duration: 20 + Math.random() * 10,
+              repeat: Number.POSITIVE_INFINITY,
+              ease: "linear",
+            }}
+          />
+        ))}
+      </svg>
+    </div>
+  );
+}
 
 export default function AuthLayout({
   children,
@@ -42,11 +76,10 @@ export default function AuthLayout({
         <div className="z-10 mt-auto">
           <blockquote className="space-y-2">
             <p className="text-xl">
-              &ldquo;Placetrix helped me crack my dream company placement — the
-              mock tests are incredibly accurate.&rdquo;
+              &ldquo;The app's quizzes and mock tests significantly improved my speed and accuracy, leaving me well-prepared for the placement process. Truly thankful!&rdquo;
             </p>
             <footer className="font-mono font-semibold text-sm">
-              ~ Priya Sharma
+              ~ Pinal Lagdhir
             </footer>
           </blockquote>
         </div>

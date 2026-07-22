@@ -174,28 +174,6 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     }
   }
 
-  // 3c. Gatekeeper: Force profile completion
-  // If they are on a protected route (but not already on /myprofile or /settings)
-  if (isProtected(pathname) && user && request.method === "GET") {
-    if (!pathname.startsWith("/myprofile") && !pathname.startsWith("/settings")) {
-      const { data: profile } = await supabase.from('profiles').select('profile_updated').eq('id', user.sub || user.id).single();
-      
-      if (profile && profile.profile_updated !== true) {
-        const setupUrl = request.nextUrl.clone();
-        setupUrl.pathname = "/myprofile";
-        setupUrl.searchParams.set("error", "incomplete");
-        
-        const redirectRes = NextResponse.redirect(setupUrl);
-        redirectRes.headers.set("Cache-Control", "no-store, max-age=0");
-        supabaseResponse.cookies.getAll().forEach((c) => {
-          const { name, value, ...options } = c;
-          redirectRes.cookies.set(name, value, options as any);
-        });
-        return redirectRes;
-      }
-    }
-  }
-
   // 3c. Authenticated user visits an auth page (e.g. /auth/login) → send to dashboard.
   //     Exception: flow pages like /auth/callback, /auth/confirm, /auth/mfa are always allowed.
   if (isAuthPage(pathname) && !isAuthFlowPage(pathname) && user) {
