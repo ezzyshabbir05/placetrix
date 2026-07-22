@@ -15,7 +15,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { OTPInput } from "@/components/others/otp-input";
 import { Button } from "@/components/ui/button";
-import { Loader2Icon, LogOutIcon } from "lucide-react";
+import { Loader2Icon, LogOutIcon, ShieldCheckIcon } from "lucide-react";
 import Link from "next/link";
 
 export default function MfaPage() {
@@ -57,9 +57,10 @@ function MfaContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (code.length < 6) {
+  const handleVerify = async (e?: React.FormEvent, codeOverride?: string) => {
+    if (e) e.preventDefault();
+    const codeToVerify = codeOverride ?? code;
+    if (codeToVerify.length < 6) {
       setError("Please enter the full 6-digit code.");
       return;
     }
@@ -77,8 +78,7 @@ function MfaContent() {
 
       const totpFactor = factorsData.totp.find((f) => f.status === "verified");
       if (!totpFactor) {
-        // No verified factor found — shouldn't happen; send to dashboard
-        router.replace(safeNext);
+        setError("No enrolled authenticator app found.");
         return;
       }
 
@@ -91,7 +91,7 @@ function MfaContent() {
       const { error: verifyErr } = await supabase.auth.mfa.verify({
         factorId: totpFactor.id,
         challengeId: challengeData.id,
-        code,
+        code: codeToVerify,
       });
       if (verifyErr) throw verifyErr;
 
@@ -100,9 +100,7 @@ function MfaContent() {
       router.refresh();
     } catch (err: unknown) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "Invalid code. Please check your authenticator app and try again."
+        err instanceof Error ? err.message : "Invalid code. Please try again."
       );
       setCode("");
     } finally {
@@ -120,24 +118,31 @@ function MfaContent() {
 
   return (
     <div className="mx-auto space-y-6 sm:w-sm">
-      {/* Header */}
-      <div className="flex flex-col space-y-1">
-        <h1 className="font-cirka font-bold text-2xl tracking-wide">
-          Two-Factor Authentication
-        </h1>
-        <p className="text-base text-muted-foreground">
-          Enter the 6-digit code from your authenticator app to continue.
-        </p>
+      {/* Icon + Title */}
+      <div className="flex flex-col space-y-3">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+          <ShieldCheckIcon className="h-6 w-6 text-primary" />
+        </div>
+        <div className="space-y-1">
+          <h1 className="font-cirka font-bold text-2xl tracking-wide">
+            Two-Factor Authentication
+          </h1>
+          <p className="text-base text-muted-foreground">
+            Enter the 6-digit code from your authenticator app to continue.
+          </p>
+        </div>
       </div>
 
       {/* Form */}
       <form className="space-y-4" onSubmit={handleVerify}>
         <OTPInput
-          length={6}
           value={code}
           onChange={(v) => {
             setCode(v);
             if (error) setError(null);
+            if (v.length === 6 && !isLoading) {
+              handleVerify(undefined, v);
+            }
           }}
           disabled={isLoading}
         />

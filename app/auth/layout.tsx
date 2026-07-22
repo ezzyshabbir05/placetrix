@@ -92,7 +92,24 @@ export default function AuthLayout({
       </div>
 
       {/* ── Right content panel ── */}
-      <div className="relative flex min-h-screen flex-col justify-center px-8">
+      <div className="relative flex min-h-screen flex-col justify-center px-6 py-12 md:px-8">
+        {/* Mobile Header Logo */}
+        <div className="absolute top-6 left-6 lg:hidden">
+          <Link href="/" className="flex items-center gap-2 font-bold tracking-[0.05em]">
+            <Image
+              src={PlaceTrixLogo}
+              alt="PlaceTrix"
+              width={24}
+              height={24}
+              className="size-6 dark:invert"
+              priority
+            />
+            <span className="pl-1 text-base font-bold tracking-wider text-zinc-950 dark:text-white">
+              PlaceTrix
+            </span>
+          </Link>
+        </div>
+
         {/* Subtle radial glow */}
         <div
           aria-hidden

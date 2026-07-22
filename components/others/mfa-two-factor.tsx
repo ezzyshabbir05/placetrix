@@ -135,8 +135,9 @@ export function MfaTwoFactor() {
     }
   };
 
-  const handleVerify = async () => {
-    if (verifyCode.length < 6) {
+  const handleVerify = async (codeOverride?: string) => {
+    const codeToVerify = codeOverride ?? verifyCode;
+    if (codeToVerify.length < 6) {
       setVerifyError("Please enter the full 6-digit code.");
       return;
     }
@@ -153,7 +154,7 @@ export function MfaTwoFactor() {
       const { error: verifyError } = await supabase.auth.mfa.verify({
         factorId,
         challengeId: challengeData.id,
-        code: verifyCode,
+        code: codeToVerify,
       });
       if (verifyError) throw verifyError;
 
@@ -420,11 +421,13 @@ export function MfaTwoFactor() {
 
                   <div className="flex flex-col gap-2.5">
                     <OTPInput
-                      length={6}
                       value={verifyCode}
                       onChange={(v) => {
                         setVerifyCode(v);
                         if (verifyError) setVerifyError(null);
+                        if (v.length === 6 && !isVerifying) {
+                          handleVerify(v);
+                        }
                       }}
                       disabled={isVerifying}
                       className="py-1 sm:justify-start"
@@ -454,7 +457,7 @@ export function MfaTwoFactor() {
               <Button
                 size="sm"
                 className="h-9 text-xs px-4"
-                onClick={handleVerify}
+                onClick={() => handleVerify()}
                 disabled={isVerifying || verifyCode.length < 6}
               >
                 {isVerifying ? (

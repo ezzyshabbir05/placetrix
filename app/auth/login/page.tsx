@@ -27,6 +27,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   InputGroup,
@@ -35,6 +36,7 @@ import {
 } from "@/components/ui/input-group";
 import { OTPInput } from "@/components/others/otp-input";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AtSignIcon,
   EyeIcon,
@@ -117,24 +119,28 @@ function LoginContent() {
 
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/confirm?next=${encodeURIComponent(next)}`,
-        },
-      });
+      const cleanEmail = email.trim().toLowerCase();
 
-      if (error) {
-        // 504 / network timeout — auth server is under load, ask user to retry
-        if (
-          error.status === 504 ||
-          error.message?.toLowerCase().includes("timeout") ||
-          error.message?.toLowerCase().includes("fetch")
-        ) {
-          setError("The server is temporarily busy. Please wait a moment and try again.");
-          return;
+      if (loginMethod === "magiclink") {
+        const { error } = await supabase.auth.signInWithOtp({
+          email: cleanEmail,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+          },
+        });
+
+        if (error) {
+          // 504 / network timeout — auth server is under load, ask user to retry
+          if (
+            error.status === 504 ||
+            error.message?.toLowerCase().includes("timeout") ||
+            error.message?.toLowerCase().includes("fetch")
+          ) {
+            setError("The server is temporarily busy. Please wait a moment and try again.");
+            return;
+          }
+          throw error;
         }
-        throw error;
       }
 
       setSuccessMessage("We sent a sign-in link to your email address. Please check your inbox.");
@@ -152,8 +158,9 @@ function LoginContent() {
 
     try {
       const supabase = createClient();
+      const cleanEmail = email.trim().toLowerCase();
       const { error } = await supabase.auth.signInWithPassword({
-        email,
+        email: cleanEmail,
         password,
       });
 
@@ -171,7 +178,7 @@ function LoginContent() {
         if (error.message === "Email not confirmed") {
           const { error: resendError } = await supabase.auth.resend({
             type: "signup",
-            email,
+            email: cleanEmail,
           });
           if (resendError) throw resendError;
           setPageState("otp-entry");
@@ -200,10 +207,11 @@ function LoginContent() {
   };
 
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otp.length < 8) {
-      setError("Please enter the full 8-digit code");
+  const handleVerifyOtp = async (e?: React.FormEvent, tokenOverride?: string) => {
+    if (e) e.preventDefault();
+    const tokenToVerify = tokenOverride ?? otp;
+    if (tokenToVerify.length < 6) {
+      setError("Please enter the full 6-digit code");
       return;
     }
     setError(null);
@@ -211,9 +219,10 @@ function LoginContent() {
 
     try {
       const supabase = createClient();
+      const cleanEmail = email.trim().toLowerCase();
       const { error } = await supabase.auth.verifyOtp({
-        email,
-        token: otp,
+        email: cleanEmail,
+        token: tokenToVerify,
         type: "signup",
       });
       if (error) throw error;
@@ -234,7 +243,8 @@ function LoginContent() {
 
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.resend({ type: "signup", email });
+      const cleanEmail = email.trim().toLowerCase();
+      const { error } = await supabase.auth.resend({ type: "signup", email: cleanEmail });
       if (error) throw error;
       startCooldown();
       setOtp("");
@@ -280,6 +290,7 @@ function LoginContent() {
         </div>
 
         <form
+          id="mfa-form"
           className="space-y-4"
           onSubmit={async (e) => {
             e.preventDefault();
@@ -306,7 +317,18 @@ function LoginContent() {
             }
           }}
         >
-          <OTPInput length={6} value={otp} onChange={setOtp} disabled={isLoading} />
+          <OTPInput
+            value={otp}
+            onChange={(v) => {
+              setOtp(v);
+              if (v.length === 6 && !isLoading) {
+                // Trigger form submission on 6th digit
+                const formEl = document.getElementById("mfa-form") as HTMLFormElement;
+                if (formEl) formEl.requestSubmit();
+              }
+            }}
+            disabled={isLoading}
+          />
 
           {error && (
             <p className="text-sm text-destructive rounded-md bg-destructive/10 px-3 py-2">
@@ -355,14 +377,23 @@ function LoginContent() {
               Confirm Your Email
             </h1>
             <p className="text-base text-muted-foreground">
-              Your email isn&apos;t confirmed yet. We sent an 8-digit code to{" "}
+              Your email isn&apos;t confirmed yet. We sent a 6-digit code to{" "}
               <span className="font-medium text-foreground">{email}</span>.
             </p>
           </div>
         </div>
 
         <form className="space-y-4" onSubmit={handleVerifyOtp}>
-          <OTPInput value={otp} onChange={setOtp} disabled={isLoading} />
+          <OTPInput
+            value={otp}
+            onChange={(v) => {
+              setOtp(v);
+              if (v.length === 6 && !isLoading) {
+                handleVerifyOtp(undefined, v);
+              }
+            }}
+            disabled={isLoading}
+          />
 
           {error && (
             <p className="text-sm text-destructive rounded-md bg-destructive/10 px-3 py-2 text-center">
@@ -373,7 +404,7 @@ function LoginContent() {
           <Button
             className="w-full cursor-pointer"
             type="submit"
-            disabled={isLoading || otp.length < 8}
+            disabled={isLoading || otp.length < 6}
           >
             {isLoading ? (
               <>
@@ -453,20 +484,31 @@ function LoginContent() {
           {isGoogleLoading ? "Redirecting…" : "Continue with Google"}
         </Button>
 
-        {/* Toggle between Password and Magic Link below Google Login */}
-        <Button
-          className="w-full cursor-pointer"
-          variant="secondary"
-          type="button"
-          onClick={() => {
-            setLoginMethod(loginMethod === "password" ? "magiclink" : "password");
+        {/* Canonical Shadcn Tabs Switcher for Login Method */}
+        <Tabs
+          value={loginMethod}
+          onValueChange={(val) => {
+            setLoginMethod(val as "password" | "magiclink");
             setError(null);
             setSuccessMessage(null);
           }}
-          disabled={isLoading || isGoogleLoading}
+          className="w-full"
         >
-          {loginMethod === "password" ? "Sign in with Magic Link" : "Sign in with Password"}
-        </Button>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger
+              value="password"
+              disabled={isLoading || isGoogleLoading}
+            >
+              Password
+            </TabsTrigger>
+            <TabsTrigger
+              value="magiclink"
+              disabled={isLoading || isGoogleLoading}
+            >
+              Magic Link
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         <div className="flex w-full items-center justify-center gap-2">
           <Separator className="flex-1" />
@@ -486,6 +528,7 @@ function LoginContent() {
 
           <InputGroup>
             <InputGroupInput
+              autoFocus
               placeholder="your.email@example.com"
               type="email"
               autoComplete="email"

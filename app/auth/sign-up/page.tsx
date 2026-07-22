@@ -15,6 +15,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Suspense } from "react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   InputGroup,
@@ -32,6 +33,7 @@ import {
   MailIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { GoogleOneTap } from "@/components/auth/google-one-tap";
 
 type PageState = "register-form" | "otp-entry";
 
@@ -102,8 +104,8 @@ function SignUpContent() {
       setError("Passwords do not match.");
       return;
     }
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters long.");
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
       return;
     }
 
@@ -111,8 +113,9 @@ function SignUpContent() {
 
     try {
       const supabase = createClient();
+      const cleanEmail = email.trim().toLowerCase();
       const { error } = await supabase.auth.signUp({
-        email,
+        email: cleanEmail,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback?next=/home`,
@@ -140,10 +143,11 @@ function SignUpContent() {
     }
   };
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otp.length < 8) {
-      setError("Please enter the full 8-digit code");
+  const handleVerifyOtp = async (e?: React.FormEvent, tokenOverride?: string) => {
+    if (e) e.preventDefault();
+    const tokenToVerify = tokenOverride ?? otp;
+    if (tokenToVerify.length < 6) {
+      setError("Please enter the full 6-digit code");
       return;
     }
     setError(null);
@@ -151,9 +155,10 @@ function SignUpContent() {
 
     try {
       const supabase = createClient();
+      const cleanEmail = email.trim().toLowerCase();
       const { error } = await supabase.auth.verifyOtp({
-        email,
-        token: otp,
+        email: cleanEmail,
+        token: tokenToVerify,
         type: "signup",
       });
       if (error) throw error;
@@ -174,7 +179,8 @@ function SignUpContent() {
 
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.resend({ type: "signup", email });
+      const cleanEmail = email.trim().toLowerCase();
+      const { error } = await supabase.auth.resend({ type: "signup", email: cleanEmail });
       if (error) throw error;
       startCooldown();
       setOtp("");
@@ -214,14 +220,23 @@ function SignUpContent() {
           <div className="space-y-1">
             <h1 className="font-cirka font-bold text-2xl tracking-wide">Confirm Your Email</h1>
             <p className="text-base text-muted-foreground">
-              We sent an 8-digit confirmation code to{" "}
+              We sent a 6-digit confirmation code to{" "}
               <span className="font-medium text-foreground">{email}</span>.
               Enter it below to activate your account.
             </p>
           </div>
         </div>
         <form className="space-y-4" onSubmit={handleVerifyOtp}>
-          <OTPInput value={otp} onChange={setOtp} disabled={isLoading} />
+          <OTPInput
+            value={otp}
+            onChange={(v) => {
+              setOtp(v);
+              if (v.length === 6 && !isLoading) {
+                handleVerifyOtp(undefined, v);
+              }
+            }}
+            disabled={isLoading}
+          />
 
           {error && (
             <p className="text-sm text-destructive rounded-md bg-destructive/10 px-3 py-2 text-center">
@@ -232,7 +247,7 @@ function SignUpContent() {
           <Button
             className="w-full cursor-pointer"
             type="submit"
-            disabled={isLoading || otp.length < 8}
+            disabled={isLoading || otp.length < 6}
           >
             {isLoading ? (
               <>
@@ -286,6 +301,7 @@ function SignUpContent() {
   // Registration form
   return (
     <div className="mx-auto space-y-4 sm:w-sm">
+      <GoogleOneTap />
       <div className="flex flex-col space-y-1">
         <h1 className="font-cirka font-bold text-2xl tracking-wide">Create an Account</h1>
         <p className="text-base text-muted-foreground">
@@ -320,6 +336,7 @@ function SignUpContent() {
 
         <InputGroup>
           <InputGroupInput
+            autoFocus
             placeholder="your.email@example.com"
             type="email"
             autoComplete="email"
@@ -335,7 +352,7 @@ function SignUpContent() {
 
         <InputGroup>
           <InputGroupInput
-            placeholder="Password (min. 8 characters)"
+            placeholder="Password (min. 6 characters)"
             type={showPassword ? "text" : "password"}
             autoComplete="new-password"
             required
@@ -354,6 +371,56 @@ function SignUpContent() {
             {showPassword ? <EyeOffIcon /> : <EyeIcon />}
           </InputGroupAddon>
         </InputGroup>
+
+        {password.length > 0 && (
+          <div className="space-y-1.5 pt-0.5">
+            <div className="grid grid-cols-4 gap-1.5 h-1.5 w-full">
+              {[1, 2, 3, 4].map((step) => {
+                let score = 0;
+                if (password.length >= 6) score++;
+                if (password.length >= 10) score++;
+                if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score++;
+                if (/[0-9]/.test(password) || /[^A-Za-z0-9]/.test(password)) score++;
+                
+                const isActive = step <= score;
+                let color = "bg-muted";
+                if (isActive) {
+                  if (score <= 1) color = "bg-rose-500";
+                  else if (score <= 3) color = "bg-amber-500";
+                  else color = "bg-emerald-500";
+                }
+                return (
+                  <div
+                    key={step}
+                    className={cn("rounded-full transition-all duration-300", color)}
+                  />
+                );
+              })}
+            </div>
+            <div className="flex justify-between items-center text-[10px] text-muted-foreground font-medium">
+              <span>Password strength</span>
+              <span className={cn(
+                (() => {
+                  let score = 0;
+                  if (password.length >= 6) score++;
+                  if (password.length >= 10) score++;
+                  if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score++;
+                  if (/[0-9]/.test(password) || /[^A-Za-z0-9]/.test(password)) score++;
+                  return score <= 1 ? "text-rose-500" : score <= 3 ? "text-amber-500" : "text-emerald-500";
+                })()
+              )}>
+                {(() => {
+                  let score = 0;
+                  if (password.length >= 6) score++;
+                  if (password.length >= 10) score++;
+                  if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score++;
+                  if (/[0-9]/.test(password) || /[^A-Za-z0-9]/.test(password)) score++;
+                  return score <= 1 ? "Weak" : score <= 3 ? "Fair" : "Strong";
+                })()}
+              </span>
+            </div>
+          </div>
+        )}
 
         <InputGroup>
           <InputGroupInput

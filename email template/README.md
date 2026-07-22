@@ -26,7 +26,7 @@ Supabase uses Go-style template variables. The following are used across the tem
 |---|---|
 | `{{ .SiteURL }}` | Your app's base URL (set in Supabase Auth Settings → Site URL) |
 | `{{ .TokenHash }}` | Opaque token hash — used in server-side `/auth/confirm` links |
-| `{{ .Token }}` | Human-readable 6–8 digit OTP code — displayed in email for copy-paste entry |
+| `{{ .Token }}` | Human-readable 6-digit OTP code — displayed in email for copy-paste entry |
 | `{{ .Email }}` | The user's current email address |
 | `{{ .NewEmail }}` | The new email address (change-email only) |
 | `{{ .Data.institute_name }}` | Institute name (invite-user — set via user metadata) |

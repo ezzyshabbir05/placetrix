@@ -5,7 +5,23 @@ import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { cirka } from "@/app/fonts";
 import { Toaster } from "@/components/ui/sonner";
+import { Outfit, EB_Garamond, Source_Code_Pro } from "next/font/google";
+import "./globals.css";
 
+const fontSans = Outfit({
+  subsets: ["latin"],
+  variable: "--font-sans",
+});
+
+const fontSerif = EB_Garamond({
+  subsets: ["latin"],
+  variable: "--font-serif",
+});
+
+const fontMono = Source_Code_Pro({
+  subsets: ["latin"],
+  variable: "--font-mono",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://placetrix.app"),

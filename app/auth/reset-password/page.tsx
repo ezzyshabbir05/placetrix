@@ -88,7 +88,8 @@ export default function ResetPasswordPage() {
 
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      const cleanEmail = email.trim().toLowerCase();
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail);
       if (error) throw error;
       setPageState("otp-entry");
       startCooldown();
@@ -100,10 +101,11 @@ export default function ResetPasswordPage() {
   };
 
   // ── Step 2: Verify OTP ─────────────────────────────────────────────────────
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otp.length < 8) {
-      setError("Please enter the full 8-digit code");
+  const handleVerifyOtp = async (e?: React.FormEvent, tokenOverride?: string) => {
+    if (e) e.preventDefault();
+    const tokenToVerify = tokenOverride ?? otp;
+    if (tokenToVerify.length < 6) {
+      setError("Please enter the full 6-digit code");
       return;
     }
     setError(null);
@@ -111,9 +113,10 @@ export default function ResetPasswordPage() {
 
     try {
       const supabase = createClient();
+      const cleanEmail = email.trim().toLowerCase();
       const { error } = await supabase.auth.verifyOtp({
-        email,
-        token: otp,
+        email: cleanEmail,
+        token: tokenToVerify,
         type: "recovery",
       });
       if (error) throw error;
@@ -133,7 +136,8 @@ export default function ResetPasswordPage() {
 
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      const cleanEmail = email.trim().toLowerCase();
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail);
       if (error) throw error;
       startCooldown();
       setOtp("");
@@ -289,13 +293,22 @@ export default function ResetPasswordPage() {
               Enter Reset Code
             </h1>
             <p className="text-base text-muted-foreground">
-              We sent an 8-digit code to{" "}
+              We sent a 6-digit code to{" "}
               <span className="font-medium text-foreground">{email}</span>
             </p>
           </div>
         </div>
         <form className="space-y-4" onSubmit={handleVerifyOtp}>
-          <OTPInput value={otp} onChange={setOtp} disabled={isLoading} />
+          <OTPInput
+            value={otp}
+            onChange={(v) => {
+              setOtp(v);
+              if (v.length === 6 && !isLoading) {
+                handleVerifyOtp(undefined, v);
+              }
+            }}
+            disabled={isLoading}
+          />
 
           {error && (
             <p className="text-sm text-destructive rounded-md bg-destructive/10 px-3 py-2 text-center">
@@ -306,7 +319,7 @@ export default function ResetPasswordPage() {
           <Button
             className="w-full cursor-pointer"
             type="submit"
-            disabled={isLoading || otp.length < 8}
+            disabled={isLoading || otp.length < 6}
           >
             {isLoading ? (
               <>
@@ -367,6 +380,7 @@ export default function ResetPasswordPage() {
       <form className="space-y-4" onSubmit={handleSendEmail}>
         <InputGroup>
           <InputGroupInput
+            autoFocus
             placeholder="your.email@example.com"
             type="email"
             autoComplete="email"
