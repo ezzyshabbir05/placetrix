@@ -1748,7 +1748,7 @@ export function CandidateProfileClient({
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {!editing("account") && (accountComplete ? <SectionComplete /> : <SectionIncomplete />)}
-              {!editing("account") && !initialUsername.current && (
+              {!editing("account") && (
                 <Button variant="outline" size="sm" onClick={() => openSection("account")}>
                   <Pencil className="h-3.5 w-3.5 mr-1.5" />
                   Edit
@@ -1784,7 +1784,7 @@ export function CandidateProfileClient({
                   <p className={cn("text-xs", usernameMsg.className)}>{usernameMsg.text}</p>
                 ) : (
                   <p className="text-xs text-muted-foreground">
-                    3–20 characters: letters, numbers, and underscores only — cannot be changed after saving
+                    3–20 characters: letters, numbers, and underscores only
                   </p>
                 )}
               </div>
@@ -1794,7 +1794,6 @@ export function CandidateProfileClient({
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-foreground">@{initialUsername.current}</span>
                 </div>
-                <p className="text-[10px] text-muted-foreground leading-normal">Usernames cannot be changed once saved.</p>
               </div>
             ) : (
               <div className="max-w-sm">

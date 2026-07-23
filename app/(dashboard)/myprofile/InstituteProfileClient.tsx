@@ -789,8 +789,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
         )}
 
         {/* Account Settings — only shown if username not yet set */}
-        {!initialUsername.current ? (
-          <Card className={cn("transition-all duration-200", editing("account") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
+        <Card className={cn("transition-all duration-200", editing("account") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
             <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 space-y-0">
               <div>
                 <CardTitle>Account Settings</CardTitle>
@@ -831,15 +830,23 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                     <p className={cn("text-xs", usernameMsg.className)}>{usernameMsg.text}</p>
                   ) : (
                     <p className="text-xs text-muted-foreground">
-                      3–20 characters · letters, numbers, and underscores only · cannot be changed after saving
+                      3–20 characters · letters, numbers, and underscores only 
                     </p>
                   )}
                 </div>
               ) : (
                 <div className="max-w-sm">
                   <p className="text-xs text-muted-foreground mb-1">Username</p>
-                  <p className="text-sm font-medium text-muted-foreground italic">Not set yet</p>
-                  <p className="text-xs text-muted-foreground mt-1">Set your username; it cannot be changed once saved</p>
+                  {initialUsername.current ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-foreground">@{initialUsername.current}</span>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm font-medium text-muted-foreground italic">Not set yet</p>
+                      <p className="text-xs text-muted-foreground mt-1">Set your unique username</p>
+                    </>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -855,7 +862,6 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
               </CardFooter>
             )}
           </Card>
-        ) : null}
 
         {/* College Logo — always interactive */}
         <Card>
