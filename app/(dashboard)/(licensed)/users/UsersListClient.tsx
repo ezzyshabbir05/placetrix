@@ -577,7 +577,10 @@ export function UsersListClient({
                 paginatedUsers.map((user) => (
                   <ContextMenu key={user.id}>
                     <ContextMenuTrigger asChild>
-                      <TableRow className="cursor-context-menu">
+                      <TableRow
+                        onClick={() => handleUserClick(user)}
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      >
                         <TableCell className="overflow-hidden text-ellipsis">
                           <div className="flex items-center gap-3 min-w-0">
                             <Avatar className="size-8 shrink-0">
@@ -629,6 +632,9 @@ export function UsersListClient({
                       </TableRow>
                     </ContextMenuTrigger>
                     <ContextMenuContent>
+                      <ContextMenuItem onClick={() => handleUserClick(user)}>
+                        View Profile
+                      </ContextMenuItem>
                       <ContextMenuItem onClick={() => { navigator.clipboard.writeText(user.email); toast.success("Email copied to clipboard"); }}>
                         Copy Email
                       </ContextMenuItem>
