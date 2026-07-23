@@ -1049,6 +1049,13 @@ export function LogicLabDashboardClient({
               <Dices className="size-4" />
               <span className={cn('hidden', 'sm:inline')}>Pick Random</span>
             </Button>
+            
+            <Link href="/logiclab/leaderboard">
+              <Button variant="outline" className={cn('rounded-full', 'h-10', 'gap-1.5', 'shrink-0')} title="View Leaderboard">
+                <Trophy className="size-4 text-amber-500" />
+                <span className={cn('hidden', 'sm:inline')}>Leaderboard</span>
+              </Button>
+            </Link>
           </div>
         </div>
 
@@ -1123,7 +1130,7 @@ export function LogicLabDashboardClient({
                       key={problem.id}
                       onClick={() => router.push(`/logiclab/problems/${problem.id}`)}
                       className={cn(
-                        "group flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors duration-150",
+                        "group flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors duration-200 hover:bg-muted/40",
                         isEven ? "bg-transparent" : "bg-zinc-100 dark:bg-white/[0.04]",
                         idx !== problems.length - 1 && "border-b border-border"
                       )}
