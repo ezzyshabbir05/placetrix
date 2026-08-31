@@ -4,25 +4,25 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import {
   Bell,
-  Sparkles,
   CheckCheck,
   Trash2,
+  Sparkles,
   ChevronRight,
+  Rocket,
+  LifeBuoy,
+  FileCheck,
+  AlertCircle,
+  Megaphone,
 } from "lucide-react"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+
+import { cn } from "@/lib/utils"
+import { startNavigationProgress } from "@/components/ui/navigation-progress"
+import { useNotifications } from "@/components/notifications/notification-provider"
+import type { NotificationItem } from "@/types/notifications"
+
 import { Button } from "@/components/ui/button"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import {
-  Empty,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-  EmptyDescription,
-} from "@/components/ui/empty"
 import {
   Tooltip,
   TooltipContent,
@@ -39,10 +39,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { useNotifications } from "@/components/notifications/notification-provider"
-import { startNavigationProgress } from "@/components/ui/navigation-progress"
-import type { NotificationItem } from "@/types/notifications"
-import { cn } from "@/lib/utils"
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
+
+// ── Time & Formatting Helpers ────────────────────────────────────────────────
 
 function formatRelativeTime(dateString: string): string {
   try {
@@ -51,43 +56,48 @@ function formatRelativeTime(dateString: string): string {
     const diffMs = now.getTime() - date.getTime()
     const diffSec = Math.floor(diffMs / 1000)
     const diffMin = Math.floor(diffSec / 60)
-    const diffHours = Math.floor(diffMin / 60)
-    const diffDays = Math.floor(diffHours / 24)
+    const diffHour = Math.floor(diffMin / 60)
+    const diffDay = Math.floor(diffHour / 24)
 
-    if (diffSec < 45) return "just now"
-    if (diffMin < 60) return `${diffMin}m`
-    if (diffHours < 24) return `${diffHours}h`
-    if (diffDays === 1) return "1d"
-    if (diffDays < 7) return `${diffDays}d`
-    return date.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+    if (diffSec < 60) return "Just now"
+    if (diffMin < 60) return `${diffMin}m ago`
+    if (diffHour < 24) return `${diffHour}h ago`
+    if (diffDay === 1) return "Yesterday"
+    if (diffDay < 7) return `${diffDay}d ago`
+
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    })
   } catch {
-    return "recently"
+    return ""
   }
 }
 
-export function formatCompactBadgeCount(count: number): string {
+function formatCompactCount(count: number): string {
   if (count <= 0) return ""
-  if (count <= 99) return `${count}`
-  if (count < 1000) return "99+"
-  if (count < 1_000_000) {
-    const formatted = (count / 1000).toFixed(count < 10000 && count % 1000 >= 100 ? 1 : 0)
-    return `${formatted.replace(/\.0$/, "")}k+`
-  }
-  const formatted = (count / 1_000_000).toFixed(1).replace(/\.0$/, "")
-  return `${formatted}m+`
+  if (count > 99) return "99+"
+  return count.toString()
 }
 
-export function formatCompactHeaderCount(count: number): string {
-  if (count <= 0) return ""
-  if (count <= 99) return `${count} unread`
-  if (count < 1000) return "99+ unread"
-  if (count < 1_000_000) {
-    const formatted = (count / 1000).toFixed(count < 10000 && count % 1000 >= 100 ? 1 : 0)
-    return `${formatted.replace(/\.0$/, "")}k+ unread`
+function getNotificationIcon(notif: NotificationItem) {
+  const type = notif.metadata?.type || ""
+  if (type === "announcement" || notif.title.includes("v1.") || notif.title.includes("🚀")) {
+    return <Rocket className="size-3.5 text-primary" />
   }
-  const formatted = (count / 1_000_000).toFixed(1).replace(/\.0$/, "")
-  return `${formatted}m+ unread`
+  if (type === "ticket" || type === "support") {
+    return <LifeBuoy className="size-3.5 text-blue-500" />
+  }
+  if (type === "test" || type === "exam") {
+    return <FileCheck className="size-3.5 text-emerald-500" />
+  }
+  if (type === "alert" || type === "warning") {
+    return <AlertCircle className="size-3.5 text-amber-500" />
+  }
+  return <Megaphone className="size-3.5 text-muted-foreground" />
 }
+
+// ── Main Popover Component ───────────────────────────────────────────────────
 
 export function NotificationsPopover() {
   const router = useRouter()
@@ -110,43 +120,37 @@ export function NotificationsPopover() {
   const viewportRef = React.useRef<HTMLDivElement>(null)
   const observerTarget = React.useRef<HTMLDivElement>(null)
 
-  // Trigger on scroll event
+  // Infinite scroll trigger via scroll proximity
   const handleScroll = React.useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
+      if (!hasMore || isLoadingMore || isLoading) return
       const target = e.currentTarget
-      const reachedBottom =
-        target.scrollHeight - target.scrollTop - target.clientHeight <= 80
-      if (reachedBottom && hasMore && !isLoadingMore && !isLoading) {
+      const threshold = 120
+      if (target.scrollHeight - target.scrollTop - target.clientHeight < threshold) {
         loadMore()
       }
     },
     [hasMore, isLoadingMore, isLoading, loadMore]
   )
 
-  // Infinite scroll trigger with root attached to ScrollArea viewport
+  // IntersectionObserver backup for bottom sentinel
   React.useEffect(() => {
-    if (!open) return
-
-    const rootEl = viewportRef.current
-    const targetEl = observerTarget.current
-    if (!targetEl) return
+    if (!open || !hasMore || isLoadingMore || isLoading) return
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore && !isLoading) {
+        if (entries[0]?.isIntersecting) {
           loadMore()
         }
       },
-      {
-        root: rootEl || null,
-        rootMargin: "60px",
-        threshold: 0.1,
-      }
+      { threshold: 0.1, rootMargin: "80px" }
     )
 
-    observer.observe(targetEl)
+    const target = observerTarget.current
+    if (target) observer.observe(target)
 
     return () => {
+      if (target) observer.unobserve(target)
       observer.disconnect()
     }
   }, [open, hasMore, isLoadingMore, isLoading, loadMore, notifications.length])
@@ -154,9 +158,10 @@ export function NotificationsPopover() {
   const handleNotificationClick = (notif: NotificationItem) => {
     if (!notif.is_read) {
       markAsRead(notif.id).catch((err) =>
-        console.error("[NOTIFICATIONS] Error marking read:", err)
+        console.error("[NOTIFICATIONS] Error marking as read:", err)
       )
     }
+
     if (notif.link) {
       setOpen(false)
       if (notif.link.startsWith("http://") || notif.link.startsWith("https://")) {
@@ -176,7 +181,7 @@ export function NotificationsPopover() {
             variant="ghost"
             size="icon"
             className="relative size-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors shrink-0"
-            aria-label={unreadCount > 0 ? formatCompactHeaderCount(unreadCount) : "Notifications"}
+            aria-label={unreadCount > 0 ? `${unreadCount} unread notifications` : "Notifications"}
           >
             <Bell className="size-4" />
             {unreadCount > 0 && (
@@ -187,7 +192,7 @@ export function NotificationsPopover() {
                   unreadCount > 9 ? "min-w-3.5 h-3.5 px-0.5 text-[8px]" : "size-3.5 text-[8.5px]"
                 )}
               >
-                {formatCompactBadgeCount(unreadCount)}
+                {formatCompactCount(unreadCount)}
               </span>
             )}
           </Button>
@@ -198,20 +203,41 @@ export function NotificationsPopover() {
           sideOffset={8}
           collisionPadding={12}
           onOpenAutoFocus={(e) => e.preventDefault()}
-          className="w-[calc(100vw-24px)] sm:w-[350px] max-w-[360px] p-0 rounded-2xl overflow-hidden shadow-lg border"
+          className="w-[calc(100vw-24px)] sm:w-[380px] max-w-[380px] p-0 rounded-2xl overflow-hidden shadow-xl border bg-popover text-popover-foreground box-border"
         >
-          {/* ── Compact Header ─────────────────────────────────── */}
-          <div className="flex h-10 items-center justify-between px-3.5 border-b">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold tracking-tight text-foreground">Notifications</span>
+          {/* ── Popover Header ──────────────────────────────────────── */}
+          <div className="flex h-11 items-center justify-between px-3.5 border-b border-border/70 bg-card/60 backdrop-blur-xs">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-xs font-bold tracking-tight text-foreground">Notifications</span>
               {unreadCount > 0 && (
-                <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-semibold bg-muted text-muted-foreground rounded-full tabular-nums">
-                  {formatCompactHeaderCount(unreadCount)}
+                <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-semibold bg-muted text-foreground rounded-full tabular-nums shrink-0">
+                  {formatCompactCount(unreadCount)} unread
                 </span>
               )}
             </div>
 
-            <div className="flex items-center gap-0.5">
+            <div className="flex items-center gap-1 shrink-0">
+              {unreadCount > 0 && (
+                <TooltipProvider delayDuration={300}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={markAllAsRead}
+                        className="size-7 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Mark all as read"
+                      >
+                        <CheckCheck className="size-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">
+                      Mark all as read
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+
               {notifications.length > 0 && (
                 <TooltipProvider delayDuration={300}>
                   <Tooltip>
@@ -226,165 +252,154 @@ export function NotificationsPopover() {
                         <Trash2 className="size-3.5" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs">Delete all notifications</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-
-              {unreadCount > 0 && (
-                <TooltipProvider delayDuration={300}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={markAllAsRead}
-                        className="size-7 rounded-md text-muted-foreground hover:text-foreground"
-                        aria-label="Mark all as read"
-                      >
-                        <CheckCheck className="size-3.5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs">Mark all as read</TooltipContent>
+                    <TooltipContent side="bottom" className="text-xs">
+                      Delete all notifications
+                    </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               )}
             </div>
           </div>
 
-        {/* ── Content Feed ──────────────────────────────────── */}
-        <ScrollArea
-          className="h-72"
-          viewportRef={viewportRef}
-          onScroll={handleScroll}
-        >
-          {isLoading ? (
-            <div className="flex h-72 items-center justify-center text-xs text-muted-foreground">
-              Loading...
-            </div>
-          ) : notifications.length === 0 ? (
-            <div className="flex h-72 items-center justify-center p-4">
-              <Empty className="border-none p-0">
-                <EmptyHeader>
-                  <EmptyMedia variant="icon" className="size-9 rounded-full mb-1.5 bg-muted">
-                    <Sparkles className="size-4 text-muted-foreground" />
-                  </EmptyMedia>
-                  <EmptyTitle className="text-xs font-medium text-foreground">
-                    You're all caught up
-                  </EmptyTitle>
-                  <EmptyDescription className="text-[11px] text-muted-foreground">
-                    No new notifications right now.
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            </div>
-          ) : (
-            <div className="divide-y">
-              {notifications.map((notif) => (
-                <div
-                  key={notif.id}
-                  onClick={() => handleNotificationClick(notif)}
-                  className={cn(
-                    "group relative flex flex-col gap-1 p-3 transition-colors cursor-pointer hover:bg-muted/40",
-                    !notif.is_read && "bg-muted/20"
-                  )}
-                >
-                  <div className="flex items-center justify-between gap-2 pr-5">
-                    <span
-                      className={cn(
-                        "text-xs truncate",
-                        !notif.is_read
-                          ? "font-semibold text-foreground"
-                          : "font-medium text-muted-foreground"
-                      )}
-                    >
-                      {notif.title}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground shrink-0 font-normal">
-                      {formatRelativeTime(notif.created_at)}
-                    </span>
-                  </div>
-
-                  <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed pr-5">
-                    {notif.message}
-                  </p>
-
-                  {notif.link && (
-                    <div className="flex items-center gap-0.5 mt-0.5 text-[10px] font-medium text-muted-foreground group-hover:text-foreground hover:underline">
-                      View
-                      <ChevronRight className="size-2.5" />
-                    </div>
-                  )}
-
-                  {/* Unread dot */}
-                  {!notif.is_read && (
-                    <span className="absolute right-3 top-3.5 size-1.5 rounded-full bg-foreground" />
-                  )}
-
-                  {/* Quick Delete on hover */}
-                  <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        deleteNotification(notif.id)
-                      }}
-                      className="size-6 text-muted-foreground hover:text-foreground"
-                      title="Delete notification"
-                    >
-                      <Trash2 className="size-3" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-
-              {/* Scroll-to-load sentinel */}
-              {hasMore && (
-                <div
-                  ref={observerTarget}
-                  className="py-2.5 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground"
-                >
-                  {isLoadingMore && (
-                    <>
-                      <div className="size-3 rounded-full border-2 border-muted-foreground border-t-transparent animate-spin" />
-                      <span>Loading more...</span>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </ScrollArea>
-      </PopoverContent>
-    </Popover>
-
-    {/* ── Confirmation Dialog for Delete All ─────────────── */}
-    <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
-      <AlertDialogContent size="sm" className="rounded-xl max-w-[340px] p-5">
-        <AlertDialogHeader className="text-left gap-1">
-          <AlertDialogTitle className="text-sm font-semibold text-foreground">
-            Delete all notifications?
-          </AlertDialogTitle>
-          <AlertDialogDescription className="text-xs text-muted-foreground leading-relaxed">
-            This will permanently remove all notifications from your inbox. This action cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter className="mt-4 flex-row justify-end gap-2">
-          <AlertDialogCancel className="h-8 px-3 text-xs">Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            variant="destructive"
-            className="h-8 px-3 text-xs"
-            onClick={() => {
-              deleteAllNotifications()
-              setConfirmDeleteOpen(false)
-            }}
+          {/* ── Scrollable Feed ─────────────────────────────────────── */}
+          <ScrollArea
+            className="h-[340px] w-full [&>div]:!block overflow-x-hidden"
+            viewportRef={viewportRef}
+            onScroll={handleScroll}
           >
-            Delete all
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  </>
+            {isLoading ? (
+              <div className="flex h-[340px] items-center justify-center text-xs text-muted-foreground">
+                Loading notifications...
+              </div>
+            ) : notifications.length === 0 ? (
+              <div className="flex h-[340px] items-center justify-center p-4">
+                <Empty className="border-none p-0">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon" className="size-9 rounded-full mb-1.5 bg-muted">
+                      <Sparkles className="size-4 text-muted-foreground" />
+                    </EmptyMedia>
+                    <EmptyTitle className="text-xs font-medium text-foreground">
+                      You&apos;re all caught up
+                    </EmptyTitle>
+                    <EmptyDescription className="text-[11px] text-muted-foreground">
+                      No new notifications right now.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              </div>
+            ) : (
+              <div className="divide-y divide-border/50 w-full min-w-0">
+                {notifications.map((notif) => (
+                  <div
+                    key={notif.id}
+                    onClick={() => handleNotificationClick(notif)}
+                    className={cn(
+                      "group relative flex items-start gap-3 p-3 transition-colors cursor-pointer hover:bg-muted/40 w-full min-w-0 box-border overflow-hidden",
+                      !notif.is_read && "bg-muted/15"
+                    )}
+                  >
+                    {/* Category Icon Badge */}
+                    <div className="size-7 rounded-lg bg-muted/80 flex items-center justify-center shrink-0 mt-0.5 border border-border/50">
+                      {getNotificationIcon(notif)}
+                    </div>
+
+                    {/* Content Column */}
+                    <div className="flex-1 min-w-0 flex flex-col gap-0.5 pr-5 overflow-hidden">
+                      <div className="flex items-center justify-between gap-1.5 min-w-0 w-full overflow-hidden">
+                        <span
+                          className={cn(
+                            "text-xs truncate min-w-0 flex-1 block font-medium",
+                            !notif.is_read
+                              ? "font-semibold text-foreground"
+                              : "text-muted-foreground"
+                          )}
+                          title={notif.title}
+                        >
+                          {notif.title}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground shrink-0 font-normal tabular-nums">
+                          {formatRelativeTime(notif.created_at)}
+                        </span>
+                      </div>
+
+                      <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed whitespace-normal break-words break-all min-w-0 w-full overflow-hidden block">
+                        {notif.message}
+                      </p>
+
+                      {notif.link && (
+                        <div className="inline-flex items-center gap-0.5 mt-0.5 text-[10px] font-medium text-foreground group-hover:text-primary transition-colors">
+                          <span>View</span>
+                          <ChevronRight className="size-2.5" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Unread dot indicator */}
+                    {!notif.is_read && (
+                      <span className="absolute right-3 top-3.5 size-1.5 rounded-full bg-foreground shrink-0" />
+                    )}
+
+                    {/* Quick Delete button on hover */}
+                    <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          deleteNotification(notif.id)
+                        }}
+                        className="size-6 text-muted-foreground hover:text-destructive transition-colors"
+                        title="Delete notification"
+                      >
+                        <Trash2 className="size-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Infinite Scroll Sentinel */}
+                {hasMore && (
+                  <div
+                    ref={observerTarget}
+                    className="py-2.5 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground"
+                  >
+                    {isLoadingMore && (
+                      <>
+                        <div className="size-3 rounded-full border-2 border-muted-foreground border-t-transparent animate-spin" />
+                        <span>Loading more...</span>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </ScrollArea>
+        </PopoverContent>
+      </Popover>
+
+      {/* ── Confirmation Dialog for Bulk Delete ────────────────────── */}
+      <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete all notifications?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove all notifications from your inbox. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                deleteAllNotifications()
+                setConfirmDeleteOpen(false)
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
