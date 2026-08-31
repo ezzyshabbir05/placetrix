@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: "Explore the latest features, improvements, and fixes across PlaceTrix.",
 }
 
-export const dynamic = "force-dynamic"
+export const revalidate = 3600
 
 import { ChangelogDate } from "./changelog-date"
 

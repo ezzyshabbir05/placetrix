@@ -43,11 +43,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import {
-  addTicketMessageAction,
-  getTicketAction,
-  updateTicketStatusAction,
-} from "@/app/(dashboard)/gethelp/actions";
+import { createClient } from "@/lib/supabase/client";
 import type { UserProfile } from "@/lib/supabase/profile";
 
 // ─── Meta Item ────────────────────────────────────────────────────────────────
@@ -62,14 +58,12 @@ function MetaItem({
   value: React.ReactNode;
 }) {
   return (
-    <div className="flex items-start gap-2.5 rounded-xl border bg-muted/20 p-3.5">
-      <span className="mt-0.5 shrink-0 text-muted-foreground">{icon}</span>
-      <div>
-        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-          {label}
-        </p>
-        <div className="mt-0.5 text-sm font-medium text-foreground">{value}</div>
+    <div className="flex flex-col gap-1 rounded-xl border bg-card p-3.5 shadow-xs">
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+        {icon}
+        <span>{label}</span>
       </div>
+      <div className="text-xs font-semibold text-foreground truncate">{value}</div>
     </div>
   );
 }
@@ -86,7 +80,7 @@ function StatusBadge({ status }: { status: string }) {
       );
     case "in_progress":
       return (
-        <span className="text-amber-600 dark:text-amber-500 font-semibold capitalize">
+        <span className="text-amber-600 dark:text-amber-400 font-semibold capitalize">
           In Progress
         </span>
       );
@@ -152,17 +146,88 @@ export default function TicketDetailClient({
 
   const isAdmin = userProfile.account_type === "admin";
 
+  // Realtime subscription for instant new messages
+  React.useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`realtime-ticket-${initialTicket.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "ticket_messages",
+          filter: `ticket_id=eq.${initialTicket.id}`,
+        },
+        async (payload) => {
+          const newMsg = payload.new as any;
+          // Fetch full message row with joined user profile
+          const { data: fullMsg } = await (supabase as any)
+            .from("ticket_messages")
+            .select(`*, user:profiles(id, full_name, email, avatar_path)`)
+            .eq("id", newMsg.id)
+            .maybeSingle();
+
+          if (fullMsg) {
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === fullMsg.id)) return prev;
+              return [...prev, fullMsg];
+            });
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "tickets",
+          filter: `id=eq.${initialTicket.id}`,
+        },
+        (payload) => {
+          const updatedTicket = payload.new as any;
+          if (updatedTicket.status) {
+            setTicketStatus(updatedTicket.status);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [initialTicket.id]);
+
   async function handleSendMessage(e: React.FormEvent) {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || isSubmitting) return;
 
+    const messageText = newMessage.trim();
     setIsSubmitting(true);
+
     try {
-      await addTicketMessageAction(initialTicket.id, newMessage);
+      const supabase = createClient();
+      const { data, error } = await (supabase as any)
+        .from("ticket_messages")
+        .insert({
+          ticket_id: initialTicket.id,
+          user_id: userProfile.id,
+          message: messageText,
+          is_admin_reply: isAdmin,
+        })
+        .select(`*, user:profiles(id, full_name, email, avatar_path)`)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
       setNewMessage("");
-      const data = await getTicketAction(initialTicket.id);
       if (data) {
-        setMessages(data.messages);
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === data.id)) return prev;
+          return [...prev, data];
+        });
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to send message");
@@ -174,7 +239,16 @@ export default function TicketDetailClient({
   async function handleStatusChange(newStatus: any) {
     setIsUpdatingStatus(true);
     try {
-      await updateTicketStatusAction(initialTicket.id, newStatus);
+      const supabase = createClient();
+      const { error } = await (supabase as any)
+        .from("tickets")
+        .update({ status: newStatus })
+        .eq("id", initialTicket.id);
+
+      if (error) {
+        throw error;
+      }
+
       setTicketStatus(newStatus);
       toast.success(`Ticket status updated to ${newStatus.replace("_", " ")}`);
     } catch (err: any) {

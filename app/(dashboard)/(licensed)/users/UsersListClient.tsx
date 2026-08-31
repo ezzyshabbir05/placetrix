@@ -140,10 +140,12 @@ const ROLE_LABELS: Record<string, string> = {
   institute_placement_officer: "TPO / Placement Officer",
 }
 
+import { createClient } from "@/lib/supabase/client"
+
 export function UsersListClient({
   initialUsers,
   courses,
-  totalCount,
+  totalCount: initialTotalCount,
   initialPage,
   initialPageSize,
   initialSearch,
@@ -166,8 +168,18 @@ export function UsersListClient({
 
   const [isPending, startTransition] = useTransition()
 
-  // Local state for search input text
+  // Local state for users, counts, filters, pagination, sort
+  const [users, setUsers] = useState<InstituteUser[]>(initialUsers)
+  const [currentTotalCount, setCurrentTotalCount] = useState<number>(initialTotalCount)
+  const [currentRole, setCurrentRole] = useState<string>(initialRole)
+  const [currentCourseId, setCurrentCourseId] = useState<string>(initialCourseId)
+  const [currentPassoutYear, setCurrentPassoutYear] = useState<string>(initialPassoutYear)
+  const [currentSortCol, setCurrentSortCol] = useState<SortColumn>(initialSortCol)
+  const [currentSortDir, setCurrentSortDir] = useState<"asc" | "desc">(initialSortDir)
+  const [currentPage, setCurrentPage] = useState<number>(initialPage)
+  const [currentPageSize, setCurrentPageSize] = useState<number>(initialPageSize)
   const [searchInput, setSearchInput] = useState(initialSearch)
+  const [isFetching, setIsFetching] = useState(false)
 
   // Dialog creation state
   const [isOpen, setIsOpen] = useState(false)
@@ -176,81 +188,249 @@ export function UsersListClient({
   const [courseId, setCourseId] = useState("")
   const [passoutYear, setPassoutYear] = useState("")
 
-  // Tracks whether the last URL change was triggered by our own debounce
-  const isOwnUpdateRef = useRef(false)
+  // Direct client Supabase fetcher
+  const fetchUsersClient = useCallback(
+    async (
+      searchVal: string,
+      roleVal: string,
+      courseVal: string,
+      passoutVal: string,
+      sortColVal: SortColumn,
+      sortDirVal: "asc" | "desc",
+      pageVal: number,
+      sizeVal: number
+    ) => {
+      setIsFetching(true)
+      try {
+        const supabase = createClient()
+        const hasAcademicFilter = courseVal !== "all" || passoutVal !== "all"
+        const academicRelation = hasAcademicFilter
+          ? "candidate_academic_details!inner"
+          : "candidate_academic_details"
 
-  // Sync search input on external navigation
-  useEffect(() => {
-    if (isOwnUpdateRef.current) {
-      isOwnUpdateRef.current = false
-      return
-    }
-    setSearchInput(initialSearch)
-  }, [initialSearch])
+        let query = (supabase as any)
+          .from("profiles")
+          .select(
+            `
+            id,
+            full_name,
+            email,
+            username,
+            account_type,
+            avatar_path,
+            created_at,
+            ${academicRelation} (
+              course_id,
+              passout_year,
+              university_prn,
+              course:institute_courses (
+                course_name
+              )
+            )
+          `,
+            { count: "exact" }
+          )
+          .in("account_type", ["institute_candidate", "institute_staff", "institute_placement_officer"])
 
-  // Helper to push updated params to URL
-  const updateParams = useCallback(
-    (newParams: Partial<Record<string, string | number>>) => {
-      const params = new URLSearchParams(window.location.search)
-      Object.entries(newParams).forEach(([key, val]) => {
-        if (val === undefined || val === "" || val === null) {
-          params.delete(key)
-        } else {
-          params.set(key, String(val))
+        if (roleVal !== "all") {
+          query = query.eq("account_type", roleVal)
         }
-      })
-      startTransition(() => {
-        push(`${pathname}?${params.toString()}`)
-      })
+        if (courseVal && courseVal !== "all") {
+          query = query.eq("candidate_academic_details.course_id", courseVal)
+        }
+        if (passoutVal && passoutVal !== "all") {
+          const yearNum = parseInt(passoutVal, 10)
+          if (!isNaN(yearNum)) {
+            query = query.eq("candidate_academic_details.passout_year", yearNum)
+          }
+        }
+        if (searchVal.trim()) {
+          const s = searchVal.trim()
+          query = query.or(`full_name.ilike.%${s}%,email.ilike.%${s}%`)
+        }
+
+        const ascending = sortDirVal === "asc"
+        switch (sortColVal) {
+          case "name":
+            query = query.order("full_name", { ascending })
+            break
+          case "email":
+            query = query.order("email", { ascending })
+            break
+          case "role":
+            query = query.order("account_type", { ascending })
+            break
+          case "created":
+          default:
+            query = query.order("created_at", { ascending })
+            break
+        }
+
+        const from = (pageVal - 1) * sizeVal
+        const to = pageVal * sizeVal - 1
+        const { data, count, error } = await query.range(from, to)
+
+        if (!error && data) {
+          const mapped: InstituteUser[] = data.map((u: any) => {
+            const cad = Array.isArray(u.candidate_academic_details)
+              ? u.candidate_academic_details[0]
+              : u.candidate_academic_details
+            const course = Array.isArray(cad?.course)
+              ? cad?.course[0]
+              : cad?.course
+            return {
+              id: u.id,
+              full_name: u.full_name,
+              email: u.email,
+              username: u.username,
+              account_type: u.account_type,
+              avatar_path: u.avatar_path,
+              created_at: u.created_at,
+              course_name: course?.course_name ?? null,
+              passout_year: cad?.passout_year ?? null,
+            }
+          })
+          setUsers(mapped)
+          setCurrentTotalCount(count ?? 0)
+        }
+      } catch (err) {
+        console.error("[UsersListClient] Error fetching users on client:", err)
+      } finally {
+        setIsFetching(false)
+      }
     },
-    [pathname, push]
+    []
   )
 
-  const onDebouncedSearch = useEffectEvent(() => {
-    isOwnUpdateRef.current = true
-    updateParams({ search: searchInput, page: 1 })
-  })
+  // Unified updater that updates client state, fetches data, and syncs URL shallowly
+  const updateParams = useCallback(
+    (newParams: {
+      search?: string
+      role?: string
+      courseId?: string
+      passoutYear?: string
+      sortBy?: SortColumn
+      sortOrder?: "asc" | "desc"
+      page?: number
+      size?: number | string
+    }) => {
+      const nextSearch = newParams.search !== undefined ? newParams.search : searchInput
+      const nextRole = newParams.role !== undefined ? newParams.role : currentRole
+      const nextCourseId = newParams.courseId !== undefined ? newParams.courseId : currentCourseId
+      const nextPassoutYear = newParams.passoutYear !== undefined ? newParams.passoutYear : currentPassoutYear
+      const nextSortCol = newParams.sortBy !== undefined ? newParams.sortBy : currentSortCol
+      const nextSortDir = newParams.sortOrder !== undefined ? newParams.sortOrder : currentSortDir
+      const nextPage = newParams.page !== undefined ? newParams.page : 1
+      const nextSize = newParams.size !== undefined ? Number(newParams.size) : currentPageSize
+
+      if (newParams.search !== undefined) setSearchInput(newParams.search)
+      if (newParams.role !== undefined) setCurrentRole(newParams.role)
+      if (newParams.courseId !== undefined) setCurrentCourseId(newParams.courseId)
+      if (newParams.passoutYear !== undefined) setCurrentPassoutYear(newParams.passoutYear)
+      if (newParams.sortBy !== undefined) setCurrentSortCol(newParams.sortBy)
+      if (newParams.sortOrder !== undefined) setCurrentSortDir(newParams.sortOrder)
+      if (newParams.page !== undefined) setCurrentPage(newParams.page)
+      if (newParams.size !== undefined) setCurrentPageSize(Number(newParams.size))
+
+      fetchUsersClient(
+        nextSearch,
+        nextRole,
+        nextCourseId,
+        nextPassoutYear,
+        nextSortCol,
+        nextSortDir,
+        nextPage,
+        nextSize
+      )
+
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search)
+        if (nextSearch) params.set("search", nextSearch)
+        else params.delete("search")
+
+        if (nextRole && nextRole !== "all") params.set("role", nextRole)
+        else params.delete("role")
+
+        if (nextCourseId && nextCourseId !== "all") params.set("courseId", nextCourseId)
+        else params.delete("courseId")
+
+        if (nextPassoutYear && nextPassoutYear !== "all") params.set("passoutYear", nextPassoutYear)
+        else params.delete("passoutYear")
+
+        if (nextSortCol !== "created") params.set("sortBy", nextSortCol)
+        else params.delete("sortBy")
+
+        if (nextSortDir !== "desc") params.set("sortOrder", nextSortDir)
+        else params.delete("sortOrder")
+
+        if (nextPage > 1) params.set("page", String(nextPage))
+        else params.delete("page")
+
+        if (nextSize !== 10) params.set("size", String(nextSize))
+        else params.delete("size")
+
+        const qs = params.toString()
+        window.history.replaceState(null, "", qs ? `${pathname}?${qs}` : pathname)
+      }
+    },
+    [
+      searchInput,
+      currentRole,
+      currentCourseId,
+      currentPassoutYear,
+      currentSortCol,
+      currentSortDir,
+      currentPageSize,
+      fetchUsersClient,
+      pathname,
+    ]
+  )
 
   // Debounce search input
+  const isFirstMount = useRef(true)
   useEffect(() => {
-    if (searchInput === initialSearch) return
+    if (isFirstMount.current) {
+      isFirstMount.current = false
+      return
+    }
 
-    const timer = setTimeout(onDebouncedSearch, 400)
+    const timer = setTimeout(() => {
+      updateParams({ search: searchInput, page: 1 })
+    }, 400)
     return () => clearTimeout(timer)
-  }, [searchInput, initialSearch])
+  }, [searchInput])
 
   const handleRoleFilterChange = (val: string) => {
     if (val === "institute_staff" || val === "institute_placement_officer") {
-      updateParams({ role: val, courseId: "", passoutYear: "", page: 1 })
+      updateParams({ role: val, courseId: "all", passoutYear: "all", page: 1 })
     } else {
       updateParams({ role: val, page: 1 })
     }
   }
 
   const handleCourseFilterChange = (val: string) => {
-    updateParams({ courseId: val === "all" ? "" : val, page: 1 })
+    updateParams({ courseId: val, page: 1 })
   }
 
   const handlePassoutYearFilterChange = (val: string) => {
-    updateParams({ passoutYear: val === "all" ? "" : val, page: 1 })
+    updateParams({ passoutYear: val, page: 1 })
   }
 
   const isFilterActive =
     Boolean(searchInput.trim()) ||
-    initialRole !== "all" ||
-    (initialCourseId && initialCourseId !== "all") ||
-    (initialPassoutYear && initialPassoutYear !== "all")
+    currentRole !== "all" ||
+    (currentCourseId && currentCourseId !== "all") ||
+    (currentPassoutYear && currentPassoutYear !== "all")
 
-  const isNonCandidateRole = initialRole !== "all" && initialRole !== "institute_candidate"
+  const isNonCandidateRole = currentRole !== "all" && currentRole !== "institute_candidate"
 
   const handleClearFilters = () => {
-    isOwnUpdateRef.current = true
     setSearchInput("")
     updateParams({
       search: "",
       role: "all",
-      courseId: "",
-      passoutYear: "",
+      courseId: "all",
+      passoutYear: "all",
       page: 1,
     })
   }
@@ -263,8 +443,8 @@ export function UsersListClient({
     let nextDir: "asc" | "desc" = "desc"
     let nextCol = col
 
-    if (initialSortCol === col) {
-      if (initialSortDir === "asc") {
+    if (currentSortCol === col) {
+      if (currentSortDir === "asc") {
         nextDir = "desc"
       } else {
         nextCol = "created"
@@ -315,9 +495,8 @@ export function UsersListClient({
     })
   }
 
-  const totalPages = Math.ceil(totalCount / initialPageSize)
-  const activePage = Math.min(initialPage, Math.max(1, totalPages))
-  const paginatedUsers = initialUsers
+  const totalPages = Math.ceil(currentTotalCount / currentPageSize)
+  const activePage = Math.min(currentPage, Math.max(1, totalPages))
 
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 9 }, (_, i) => currentYear - 2 + i)
@@ -329,7 +508,7 @@ export function UsersListClient({
       <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4">
         <div className="flex flex-col sm:flex-row w-full xl:w-auto flex-1 gap-3 items-stretch sm:items-center flex-wrap">
           <div className="relative w-full sm:w-64 shrink-0">
-            {isPending ? (
+            {isPending || isFetching ? (
               <Loader2 className="absolute left-2.5 top-2.5 size-4 text-muted-foreground animate-spin" />
             ) : (
               <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
@@ -344,7 +523,6 @@ export function UsersListClient({
               <button
                 type="button"
                 onClick={() => {
-                  isOwnUpdateRef.current = true
                   setSearchInput("")
                   updateParams({ search: "", page: 1 })
                 }}
@@ -358,7 +536,7 @@ export function UsersListClient({
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full sm:w-auto flex-1 max-w-2xl">
             {/* Roles Filter */}
-            <Select value={initialRole} onValueChange={handleRoleFilterChange}>
+            <Select value={currentRole} onValueChange={handleRoleFilterChange}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="All Roles" />
               </SelectTrigger>
@@ -372,7 +550,7 @@ export function UsersListClient({
 
             {/* Course Filter */}
             <Select
-              value={initialCourseId}
+              value={currentCourseId}
               onValueChange={handleCourseFilterChange}
               disabled={isNonCandidateRole}
             >
@@ -381,9 +559,9 @@ export function UsersListClient({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Courses</SelectItem>
-                {courses.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.course_name}
+                {courses.map((course) => (
+                  <SelectItem key={course.id} value={course.id}>
+                    {course.course_name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -391,7 +569,7 @@ export function UsersListClient({
 
             {/* Passout Year Filter */}
             <Select
-              value={initialPassoutYear}
+              value={currentPassoutYear}
               onValueChange={handlePassoutYearFilterChange}
               disabled={isNonCandidateRole}
             >
@@ -563,14 +741,14 @@ export function UsersListClient({
             </colgroup>
             <TableHeader>
               <TableRow>
-                <SortableHead label="User" col="name" sortCol={initialSortCol} sortDir={initialSortDir} onSort={handleSort} />
-                <SortableHead label="Role" col="role" sortCol={initialSortCol} sortDir={initialSortDir} onSort={handleSort} />
+                <SortableHead label="User" col="name" sortCol={currentSortCol} sortDir={currentSortDir} onSort={handleSort} />
+                <SortableHead label="Role" col="role" sortCol={currentSortCol} sortDir={currentSortDir} onSort={handleSort} />
                 <TableHead className="text-xs font-semibold select-none">Academic/Staff Details</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedUsers.length > 0 ? (
-                paginatedUsers.map((user) => (
+              {users.length > 0 ? (
+                users.map((user) => (
                   <ContextMenu key={user.id}>
                     <ContextMenuTrigger asChild>
                       <TableRow
@@ -643,9 +821,9 @@ export function UsersListClient({
         </div>
 
         {/* Mobile Card List View */}
-        {paginatedUsers.length > 0 ? (
+        {users.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 md:hidden">
-            {paginatedUsers.map((user) => (
+            {users.map((user) => (
               <div
                 key={user.id}
                 onClick={() => handleUserClick(user)}
@@ -694,23 +872,23 @@ export function UsersListClient({
         )}
 
         {/* Bottom Pagination controls */}
-        {totalCount > 0 && (
+        {currentTotalCount > 0 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-1">
             <div className="text-xs text-muted-foreground">
-              Showing <span className="font-medium">{Math.min(totalCount, (activePage - 1) * initialPageSize + 1)}</span> to{" "}
-              <span className="font-medium">{Math.min(totalCount, activePage * initialPageSize)}</span> of{" "}
-              <span className="font-medium">{totalCount}</span> users
+              Showing <span className="font-medium">{Math.min(currentTotalCount, (activePage - 1) * currentPageSize + 1)}</span> to{" "}
+              <span className="font-medium">{Math.min(currentTotalCount, activePage * currentPageSize)}</span> of{" "}
+              <span className="font-medium">{currentTotalCount}</span> users
             </div>
 
             <div className="flex flex-wrap items-center gap-4 sm:gap-6">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground whitespace-nowrap">Rows per page</span>
                 <Select
-                  value={initialPageSize.toString()}
+                  value={currentPageSize.toString()}
                   onValueChange={(val) => handlePageSizeChange(val)}
                 >
                   <SelectTrigger className="h-8 w-[70px] text-xs">
-                    <SelectValue placeholder={initialPageSize.toString()} />
+                    <SelectValue placeholder={currentPageSize.toString()} />
                   </SelectTrigger>
                   <SelectContent>
                     {[5, 10, 20, 50, 100].map((size) => (
@@ -741,9 +919,9 @@ export function UsersListClient({
                   </PaginationItem>
                 </PaginationContent>
               </Pagination>
-              </div>
             </div>
-          )}
+          </div>
+        )}
 
       </div>
     </div>

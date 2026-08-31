@@ -183,76 +183,184 @@ function TicketCard({ ticket }: { ticket: any }) {
   );
 }
 
+import { createClient } from "@/lib/supabase/client";
+
 export default function GetHelpClient({
   userProfile,
-  tickets,
+  tickets: initialTickets,
   initialPage,
   initialPageSize,
   initialSearch,
   initialTab,
-  totalCount,
-  tabCounts,
+  totalCount: initialTotalCount,
+  tabCounts: initialTabCounts,
 }: GetHelpClientProps) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const [isPending, startTransition] = useTransition();
+  // Local state for tickets, counts, page, tab, search
+  const [ticketList, setTicketList] = useState<any[]>(initialTickets);
+  const [currentTotalCount, setCurrentTotalCount] = useState<number>(initialTotalCount);
+  const [currentTabCounts, setCurrentTabCounts] = useState(initialTabCounts);
+  const [activeTab, setActiveTab] = useState<TabType>((initialTab || "all") as TabType);
+  const [currentPage, setCurrentPage] = useState<number>(initialPage);
+  const [searchInput, setSearchInput] = useState<string>(initialSearch);
+  const [isPending, setIsPending] = useState<boolean>(false);
 
-  // Local state for search input text
-  const [searchInput, setSearchInput] = useState(initialSearch);
+  // Client-side fetcher
+  const fetchTicketsClient = useCallback(
+    async (searchVal: string, tabVal: string, pageVal: number) => {
+      setIsPending(true);
+      try {
+        const supabase = createClient();
+        const searchFilter = (q: any) => {
+          if (searchVal.trim()) {
+            const s = searchVal.trim();
+            return q.or(`title.ilike.%${s}%,ticket_number.ilike.%${s}%`);
+          }
+          return q;
+        };
 
-  // Tracks whether the last URL change was triggered by our own debounce
-  const isOwnUpdateRef = useRef(false);
+        const [countAllRes, countOpenRes, countInProgressRes, countResolvedRes, countClosedRes] =
+          await Promise.all([
+            searchFilter(
+              (supabase as any)
+                .from("tickets")
+                .select("id", { count: "exact", head: true })
+                .eq("user_id", userProfile.id)
+            ),
+            searchFilter(
+              (supabase as any)
+                .from("tickets")
+                .select("id", { count: "exact", head: true })
+                .eq("user_id", userProfile.id)
+                .eq("status", "open")
+            ),
+            searchFilter(
+              (supabase as any)
+                .from("tickets")
+                .select("id", { count: "exact", head: true })
+                .eq("user_id", userProfile.id)
+                .eq("status", "in_progress")
+            ),
+            searchFilter(
+              (supabase as any)
+                .from("tickets")
+                .select("id", { count: "exact", head: true })
+                .eq("user_id", userProfile.id)
+                .eq("status", "resolved")
+            ),
+            searchFilter(
+              (supabase as any)
+                .from("tickets")
+                .select("id", { count: "exact", head: true })
+                .eq("user_id", userProfile.id)
+                .eq("status", "closed")
+            ),
+          ]);
 
-  useEffect(() => {
-    if (isOwnUpdateRef.current) {
-      isOwnUpdateRef.current = false;
-      return;
-    }
-    setSearchInput(initialSearch);
-  }, [initialSearch]);
+        const newTabCounts = {
+          all: countAllRes.count ?? 0,
+          open: countOpenRes.count ?? 0,
+          in_progress: countInProgressRes.count ?? 0,
+          resolved: countResolvedRes.count ?? 0,
+          closed: countClosedRes.count ?? 0,
+        };
 
-  // Helper to push updated search parameters to the URL
-  const updateParams = useCallback(
-    (newParams: Partial<Record<string, string | number>>) => {
-      const params = new URLSearchParams(window.location.search);
-      Object.entries(newParams).forEach(([key, val]) => {
-        if (val === undefined || val === "" || val === null) {
-          params.delete(key);
-        } else {
-          params.set(key, String(val));
+        const activeStatus = ["all", "open", "in_progress", "resolved", "closed"].includes(tabVal)
+          ? tabVal
+          : "all";
+
+        let query = (supabase as any)
+          .from("tickets")
+          .select("*", { count: "exact" })
+          .eq("user_id", userProfile.id);
+
+        if (activeStatus !== "all") {
+          query = query.eq("status", activeStatus);
         }
-      });
-      startTransition(() => {
-        router.push(`${pathname}?${params.toString()}`);
-      });
+
+        query = searchFilter(query);
+        query = query.order("created_at", { ascending: false });
+
+        const from = (pageVal - 1) * initialPageSize;
+        const to = pageVal * initialPageSize - 1;
+
+        const { data, count, error } = await query.range(from, to);
+
+        if (!error && data) {
+          setTicketList(data);
+          setCurrentTotalCount(count ?? 0);
+          setCurrentTabCounts(newTabCounts);
+        }
+      } catch (err) {
+        console.error("[GetHelpClient] Error fetching tickets on client:", err);
+      } finally {
+        setIsPending(false);
+      }
     },
-    [pathname, router]
+    [userProfile.id, initialPageSize]
+  );
+
+  // Sync state and shallow URL params
+  const updateParams = useCallback(
+    (newParams: { search?: string; tab?: string; page?: number; size?: string | number }) => {
+      const nextSearch = newParams.search !== undefined ? newParams.search : searchInput;
+      const nextTab = newParams.tab !== undefined ? (newParams.tab as TabType) : activeTab;
+      const nextPage = newParams.page !== undefined ? newParams.page : 1;
+
+      if (newParams.search !== undefined) setSearchInput(newParams.search);
+      if (newParams.tab !== undefined) setActiveTab(newParams.tab as TabType);
+      if (newParams.page !== undefined) setCurrentPage(newParams.page);
+
+      // Fetch via client Supabase
+      fetchTicketsClient(nextSearch, nextTab, nextPage);
+
+      // Shallow URL sync without server re-render
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        if (nextSearch) params.set("search", nextSearch);
+        else params.delete("search");
+
+        if (nextTab && nextTab !== "all") params.set("tab", nextTab);
+        else params.delete("tab");
+
+        if (nextPage > 1) params.set("page", String(nextPage));
+        else params.delete("page");
+
+        if (newParams.size) params.set("size", String(newParams.size));
+
+        const qs = params.toString();
+        window.history.replaceState(null, "", qs ? `${pathname}?${qs}` : pathname);
+      }
+    },
+    [searchInput, activeTab, fetchTicketsClient, pathname]
   );
 
   // Debounce search input
+  const isFirstMount = useRef(true);
   useEffect(() => {
-    if (searchInput === initialSearch) return;
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
 
     const timer = setTimeout(() => {
-      isOwnUpdateRef.current = true;
       updateParams({ search: searchInput, page: 1 });
     }, 400);
     return () => clearTimeout(timer);
-  }, [searchInput, initialSearch, updateParams]);
-
-  const activeTab = (initialTab || "all") as TabType;
+  }, [searchInput]);
 
   const tabConfig = [
-    { value: "all" as TabType, label: "All", icon: <Inbox className="h-3.5 w-3.5" />, count: tabCounts.all },
-    { value: "open" as TabType, label: "Open", icon: <HelpCircle className="h-3.5 w-3.5" />, count: tabCounts.open },
-    { value: "in_progress" as TabType, label: "In Progress", icon: <Activity className="h-3.5 w-3.5" />, count: tabCounts.in_progress },
-    { value: "resolved" as TabType, label: "Resolved", icon: <CheckCircle2 className="h-3.5 w-3.5" />, count: tabCounts.resolved },
-    { value: "closed" as TabType, label: "Closed", icon: <X className="h-3.5 w-3.5" />, count: tabCounts.closed },
+    { value: "all" as TabType, label: "All", icon: <Inbox className="h-3.5 w-3.5" />, count: currentTabCounts.all },
+    { value: "open" as TabType, label: "Open", icon: <HelpCircle className="h-3.5 w-3.5" />, count: currentTabCounts.open },
+    { value: "in_progress" as TabType, label: "In Progress", icon: <Activity className="h-3.5 w-3.5" />, count: currentTabCounts.in_progress },
+    { value: "resolved" as TabType, label: "Resolved", icon: <CheckCircle2 className="h-3.5 w-3.5" />, count: currentTabCounts.resolved },
+    { value: "closed" as TabType, label: "Closed", icon: <X className="h-3.5 w-3.5" />, count: currentTabCounts.closed },
   ];
 
-  const totalPages = Math.ceil(totalCount / initialPageSize);
-  const activePage = Math.min(initialPage, Math.max(1, totalPages));
+  const totalPages = Math.ceil(currentTotalCount / initialPageSize);
+  const activePage = Math.min(currentPage, Math.max(1, totalPages));
 
   return (
     <div className="flex flex-col gap-6 px-4 py-8 md:px-8 mx-auto w-full">
@@ -261,11 +369,11 @@ export default function GetHelpClient({
         <div className="flex flex-col gap-1.5">
           <h1 className="text-3xl font-bold font-cirka tracking-tight text-foreground">Get Help</h1>
           <p className="text-sm text-muted-foreground">
-            {tabCounts.all} ticket{tabCounts.all !== 1 ? "s" : ""} total
-            {tabCounts.open > 0 && (
+            {currentTabCounts.all} ticket{currentTabCounts.all !== 1 ? "s" : ""} total
+            {currentTabCounts.open > 0 && (
               <span className="ml-2 inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-medium">
                 <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-                {tabCounts.open} open
+                {currentTabCounts.open} open
               </span>
             )}
           </p>
@@ -299,7 +407,6 @@ export default function GetHelpClient({
               {searchInput && (
                 <button
                   onClick={() => {
-                    isOwnUpdateRef.current = true;
                     setSearchInput("");
                     updateParams({ search: "", page: 1 });
                   }}
@@ -353,12 +460,12 @@ export default function GetHelpClient({
 
                 return (
                   <TabsContent key={value} value={value} className="mt-0 outline-none space-y-4">
-                    {totalCount === 0 ? (
+                    {currentTotalCount === 0 ? (
                       <EmptyState isFiltered={value !== "all" || searchInput.trim() !== ""} />
                     ) : (
                       <>
                         <div className="flex flex-col gap-3 w-full">
-                          {tickets.map((ticket) => (
+                          {ticketList.map((ticket) => (
                             <TicketCard
                               key={ticket.id}
                               ticket={ticket}
@@ -371,12 +478,12 @@ export default function GetHelpClient({
                           <div className="text-xs text-muted-foreground">
                             Showing{" "}
                             <span className="font-medium">
-                              {totalCount === 0 ? 0 : Math.min(totalCount, (activePage - 1) * initialPageSize + 1)}
+                              {currentTotalCount === 0 ? 0 : Math.min(currentTotalCount, (activePage - 1) * initialPageSize + 1)}
                             </span>
                             {" "}to{" "}
-                            <span className="font-medium">{Math.min(totalCount, activePage * initialPageSize)}</span>
+                            <span className="font-medium">{Math.min(currentTotalCount, activePage * initialPageSize)}</span>
                             {" "}of{" "}
-                            <span className="font-medium">{totalCount}</span> tickets
+                            <span className="font-medium">{currentTotalCount}</span> tickets
                           </div>
 
                           <div className="flex flex-wrap items-center gap-4 sm:gap-6">

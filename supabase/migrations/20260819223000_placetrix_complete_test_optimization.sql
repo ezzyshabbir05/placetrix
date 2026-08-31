@@ -504,13 +504,17 @@ BEGIN
     v_total_score := 0;
   END IF;
 
-  -- 5. Calculate total question time spent & actual duration
   SELECT COALESCE(SUM(time_spent_seconds), 0)
   INTO v_total_time_spent
   FROM public.test_attempt_answers
   WHERE attempt_id = p_attempt_id;
 
   v_actual_time_spent := EXTRACT(EPOCH FROM (now() - v_attempt.started_at))::INT;
+
+  -- Ensure active question time never exceeds total wall-clock duration
+  IF v_actual_time_spent > 0 AND v_total_time_spent > v_actual_time_spent THEN
+    v_total_time_spent := v_actual_time_spent;
+  END IF;
 
   -- 6. Calculate Percentage & Pass status
   IF v_total_possible_marks > 0 THEN

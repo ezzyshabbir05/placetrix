@@ -1224,8 +1224,99 @@ export function AttemptClient({
     const answersRef = useRef(answers)
     const syncedAnswersRef = useRef(syncedAnswers)
     const syncPromiseRef = useRef<Promise<boolean> | null>(null)
-    const pacingBufferRef = useRef<Record<string, number>>({})
-    const lastSyncAtRef = useRef<number>(0)
+
+    // ── High-Precision Active Question Timing Engine ──────────────────────────
+    // Tracks active solving time per question (excluding backgrounding, blur, and idle).
+    const questionPacingRef = useRef<Record<string, number>>({})
+    useEffect(() => {
+        if (typeof window !== "undefined" && storagePrefix) {
+            try {
+                const saved = localStorage.getItem(`${storagePrefix}_pacing`)
+                if (saved) {
+                    questionPacingRef.current = JSON.parse(saved)
+                }
+            } catch {}
+        }
+    }, [storagePrefix])
+    const activeQuestionTrackerRef = useRef<{
+        questionId: string | null
+        lastActivePerfTime: number
+        isPaused: boolean
+    }>({
+        questionId: null,
+        lastActivePerfTime: typeof window !== "undefined" ? performance.now() : 0,
+        isPaused: false,
+    })
+
+    const flushCurrentQuestionActiveTime = useCallback(() => {
+        const tracker = activeQuestionTrackerRef.current
+        if (!tracker || tracker.isPaused || !tracker.questionId) return
+
+        const now = typeof window !== "undefined" ? performance.now() : 0
+        const elapsedSec = Math.max(0, Math.floor((now - tracker.lastActivePerfTime) / 1000))
+        if (elapsedSec > 0) {
+            const qId = tracker.questionId
+            const currentTotal = questionPacingRef.current[qId] ?? 0
+            const nextTotal = currentTotal + elapsedSec
+            questionPacingRef.current[qId] = nextTotal
+            tracker.lastActivePerfTime += elapsedSec * 1000
+
+            if (attemptInfo && typeof window !== "undefined") {
+                try {
+                    localStorage.setItem(
+                        `pt_attempt_${attemptInfo.id}_pacing`,
+                        JSON.stringify(questionPacingRef.current)
+                    )
+                } catch {}
+            }
+        }
+    }, [attemptInfo])
+
+    // Update active question target on question navigation
+    useEffect(() => {
+        if (phase === "active" && displayQuestions[currentIndex]) {
+            const targetQId = displayQuestions[currentIndex].id
+            activeQuestionTrackerRef.current = {
+                questionId: targetQId,
+                lastActivePerfTime: typeof window !== "undefined" ? performance.now() : 0,
+                isPaused: typeof document !== "undefined" ? document.hidden : false,
+            }
+        }
+    }, [phase, currentIndex, displayQuestions])
+
+    // ── Idle / Inactivity Ceiling (AFK Protection: > 75s of zero activity pauses active clock) ──
+    useEffect(() => {
+        if (phase !== "active") return
+
+        let idleTimer: NodeJS.Timeout | null = null
+
+        const resetIdleTimer = () => {
+            const tracker = activeQuestionTrackerRef.current
+            // If was paused due to inactivity, resume clock from now
+            if (tracker.isPaused && !document.hidden && !showFocusWarningRef.current) {
+                tracker.lastActivePerfTime = performance.now()
+                tracker.isPaused = false
+            }
+
+            if (idleTimer) clearTimeout(idleTimer)
+            idleTimer = setTimeout(() => {
+                if (phase === "active") {
+                    flushCurrentQuestionActiveTime()
+                    activeQuestionTrackerRef.current.isPaused = true
+                }
+            }, 75_000)
+        }
+
+        const events = ["mousemove", "mousedown", "keydown", "touchstart", "scroll"]
+        events.forEach((ev) => window.addEventListener(ev, resetIdleTimer, { passive: true }))
+
+        resetIdleTimer()
+
+        return () => {
+            if (idleTimer) clearTimeout(idleTimer)
+            events.forEach((ev) => window.removeEventListener(ev, resetIdleTimer))
+        }
+    }, [phase, flushCurrentQuestionActiveTime])
 
     // ── Persistence ───────────────────────────────────────────────────────────
     useEffect(() => {
@@ -1263,11 +1354,6 @@ export function AttemptClient({
 
 
     // ── Event Listeners: Fullscreen, Anti-Cheat & Copy-Block ──────────────────
-    //
-    // This effect registers ONCE when phase becomes "active" and never re-runs,
-    // because isSubmitting and showFocusWarning are read from refs instead of
-    // being in the dependency array. This closes the race window that existed
-    // when the effect tore down and re-registered listeners on every state change.
 
     useEffect(() => {
         if (phase !== "active") return
@@ -1297,11 +1383,8 @@ export function AttemptClient({
         }
 
         // 2. Focus-loss trigger ────────────────────────────────────────────────
-        //    Guarded by a ref so only one violation is counted no matter how
-        //    many events fire for the same user action.
         const triggerFocusLoss = () => {
             if (autoSubmitted.current || isSubmittingRef.current) return
-            // Only mark next violation once earlier focus violation popup is marked dismissed
             if (showFocusWarningRef.current) return
             if (focusGuardRef.current) return
             focusGuardRef.current = true
@@ -1313,13 +1396,10 @@ export function AttemptClient({
             setShowFocusWarning(true)
 
             if (attemptInfo) {
-                // Throttled violation recording: only sync to server every 2s
-                // to prevent traffic storms from rapid browser focus events.
                 const now = Date.now()
                 const lastSync = (window as any)._lastViolationSync ?? 0
                 if (now - lastSync > 2000) {
                     (window as any)._lastViolationSync = now
-                    // Persist violation to the server immediately (fire-and-forget).
                     onViolation?.(
                         attemptInfo.id,
                         "focus_loss",
@@ -1332,13 +1412,15 @@ export function AttemptClient({
             // Auto-submit once the threshold is crossed (strict mode only).
             if (test.strict_mode && currentCount >= MAX_VIOLATIONS && !autoSubmitted.current) {
                 autoSubmitted.current = true
-                // Defer so state updates above are flushed before submission starts.
                 setTimeout(() => handleSubmitRef.current?.(true), 0)
             }
         }
 
         const handleVisibilityChange = () => {
             if (document.visibilityState === "hidden") {
+                flushCurrentQuestionActiveTime()
+                activeQuestionTrackerRef.current.isPaused = true
+
                 if (showFocusWarningRef.current) return
                 awayStartRef.current = getNowOnServer().getTime()
                 if (phase === "active" && attemptInfo) {
@@ -1357,20 +1439,17 @@ export function AttemptClient({
                 }
                 triggerFocusLoss()
             } else if (document.visibilityState === "visible") {
-                if (awayStartRef.current !== null) {
-                    const nowMs = getNowOnServer().getTime()
-                    lastSyncAtRef.current = nowMs
-                    timeTrackingRef.current = {
-                        ...timeTrackingRef.current,
-                        enteredAtServerTime: nowMs,
-                    }
-                    awayStartRef.current = null
-                }
+                activeQuestionTrackerRef.current.lastActivePerfTime = performance.now()
+                activeQuestionTrackerRef.current.isPaused = false
+                awayStartRef.current = null
                 focusGuardRef.current = false
             }
         }
 
         const handleBlur = () => {
+            flushCurrentQuestionActiveTime()
+            activeQuestionTrackerRef.current.isPaused = true
+
             setTimeout(() => {
                 // Ensure document visibility is hidden (tab switch/minimize) or genuinely lost focus without active warning
                 if (!document.hasFocus() && document.visibilityState === "hidden" && !showFocusWarningRef.current) {
@@ -1380,6 +1459,8 @@ export function AttemptClient({
         }
 
         const handleWindowFocus = () => {
+            activeQuestionTrackerRef.current.lastActivePerfTime = performance.now()
+            activeQuestionTrackerRef.current.isPaused = false
             if (document.hasFocus()) {
                 focusGuardRef.current = false
             }
@@ -1670,17 +1751,18 @@ export function AttemptClient({
                 } catch {}
             }
 
-            // Commit current question pacing delta to local state buffer
-            const nowMs = getNowOnServer().getTime()
-            const track = timeTrackingRef.current
-            if (track.id && !isSubmittingRef.current) {
-                const baseTime = Math.max(lastSyncAtRef.current, track.enteredAtServerTime)
-                const elapsed = Math.max(0, Math.floor((nowMs - baseTime) / 1000))
-                if (elapsed > 0) {
-                    pacingBufferRef.current[track.id] = (pacingBufferRef.current[track.id] ?? 0) + elapsed
-                    // Kept in local state (pacingBufferRef). Server sync is ONLY triggered when options change or on final submit.
-                    lastSyncAtRef.current = nowMs
-                }
+            // Commit current question active elapsed time
+            flushCurrentQuestionActiveTime()
+
+            // If final sync on test submission, ensure all questions with recorded pacing or answers are queued
+            if (isFinalSync) {
+                displayQuestions.forEach((q) => {
+                    const pacing = questionPacingRef.current[q.id] ?? 0
+                    const ans = answersRef.current[q.id] ?? []
+                    if (pacing > 0 || ans.length > 0) {
+                        batchQueueRef.current.add(q.id)
+                    }
+                })
             }
 
             const idsToSync = Array.from(batchQueueRef.current)
@@ -1691,7 +1773,7 @@ export function AttemptClient({
             const batch = idsToSync.map((id) => ({
                 questionId: id,
                 selectedOptionIds: [...(answersRef.current[id] ?? [])],
-                timeSpentSeconds: pacingBufferRef.current[id] ?? 0,
+                timeSpentSeconds: questionPacingRef.current[id] ?? 0,
             }))
 
             setSyncStatus("syncing")
@@ -1715,7 +1797,6 @@ export function AttemptClient({
 
                     // Success
                     lastSyncTimestampRef.current = Date.now()
-                    idsToSync.forEach((id) => { pacingBufferRef.current[id] = 0 })
                     const newSynced: Record<string, string[]> = {}
                     batch.forEach((b) => { newSynced[b.questionId] = b.selectedOptionIds })
                     setSyncedAnswers((prev) => ({ ...prev, ...newSynced }))
@@ -1741,7 +1822,7 @@ export function AttemptClient({
             syncPromiseRef.current = syncTask
             return syncTask
         },
-        [attemptInfo, onSync, getNowOnServer]
+        [attemptInfo, onSync, flushCurrentQuestionActiveTime, displayQuestions]
     )
 
     useEffect(() => {
@@ -1754,21 +1835,24 @@ export function AttemptClient({
 
     const handleNext = useCallback(() => {
         if (isSubmittingRef.current) return
+        flushCurrentQuestionActiveTime()
         setCurrentIndex((i) => Math.min(displayQuestions.length - 1, i + 1))
         performSync()
-    }, [displayQuestions.length, performSync])
+    }, [displayQuestions.length, flushCurrentQuestionActiveTime, performSync])
 
     const handlePrevious = useCallback(() => {
         if (isSubmittingRef.current) return
+        flushCurrentQuestionActiveTime()
         setCurrentIndex((i) => Math.max(0, i - 1))
         performSync()
-    }, [performSync])
+    }, [flushCurrentQuestionActiveTime, performSync])
 
     const handleJump = useCallback((targetIndex: number) => {
         if (isSubmittingRef.current || targetIndex === currentIndex) return
+        flushCurrentQuestionActiveTime()
         setCurrentIndex(targetIndex)
         performSync()
-    }, [currentIndex, performSync])
+    }, [currentIndex, flushCurrentQuestionActiveTime, performSync])
 
     const autoSyncTimerRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -2007,29 +2091,7 @@ export function AttemptClient({
         }
     }, [])
 
-    useEffect(() => {
-        if (phase !== "active" || !currentQuestion || isSubmittingRef.current) return
 
-        const nowServerTime = getNowOnServer().getTime()
-        const track = timeTrackingRef.current
-
-        // If we switched away from a previous question:
-        if (track.id && track.id !== currentQuestion.id && track.enteredAtServerTime > 0) {
-            const baseTime = Math.max(lastSyncAtRef.current, track.enteredAtServerTime)
-            const elapsed = Math.max(0, Math.floor((nowServerTime - baseTime) / 1000))
-
-            if (elapsed > 0 && attemptInfo) {
-                pacingBufferRef.current[track.id] = (pacingBufferRef.current[track.id] ?? 0) + elapsed
-                batchQueueRef.current.add(track.id)
-            }
-        }
-
-        // Only explicitly reset tracker if we are indeed looking at a new/different question
-        if (track.id !== currentQuestion.id) {
-            timeTrackingRef.current = { id: currentQuestion.id, enteredAtServerTime: nowServerTime }
-            lastSyncAtRef.current = nowServerTime
-        }
-    }, [currentIndex, currentQuestion, phase, attemptInfo, performSync, getNowOnServer])
 
 
 

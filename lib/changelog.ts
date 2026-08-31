@@ -23,7 +23,7 @@ export interface ChangelogItem {
  */
 export async function getChangelogs(): Promise<ChangelogItem[]> {
   try {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { data, error } = await (supabase as any)
       .from("changelogs")
       .select("*")

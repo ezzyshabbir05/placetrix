@@ -112,7 +112,6 @@ import { InlineRichText } from "@/components/others/rich-text"
 import type { InstituteTestDetail, InstituteQuestion, InstituteSection, InstituteAttemptRow } from "./_types"
 import { formatDuration, formatDateTime, formatSeconds, resolvePct } from "./_types"
 import { ExportTestParticipantsModal } from "./ExportTestParticipantsModal"
-import { fetchTestAttemptsAction } from "./actions"
 
 
 // ─── useDebounce ──────────────────────────────────────────────────────────────

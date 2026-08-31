@@ -3,13 +3,7 @@
 import * as React from "react"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
-import {
-  fetchNotificationsAction,
-  markNotificationAsReadAction,
-  markAllNotificationsAsReadAction,
-  deleteNotificationAction,
-  deleteAllNotificationsAction,
-} from "@/app/actions/notifications"
+// Removed server actions import - now using direct browser client Supabase with RLS
 import type { NotificationItem, NotificationFilter } from "@/types/notifications"
 import type { UserProfile } from "@/lib/supabase/profile"
 import { Bell } from "lucide-react"
@@ -58,7 +52,7 @@ export function NotificationProvider({ user, children }: NotificationProviderPro
 
   const hasMore = notifications.length < totalCount
 
-  // Load initial 5 notifications
+  // Load initial 5 notifications directly via client Supabase
   const loadNotifications = React.useCallback(async () => {
     if (!user?.id) {
       setNotifications([])
@@ -70,10 +64,35 @@ export function NotificationProvider({ user, children }: NotificationProviderPro
 
     try {
       setIsLoading(true)
-      const res = await fetchNotificationsAction(filter, PAGE_SIZE, 0)
-      setNotifications(res.data)
-      setUnreadCount(res.unreadCount)
-      setTotalCount(res.totalCount)
+      const supabase = createClient()
+
+      let query = (supabase as any)
+        .from("notifications")
+        .select("*", { count: "exact" })
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+
+      if (filter === "unread") {
+        query = query.eq("is_read", false)
+      }
+
+      const [{ data, count, error }, unreadRes] = await Promise.all([
+        query.range(0, PAGE_SIZE - 1),
+        (supabase as any)
+          .from("notifications")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("is_read", false),
+      ])
+
+      if (error) {
+        console.error("[NOTIFICATION_PROVIDER] Error loading notifications:", error)
+        return
+      }
+
+      setNotifications((data || []) as NotificationItem[])
+      setUnreadCount(unreadRes.count ?? 0)
+      setTotalCount(count ?? 0)
     } catch (err) {
       console.error("[NOTIFICATION_PROVIDER] Error loading notifications:", err)
     } finally {
@@ -81,22 +100,39 @@ export function NotificationProvider({ user, children }: NotificationProviderPro
     }
   }, [user?.id, filter])
 
-  // Load next 5 notifications on scroll
+  // Load next 5 notifications on scroll directly via client Supabase
   const loadMore = React.useCallback(async () => {
     if (!user?.id || isLoadingMore || !hasMore || isLoading) return
 
     try {
       setIsLoadingMore(true)
       const offset = notifications.length
-      const res = await fetchNotificationsAction(filter, PAGE_SIZE, offset)
+      const supabase = createClient()
 
+      let query = (supabase as any)
+        .from("notifications")
+        .select("*", { count: "exact" })
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+
+      if (filter === "unread") {
+        query = query.eq("is_read", false)
+      }
+
+      const { data, count, error } = await query.range(offset, offset + PAGE_SIZE - 1)
+
+      if (error) {
+        console.error("[NOTIFICATION_PROVIDER] Error loading more notifications:", error)
+        return
+      }
+
+      const incoming = (data || []) as NotificationItem[]
       setNotifications((prev) => {
         const existingIds = new Set(prev.map((n) => n.id))
-        const incoming = res.data.filter((n) => !existingIds.has(n.id))
-        return [...prev, ...incoming]
+        const filtered = incoming.filter((n) => !existingIds.has(n.id))
+        return [...prev, ...filtered]
       })
-      setTotalCount(res.totalCount)
-      setUnreadCount(res.unreadCount)
+      setTotalCount(count ?? 0)
     } catch (err) {
       console.error("[NOTIFICATION_PROVIDER] Error loading more notifications:", err)
     } finally {
@@ -220,6 +256,7 @@ export function NotificationProvider({ user, children }: NotificationProviderPro
   }, [user?.id])
 
   const markAsRead = React.useCallback(async (id: string) => {
+    if (!user?.id) return
     // Optimistic update
     setNotifications((prev) => {
       if (filter === "unread") {
@@ -233,16 +270,23 @@ export function NotificationProvider({ user, children }: NotificationProviderPro
     setUnreadCount((prev) => Math.max(0, prev - 1))
 
     try {
-      const res = await markNotificationAsReadAction(id)
-      if (!res.success) {
-        console.error("[NOTIFICATIONS] Failed to mark as read:", res.error)
+      const supabase = createClient()
+      const { error } = await (supabase as any)
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("id", id)
+        .eq("user_id", user.id)
+
+      if (error) {
+        console.error("[NOTIFICATIONS] Failed to mark as read:", error)
       }
     } catch (err) {
       console.error("[NOTIFICATIONS] Exception marking as read:", err)
     }
-  }, [filter])
+  }, [filter, user?.id])
 
   const markAllAsRead = React.useCallback(async () => {
+    if (!user?.id) return
     // Snapshot for rollback in case of network/server error
     const prevNotifications = notifications
     const prevUnreadCount = unreadCount
@@ -260,26 +304,33 @@ export function NotificationProvider({ user, children }: NotificationProviderPro
     setUnreadCount(0)
 
     try {
-      const res = await markAllNotificationsAsReadAction()
-      if (!res.success) {
+      const supabase = createClient()
+      const { error } = await (supabase as any)
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("user_id", user.id)
+        .eq("is_read", false)
+
+      if (error) {
         // Rollback on failure
         setNotifications(prevNotifications)
         setUnreadCount(prevUnreadCount)
         setTotalCount(prevTotalCount)
-        toast.error(res.error || "Failed to mark all as read")
+        toast.error(error.message || "Failed to mark all as read")
         return
       }
       toast.success("All notifications marked as read")
-    } catch (err) {
+    } catch (err: any) {
       // Rollback on exception
       setNotifications(prevNotifications)
       setUnreadCount(prevUnreadCount)
       setTotalCount(prevTotalCount)
-      toast.error("Failed to mark all as read")
+      toast.error(err?.message || "Failed to mark all as read")
     }
-  }, [filter, notifications, unreadCount, totalCount])
+  }, [filter, notifications, unreadCount, totalCount, user?.id])
 
   const deleteNotification = React.useCallback(async (id: string) => {
+    if (!user?.id) return
     const itemToDelete = notifications.find((n) => n.id === id)
     // Optimistic update
     setNotifications((prev) => prev.filter((n) => n.id !== id))
@@ -287,10 +338,21 @@ export function NotificationProvider({ user, children }: NotificationProviderPro
     if (itemToDelete && !itemToDelete.is_read) {
       setUnreadCount((prev) => Math.max(0, prev - 1))
     }
-    await deleteNotificationAction(id)
-  }, [notifications])
+
+    try {
+      const supabase = createClient()
+      await (supabase as any)
+        .from("notifications")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", user.id)
+    } catch (err) {
+      console.error("[NOTIFICATIONS] Error deleting notification:", err)
+    }
+  }, [notifications, user?.id])
 
   const deleteAllNotifications = React.useCallback(async () => {
+    if (!user?.id) return
     const prevNotifications = notifications
     const prevUnreadCount = unreadCount
     const prevTotalCount = totalCount
@@ -301,12 +363,17 @@ export function NotificationProvider({ user, children }: NotificationProviderPro
     setTotalCount(0)
 
     try {
-      const res = await deleteAllNotificationsAction()
-      if (!res.success) {
+      const supabase = createClient()
+      const { error } = await (supabase as any)
+        .from("notifications")
+        .delete()
+        .eq("user_id", user.id)
+
+      if (error) {
         setNotifications(prevNotifications)
         setUnreadCount(prevUnreadCount)
         setTotalCount(prevTotalCount)
-        toast.error(res.error || "Failed to delete all notifications")
+        toast.error(error.message || "Failed to delete all notifications")
         return
       }
       toast.success("All notifications deleted")
@@ -316,7 +383,7 @@ export function NotificationProvider({ user, children }: NotificationProviderPro
       setTotalCount(prevTotalCount)
       toast.error("Failed to delete all notifications")
     }
-  }, [notifications, unreadCount, totalCount])
+  }, [notifications, unreadCount, totalCount, user?.id])
 
   const requestBrowserPermission = React.useCallback(async (): Promise<NotificationPermission> => {
     if (typeof window === "undefined" || !("Notification" in window)) {

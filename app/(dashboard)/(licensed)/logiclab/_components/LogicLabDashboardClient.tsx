@@ -251,6 +251,47 @@ export function LogicLabDashboardClient({
   const [deletingProblemId, setDeletingProblemId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
+  // Direct Client-Side Supabase RPC fetcher
+  const fetchProblemsClient = useCallback(
+    async (params: {
+      offset: number
+      limit: number
+      search: string
+      tab: string
+      difficulty: string
+      tag: string
+      sortBy: string
+    }) => {
+      try {
+        const supabase = createClient()
+        const { data, error } = await (supabase as any).rpc("get_paginated_problems", {
+          p_user_id: userId || null,
+          p_limit: params.limit,
+          p_offset: params.offset,
+          p_search: params.search.trim() || null,
+          p_tab: params.tab || "all",
+          p_difficulty: params.difficulty || "All",
+          p_tag: params.tag || "All",
+          p_sort_by: params.sortBy || "number-asc",
+        })
+
+        if (!error && data) {
+          const total = data.length > 0 ? Number(data[0].total_count) : 0
+          const hasMore = params.offset + params.limit < total
+          return { problems: data, hasMore, totalCount: total }
+        }
+
+        if (error) {
+          console.error("[LogicLabDashboardClient] get_paginated_problems error:", error)
+        }
+      } catch (err) {
+        console.error("[LogicLabDashboardClient] Exception fetching problems on client:", err)
+      }
+      return { problems: [], hasMore: false, totalCount: 0 }
+    },
+    [userId]
+  )
+
   const resetAndFetch = useCallback(
     async (search: string, tab: string, difficulty: string, tag: string, sortBy: string) => {
       isFiltering.current = true
@@ -260,8 +301,7 @@ export function LogicLabDashboardClient({
       setOffset(0)
 
       try {
-        const { problems: fresh, hasMore: more, totalCount: count } = await fetchProblemsInfinite({
-          userId,
+        const { problems: fresh, hasMore: more, totalCount: count } = await fetchProblemsClient({
           offset: 0,
           limit: 20,
           search,
@@ -279,7 +319,7 @@ export function LogicLabDashboardClient({
         isFiltering.current = false
       }
     },
-    [userId]
+    [fetchProblemsClient]
   )
 
   const loadMore = useCallback(async () => {
@@ -293,8 +333,7 @@ export function LogicLabDashboardClient({
 
     setIsLoadingMore(true)
     try {
-      const { problems: next, hasMore: more } = await fetchProblemsInfinite({
-        userId,
+      const { problems: next, hasMore: more } = await fetchProblemsClient({
         offset,
         limit: 20,
         search: searchInput,
@@ -314,7 +353,7 @@ export function LogicLabDashboardClient({
         setIsLoadingMore(false)
       }
     }
-  }, [isLoadingMore, hasMore, userId, offset, searchInput, activeTab, activeDifficulty, activeTag, activeSort])
+  }, [isLoadingMore, hasMore, offset, searchInput, activeTab, activeDifficulty, activeTag, activeSort, fetchProblemsClient])
 
   useEffect(() => {
     const el = sentinelRef.current
