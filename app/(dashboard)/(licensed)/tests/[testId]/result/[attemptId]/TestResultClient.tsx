@@ -661,12 +661,18 @@ export function TestResultClient({ test, attempt, accountType, serverNow }: Prop
                 )}
               </div>
 
-              {(attempt.time_spent_seconds != null || attempt.tab_switch_count != null) && (
+              {(attempt.time_spent_seconds != null || attempt.actual_time_spent_seconds != null || attempt.tab_switch_count != null) && (
                 <div className="flex flex-wrap items-center sm:items-end gap-2 shrink-0">
                   {attempt.time_spent_seconds != null && (
-                    <div className="flex items-center gap-1.5 rounded-lg bg-muted/50 px-2.5 py-1.5 text-xs font-medium text-muted-foreground">
-                      <Timer className="h-3.5 w-3.5 shrink-0" />
-                      <span className="tabular-nums">{formatSeconds(attempt.time_spent_seconds)}</span>
+                    <div className="flex items-center gap-1.5 rounded-lg bg-muted/50 px-2.5 py-1.5 text-xs font-medium text-muted-foreground" title="Total active time spent on questions">
+                      <Timer className="h-3.5 w-3.5 shrink-0 text-primary" />
+                      <span>Active: <span className="tabular-nums font-semibold text-foreground">{formatSeconds(attempt.time_spent_seconds)}</span></span>
+                    </div>
+                  )}
+                  {(attempt.actual_time_spent_seconds != null || (attempt.submitted_at && attempt.started_at)) && (
+                    <div className="flex items-center gap-1.5 rounded-lg bg-muted/50 px-2.5 py-1.5 text-xs font-medium text-muted-foreground" title="Total duration from start to submission">
+                      <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <span>Total: <span className="tabular-nums font-semibold text-foreground">{formatSeconds(attempt.actual_time_spent_seconds ?? (attempt.submitted_at && attempt.started_at ? Math.max(0, Math.round((new Date(attempt.submitted_at).getTime() - new Date(attempt.started_at).getTime()) / 1000)) : null))}</span></span>
                     </div>
                   )}
                   {attempt.tab_switch_count != null && attempt.tab_switch_count > 0 && (

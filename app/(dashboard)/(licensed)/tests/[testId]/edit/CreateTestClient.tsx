@@ -77,6 +77,13 @@ import type {
   InitialTestData,
   GenerateQuestionsResult,
 } from "./actions"
+import {
+  uploadStagedTestImages,
+  extractMarkdownImageUrl,
+  stripMarkdownImage,
+  setMarkdownImage,
+  replaceBlobUrlsInQuestions,
+} from "@/lib/test-image-upload"
 
 interface Props {
   testId?: string
@@ -192,6 +199,13 @@ export function CreateTestClient({
 
   const [isSaving, setIsSaving] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
+  const stagedFilesRef = useRef<Map<string, File>>(new Map())
+
+  const stageImageFile = useCallback((file: File): string => {
+    const blobUrl = URL.createObjectURL(file)
+    stagedFilesRef.current.set(blobUrl, file)
+    return blobUrl
+  }, [])
 
   const titleValid = settings.title.trim().length > 0
   const dateRangeValid =
@@ -208,7 +222,21 @@ export function CreateTestClient({
     }
     setIsSaving(true)
     try {
-      await onSaveDraft(testId, settingsForDb(settings), questions, sections)
+      let finalQuestions = questions
+      if (stagedFilesRef.current.size > 0) {
+        const uploadToast = toast.loading("Uploading test images...")
+        try {
+          const urlMap = await uploadStagedTestImages(testId, stagedFilesRef.current)
+          finalQuestions = replaceBlobUrlsInQuestions(questions, urlMap)
+          setQuestions(finalQuestions)
+          stagedFilesRef.current.clear()
+          toast.dismiss(uploadToast)
+        } catch (uploadErr: any) {
+          toast.dismiss(uploadToast)
+          throw uploadErr
+        }
+      }
+      await onSaveDraft(testId, settingsForDb(settings), finalQuestions, sections)
       toast.success("Draft saved.")
     } catch (err: any) {
       toast.error(getFriendlyErrorMessage(err, "Failed to save draft. Please try again."))
@@ -224,7 +252,21 @@ export function CreateTestClient({
     }
     setIsPublishing(true)
     try {
-      await onPublish(testId, settingsForDb(settings), questions, sections)
+      let finalQuestions = questions
+      if (stagedFilesRef.current.size > 0) {
+        const uploadToast = toast.loading("Uploading test images...")
+        try {
+          const urlMap = await uploadStagedTestImages(testId, stagedFilesRef.current)
+          finalQuestions = replaceBlobUrlsInQuestions(questions, urlMap)
+          setQuestions(finalQuestions)
+          stagedFilesRef.current.clear()
+          toast.dismiss(uploadToast)
+        } catch (uploadErr: any) {
+          toast.dismiss(uploadToast)
+          throw uploadErr
+        }
+      }
+      await onPublish(testId, settingsForDb(settings), finalQuestions, sections)
     } catch (err: any) {
       if (err?.message === "NEXT_REDIRECT") throw err
       toast.error(getFriendlyErrorMessage(err, "Failed to publish. Please try again."))
@@ -294,6 +336,7 @@ export function CreateTestClient({
           setQuestions={setQuestions}
           availableTags={availableTags}
           generateQuestionsAction={generateQuestionsAction}
+          onStageFile={stageImageFile}
         />
 
       </div>
@@ -556,6 +599,7 @@ interface TestContentPanelProps {
   setQuestions: React.Dispatch<React.SetStateAction<LocalQuestion[]>>
   availableTags: { id: string; name: string }[]
   generateQuestionsAction: (input: AiGenerateForm) => Promise<GenerateQuestionsResult>
+  onStageFile: (file: File) => string
 }
 
 function TestContentPanel({
@@ -565,6 +609,7 @@ function TestContentPanel({
   setQuestions,
   availableTags,
   generateQuestionsAction,
+  onStageFile,
 }: TestContentPanelProps) {
   const [questionSheetOpen, setQuestionSheetOpen] = useState(false)
   const [editingQuestion, setEditingQuestion] = useState<LocalQuestion | null>(null)
@@ -906,6 +951,7 @@ function TestContentPanel({
         availableTags={availableTags}
         sections={sections}
         onSave={handleQuestionSave}
+        onStageFile={onStageFile}
       />
 
       <AiGenerateSheet
@@ -1287,16 +1333,157 @@ function SortableQuestionRow({
   )
 }
 
+// ─── ImageAttachmentField ──────────────────────────────────────────────────
+
+function ImageAttachmentField({
+  text,
+  onChangeText,
+  onStageFile,
+  label = "Attach Image",
+  defaultAlt = "Image",
+  compact = false,
+}: {
+  text: string
+  onChangeText: (newText: string) => void
+  onStageFile: (file: File) => string
+  label?: string
+  defaultAlt?: string
+  compact?: boolean
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const imageInfo = extractMarkdownImageUrl(text)
+
+  const handleFile = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file (PNG, JPEG, WEBP, GIF, SVG).")
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image file size exceeds 10MB limit.")
+      return
+    }
+    const blobUrl = onStageFile(file)
+    const updated = setMarkdownImage(text, blobUrl, defaultAlt || "Image")
+    onChangeText(updated)
+  }
+
+  const handleRemove = () => {
+    const updated = stripMarkdownImage(text)
+    onChangeText(updated)
+  }
+
+  if (imageInfo) {
+    return (
+      <div className={cn("relative rounded-lg border border-border/80 bg-muted/20 p-2", compact ? "text-xs mt-1" : "text-sm mt-2")}>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imageInfo.url}
+              alt={imageInfo.alt || "Attached preview"}
+              className={cn("shrink-0 rounded-md border object-contain bg-background p-0.5", compact ? "size-9" : "size-14")}
+            />
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium text-foreground text-xs">{imageInfo.alt || "Image attached"}</p>
+              <p className="text-[11px] text-muted-foreground">Will be uploaded on save</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Replace
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+              onClick={handleRemove}
+            >
+              <Trash2 className="size-3.5" />
+            </Button>
+          </div>
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            if (f) handleFile(f)
+            e.target.value = ""
+          }}
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div className={compact ? "mt-1" : "mt-2"}>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) handleFile(f)
+          e.target.value = ""
+        }}
+      />
+      {compact ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => fileInputRef.current?.click()}
+          className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-foreground gap-1"
+          title="Attach image to option"
+        >
+          <Image className="size-3 text-primary/70" />
+          <span>Add Image</span>
+        </Button>
+      ) : (
+        <div
+          onDragOver={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+          }}
+          onDrop={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            const f = e.dataTransfer.files?.[0]
+            if (f) handleFile(f)
+          }}
+          onClick={() => fileInputRef.current?.click()}
+          className="group flex items-center justify-center gap-2 rounded-lg border border-dashed border-border/80 bg-muted/10 px-3 py-2.5 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:bg-muted/20 hover:text-foreground cursor-pointer"
+        >
+          <Image className="size-4 text-primary/70 group-hover:text-primary transition-colors" />
+          <span>Click or drop an image to attach to this question</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── OptionsBuilder ────────────────────────────────────────────────────────────
 
 function OptionsBuilder({
   options,
   questionType,
   onChange,
+  onStageFile,
 }: {
   options: OptionForm[]
   questionType: "single_correct" | "multiple_correct"
   onChange: (v: OptionForm[]) => void
+  onStageFile: (file: File) => string
 }) {
   const updateText = (key: string, text: string) =>
     onChange(options.map((o) => (o._key === key ? { ...o, option_text: text } : o)))
@@ -1324,8 +1511,12 @@ function OptionsBuilder({
             </span>
             <Input
               placeholder={`Option ${String.fromCharCode(65 + idx)}`}
-              value={opt.option_text}
-              onChange={(e) => updateText(opt._key, e.target.value)}
+              value={stripMarkdownImage(opt.option_text)}
+              onChange={(e) => {
+                const imgInfo = extractMarkdownImageUrl(opt.option_text)
+                const newText = setMarkdownImage(e.target.value, imgInfo ? imgInfo.url : null, imgInfo ? imgInfo.alt : undefined)
+                updateText(opt._key, newText)
+              }}
               className={cn(
                 "flex-1 text-sm",
                 opt.is_correct && "border-emerald-500 focus-visible:ring-emerald-400"
@@ -1357,6 +1548,16 @@ function OptionsBuilder({
             >
               <X className="h-4 w-4" />
             </button>
+          </div>
+          <div className="pl-7">
+            <ImageAttachmentField
+              text={opt.option_text}
+              onChangeText={(newText) => updateText(opt._key, newText)}
+              onStageFile={onStageFile}
+              label="Option Image"
+              defaultAlt={`Option ${String.fromCharCode(65 + idx)} Image`}
+              compact={true}
+            />
           </div>
         </div>
       ))}
@@ -1518,6 +1719,7 @@ interface QuestionSheetProps {
   availableTags: { id: string; name: string }[]
   sections: LocalSection[]
   onSave: (form: QuestionForm, sectionId: string) => void
+  onStageFile: (file: File) => string
   mode?: "add" | "edit"
 }
 
@@ -1545,6 +1747,7 @@ function QuestionSheet({
   availableTags,
   sections,
   onSave,
+  onStageFile,
   mode = "add",
 }: QuestionSheetProps) {
   const [form, setForm] = useState<QuestionForm>(defaultValues ?? { ...EMPTY_FORM, options: makeOptions() })
@@ -1566,9 +1769,11 @@ function QuestionSheet({
 
   const validate = (): string[] => {
     const e: string[] = []
-    if (!form.question_text.trim()) e.push("Question text is required.")
+    const cleanText = stripMarkdownImage(form.question_text)
+    const hasQuestionImg = !!extractMarkdownImageUrl(form.question_text)
+    if (!cleanText && !hasQuestionImg) e.push("Question text or image is required.")
     if (!selectedSectionId) e.push("Select a section for this question.")
-    if (form.options.some((o) => !o.option_text.trim())) e.push("All options must have text.")
+    if (form.options.some((o) => !o.option_text.trim())) e.push("All options must have text or an image.")
     if (!form.options.some((o) => o.is_correct)) e.push("Mark at least one correct answer.")
     if (form.question_type === "single_correct" && form.options.filter((o) => o.is_correct).length > 1)
       e.push("Single-answer type can only have one correct option.")
@@ -1617,10 +1822,21 @@ function QuestionSheet({
             </Label>
             <Textarea
               placeholder="Enter the question text…"
-              value={form.question_text}
-              onChange={(e) => set("question_text", e.target.value)}
+              value={stripMarkdownImage(form.question_text)}
+              onChange={(e) => {
+                const imgInfo = extractMarkdownImageUrl(form.question_text)
+                const newText = setMarkdownImage(e.target.value, imgInfo ? imgInfo.url : null, imgInfo ? imgInfo.alt : undefined)
+                set("question_text", newText)
+              }}
               rows={3}
               className="resize-none text-sm"
+            />
+            <ImageAttachmentField
+              text={form.question_text}
+              onChangeText={(newText) => set("question_text", newText)}
+              onStageFile={onStageFile}
+              label="Attach Question Image"
+              defaultAlt="Question Diagram"
             />
           </div>
 
@@ -1684,6 +1900,7 @@ function QuestionSheet({
               options={form.options}
               questionType={form.question_type}
               onChange={(v) => set("options", v)}
+              onStageFile={onStageFile}
             />
           </div>
 
@@ -1705,13 +1922,25 @@ function QuestionSheet({
                   <span className="text-xs font-normal">(optional)</span>
                 </span>
               </AccordionTrigger>
-              <AccordionContent className="px-3 pb-3">
+              <AccordionContent className="px-3 pb-3 space-y-2">
                 <Textarea
                   placeholder="Explain why the correct answer is correct…"
-                  value={form.explanation}
-                  onChange={(e) => set("explanation", e.target.value)}
+                  value={stripMarkdownImage(form.explanation)}
+                  onChange={(e) => {
+                    const imgInfo = extractMarkdownImageUrl(form.explanation)
+                    const newText = setMarkdownImage(e.target.value, imgInfo ? imgInfo.url : null, imgInfo ? imgInfo.alt : undefined)
+                    set("explanation", newText)
+                  }}
                   rows={3}
                   className="resize-none text-sm"
+                />
+                <ImageAttachmentField
+                  text={form.explanation}
+                  onChangeText={(newText) => set("explanation", newText)}
+                  onStageFile={onStageFile}
+                  label="Attach Explanation Image"
+                  defaultAlt="Explanation Diagram"
+                  compact={true}
                 />
               </AccordionContent>
             </AccordionItem>

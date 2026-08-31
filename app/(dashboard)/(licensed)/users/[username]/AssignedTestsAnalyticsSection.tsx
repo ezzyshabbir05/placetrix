@@ -62,6 +62,7 @@ export interface CandidateTestAttemptDetail {
   startedAt: string;
   submittedAt: string | null;
   timeSpentSeconds: number | null;
+  actualTimeSpentSeconds?: number | null;
   tabSwitchCount: number;
 }
 
@@ -640,9 +641,15 @@ export function AssignedTestsAnalyticsSection({ data }: Props) {
                               </span>
                             )}
                             {test.attempt?.timeSpentSeconds && (
-                              <span className="flex items-center gap-1 text-foreground/80">
+                              <span className="flex items-center gap-1 text-foreground/80" title="Active time spent answering questions">
                                 <Zap className="size-3 text-indigo-500 print:hidden" />
-                                Spent: {formatDuration(test.attempt.timeSpentSeconds)}
+                                Active: {formatDuration(test.attempt.timeSpentSeconds)}
+                              </span>
+                            )}
+                            {test.attempt?.actualTimeSpentSeconds && (
+                              <span className="flex items-center gap-1 text-foreground/80" title="Total duration from start to submission">
+                                <Clock className="size-3 text-muted-foreground print:hidden" />
+                                Total: {formatDuration(test.attempt.actualTimeSpentSeconds)}
                               </span>
                             )}
                             {test.attempt?.submittedAt && (

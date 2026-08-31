@@ -19,8 +19,11 @@ import remarkGfm from "remark-gfm"
 import rehypeKatex from "rehype-katex"
 import Prism from "prismjs"
 import "katex/dist/katex.min.css"
-import { Copy, Check } from "lucide-react"
+import { Copy, Check, ZoomIn, ExternalLink } from "lucide-react"
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { getOptimizedImageUrl } from "@/lib/test-image-upload"
 
 // ── Prism language imports ────────────────────────────────────────────────────
 import "prismjs/components/prism-javascript"
@@ -212,14 +215,13 @@ export function CodeBlock({ code, language, caption, allowCopy = true }: CodeBlo
         <div className="flex items-center gap-2">
           {langLabel && (
             <span
-              className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full"
+              className="inline-flex items-center text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full"
               style={{
                 color: accent,
                 background: `color-mix(in oklch, ${accent} 12%, transparent)`,
                 border: `1px solid color-mix(in oklch, ${accent} 30%, transparent)`,
               }}
             >
-              <span className="size-1.5 rounded-full flex-shrink-0" style={{ background: accent }} />
               {langLabel}
             </span>
           )}
@@ -292,6 +294,125 @@ export function CodeBlock({ code, language, caption, allowCopy = true }: CodeBlo
   )
 }
 
+// ── <ZoomableImage> ──────────────────────────────────────────────────────────
+
+function ZoomableImage({
+  src,
+  alt,
+  inline = false,
+}: {
+  src?: string
+  alt?: string
+  inline?: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const [isZoomed, setIsZoomed] = useState(false)
+
+  if (!src) return null
+
+  return (
+    <>
+      <span
+        role="button"
+        tabIndex={0}
+        onClick={(e) => {
+          e.stopPropagation()
+          setOpen(true)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.stopPropagation()
+            setOpen(true)
+          }
+        }}
+        className={cn(
+          "group relative block w-fit text-left cursor-zoom-in rounded-xl transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary",
+          inline ? "my-2.5" : "my-4"
+        )}
+      >
+        <span className={cn(
+          "relative flex items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-muted/20 p-2 shadow-xs transition-all duration-300 group-hover:border-primary/60 group-hover:shadow-md",
+          inline ? "w-44 h-44 sm:w-52 sm:h-52" : "w-56 h-56 sm:w-64 sm:h-64"
+        )}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={getOptimizedImageUrl(src, { width: inline ? 360 : 520, quality: 80, resize: "contain" })}
+            alt={alt ?? "Image"}
+            className="w-full h-full object-contain select-none rounded-lg transition-transform duration-300 group-hover:scale-[1.02]"
+            loading="lazy"
+          />
+
+          <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-background/90 px-1.5 py-0.5 text-[10px] sm:text-[11px] font-medium text-foreground backdrop-blur-md opacity-0 shadow-sm transition-opacity duration-200 group-hover:opacity-100 border border-border/50 select-none pointer-events-none">
+            <ZoomIn className="size-3 text-primary" />
+            <span>Click to zoom</span>
+          </span>
+        </span>
+
+        {alt && !inline && (
+          <span className="mt-1.5 block text-left text-xs text-muted-foreground select-none italic max-w-xs truncate">
+            {alt}
+          </span>
+        )}
+      </span>
+
+      {/* Lightbox Dialog */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent
+          className="max-w-[94vw] lg:max-w-6xl w-full p-2 sm:p-4 bg-background/95 backdrop-blur-xl border border-border/80 shadow-2xl rounded-2xl overflow-hidden flex flex-col max-h-[92vh]"
+          showCloseButton={true}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="sr-only">
+            <DialogTitle>{alt ?? "Enlarged Image Preview"}</DialogTitle>
+            <DialogDescription>Full view of the image</DialogDescription>
+          </div>
+
+          <div className="relative flex-1 overflow-auto flex items-center justify-center min-h-[300px] max-h-[78vh] p-2 bg-muted/10 rounded-xl">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={getOptimizedImageUrl(src, { width: 1400, quality: 90, resize: "contain" })}
+              alt={alt ?? "Enlarged view"}
+              onClick={() => setIsZoomed((z) => !z)}
+              className={cn(
+                "h-auto max-w-full object-contain rounded-lg transition-all duration-300 select-none",
+                isZoomed ? "scale-125 cursor-zoom-out" : "max-h-[75vh] cursor-zoom-in"
+              )}
+            />
+          </div>
+
+          <div className="mt-2 flex items-center justify-between px-2 text-xs text-muted-foreground">
+            <span className="truncate font-medium text-foreground/80 max-w-[60%]">
+              {alt || "Image preview"}
+            </span>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1 px-2"
+                onClick={() => setIsZoomed((z) => !z)}
+              >
+                <ZoomIn className="size-3.5" />
+                {isZoomed ? "Reset Zoom" : "2x Zoom"}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1 px-2"
+                asChild
+              >
+                <a href={src} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="size-3.5" />
+                  Open Full
+                </a>
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
+
 // ── Shared Markdown component map ─────────────────────────────────────────────
 
 type Components = React.ComponentProps<typeof ReactMarkdown>["components"]
@@ -358,19 +479,8 @@ function buildComponents(inline = false, allowCopy = true): Components {
       />
     ),
 
-    img: ({ node, src, alt, ...props }: any) => (
-      <span className="my-6 w-full flex flex-col items-center justify-center">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={src}
-          alt={alt ?? "Image"}
-          className="max-h-[400px] w-auto max-w-full object-contain rounded-xl shadow-sm border border-border/50 select-none bg-background/50 p-2 hover:shadow-md transition-all duration-300"
-          {...props}
-        />
-        {alt && (
-          <span className="mt-2 text-center text-xs text-muted-foreground select-none italic">{alt}</span>
-        )}
-      </span>
+    img: ({ node, src, alt }: any) => (
+      <ZoomableImage src={src} alt={alt} inline={inline} />
     ),
 
     table: ({ node, ...props }) => (

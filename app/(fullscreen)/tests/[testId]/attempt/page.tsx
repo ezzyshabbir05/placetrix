@@ -11,7 +11,6 @@ import {
   submitAttemptAction,
   recordViolationAction,
   startAttemptAction,
-  submitFeedbackAction,
 } from "./actions"
 import { getTestQuestions, getTestSections } from "@/lib/test-data"
 import type { AttemptQuestion, AttemptTest, AttemptInfo, SavedAnswer } from "./_types"
@@ -149,7 +148,6 @@ export default async function AttemptPage({
       onClaimSession={claimSessionAction}
       onSubmit={submitAttemptAction}
       onViolation={recordViolationAction}
-      onSubmitFeedback={submitFeedbackAction}
     />
   )
 }

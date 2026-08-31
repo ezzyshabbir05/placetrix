@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { getUserProfile } from "@/lib/supabase/profile"
 import { getFriendlyErrorMessage } from "@/lib/errors"
 import { GoogleGenAI } from "@google/genai"
@@ -752,6 +753,56 @@ ${existingTagsStr}`
     error: lastError instanceof Error
       ? `AI generation failed: ${lastError.message}`
       : "Failed to generate questions. Please try again."
+  }
+}
+
+/**
+ * Server action to securely upload test images to the test-images Supabase Storage bucket.
+ * Bypasses client-side RLS issues using the admin client while verifying session auth.
+ */
+export async function uploadTestImagesAction(
+  testId: string,
+  formData: FormData
+): Promise<{ success: boolean; urlMap: Record<string, string>; error?: string }> {
+  try {
+    await requireAuth()
+    const adminClient = createAdminClient()
+    const urlMap: Record<string, string> = {}
+
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        const file = value
+        const ext = file.name.split(".").pop() || "png"
+        const cleanExt = ext.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() || "png"
+        const randomName = `img_${crypto.randomUUID().replace(/-/g, "")}.${cleanExt}`
+        const filePath = `tests/${testId}/${randomName}`
+
+        const buffer = Buffer.from(await file.arrayBuffer())
+
+        const { error: uploadError } = await adminClient.storage
+          .from("test-images")
+          .upload(filePath, buffer, {
+            cacheControl: "31536000",
+            upsert: false,
+            contentType: file.type || "image/png",
+          })
+
+        if (uploadError) {
+          console.error(`[STORAGE] Upload failed for ${file.name}:`, uploadError)
+          throw new Error(`Failed to upload ${file.name}: ${uploadError.message}`)
+        }
+
+        const { data } = adminClient.storage.from("test-images").getPublicUrl(filePath)
+        if (data?.publicUrl) {
+          urlMap[key] = data.publicUrl
+        }
+      }
+    }
+
+    return { success: true, urlMap }
+  } catch (err: any) {
+    console.error("[STORAGE] uploadTestImagesAction error:", err)
+    return { success: false, urlMap: {}, error: err.message || "Failed to upload image." }
   }
 }
 

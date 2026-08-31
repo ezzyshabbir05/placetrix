@@ -7,6 +7,13 @@ import {
 
 import { cn } from "@/lib/utils"
 import { buttonVariants, type Button } from "@/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
   return (
@@ -116,6 +123,71 @@ function PaginationEllipsis({
   )
 }
 
+interface PaginationPageSizeProps {
+  pageSize: number
+  onPageSizeChange: (size: number) => void
+  options?: number[]
+  disabled?: boolean
+  label?: string
+  className?: string
+}
+
+function PaginationPageSize({
+  pageSize,
+  onPageSizeChange,
+  options = [10, 20, 50, 100],
+  disabled = false,
+  label = "Per page:",
+  className,
+}: PaginationPageSizeProps) {
+  return (
+    <div className={cn("flex items-center gap-1.5 text-xs text-muted-foreground", className)}>
+      {label && <span>{label}</span>}
+      <Select
+        value={String(pageSize)}
+        onValueChange={(val) => onPageSizeChange(Number(val))}
+        disabled={disabled}
+      >
+        <SelectTrigger className="h-7 w-[68px] text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent side="top">
+          {options.map((size) => (
+            <SelectItem key={size} value={String(size)} className="text-xs">
+              {size}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
+interface PaginationInfoProps {
+  total: number
+  page: number
+  pageSize: number
+  itemName?: string
+  className?: string
+}
+
+function PaginationInfo({
+  total,
+  page,
+  pageSize,
+  itemName = "items",
+  className,
+}: PaginationInfoProps) {
+  const start = total === 0 ? 0 : page * pageSize + 1
+  const end = Math.min((page + 1) * pageSize, total)
+
+  return (
+    <span className={cn("text-xs text-muted-foreground tabular-nums", className)}>
+      Showing <span className="font-semibold text-foreground">{start}</span>–<span className="font-semibold text-foreground">{end}</span> of <span className="font-semibold text-foreground">{total}</span> {itemName}
+    </span>
+  )
+}
+
 export {
   Pagination,
   PaginationContent,
@@ -124,4 +196,6 @@ export {
   PaginationPrevious,
   PaginationNext,
   PaginationEllipsis,
+  PaginationPageSize,
+  PaginationInfo,
 }

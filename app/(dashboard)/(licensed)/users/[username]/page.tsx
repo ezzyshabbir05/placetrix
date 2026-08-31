@@ -189,7 +189,7 @@ export default async function UserReportPage({ params }: PageProps) {
       .eq("student_id", targetProfile.id),
     (supabase as any)
       .from("test_attempts")
-      .select("id, test_id, attempt_number, status, score, total_marks, percentage, passed, started_at, submitted_at, time_spent_seconds, tab_switch_count")
+      .select("id, test_id, attempt_number, status, score, total_marks, percentage, passed, started_at, submitted_at, time_spent_seconds, actual_time_spent_seconds, tab_switch_count")
       .eq("candidate_id", targetProfile.id)
       .order("created_at", { ascending: false }),
     getCachedGlobalTagCounts(),
@@ -561,6 +561,7 @@ export default async function UserReportPage({ params }: PageProps) {
         startedAt: attempt.started_at,
         submittedAt: attempt.submitted_at,
         timeSpentSeconds: attempt.time_spent_seconds,
+        actualTimeSpentSeconds: attempt.actual_time_spent_seconds ?? (attempt.started_at && attempt.submitted_at ? Math.max(0, Math.round((new Date(attempt.submitted_at).getTime() - new Date(attempt.started_at).getTime()) / 1000)) : null),
         tabSwitchCount: attempt.tab_switch_count || 0,
       } : undefined,
     };

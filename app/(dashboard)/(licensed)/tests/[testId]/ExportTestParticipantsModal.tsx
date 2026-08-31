@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { FileSpreadsheet, Loader2 } from "lucide-react"
-import { fetchAllTestAttemptsForExportAction } from "./actions"
+import { createClient } from "@/lib/supabase/client"
 
 interface ExportTestParticipantsModalProps {
   testId: string
@@ -24,6 +24,7 @@ interface ExportTestParticipantsModalProps {
 }
 
 const AVAILABLE_FIELDS = [
+  { id: "srNo", label: "Sr. No." },
   { id: "name", label: "Candidate Name" },
   { id: "email", label: "Email Address" },
   { id: "branch", label: "Branch / Course" },
@@ -32,7 +33,8 @@ const AVAILABLE_FIELDS = [
   { id: "score", label: "Score" },
   { id: "totalScore", label: "Total Score" },
   { id: "percentage", label: "Percentage" },
-  { id: "timeSpent", label: "Time Spent" },
+  { id: "timeSpent", label: "Active Time Spent" },
+  { id: "actualTimeSpent", label: "Total Duration" },
   { id: "tabSwitches", label: "Tab Switches" },
   { id: "submittedAt", label: "Submission Date" },
 ]
@@ -67,8 +69,49 @@ export function ExportTestParticipantsModal({ testId, testName, totalAttempts, t
     try {
       setIsExporting(true)
       const XLSX = await import("xlsx-js-style")
-      // Fetch all attempts directly from the server bypassing pagination
-      const allAttempts = await fetchAllTestAttemptsForExportAction(testId)
+      const supabase = createClient()
+      
+      const { data, error } = await (supabase as any)
+        .from("test_attempts")
+        .select(
+          "id, tab_switch_count, status, score, total_marks, percentage, time_spent_seconds, actual_time_spent_seconds, started_at, submitted_at, profile:profiles!candidate_id(full_name, email, candidate_academic_details(passout_year, course:institute_courses(course_name)))"
+        )
+        .eq("test_id", testId)
+        .not("started_at", "is", null)
+        .order("started_at", { ascending: false })
+        .order("id", { ascending: true })
+
+      if (error) {
+        toast.error("Failed to fetch attempts for export.")
+        setIsExporting(false)
+        return
+      }
+
+      const allAttempts = (data || []).map((a: any) => {
+        const cad = Array.isArray(a.profile?.candidate_academic_details)
+          ? a.profile?.candidate_academic_details[0]
+          : a.profile?.candidate_academic_details
+        const courseName = Array.isArray(cad?.course)
+          ? cad?.course[0]?.course_name
+          : cad?.course?.course_name
+
+        return {
+          id: a.id,
+          student_name: a.profile?.full_name ?? "Unknown",
+          student_email: a.profile?.email ?? "Unknown",
+          status: a.status,
+          score: a.score ?? null,
+          total_marks: a.total_marks ?? null,
+          percentage: a.percentage ?? null,
+          time_spent_seconds: a.time_spent_seconds ?? null,
+          actual_time_spent_seconds: a.actual_time_spent_seconds ?? (a.started_at && a.submitted_at ? Math.max(0, Math.round((new Date(a.submitted_at).getTime() - new Date(a.started_at).getTime()) / 1000)) : null),
+          started_at: a.started_at,
+          submitted_at: a.submitted_at ?? null,
+          tab_switch_count: a.tab_switch_count ?? null,
+          branch: courseName ?? null,
+          passout_year: cad?.passout_year ?? null,
+        }
+      })
       
       if (!allAttempts || allAttempts.length === 0) {
         toast.error("No attempts found to export.")
@@ -78,7 +121,7 @@ export function ExportTestParticipantsModal({ testId, testName, totalAttempts, t
 
       const exportData = allAttempts.map((a: any, index: number) => {
         const row: any = {}
-        row["Sr. No."] = index + 1
+        if (selectedFields.includes("srNo")) row["Sr. No."] = index + 1
         if (selectedFields.includes("name")) row["Candidate Name"] = a.student_name || "Unknown"
         if (selectedFields.includes("email")) row["Email Address"] = a.student_email || "N/A"
         if (selectedFields.includes("branch")) row["Branch / Course"] = a.branch || "N/A"
@@ -87,7 +130,8 @@ export function ExportTestParticipantsModal({ testId, testName, totalAttempts, t
         if (selectedFields.includes("score")) row["Score"] = a.score != null ? a.score : "N/A"
         if (selectedFields.includes("totalScore")) row["Total Score"] = a.total_marks != null ? a.total_marks : "N/A"
         if (selectedFields.includes("percentage")) row["Percentage (%)"] = a.percentage != null ? a.percentage : "N/A"
-        if (selectedFields.includes("timeSpent")) row["Time Spent"] = formatSeconds(a.time_spent_seconds)
+        if (selectedFields.includes("timeSpent")) row["Active Time Spent"] = formatSeconds(a.time_spent_seconds)
+        if (selectedFields.includes("actualTimeSpent")) row["Total Duration"] = formatSeconds(a.actual_time_spent_seconds ?? (a.submitted_at && a.started_at ? Math.max(0, Math.round((new Date(a.submitted_at).getTime() - new Date(a.started_at).getTime()) / 1000)) : null))
         if (selectedFields.includes("tabSwitches")) row["Tab Switches"] = a.tab_switch_count ?? "0"
         if (selectedFields.includes("submittedAt")) row["Submission Date"] = a.submitted_at ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(a.submitted_at)) : "N/A"
         return row

@@ -312,7 +312,6 @@ const TestCard = React.memo(function TestCard({
                                   </p>
                                   {test.creator.email && (
                                     <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                                      <Mail className="size-3 shrink-0 text-muted-foreground/70" />
                                       {test.creator.email}
                                     </p>
                                   )}

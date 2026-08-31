@@ -51,8 +51,8 @@ async function fetchCandidateView(
         question_tags (test_question_tags (id, name))
       ),
       test_attempts (
-        id, status, submitted_at, score, total_marks, percentage, 
-        time_spent_seconds, tab_switch_count,
+        id, status, submitted_at, started_at, score, total_marks, percentage, 
+        time_spent_seconds, actual_time_spent_seconds, tab_switch_count,
         test_attempt_answers (
           question_id, selected_option_ids, is_correct, marks_awarded, time_spent_seconds
         )
@@ -80,8 +80,8 @@ async function fetchCandidateView(
           question_tags (test_question_tags (id, name))
         ),
         test_attempts (
-          id, status, submitted_at, score, total_marks, percentage, 
-          time_spent_seconds, tab_switch_count,
+          id, status, submitted_at, started_at, score, total_marks, percentage, 
+          time_spent_seconds, actual_time_spent_seconds, tab_switch_count,
           test_attempt_answers (
             question_id, selected_option_ids, is_correct, marks_awarded, time_spent_seconds
           )
@@ -151,6 +151,8 @@ async function fetchCandidateView(
       percentage: a.percentage ?? null,
       status: a.status,
       submitted_at: a.submitted_at ?? null,
+      time_spent_seconds: a.time_spent_seconds ?? null,
+      actual_time_spent_seconds: a.actual_time_spent_seconds ?? (a.started_at && a.submitted_at ? Math.max(0, Math.round((new Date(a.submitted_at).getTime() - new Date(a.started_at).getTime()) / 1000)) : null),
     })),
     institute_name: (raw.institute as any)?.institute_name ?? null,
     institute_logo_url: instituteLogoUrl,
@@ -172,11 +174,13 @@ async function fetchCandidateView(
   const attemptBase = {
     id: rawAttempt.id,
     status: rawAttempt.status as "in_progress" | "submitted",
+    started_at: rawAttempt.started_at ?? null,
     submitted_at: rawAttempt.submitted_at ?? null,
     score: rawAttempt.score ?? null,
     total_marks: rawAttempt.total_marks ?? null,
     percentage: rawAttempt.percentage ?? null,
     time_spent_seconds: rawAttempt.time_spent_seconds ?? null,
+    actual_time_spent_seconds: rawAttempt.actual_time_spent_seconds ?? (rawAttempt.started_at && rawAttempt.submitted_at ? Math.max(0, Math.round((new Date(rawAttempt.submitted_at).getTime() - new Date(rawAttempt.started_at).getTime()) / 1000)) : null),
     tab_switch_count: rawAttempt.tab_switch_count ?? null,
   }
 
@@ -309,8 +313,8 @@ async function fetchInstituteView(
 
   if (error || !raw) notFound()
 
-  // 2. Parallel fetches (SSR seed, 20 rows, newest first, stats, analytics, feedbacks)
-  const [attemptsRes, statsRes, analyticsRes, feedbacksRes] = await Promise.all([
+  // 2. Parallel fetches (SSR seed, 20 rows, newest first, stats, analytics)
+  const [attemptsRes, statsRes, analyticsRes] = await Promise.all([
     (supabase as any)
       .from("test_attempts")
       .select(
@@ -319,6 +323,7 @@ async function fetchInstituteView(
       .eq("test_id", testId)
       .not("started_at", "is", null)
       .order("started_at", { ascending: false })
+      .order("id", { ascending: true })
       .range(0, PAGE_SIZE - 1),
 
     // 3. Aggregate stats across ALL attempts (pre-aggregated via RPC)
@@ -329,23 +334,11 @@ async function fetchInstituteView(
       .from("view_test_question_analysis")
       .select("question_id, question_text, marks, total_answers, correct_answers, success_rate_pct, avg_time_spent")
       .eq("test_id", testId),
-
-    // 5. Test attempt feedback data
-    (supabase as any)
-      .from("test_attempt_feedbacks")
-      .select(`
-        id, rating, overall_comment, bugs_issues, suggestions, difficulty_felt, created_at,
-        candidate:profiles(full_name)
-      `)
-      .eq("test_id", testId)
-      .order("created_at", { ascending: false })
-      .limit(50),
   ])
 
   if (attemptsRes.error) console.error("[fetchInstituteView] attempts error:", attemptsRes.error)
   if (statsRes.error) console.error("[fetchInstituteView] stats error:", statsRes.error)
   if (analyticsRes.error) console.error("[fetchInstituteView] analytics error:", analyticsRes.error)
-  if (feedbacksRes.error) console.error("[fetchInstituteView] feedbacks error:", feedbacksRes.error)
 
   const firstPageAttempts: InstituteAttemptRow[] = (attemptsRes.data ?? []).map(mapAttemptRow)
 
@@ -364,17 +357,6 @@ async function fetchInstituteView(
     correct_answers: Number(a.correct_answers),
     success_rate_pct: a.success_rate_pct != null ? Number(a.success_rate_pct) : null,
     avg_time_spent: a.avg_time_spent != null ? Number(a.avg_time_spent) : null,
-  }))
-
-  const feedbacks = (feedbacksRes.data ?? []).map((f: any) => ({
-    id: f.id,
-    rating: f.rating,
-    overall_comment: f.overall_comment ?? null,
-    bugs_issues: f.bugs_issues ?? null,
-    suggestions: f.suggestions ?? null,
-    difficulty_felt: f.difficulty_felt as any,
-    created_at: f.created_at,
-    student_name: f.candidate?.full_name ?? "Candidate",
   }))
 
   const sections = ((raw.test_sections as any[]) ?? [])
@@ -431,7 +413,6 @@ async function fetchInstituteView(
     attempts: firstPageAttempts,
     attemptStats,
     questionAnalytics,
-    feedbacks,
   }
 }
 

@@ -62,6 +62,17 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+  PaginationPageSize,
+  PaginationInfo,
+} from "@/components/ui/pagination"
+import {
   Eye,
   EyeOff,
   MoreHorizontal,
@@ -101,6 +112,7 @@ import { InlineRichText } from "@/components/others/rich-text"
 import type { InstituteTestDetail, InstituteQuestion, InstituteSection, InstituteAttemptRow } from "./_types"
 import { formatDuration, formatDateTime, formatSeconds, resolvePct } from "./_types"
 import { ExportTestParticipantsModal } from "./ExportTestParticipantsModal"
+import { fetchTestAttemptsAction } from "./actions"
 
 
 // ─── useDebounce ──────────────────────────────────────────────────────────────
@@ -511,11 +523,13 @@ function SortableHead({
 // row data won't re-render that individual row at all.
 
 const MobileAttemptRow = React.memo(function MobileAttemptRow({
+  srNo,
   attempt,
   scoresVisible,
   testId,
   onDelete,
 }: {
+  srNo: number
   attempt: InstituteAttemptRow
   scoresVisible: boolean
   testId: string
@@ -528,9 +542,14 @@ const MobileAttemptRow = React.memo(function MobileAttemptRow({
       <AccordionTrigger className={cn('px-4', 'py-4', 'hover:bg-muted/5', 'hover:no-underline', 'data-[state=open]:bg-muted/10', 'transition-all')}>
         <div className={cn('flex', 'items-center', 'justify-between', 'w-full', 'pr-6', 'text-left')}>
           <div className={cn('min-w-0', 'flex-1', 'gap-1.5', 'flex', 'flex-col')}>
-            <p className={cn('truncate', 'text-sm', 'font-semibold', 'text-foreground', 'leading-none')}>
-              {attempt.student_name ?? "Unknown"}
-            </p>
+            <div className="flex items-center gap-2">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md border bg-muted/40 text-[10px] font-bold text-muted-foreground">
+                {srNo}
+              </span>
+              <p className={cn('truncate', 'text-sm', 'font-semibold', 'text-foreground', 'leading-none')}>
+                {attempt.student_name ?? "Unknown"}
+              </p>
+            </div>
             <div className={cn('flex', 'flex-wrap', 'items-center', 'gap-1.5')}>
               <span
                 className={cn(
@@ -571,8 +590,15 @@ const MobileAttemptRow = React.memo(function MobileAttemptRow({
             </div>
 
             <div className={cn('px-3.5', 'py-2.5', 'flex', 'items-baseline', 'justify-between', 'gap-4')}>
-              <span className={cn('text-[10px]', 'font-bold', 'text-muted-foreground', 'uppercase', 'tracking-widest', 'shrink-0')}>Time Spent</span>
+              <span className={cn('text-[10px]', 'font-bold', 'text-muted-foreground', 'uppercase', 'tracking-widest', 'shrink-0')}>Active Time</span>
               <span className={cn('text-xs', 'font-mono', 'font-medium', 'text-foreground', 'text-right')}>{formatSeconds(attempt.time_spent_seconds)}</span>
+            </div>
+
+            <div className={cn('px-3.5', 'py-2.5', 'flex', 'items-baseline', 'justify-between', 'gap-4')}>
+              <span className={cn('text-[10px]', 'font-bold', 'text-muted-foreground', 'uppercase', 'tracking-widest', 'shrink-0')}>Total Duration</span>
+              <span className={cn('text-xs', 'font-mono', 'font-medium', 'text-foreground', 'text-right')}>
+                {formatSeconds(attempt.actual_time_spent_seconds ?? (attempt.submitted_at && attempt.started_at ? Math.max(0, Math.round((new Date(attempt.submitted_at).getTime() - new Date(attempt.started_at).getTime()) / 1000)) : null))}
+              </span>
             </div>
 
             <div className={cn('px-3.5', 'py-2.5', 'flex', 'items-baseline', 'justify-between', 'gap-4')}>
@@ -621,11 +647,13 @@ const MobileAttemptRow = React.memo(function MobileAttemptRow({
 
 
 const DesktopAttemptRow = React.memo(function DesktopAttemptRow({
+  srNo,
   attempt,
   scoresVisible,
   testId,
   onDelete,
 }: {
+  srNo: number
   attempt: InstituteAttemptRow
   scoresVisible: boolean
   testId: string
@@ -633,6 +661,9 @@ const DesktopAttemptRow = React.memo(function DesktopAttemptRow({
 }) {
   return (
     <TableRow className="hover:bg-muted/20">
+      <TableCell className="w-12 text-center text-xs font-semibold tabular-nums text-muted-foreground">
+        {srNo}
+      </TableCell>
       <TableCell>
         <p className={cn('truncate', 'text-sm', 'font-medium')}>{attempt.student_name ?? "Unknown"}</p>
         {attempt.student_email && (
@@ -660,8 +691,15 @@ const DesktopAttemptRow = React.memo(function DesktopAttemptRow({
           <AttemptScore attempt={attempt} scoresVisible={scoresVisible} />
         </div>
       </TableCell>
-      <TableCell className={cn('text-right', 'text-sm', 'tabular-nums', 'text-muted-foreground')}>
-        {formatSeconds(attempt.time_spent_seconds)}
+      <TableCell className={cn('text-right', 'text-sm', 'tabular-nums')}>
+        <div className="flex flex-col items-end gap-0.5">
+          <span className="font-medium text-foreground" title="Active Question Time">
+            {formatSeconds(attempt.time_spent_seconds)}
+          </span>
+          <span className="text-[11px] text-muted-foreground" title="Total Duration (Start to End)">
+            {formatSeconds(attempt.actual_time_spent_seconds ?? (attempt.submitted_at && attempt.started_at ? Math.max(0, Math.round((new Date(attempt.submitted_at).getTime() - new Date(attempt.started_at).getTime()) / 1000)) : null))} total
+          </span>
+        </div>
       </TableCell>
       <TableCell className={cn('text-center', 'text-sm', 'tabular-nums', 'text-muted-foreground')}>
         {attempt.tab_switch_count != null && attempt.tab_switch_count > 0
@@ -763,9 +801,10 @@ function AttemptsTab({
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "submitted" | "in_progress">("all")
   const [scoreFilter, setScoreFilter] = useState<"all" | "high" | "mid" | "low">("all")
-  const [sortCol, setSortCol] = useState<SortColumn>("submitted")
+  const [sortCol, setSortCol] = useState<SortColumn>("started")
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
   const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(20)
 
   const debouncedSearch = useDebounce(searchQuery, 300)
 
@@ -792,8 +831,9 @@ function AttemptsTab({
       sortCol,
       sortDir,
       page: 0,
+      pageSize,
     }).finally(() => setIsLoadingPage(false))
-  }, [sortCol, sortDir, onFetchPage])
+  }, [sortCol, sortDir, pageSize, onFetchPage])
 
   // Re-fetch whenever filters / sort / page change
   const fetchCurrentPage = useCallback(async (
@@ -808,12 +848,13 @@ function AttemptsTab({
         sortCol,
         sortDir,
         page,
+        pageSize,
         ...overrides,
       })
     } finally {
       setIsLoadingPage(false)
     }
-  }, [debouncedSearch, statusFilter, scoreFilter, sortCol, sortDir, page, onFetchPage])
+  }, [debouncedSearch, statusFilter, scoreFilter, sortCol, sortDir, page, pageSize, onFetchPage])
 
   const handleSort = useCallback((col: SortColumn) => {
     const newDir = sortCol === col ? (sortDir === "asc" ? "desc" : "asc") :
@@ -823,9 +864,9 @@ function AttemptsTab({
     setSortDir(newDir)
     setPage(newPage)
     setIsLoadingPage(true)
-    onFetchPage({ search: debouncedSearch.trim(), statusFilter, scoreFilter, sortCol: col, sortDir: newDir, page: newPage })
+    onFetchPage({ search: debouncedSearch.trim(), statusFilter, scoreFilter, sortCol: col, sortDir: newDir, page: newPage, pageSize })
       .finally(() => setIsLoadingPage(false))
-  }, [sortCol, sortDir, debouncedSearch, statusFilter, scoreFilter, onFetchPage])
+  }, [sortCol, sortDir, debouncedSearch, statusFilter, scoreFilter, pageSize, onFetchPage])
 
   const handleFilterChange = useCallback((
     patch: Partial<{ statusFilter: typeof statusFilter; scoreFilter: typeof scoreFilter }>
@@ -836,9 +877,9 @@ function AttemptsTab({
     if (patch.scoreFilter !== undefined) setScoreFilter(newScore)
     setPage(0)
     setIsLoadingPage(true)
-    onFetchPage({ search: debouncedSearch.trim(), statusFilter: newStatus, scoreFilter: newScore, sortCol, sortDir, page: 0 })
+    onFetchPage({ search: debouncedSearch.trim(), statusFilter: newStatus, scoreFilter: newScore, sortCol, sortDir, page: 0, pageSize })
       .finally(() => setIsLoadingPage(false))
-  }, [statusFilter, scoreFilter, debouncedSearch, sortCol, sortDir, onFetchPage])
+  }, [statusFilter, scoreFilter, debouncedSearch, sortCol, sortDir, pageSize, onFetchPage])
 
   // Handle search debounce — reset to page 0
   const prevSearch = useRef(debouncedSearch)
@@ -847,19 +888,17 @@ function AttemptsTab({
     prevSearch.current = debouncedSearch
     setPage(0)
     setIsLoadingPage(true)
-    onFetchPage({ search: debouncedSearch.trim(), statusFilter, scoreFilter, sortCol, sortDir, page: 0 })
+    onFetchPage({ search: debouncedSearch.trim(), statusFilter, scoreFilter, sortCol, sortDir, page: 0, pageSize })
       .finally(() => setIsLoadingPage(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch])
+  }, [debouncedSearch, pageSize])
 
-  // Navigate pages using scroll-to-load
-  const totalPages = Math.max(1, Math.ceil(totalCount / ATTEMPTS_PAGE_SIZE))
-  const hasMore = page < totalPages - 1
+  // Standard Pagination state
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
 
-  const loadNextPage = useCallback(() => {
-    if (isLoadingPage || !hasMore) return
-    const nextPage = page + 1
-    setPage(nextPage)
+  const handlePageChange = useCallback((newPage: number) => {
+    if (newPage < 0 || newPage >= totalPages || newPage === page || isLoadingPage) return
+    setPage(newPage)
     setIsLoadingPage(true)
     onFetchPage({
       search: debouncedSearch.trim(),
@@ -867,34 +906,25 @@ function AttemptsTab({
       scoreFilter,
       sortCol,
       sortDir,
-      page: nextPage,
+      page: newPage,
+      pageSize,
     }).finally(() => setIsLoadingPage(false))
-  }, [page, totalPages, isLoadingPage, hasMore, debouncedSearch, statusFilter, scoreFilter, sortCol, sortDir, onFetchPage])
+  }, [totalPages, page, pageSize, isLoadingPage, onFetchPage, debouncedSearch, statusFilter, scoreFilter, sortCol, sortDir])
 
-  const sentinelRef = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    const sentinel = sentinelRef.current
-    if (!sentinel) return
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const first = entries[0]
-        if (first.isIntersecting) {
-          loadNextPage()
-        }
-      },
-      { threshold: 0.1 }
-    )
-
-    observer.observe(sentinel)
-
-    return () => {
-      if (sentinel) {
-        observer.unobserve(sentinel)
-      }
-    }
-  }, [loadNextPage, hasMore])
+  const handlePageSizeChange = useCallback((newPageSize: number) => {
+    setPageSize(newPageSize)
+    setPage(0)
+    setIsLoadingPage(true)
+    onFetchPage({
+      search: debouncedSearch.trim(),
+      statusFilter,
+      scoreFilter,
+      sortCol,
+      sortDir,
+      page: 0,
+      pageSize: newPageSize,
+    }).finally(() => setIsLoadingPage(false))
+  }, [debouncedSearch, statusFilter, scoreFilter, sortCol, sortDir, onFetchPage])
 
 
   if (stats.total === 0) {
@@ -1123,8 +1153,8 @@ function AttemptsTab({
           </div>
         ) : (
           <Accordion type="single" collapsible className={cn('divide-y', 'divide-border/60')}>
-            {pageRows.map((a) => (
-              <MobileAttemptRow key={a.id} attempt={a} scoresVisible={scoresVisible} testId={test.id} onDelete={setAttemptToDelete} />
+            {pageRows.map((a, idx) => (
+              <MobileAttemptRow key={a.id} srNo={page * pageSize + idx + 1} attempt={a} scoresVisible={scoresVisible} testId={test.id} onDelete={setAttemptToDelete} />
             ))}
           </Accordion>
         )}
@@ -1132,10 +1162,11 @@ function AttemptsTab({
 
 
       {/* Desktop table */}
-      <div className={cn("hidden overflow-hidden rounded-xl border md:block", isLoadingPage && page === 0 && "opacity-60 pointer-events-none")}>
+      <div className={cn("hidden overflow-hidden rounded-xl border md:block", isLoadingPage && "opacity-60 pointer-events-none transition-opacity")}>
         <Table>
           <TableHeader>
             <TableRow className={cn('bg-muted/40', 'hover:bg-muted/40')}>
+              <TableHead className="w-12 text-center text-xs font-bold text-muted-foreground">#</TableHead>
               <SortableHead label="Student" col="student_name" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
               <SortableHead label="Education" col="education" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
               <SortableHead label="Status" col="status" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
@@ -1150,7 +1181,7 @@ function AttemptsTab({
           <TableBody>
             {pageRows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className={cn('py-12', 'text-center')}>
+                <TableCell colSpan={10} className={cn('py-12', 'text-center')}>
                   <div className={cn('flex', 'flex-col', 'items-center', 'gap-2')}>
                     <Filter className={cn('h-5', 'w-5', 'text-muted-foreground')} />
                     <p className={cn('text-sm', 'text-muted-foreground')}>No results match your filters.</p>
@@ -1161,18 +1192,94 @@ function AttemptsTab({
                 </TableCell>
               </TableRow>
             ) : (
-              pageRows.map((a) => (
-                <DesktopAttemptRow key={a.id} attempt={a} scoresVisible={scoresVisible} testId={test.id} onDelete={setAttemptToDelete} />
+              pageRows.map((a, idx) => (
+                <DesktopAttemptRow key={a.id} srNo={page * pageSize + idx + 1} attempt={a} scoresVisible={scoresVisible} testId={test.id} onDelete={setAttemptToDelete} />
               ))
             )}
           </TableBody>
         </Table>
       </div>
 
-      {/* Sentinel element for infinite scroll */}
-      {hasMore && (
-        <div ref={sentinelRef} className={cn('py-6', 'flex', 'items-center', 'justify-center', 'min-h-[50px]')}>
-          {isLoadingPage && <Loader2 className={cn('h-6', 'w-6', 'animate-spin', 'text-muted-foreground')} />}
+      {/* Shadcn Standard Pagination Controls with Page Size Selector */}
+      {totalCount > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 text-xs text-muted-foreground border-t border-border/40">
+          <div className="flex flex-wrap items-center gap-3">
+            <PaginationInfo
+              total={totalCount}
+              page={page}
+              pageSize={pageSize}
+              itemName="attempts"
+            />
+            <div className="flex items-center pl-3 border-l border-border/60">
+              <PaginationPageSize
+                pageSize={pageSize}
+                onPageSizeChange={handlePageSizeChange}
+                disabled={isLoadingPage}
+                options={[10, 20, 50, 100]}
+              />
+            </div>
+          </div>
+
+          {totalPages > 1 && (
+            <Pagination className="w-auto mx-0">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      handlePageChange(page - 1)
+                    }}
+                    className={cn("cursor-pointer select-none", (page === 0 || isLoadingPage) && "pointer-events-none opacity-50")}
+                  />
+                </PaginationItem>
+
+                {Array.from({ length: totalPages }, (_, i) => i).map((pIndex) => {
+                  const pNumber = pIndex + 1
+                  if (
+                    pIndex === 0 ||
+                    pIndex === totalPages - 1 ||
+                    (pIndex >= page - 1 && pIndex <= page + 1)
+                  ) {
+                    return (
+                      <PaginationItem key={pIndex}>
+                        <PaginationLink
+                          href="#"
+                          isActive={pIndex === page}
+                          onClick={(e) => {
+                            e.preventDefault()
+                            handlePageChange(pIndex)
+                          }}
+                          className={cn("cursor-pointer size-8 text-xs select-none", isLoadingPage && "pointer-events-none")}
+                        >
+                          {pNumber}
+                        </PaginationLink>
+                      </PaginationItem>
+                    )
+                  }
+                  if (pIndex === page - 2 || pIndex === page + 2) {
+                    return (
+                      <PaginationItem key={pIndex}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    )
+                  }
+                  return null
+                })}
+
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      handlePageChange(page + 1)
+                    }}
+                    className={cn("cursor-pointer select-none", (page >= totalPages - 1 || isLoadingPage) && "pointer-events-none opacity-50")}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
         </div>
       )}
 
@@ -1434,90 +1541,111 @@ interface AttemptQueryParams {
   sortCol: SortColumn
   sortDir: "asc" | "desc"
   page: number
+  pageSize?: number
 }
 
 
-// ─── Supabase query builder ───────────────────────────────────────────────────
+// ─── Direct Client-Side Supabase Query Helper ────────────────────────────────
 
-function buildAttemptsQuery(
-  supabase: ReturnType<typeof createClient>,
+async function fetchAttemptsClient(
   testId: string,
-  params: Omit<AttemptQueryParams, "page"> & { range?: [number, number] }
-) {
-  const dbCol = SORT_COL_MAP[params.sortCol]
-  // For "submitted" sort column we need to handle nulls for in-progress rows.
-  // Use submitted_at primarily and fall back to started_at via coalesce — but
-  // the view doesn't support coalesce in .order(), so we sort by submitted_at
-  // and let nulls float (Postgres puts NULLs last with NULLS LAST by default).
-  let q = (supabase as any)
-    .from("view_test_attempt_details")
-    .select(
-      "id, status, score, total_marks, percentage, time_spent_seconds, started_at, submitted_at, student_name, student_email, tab_switch_count, profile:profiles!student_id(candidate_academic_details(passout_year, course:institute_courses(course_name)))",
-      { count: "exact" }
-    )
-    .eq("test_id", testId)
-    .not("started_at", "is", null)
+  params: AttemptQueryParams
+): Promise<{ data: InstituteAttemptRow[]; count: number; error?: string }> {
+  try {
+    const supabase = createClient()
+    const pageSize = params.pageSize || ATTEMPTS_PAGE_SIZE
+    const from = params.page * pageSize
+    const to = from + pageSize - 1
 
-  // Status filter
-  if (params.statusFilter === "submitted") {
-    q = q.in("status", ["submitted", "auto_submitted"])
-  } else if (params.statusFilter === "in_progress") {
-    q = q.eq("status", "in_progress")
+    let q = (supabase as any)
+      .from("test_attempts")
+      .select(
+        "id, tab_switch_count, status, score, total_marks, percentage, time_spent_seconds, actual_time_spent_seconds, started_at, submitted_at, profile:profiles!candidate_id(full_name, email, candidate_academic_details(passout_year, course:institute_courses(course_name)))",
+        { count: "exact" }
+      )
+      .eq("test_id", testId)
+      .not("started_at", "is", null)
+
+    // Status filter
+    if (params.statusFilter === "submitted") {
+      q = q.in("status", ["submitted", "auto_submitted"])
+    } else if (params.statusFilter === "in_progress") {
+      q = q.eq("status", "in_progress")
+    }
+
+    // Score filter
+    if (params.scoreFilter === "high") q = q.gte("percentage", 75)
+    else if (params.scoreFilter === "mid") q = q.gte("percentage", 50).lt("percentage", 75)
+    else if (params.scoreFilter === "low") q = q.lt("percentage", 50)
+
+    // Sort
+    const sortColMap: Record<string, string> = {
+      status: "status",
+      score: "percentage",
+      time: "time_spent_seconds",
+      violations: "tab_switch_count",
+      started: "started_at",
+      submitted: "submitted_at",
+    }
+    const dbCol = (params.sortCol && sortColMap[params.sortCol]) || "started_at"
+    const isAsc = params.sortDir === "asc"
+    q = q.order(dbCol, { ascending: isAsc, nullsFirst: isAsc })
+    if (dbCol !== "started_at") {
+      q = q.order("started_at", { ascending: false })
+    }
+    q = q.order("id", { ascending: true })
+
+    q = q.range(from, to)
+
+    const { data, count, error } = await q
+
+    if (error) {
+      console.error("[fetchAttemptsClient] query error:", error)
+      return { data: [], count: 0, error: error.message }
+    }
+
+    let mapped: InstituteAttemptRow[] = (data || []).map((a: any) => {
+      const cad = Array.isArray(a.profile?.candidate_academic_details)
+        ? a.profile?.candidate_academic_details[0]
+        : a.profile?.candidate_academic_details
+      const courseName = Array.isArray(cad?.course)
+        ? cad?.course[0]?.course_name
+        : cad?.course?.course_name
+
+      return {
+        id: a.id,
+        student_name: a.profile?.full_name ?? "Unknown",
+        student_email: a.profile?.email ?? "Unknown",
+        status: a.status,
+        score: a.score ?? null,
+        total_marks: a.total_marks ?? null,
+        percentage: a.percentage ?? null,
+        time_spent_seconds: a.time_spent_seconds ?? null,
+        actual_time_spent_seconds: a.actual_time_spent_seconds ?? (a.started_at && a.submitted_at ? Math.max(0, Math.round((new Date(a.submitted_at).getTime() - new Date(a.started_at).getTime()) / 1000)) : null),
+        started_at: a.started_at,
+        submitted_at: a.submitted_at ?? null,
+        tab_switch_count: a.tab_switch_count ?? null,
+        branch: courseName ?? null,
+        passout_year: cad?.passout_year ?? null,
+      }
+    })
+
+    if (params.search && params.search.trim()) {
+      const s = params.search.trim().toLowerCase()
+      mapped = mapped.filter(
+        (r) =>
+          (r.student_name && r.student_name.toLowerCase().includes(s)) ||
+          (r.student_email && r.student_email.toLowerCase().includes(s)) ||
+          (r.branch && r.branch.toLowerCase().includes(s))
+      )
+    }
+
+    return { data: mapped, count: count ?? mapped.length }
+  } catch (err: any) {
+    console.error("[fetchAttemptsClient] error:", err)
+    return { data: [], count: 0, error: err.message }
   }
-
-  // Score filter (only meaningful for submitted rows)
-  if (params.scoreFilter === "high") q = q.gte("percentage", 75)
-  else if (params.scoreFilter === "mid") q = q.gte("percentage", 50).lt("percentage", 75)
-  else if (params.scoreFilter === "low") q = q.lt("percentage", 50)
-
-  // Search (name or email ILIKE)
-  if (params.search) {
-    q = q.or(`student_name.ilike.%${params.search}%,student_email.ilike.%${params.search}%`)
-  }
-
-  // Sort
-  const nullsFirst = params.sortDir === "asc"
-  q = q.order(dbCol, { ascending: params.sortDir === "asc", nullsFirst })
-  // Always secondary-sort by started_at for stable ordering
-  if (dbCol !== "started_at") {
-    q = q.order("started_at", { ascending: false })
-  }
-
-  // Pagination range
-  if (params.range) {
-    q = q.range(params.range[0], params.range[1])
-  }
-
-  return q
 }
-
-function mapRawAttempt(a: any): InstituteAttemptRow {
-  const cad = Array.isArray(a.profile?.candidate_academic_details)
-    ? a.profile?.candidate_academic_details[0]
-    : a.profile?.candidate_academic_details
-
-  const courseName = Array.isArray(cad?.course)
-    ? cad?.course[0]?.course_name
-    : cad?.course?.course_name
-
-  return {
-    id: a.id,
-    student_name: a.student_name ?? null,
-    student_email: a.student_email ?? null,
-    status: a.status as InstituteAttemptRow["status"],
-    score: a.score ?? null,
-    total_marks: a.total_marks ?? null,
-    percentage: a.percentage ?? null,
-    time_spent_seconds: a.time_spent_seconds ?? null,
-    actual_time_spent_seconds: a.actual_time_spent_seconds ?? null,
-    started_at: a.started_at,
-    submitted_at: a.submitted_at ?? null,
-    tab_switch_count: a.tab_switch_count ?? null,
-    branch: courseName ?? null,
-    passout_year: cad?.passout_year ?? null,
-  }
-}
-
 
 // ─── Page component ───────────────────────────────────────────────────────────
 
@@ -1569,35 +1697,23 @@ export function InstituteTestDetailClient({
     search: "",
     statusFilter: "all",
     scoreFilter: "all",
-    sortCol: "submitted",
+    sortCol: "started",
     sortDir: "desc",
     page: 0,
   })
 
-  // Fetch one page of attempts and update count
+  // Fetch one page of attempts and update count (direct client-side DB query)
   const handleFetchPage = useCallback(async (params: AttemptQueryParams) => {
     lastParamsRef.current = params
-    const supabase = createClient()
-    const from = params.page * ATTEMPTS_PAGE_SIZE
-    const to = from + ATTEMPTS_PAGE_SIZE - 1
+    const result = await fetchAttemptsClient(testId, params)
 
-    const { data, count, error } = await buildAttemptsQuery(supabase, testId, {
-      ...params,
-      range: [from, to],
-    })
+    if (result.error) {
+      console.error("[handleFetchPage] error:", result.error)
+      return
+    }
 
-    if (error || !data) return
-    setPageRows(prev => {
-      const mapped = data.map(mapRawAttempt)
-      if (params.page === 0) {
-        return mapped
-      } else {
-        const existingIds = new Set(prev.map((r: InstituteAttemptRow) => r.id))
-        const filteredNew = mapped.filter((r: InstituteAttemptRow) => !existingIds.has(r.id))
-        return [...prev, ...filteredNew]
-      }
-    })
-    if (count != null) setTotalCount(count)
+    setPageRows(result.data)
+    if (result.count != null) setTotalCount(result.count)
   }, [testId])
 
   // Fetch aggregate stats independently (runs after Realtime events)
@@ -1613,10 +1729,8 @@ export function InstituteTestDetailClient({
   const handleFetchAllForExport = useCallback(async (
     params: Omit<AttemptQueryParams, "page">
   ): Promise<InstituteAttemptRow[]> => {
-    const supabase = createClient()
-    const { data, error } = await buildAttemptsQuery(supabase, testId, params)
-    if (error || !data) return []
-    return data.map(mapRawAttempt)
+    const result = await fetchAttemptsClient(testId, { ...params, page: 0 } as AttemptQueryParams)
+    return result.data || []
   }, [testId])
 
 
@@ -1844,7 +1958,6 @@ export function InstituteTestDetailClient({
                 { value: "questions", label: "Questions", icon: <ListChecks className={cn('h-3.5', 'w-3.5')} />, count: test.questions.length },
                 { value: "attempts", label: "Attempts", icon: <Users className={cn('h-3.5', 'w-3.5')} />, count: liveStats.total },
                 { value: "analytics", label: "Analytics", icon: <BarChart2 className={cn('h-3.5', 'w-3.5')} />, count: null },
-                { value: "feedback", label: "Feedback", icon: <RotateCw className={cn('h-3.5', 'w-3.5')} />, count: test.feedbacks?.length || null },
               ].map(({ value, label, icon, count }) => (
                 <TabsTrigger
                   key={value}
@@ -1928,10 +2041,6 @@ export function InstituteTestDetailClient({
 
         <TabsContent value="analytics" className="m-0">
           <AnalyticsTab test={test} />
-        </TabsContent>
-
-        <TabsContent value="feedback" className="m-0">
-          <FeedbackTab test={test} />
         </TabsContent>
       </Tabs>
     </div>
@@ -2068,130 +2177,6 @@ function AnalyticsTab({ test }: { test: InstituteTestDetail }) {
           </Table>
         </CardContent>
       </Card>
-    </div>
-  )
-}
-
-function FeedbackTab({ test }: { test: InstituteTestDetail }) {
-  const feedbacks = test.feedbacks ?? []
-
-  const stats = useMemo(() => {
-    if (feedbacks.length === 0) return null
-    const sum = feedbacks.reduce((acc, f) => acc + f.rating, 0)
-    const avg = sum / feedbacks.length
-
-    const difficulties = { too_easy: 0, as_expected: 0, too_hard: 0 }
-    feedbacks.forEach((f) => {
-      if (f.difficulty_felt) {
-        difficulties[f.difficulty_felt]++
-      }
-    })
-
-    return { avg, difficulties }
-  }, [feedbacks])
-
-  if (feedbacks.length === 0) {
-    return (
-      <Card className={cn('rounded-xl', 'border-dashed')}>
-        <CardContent className={cn('flex', 'flex-col', 'items-center', 'justify-center', 'gap-3', 'py-12', 'text-center')}>
-          <div className={cn('flex', 'h-10', 'w-10', 'items-center', 'justify-center', 'rounded-full', 'bg-muted')}>
-            <RotateCw className={cn('h-5', 'w-5', 'text-muted-foreground')} />
-          </div>
-          <div className="space-y-0.5">
-            <p className={cn('text-sm', 'font-medium')}>No feedback yet</p>
-            <p className={cn('text-xs', 'text-muted-foreground')}>
-              Candidate feedback will appear here once submitted.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Feedback Summary Cards */}
-      <div className={cn('grid', 'grid-cols-1', 'gap-4', 'sm:grid-cols-2')}>
-        <Card>
-          <CardContent className={cn('p-4', 'space-y-1')}>
-            <p className={cn('text-xs', 'font-medium', 'text-muted-foreground', 'uppercase', 'tracking-wide')}>Average Rating</p>
-            <div className={cn('flex', 'items-baseline', 'gap-2')}>
-              <span className={cn('text-3xl', 'font-bold')}>{stats?.avg.toFixed(1)}</span>
-              <span className={cn('text-sm', 'text-muted-foreground')}>/ 5 stars</span>
-            </div>
-            <p className={cn('text-xs', 'text-muted-foreground')}>Based on {feedbacks.length} response{feedbacks.length !== 1 ? "s" : ""}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className={cn('p-4', 'space-y-1')}>
-            <p className={cn('text-xs', 'font-medium', 'text-muted-foreground', 'uppercase', 'tracking-wide')}>Difficulty Felt</p>
-            <div className={cn('flex', 'items-center', 'gap-3', 'pt-1.5', 'text-xs')}>
-              <div className={cn('flex', 'flex-col', 'flex-1', 'items-center', 'bg-muted/40', 'rounded', 'py-1')}>
-                <span className={cn('font-semibold', 'text-emerald-600')}>{stats?.difficulties.too_easy}</span>
-                <span className={cn('text-[10px]', 'text-muted-foreground')}>Too Easy</span>
-              </div>
-              <div className={cn('flex', 'flex-col', 'flex-1', 'items-center', 'bg-muted/40', 'rounded', 'py-1')}>
-                <span className={cn('font-semibold', 'text-blue-600')}>{stats?.difficulties.as_expected}</span>
-                <span className={cn('text-[10px]', 'text-muted-foreground')}>As Expected</span>
-              </div>
-              <div className={cn('flex', 'flex-col', 'flex-1', 'items-center', 'bg-muted/40', 'rounded', 'py-1')}>
-                <span className={cn('font-semibold', 'text-amber-600')}>{stats?.difficulties.too_hard}</span>
-                <span className={cn('text-[10px]', 'text-muted-foreground')}>Too Hard</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Feedback Cards List */}
-      <div className="space-y-3">
-        {feedbacks.map((fb) => (
-          <Card key={fb.id}>
-            <CardContent className={cn('p-4', 'space-y-3')}>
-              <div className={cn('flex', 'items-start', 'justify-between', 'gap-4')}>
-                <div className="space-y-0.5">
-                  <p className={cn('font-semibold', 'text-sm')}>{fb.student_name}</p>
-                  <p className={cn('text-[10px]', 'text-muted-foreground')}>{formatDateTime(fb.created_at)}</p>
-                </div>
-                <div className={cn('flex', 'items-center', 'gap-1.5')}>
-                  {fb.difficulty_felt && (
-                    <Badge variant="outline" className={cn('text-[10px]', 'capitalize')}>
-                      {fb.difficulty_felt.replace("_", " ")}
-                    </Badge>
-                  )}
-                  <Badge className={cn('bg-primary', 'text-primary-foreground', 'font-semibold', 'text-xs')}>
-                    {fb.rating} ★
-                  </Badge>
-                </div>
-              </div>
-
-              <div className={cn('space-y-2', 'text-xs')}>
-                {fb.overall_comment && (
-                  <div>
-                    <span className={cn('font-bold', 'text-muted-foreground')}>Comment:</span>
-                    <p className={cn('mt-0.5', 'text-foreground', 'leading-relaxed')}>{fb.overall_comment}</p>
-                  </div>
-                )}
-                {fb.suggestions && (
-                  <div>
-                    <span className={cn('font-bold', 'text-muted-foreground')}>Suggestions:</span>
-                    <p className={cn('mt-0.5', 'text-foreground', 'leading-relaxed')}>{fb.suggestions}</p>
-                  </div>
-                )}
-                {fb.bugs_issues && (
-                  <div className={cn('rounded', 'bg-destructive/5', 'border', 'border-destructive/10', 'p-2')}>
-                    <span className={cn('font-bold', 'text-destructive', 'flex', 'items-center', 'gap-1')}>
-                      <AlertCircle className={cn('h-3', 'w-3', 'shrink-0')} /> Reported Bugs/Issues:
-                    </span>
-                    <p className={cn('mt-1', 'text-destructive', 'leading-relaxed')}>{fb.bugs_issues}</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
     </div>
   )
 }

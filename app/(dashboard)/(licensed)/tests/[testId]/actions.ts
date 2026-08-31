@@ -242,7 +242,7 @@ export async function fetchAllTestAttemptsForExportAction(testId: string) {
       total_marks: a.total_marks ?? null,
       percentage: a.percentage ?? null,
       time_spent_seconds: a.time_spent_seconds ?? null,
-      actual_time_spent_seconds: a.actual_time_spent_seconds ?? null,
+      actual_time_spent_seconds: a.actual_time_spent_seconds ?? (a.started_at && a.submitted_at ? Math.max(0, Math.round((new Date(a.submitted_at).getTime() - new Date(a.started_at).getTime()) / 1000)) : null),
       started_at: a.started_at,
       submitted_at: a.submitted_at ?? null,
       tab_switch_count: a.tab_switch_count ?? null,
@@ -250,4 +250,120 @@ export async function fetchAllTestAttemptsForExportAction(testId: string) {
       passout_year: cad?.passout_year ?? null,
     }
   })
+}
+
+// ─── Fetch Paginated Attempts (with Server Filtering & Sorting) ─────────────────
+
+export interface FetchAttemptsParams {
+  search?: string
+  statusFilter?: "all" | "submitted" | "in_progress"
+  scoreFilter?: "all" | "high" | "mid" | "low"
+  sortCol?: string
+  sortDir?: "asc" | "desc"
+  page?: number
+  pageSize?: number
+}
+
+export async function fetchTestAttemptsAction(
+  testId: string,
+  params: FetchAttemptsParams
+): Promise<{ data: any[]; count: number; error?: string }> {
+  try {
+    await requireAuth()
+    await assertOwner(testId)
+    const supabase = await createClient()
+
+    const page = params.page ?? 0
+    const pageSize = params.pageSize ?? 20
+    const from = page * pageSize
+    const to = from + pageSize - 1
+
+    let q = (supabase as any)
+      .from("test_attempts")
+      .select(
+        "id, tab_switch_count, status, score, total_marks, percentage, time_spent_seconds, actual_time_spent_seconds, started_at, submitted_at, profile:profiles!candidate_id(full_name, email, candidate_academic_details(passout_year, course:institute_courses(course_name)))",
+        { count: "exact" }
+      )
+      .eq("test_id", testId)
+      .not("started_at", "is", null)
+
+    // Status filter
+    if (params.statusFilter === "submitted") {
+      q = q.in("status", ["submitted", "auto_submitted"])
+    } else if (params.statusFilter === "in_progress") {
+      q = q.eq("status", "in_progress")
+    }
+
+    // Score filter
+    if (params.scoreFilter === "high") q = q.gte("percentage", 75)
+    else if (params.scoreFilter === "mid") q = q.gte("percentage", 50).lt("percentage", 75)
+    else if (params.scoreFilter === "low") q = q.lt("percentage", 50)
+
+    // Sort
+    const sortColMap: Record<string, string> = {
+      status: "status",
+      score: "percentage",
+      time: "time_spent_seconds",
+      violations: "tab_switch_count",
+      started: "started_at",
+      submitted: "submitted_at",
+    }
+    const dbCol = (params.sortCol && sortColMap[params.sortCol]) || "started_at"
+    const isAsc = params.sortDir === "asc"
+    q = q.order(dbCol, { ascending: isAsc, nullsFirst: isAsc })
+    if (dbCol !== "started_at") {
+      q = q.order("started_at", { ascending: false })
+    }
+    q = q.order("id", { ascending: true })
+
+    q = q.range(from, to)
+
+    const { data, count, error } = await q
+
+    if (error) {
+      console.error("[fetchTestAttemptsAction] query error:", error)
+      return { data: [], count: 0, error: error.message }
+    }
+
+    let mapped = (data || []).map((a: any) => {
+      const cad = Array.isArray(a.profile?.candidate_academic_details)
+        ? a.profile?.candidate_academic_details[0]
+        : a.profile?.candidate_academic_details
+      const courseName = Array.isArray(cad?.course)
+        ? cad?.course[0]?.course_name
+        : cad?.course?.course_name
+
+      return {
+        id: a.id,
+        student_name: a.profile?.full_name ?? "Unknown",
+        student_email: a.profile?.email ?? "Unknown",
+        status: a.status,
+        score: a.score ?? null,
+        total_marks: a.total_marks ?? null,
+        percentage: a.percentage ?? null,
+        time_spent_seconds: a.time_spent_seconds ?? null,
+        actual_time_spent_seconds: a.actual_time_spent_seconds ?? (a.started_at && a.submitted_at ? Math.max(0, Math.round((new Date(a.submitted_at).getTime() - new Date(a.started_at).getTime()) / 1000)) : null),
+        started_at: a.started_at,
+        submitted_at: a.submitted_at ?? null,
+        tab_switch_count: a.tab_switch_count ?? null,
+        branch: courseName ?? null,
+        passout_year: cad?.passout_year ?? null,
+      }
+    })
+
+    if (params.search && params.search.trim()) {
+      const s = params.search.trim().toLowerCase()
+      mapped = mapped.filter(
+        (r: any) =>
+          (r.student_name && r.student_name.toLowerCase().includes(s)) ||
+          (r.student_email && r.student_email.toLowerCase().includes(s)) ||
+          (r.branch && r.branch.toLowerCase().includes(s))
+      )
+    }
+
+    return { data: mapped, count: count ?? mapped.length }
+  } catch (err: any) {
+    console.error("[fetchTestAttemptsAction] catch error:", err)
+    return { data: [], count: 0, error: err.message }
+  }
 }

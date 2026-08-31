@@ -51,6 +51,8 @@ export interface CandidateAttemptDetail
     AttemptRow,
     "id" | "status" | "submitted_at" | "score" | "total_marks" | "percentage" | "time_spent_seconds" | "tab_switch_count"
   > {
+  actual_time_spent_seconds?: number | null
+  started_at?: string | null
   status: "in_progress" | "submitted"   // narrow the DB string union
   student_name?: string | null
   ai_diagnosis?: any | null
@@ -94,6 +96,8 @@ export interface CandidateTestDetail
     percentage: number | null
     status: string
     submitted_at: string | null
+    time_spent_seconds?: number | null
+    actual_time_spent_seconds?: number | null
   }[]
   /** Lightweight list — only marks needed for the pre-test totals display */
   questions: Pick<QuestionRow, "marks">[]
@@ -190,16 +194,6 @@ export interface InstituteTestDetail
     correct_answers: number
     success_rate_pct: number | null
     avg_time_spent: number | null
-  }[]
-  feedbacks: {
-    id: string
-    rating: number
-    overall_comment: string | null
-    bugs_issues: string | null
-    suggestions: string | null
-    difficulty_felt: "too_easy" | "as_expected" | "too_hard" | null
-    created_at: string
-    student_name: string | null
   }[]
 }
 

@@ -34,8 +34,8 @@ async function fetchResultData(
         question_tags (test_question_tags (id, name))
       ),
       test_attempts!inner (
-        id, candidate_id, status, submitted_at, score, total_marks, percentage, 
-        time_spent_seconds, tab_switch_count, ai_diagnosis,
+        id, candidate_id, status, submitted_at, started_at, score, total_marks, percentage, 
+        time_spent_seconds, actual_time_spent_seconds, tab_switch_count, ai_diagnosis,
         student:profiles(full_name),
         test_attempt_answers (
           question_id, selected_option_ids, is_correct, marks_awarded, time_spent_seconds
@@ -62,8 +62,8 @@ async function fetchResultData(
           question_tags (test_question_tags (id, name))
         ),
         test_attempts!inner (
-          id, candidate_id, status, submitted_at, score, total_marks, percentage, 
-          time_spent_seconds, tab_switch_count, ai_diagnosis,
+          id, candidate_id, status, submitted_at, started_at, score, total_marks, percentage, 
+          time_spent_seconds, actual_time_spent_seconds, tab_switch_count, ai_diagnosis,
           student:profiles(full_name),
           test_attempt_answers (
             question_id, selected_option_ids, is_correct, marks_awarded, time_spent_seconds
@@ -79,11 +79,13 @@ async function fetchResultData(
 
   if (error || !raw) notFound()
 
+  const rawAttempt = raw.test_attempts?.[0]
+  if (!rawAttempt) notFound()
+
   // 2. Security Check & Eligibility
   if (accountType === "institute_candidate") {
     // Candidates can only see their own attempts
-    // 1. Candidates can only see their own attempts
-    if (raw.test_attempts[0].candidate_id !== userId) {
+    if (rawAttempt.candidate_id !== userId) {
       notFound()
     }
     // 2. Candidates can only see results for PUBLISHED tests
@@ -133,18 +135,19 @@ async function fetchResultData(
     questions: (raw.test_questions ?? []).map((q: any) => ({ marks: q.marks })),
   }
 
-  const rawAttempt = raw.test_attempts[0]
   const student = (rawAttempt as any).student
   const studentName = student?.full_name ?? null
 
   const attemptBase = {
     id: rawAttempt.id,
     status: rawAttempt.status as "in_progress" | "submitted",
+    started_at: rawAttempt.started_at ?? null,
     submitted_at: rawAttempt.submitted_at ?? null,
     score: rawAttempt.score ?? null,
     total_marks: rawAttempt.total_marks ?? null,
     percentage: rawAttempt.percentage ?? null,
     time_spent_seconds: rawAttempt.time_spent_seconds ?? null,
+    actual_time_spent_seconds: rawAttempt.actual_time_spent_seconds ?? (rawAttempt.started_at && rawAttempt.submitted_at ? Math.max(0, Math.round((new Date(rawAttempt.submitted_at).getTime() - new Date(rawAttempt.started_at).getTime()) / 1000)) : null),
     tab_switch_count: rawAttempt.tab_switch_count ?? null,
     student_name: studentName,
     ai_diagnosis: rawAttempt.ai_diagnosis ?? null,

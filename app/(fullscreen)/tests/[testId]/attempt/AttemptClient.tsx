@@ -52,8 +52,6 @@ import {
     EyeOff,
     Flag,
     Shuffle,
-    Star,
-    MessageSquare,
     MonitorSmartphone,
     Keyboard,
     ShieldCheck,
@@ -64,7 +62,6 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { InlineRichText } from "@/components/others/rich-text"
-import { Textarea } from "@/components/ui/textarea"
 import { createClient } from "@/lib/supabase/client"
 import { isDeploymentError, getFriendlyErrorMessage } from "@/lib/errors"
 import type { AttemptTest, AttemptQuestion, AttemptSection, AttemptInfo, SavedAnswer } from "./_types"
@@ -504,7 +501,7 @@ function OptionButton({
             onClick={onClick}
             disabled={disabled}
             className={cn(
-                "group relative flex w-full min-h-[3rem] items-center gap-3.5 rounded-xl border p-4 text-left text-sm transition-all duration-150 cursor-pointer",
+                "group relative flex w-full min-h-[3rem] items-start gap-3.5 rounded-xl border p-4 text-left text-sm transition-all duration-150 cursor-pointer",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 isSelected
                     ? "border-primary bg-primary/5 text-foreground font-medium shadow-2xs"
@@ -512,10 +509,10 @@ function OptionButton({
                 disabled && "cursor-not-allowed opacity-70"
             )}
         >
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border bg-muted/40 text-[11px] font-bold text-muted-foreground group-hover:border-primary/40 group-hover:text-primary">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border bg-muted/40 text-[11px] font-bold text-muted-foreground group-hover:border-primary/40 group-hover:text-primary mt-0.5">
                 {letter}
             </span>
-            <span className="shrink-0">
+            <span className="shrink-0 mt-0.5">
                 {isSingle ? (
                     isSelected ? (
                         <CheckCircle2 className="h-5 w-5 text-primary" />
@@ -528,11 +525,11 @@ function OptionButton({
                     <Square className="h-5 w-5 text-muted-foreground/50" />
                 )}
             </span>
-            <span className={cn("min-w-0 flex-1 break-words leading-snug space-y-2", isSelected && "font-medium")}>
-                <div><InlineRichText>{option.option_text}</InlineRichText></div>
+            <span className={cn("min-w-0 flex-1 break-words leading-snug text-left space-y-1.5", isSelected && "font-medium")}>
+                <InlineRichText>{option.option_text}</InlineRichText>
             </span>
             {isSaving && isSelected && (
-                <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
+                <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground mt-0.5" />
             )}
         </button>
     )
@@ -639,9 +636,9 @@ function QuestionView({
                     </button>
                 </div>
 
-                <p className="break-words text-base font-medium leading-relaxed">
+                <div className="break-words text-base font-medium leading-relaxed">
                     <InlineRichText>{question.question_text}</InlineRichText>
-                </p>
+                </div>
 
                 {question.tags.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1.5">
@@ -907,66 +904,15 @@ function IntroScreen({
 
 // ─── Submitted Screen ─────────────────────────────────────────────────────────
 
-const DIFFICULTY_OPTIONS = [
-    { value: "too_easy" as const, label: "Easy", emoji: "😌" },
-    { value: "as_expected" as const, label: "Just Right", emoji: "👍" },
-    { value: "too_hard" as const, label: "Too Hard", emoji: "😰" },
-]
-
 function SubmittedScreen({
     test,
     reason,
-    attemptId,
     onViewResults,
-    onSubmitFeedback,
 }: {
     test: AttemptTest
     reason: "manual" | "auto"
-    attemptId: string | null
     onViewResults: () => void
-    onSubmitFeedback?: (
-        attemptId: string,
-        testId: string,
-        data: {
-            rating: number
-            overallComment?: string
-            bugsIssues?: string
-            suggestions?: string
-            difficultyFelt?: "too_easy" | "as_expected" | "too_hard"
-        }
-    ) => Promise<void>
 }) {
-    const router = useRouter()
-    const [feedbackPhase, setFeedbackPhase] = useState<"prompt" | "form" | "thanks">("prompt")
-    const [rating, setRating] = useState(0)
-    const [hoveredStar, setHoveredStar] = useState(0)
-    const [overallComment, setOverallComment] = useState("")
-    const [bugsIssues, setBugsIssues] = useState("")
-    const [suggestions, setSuggestions] = useState("")
-    const [difficultyFelt, setDifficultyFelt] = useState<"too_easy" | "as_expected" | "too_hard" | null>(null)
-    const [isSendingFeedback, setIsSendingFeedback] = useState(false)
-    const [feedbackError, setFeedbackError] = useState<string | null>(null)
-
-    const handleFeedbackSubmit = async () => {
-        if (!attemptId || !onSubmitFeedback || rating === 0) return
-        setIsSendingFeedback(true)
-        setFeedbackError(null)
-        try {
-            await onSubmitFeedback(attemptId, test.id, {
-                rating,
-                overallComment: overallComment.trim() || undefined,
-                bugsIssues: bugsIssues.trim() || undefined,
-                suggestions: suggestions.trim() || undefined,
-                difficultyFelt: difficultyFelt ?? undefined,
-            })
-            setFeedbackPhase("thanks")
-        } catch (err: any) {
-            setFeedbackError(err?.message ?? "Failed to submit feedback")
-        } finally {
-            setIsSendingFeedback(false)
-        }
-    }
-
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 py-12 text-center">
             <div className="w-full max-w-lg space-y-6">
@@ -996,157 +942,6 @@ function SubmittedScreen({
                         }).format(new Date())}
                     </p>
                 </div>
-
-                {feedbackPhase === "form" && (
-                    <div className="space-y-5 rounded-xl border p-6 text-left">
-                        <p className="text-center text-sm font-semibold">
-                            Rate your experience
-                        </p>
-
-                        {/* Star Rating */}
-                        <div className="flex items-center justify-center gap-1.5">
-                            {[1, 2, 3, 4, 5].map((star) => {
-                                const active = star <= (hoveredStar || rating)
-                                return (
-                                    <button
-                                        key={star}
-                                        type="button"
-                                        onClick={() => setRating(star)}
-                                        onMouseEnter={() => setHoveredStar(star)}
-                                        onMouseLeave={() => setHoveredStar(0)}
-                                        className={cn(
-                                            "rounded-lg p-1.5 transition-all duration-150",
-                                            "hover:scale-110 active:scale-95",
-                                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                                        )}
-                                        aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
-                                    >
-                                        <Star
-                                            className={cn(
-                                                "h-8 w-8 transition-colors duration-150",
-                                                active
-                                                    ? "fill-amber-400 text-amber-400"
-                                                    : "text-muted-foreground/30"
-                                            )}
-                                        />
-                                    </button>
-                                )
-                            })}
-                        </div>
-                        {rating > 0 && (
-                            <p className="text-center text-xs text-muted-foreground">
-                                {rating === 1 && "Poor"}
-                                {rating === 2 && "Fair"}
-                                {rating === 3 && "Good"}
-                                {rating === 4 && "Very Good"}
-                                {rating === 5 && "Excellent"}
-                            </p>
-                        )}
-
-                        {/* Difficulty Perception */}
-                        <div className="space-y-2">
-                            <p className="text-xs font-medium text-muted-foreground">
-                                How did you find the difficulty?
-                            </p>
-                            <div className="grid grid-cols-3 gap-2">
-                                {DIFFICULTY_OPTIONS.map((opt) => (
-                                    <button
-                                        key={opt.value}
-                                        type="button"
-                                        onClick={() => setDifficultyFelt(
-                                            difficultyFelt === opt.value ? null : opt.value
-                                        )}
-                                        className={cn(
-                                            "flex flex-col items-center gap-1 rounded-xl border px-3 py-3 text-xs font-medium transition-all",
-                                            "hover:border-primary/50 hover:bg-primary/5",
-                                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                                            difficultyFelt === opt.value
-                                                ? "border-primary bg-primary/10 text-primary"
-                                                : "border-border text-muted-foreground"
-                                        )}
-                                    >
-                                        <span className="text-lg">{opt.emoji}</span>
-                                        {opt.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Overall Comment */}
-                        <div className="space-y-1.5">
-                            <label htmlFor="fb-comment" className="text-xs font-medium text-muted-foreground">
-                                Overall thoughts (optional)
-                            </label>
-                            <Textarea
-                                id="fb-comment"
-                                placeholder="How was the test overall?"
-                                value={overallComment}
-                                onChange={(e) => setOverallComment(e.target.value)}
-                                className="min-h-[3.5rem] resize-none text-sm"
-                                maxLength={1000}
-                            />
-                        </div>
-
-                        {/* Bugs / Issues */}
-                        <div className="space-y-1.5">
-                            <label htmlFor="fb-bugs" className="text-xs font-medium text-muted-foreground">
-                                Any bugs or issues? (optional)
-                            </label>
-                            <Textarea
-                                id="fb-bugs"
-                                placeholder="Describe any issues you faced..."
-                                value={bugsIssues}
-                                onChange={(e) => setBugsIssues(e.target.value)}
-                                className="min-h-[3.5rem] resize-none text-sm"
-                                maxLength={1000}
-                            />
-                        </div>
-
-                        {/* Suggestions */}
-                        <div className="space-y-1.5">
-                            <label htmlFor="fb-suggestions" className="text-xs font-medium text-muted-foreground">
-                                Suggestions for improvement (optional)
-                            </label>
-                            <Textarea
-                                id="fb-suggestions"
-                                placeholder="What could we do better?"
-                                value={suggestions}
-                                onChange={(e) => setSuggestions(e.target.value)}
-                                className="min-h-[3.5rem] resize-none text-sm"
-                                maxLength={1000}
-                            />
-                        </div>
-
-                        {feedbackError && (
-                            <p className="flex items-center gap-1.5 text-xs text-destructive">
-                                <AlertTriangle className="h-3 w-3 shrink-0" />
-                                {feedbackError}
-                            </p>
-                        )}
-
-                        <div className="flex gap-3 pt-1">
-                            <Button
-                                variant="ghost"
-                                className="flex-1"
-                                onClick={onViewResults}
-                                disabled={isSendingFeedback}
-                            >
-                                Skip Feedback
-                            </Button>
-                            <Button
-                                className="flex-1"
-                                onClick={handleFeedbackSubmit}
-                                disabled={rating === 0 || isSendingFeedback}
-                            >
-                                {isSendingFeedback ? (
-                                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Sending…</>
-                                ) : (
-                                    "Submit Feedback"
-                                )}
-                            </Button>
-                        </div>
-                    </div>
-                )}
 
                 {/* ── Centered Navigation Button ──────────────────────────── */}
                 <div className="flex flex-col items-center justify-center gap-2 pt-3">
@@ -1198,17 +993,6 @@ interface Props {
         totalCount: number,
         timestamp: string
     ) => Promise<void>
-    onSubmitFeedback?: (
-        attemptId: string,
-        testId: string,
-        data: {
-            rating: number
-            overallComment?: string
-            bugsIssues?: string
-            suggestions?: string
-            difficultyFelt?: "too_easy" | "as_expected" | "too_hard"
-        }
-    ) => Promise<void>
     shuffleSeed: string
 }
 
@@ -1243,7 +1027,6 @@ export function AttemptClient({
     onClaimSession,
     onSubmit,
     onViolation,
-    onSubmitFeedback,
     serverNow,
     shuffleSeed,
 }: Props) {
@@ -2408,11 +2191,9 @@ export function AttemptClient({
             <SubmittedScreen
                 test={test}
                 reason={submitReason}
-                attemptId={attemptInfo?.id ?? null}
                 onViewResults={() => {
                     router.push(submitRedirectPath ?? `/tests/${test.id}`)
                 }}
-                onSubmitFeedback={onSubmitFeedback}
             />
         )
     }
