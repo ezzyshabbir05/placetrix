@@ -107,17 +107,11 @@ export default async function LogicLabPage() {
     }
   }
 
-  // 2. Fetch full activity history to compute accurate streaks on the fly
-  const { data: streakRows } = await (supabase as any)
-    .from("logiclab_daily_challenge_user_activity")
-    .select("activity_date, solved, submission_count")
-    .eq("user_id", profile.id)
-    .order("activity_date", { ascending: true });
-
+  // 2. Derive active dates for streak calculation from actual submission timestamps
   const allActiveDates = new Map<string, boolean>();
-  for (const row of streakRows ?? []) {
-    if (row.activity_date && (row.solved || Number(row.submission_count) > 0)) {
-      allActiveDates.set(row.activity_date, true);
+  for (const [dateStr, state] of uniqueDatesWithStatus.entries()) {
+    if (state.solved || Number(state.count) > 0) {
+      allActiveDates.set(dateStr, true);
     }
   }
 

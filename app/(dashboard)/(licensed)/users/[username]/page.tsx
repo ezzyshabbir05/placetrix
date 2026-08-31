@@ -89,8 +89,8 @@ export default async function UserReportPage({ params }: PageProps) {
     { data: userBadges },
     allBadges,
     { data: instData },
-    { data: activityRows },
-    { data: streakRows },
+    { data: regActivitySubs },
+    { data: dailyActivitySubs },
     { data: statsData },
     { data: standardSolvedSubs },
     { data: dailySolvedSubs },
@@ -151,16 +151,13 @@ export default async function UserReportPage({ params }: PageProps) {
       ? (supabase as any).from("institutes").select("institute_name").eq("id", targetProfile.institute_id).maybeSingle()
       : Promise.resolve({ data: null }),
     (supabase as any)
-      .from("logiclab_daily_challenge_user_activity")
-      .select("activity_date, submission_count, solved, easy_solved, medium_solved, hard_solved, easy_attempted, medium_attempted, hard_attempted")
-      .eq("user_id", targetProfile.id)
-      .gte("activity_date", cutOffStr20Weeks)
-      .order("activity_date", { ascending: true }),
+      .from("logiclab_problem_submissions")
+      .select("created_at, status, logiclab_problems(difficulty)")
+      .eq("user_id", targetProfile.id),
     (supabase as any)
-      .from("logiclab_daily_challenge_user_activity")
-      .select("activity_date, solved, submission_count")
-      .eq("user_id", targetProfile.id)
-      .order("activity_date", { ascending: true }),
+      .from("logiclab_daily_challenge_submissions")
+      .select("created_at, status, logiclab_problems(difficulty)")
+      .eq("user_id", targetProfile.id),
     (supabase as any).rpc("get_user_global_stats", { p_user_id: targetProfile.id }),
     (supabase as any)
       .from("logiclab_problem_submissions")
@@ -218,16 +215,52 @@ export default async function UserReportPage({ params }: PageProps) {
 
   const selectedSkillIds: string[] = (candidateSkillRows ?? []).map((r: any) => r.skill_id);
 
-  // UTC-based activity calendar and streak computation
+  // UTC-based activity calendar and streak computation directly from actual submission timestamps
   const todayUtc = new Date();
   const todayStr = todayUtc.toISOString().split("T")[0];
   const yesterdayUtc = new Date(todayUtc.getTime() - 24 * 60 * 60 * 1000);
   const yesterdayStr = yesterdayUtc.toISOString().split("T")[0];
 
+  const allSubs = [...(regActivitySubs || []), ...(dailyActivitySubs || [])];
+
+  const uniqueDatesWithStatus = new Map<string, any>();
   const allActiveDates = new Map<string, boolean>();
-  for (const row of streakRows ?? []) {
-    if (row.activity_date && (row.solved || Number(row.submission_count) > 0)) {
-      allActiveDates.set(row.activity_date, true);
+
+  for (const sub of allSubs) {
+    if (!sub.created_at) continue;
+    const dateStr = sub.created_at.split("T")[0];
+    const diff = sub.logiclab_problems?.difficulty;
+    const isSolved = sub.status === "Accepted";
+
+    allActiveDates.set(dateStr, true);
+
+    if (!uniqueDatesWithStatus.has(dateStr)) {
+      uniqueDatesWithStatus.set(dateStr, {
+        activity_date: dateStr,
+        solved: false,
+        submission_count: 0,
+        easy_solved: 0,
+        medium_solved: 0,
+        hard_solved: 0,
+        easy_attempted: 0,
+        medium_attempted: 0,
+        hard_attempted: 0,
+      });
+    }
+
+    const state = uniqueDatesWithStatus.get(dateStr);
+    state.submission_count += 1;
+    if (isSolved) state.solved = true;
+
+    if (diff === "Easy") {
+      state.easy_attempted += 1;
+      if (isSolved) state.easy_solved += 1;
+    } else if (diff === "Medium") {
+      state.medium_attempted += 1;
+      if (isSolved) state.medium_solved += 1;
+    } else if (diff === "Hard") {
+      state.hard_attempted += 1;
+      if (isSolved) state.hard_solved += 1;
     }
   }
 
@@ -270,13 +303,6 @@ export default async function UserReportPage({ params }: PageProps) {
     }
   }
   if (currentStreak > maxStreak) maxStreak = currentStreak;
-
-  const uniqueDatesWithStatus = new Map<string, any>();
-  for (const row of activityRows ?? []) {
-    if (row.activity_date) {
-      uniqueDatesWithStatus.set(row.activity_date, row);
-    }
-  }
 
   const activityCalendar: any[] = [];
   for (let i = 139; i >= 0; i--) {

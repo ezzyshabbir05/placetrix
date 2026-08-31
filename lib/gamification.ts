@@ -89,17 +89,16 @@ export async function awardGamificationRewards(
     let newCurrentStreak = profile.current_streak || 0;
     let newLongestStreak = profile.longest_streak || 0;
     
-    if (isFirstTimeEver) {
-      if (profile.last_solve_date === yesterday) {
-        newCurrentStreak += 1;
-      } else if (profile.last_solve_date !== today) {
-        newCurrentStreak = 1; // Reset streak
-      }
-      if (newCurrentStreak > newLongestStreak) newLongestStreak = newCurrentStreak;
+    // Always maintain streak when solving problems on a new day
+    if (profile.last_solve_date === yesterday) {
+      newCurrentStreak += 1;
+    } else if (profile.last_solve_date !== today) {
+      newCurrentStreak = 1; // Start/reset streak on new active day
     }
+    if (newCurrentStreak > newLongestStreak) newLongestStreak = newCurrentStreak;
 
     let newPotdStreak = profile.potd_streak || 0;
-    if (isFirstTimePOTD) {
+    if (isDailyChallenge) {
       if (profile.last_potd_date === yesterday) {
         newPotdStreak += 1;
       } else if (profile.last_potd_date !== today) {
@@ -110,16 +109,14 @@ export async function awardGamificationRewards(
     const newFlawlessStreak = isFirstTimeEver ? (profile.flawless_streak || 0) + 1 : (profile.flawless_streak || 0);
     const newSolvedCount = incrementSolvedCount ? (profile.logiclab_solved_count || 0) + 1 : (profile.logiclab_solved_count || 0);
 
-    // Record this solve in logiclab_user_solved_problems only if it's their first time ever
-    if (isFirstTimeEver) {
-      try {
-        const adminSupabase = getAdminSupabase();
-        await adminSupabase
-          .from('logiclab_user_solved_problems')
-          .upsert({ user_id: userId, problem_id: problemId, solved_at: new Date().toISOString() }, { onConflict: 'user_id,problem_id' });
-      } catch (e) {
-        console.error("[Gamification] Error recording in logiclab_user_solved_problems:", e);
-      }
+    // Record this solve in logiclab_user_solved_problems for candidate analytics
+    try {
+      const adminSupabase = getAdminSupabase();
+      await adminSupabase
+        .from('logiclab_user_solved_problems')
+        .upsert({ user_id: userId, problem_id: problemId, solved_at: new Date().toISOString() }, { onConflict: 'user_id,problem_id' });
+    } catch (e) {
+      console.error("[Gamification] Error recording in logiclab_user_solved_problems:", e);
     }
 
     await supabase
@@ -129,9 +126,9 @@ export async function awardGamificationRewards(
         logiclab_solved_count: newSolvedCount,
         current_streak: newCurrentStreak,
         longest_streak: newLongestStreak,
-        last_solve_date: isFirstTimeEver ? today : profile.last_solve_date,
+        last_solve_date: today,
         potd_streak: newPotdStreak,
-        last_potd_date: isFirstTimePOTD ? today : profile.last_potd_date,
+        last_potd_date: isDailyChallenge ? today : profile.last_potd_date,
         flawless_streak: newFlawlessStreak
       })
       .eq('id', userId)
