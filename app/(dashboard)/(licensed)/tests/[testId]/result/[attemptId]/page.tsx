@@ -35,7 +35,7 @@ async function fetchResultData(
       ),
       test_attempts!inner (
         id, candidate_id, status, submitted_at, started_at, score, total_marks, percentage, 
-        time_spent_seconds, actual_time_spent_seconds, tab_switch_count, ai_diagnosis,
+        active_time_taken, total_time_taken, tab_switch_count, ai_diagnosis,
         student:profiles(full_name),
         test_attempt_answers (
           question_id, selected_option_ids, is_correct, marks_awarded, time_spent_seconds
@@ -63,7 +63,7 @@ async function fetchResultData(
         ),
         test_attempts!inner (
           id, candidate_id, status, submitted_at, started_at, score, total_marks, percentage, 
-          time_spent_seconds, actual_time_spent_seconds, tab_switch_count, ai_diagnosis,
+          active_time_taken, total_time_taken, tab_switch_count, ai_diagnosis,
           student:profiles(full_name),
           test_attempt_answers (
             question_id, selected_option_ids, is_correct, marks_awarded, time_spent_seconds
@@ -146,8 +146,8 @@ async function fetchResultData(
     score: rawAttempt.score ?? null,
     total_marks: rawAttempt.total_marks ?? null,
     percentage: rawAttempt.percentage ?? null,
-    time_spent_seconds: rawAttempt.time_spent_seconds ?? null,
-    actual_time_spent_seconds: rawAttempt.actual_time_spent_seconds ?? (rawAttempt.started_at && rawAttempt.submitted_at ? Math.max(0, Math.round((new Date(rawAttempt.submitted_at).getTime() - new Date(rawAttempt.started_at).getTime()) / 1000)) : null),
+    active_time_taken: rawAttempt.active_time_taken ?? null,
+    total_time_taken: rawAttempt.total_time_taken ?? (rawAttempt.started_at && rawAttempt.submitted_at ? Math.max(0, Math.round((new Date(rawAttempt.submitted_at).getTime() - new Date(rawAttempt.started_at).getTime()) / 1000)) : null),
     tab_switch_count: rawAttempt.tab_switch_count ?? null,
     student_name: studentName,
     ai_diagnosis: rawAttempt.ai_diagnosis ?? null,

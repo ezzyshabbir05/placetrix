@@ -52,7 +52,7 @@ async function fetchCandidateView(
       ),
       test_attempts (
         id, status, submitted_at, started_at, score, total_marks, percentage, 
-        time_spent_seconds, actual_time_spent_seconds, tab_switch_count,
+        active_time_taken, total_time_taken, tab_switch_count,
         test_attempt_answers (
           question_id, selected_option_ids, is_correct, marks_awarded, time_spent_seconds
         )
@@ -81,7 +81,7 @@ async function fetchCandidateView(
         ),
         test_attempts (
           id, status, submitted_at, started_at, score, total_marks, percentage, 
-          time_spent_seconds, actual_time_spent_seconds, tab_switch_count,
+          active_time_taken, total_time_taken, tab_switch_count,
           test_attempt_answers (
             question_id, selected_option_ids, is_correct, marks_awarded, time_spent_seconds
           )
@@ -151,8 +151,8 @@ async function fetchCandidateView(
       percentage: a.percentage ?? null,
       status: a.status,
       submitted_at: a.submitted_at ?? null,
-      time_spent_seconds: a.time_spent_seconds ?? null,
-      actual_time_spent_seconds: a.actual_time_spent_seconds ?? (a.started_at && a.submitted_at ? Math.max(0, Math.round((new Date(a.submitted_at).getTime() - new Date(a.started_at).getTime()) / 1000)) : null),
+      active_time_taken: a.active_time_taken ?? null,
+      total_time_taken: a.total_time_taken ?? (a.started_at && a.submitted_at ? Math.max(0, Math.round((new Date(a.submitted_at).getTime() - new Date(a.started_at).getTime()) / 1000)) : null),
     })),
     institute_name: (raw.institute as any)?.institute_name ?? null,
     institute_logo_url: instituteLogoUrl,
@@ -179,8 +179,8 @@ async function fetchCandidateView(
     score: rawAttempt.score ?? null,
     total_marks: rawAttempt.total_marks ?? null,
     percentage: rawAttempt.percentage ?? null,
-    time_spent_seconds: rawAttempt.time_spent_seconds ?? null,
-    actual_time_spent_seconds: rawAttempt.actual_time_spent_seconds ?? (rawAttempt.started_at && rawAttempt.submitted_at ? Math.max(0, Math.round((new Date(rawAttempt.submitted_at).getTime() - new Date(rawAttempt.started_at).getTime()) / 1000)) : null),
+    active_time_taken: rawAttempt.active_time_taken ?? null,
+    total_time_taken: rawAttempt.total_time_taken ?? (rawAttempt.started_at && rawAttempt.submitted_at ? Math.max(0, Math.round((new Date(rawAttempt.submitted_at).getTime() - new Date(rawAttempt.started_at).getTime()) / 1000)) : null),
     tab_switch_count: rawAttempt.tab_switch_count ?? null,
   }
 
@@ -253,8 +253,8 @@ function mapAttemptRow(a: any): InstituteAttemptRow {
     score: a.score ?? null,
     total_marks: a.total_marks ?? null,
     percentage: a.percentage ?? null,
-    time_spent_seconds: a.time_spent_seconds ?? null,
-    actual_time_spent_seconds: a.actual_time_spent_seconds ?? null,
+    active_time_taken: a.active_time_taken ?? null,
+    total_time_taken: a.total_time_taken ?? (a.started_at && a.submitted_at ? Math.max(0, Math.round((new Date(a.submitted_at).getTime() - new Date(a.started_at).getTime()) / 1000)) : null),
     started_at: a.started_at,
     submitted_at: a.submitted_at ?? null,
     tab_switch_count: a.tab_switch_count ?? null,
@@ -318,7 +318,7 @@ async function fetchInstituteView(
     (supabase as any)
       .from("test_attempts")
       .select(
-        "id, tab_switch_count, status, score, total_marks, percentage, time_spent_seconds, actual_time_spent_seconds, started_at, submitted_at, profile:profiles!candidate_id(full_name, email, candidate_academic_details(passout_year, course:institute_courses(course_name)))"
+        "id, tab_switch_count, status, score, total_marks, percentage, active_time_taken, total_time_taken, started_at, submitted_at, profile:profiles!candidate_id(full_name, email, candidate_academic_details(passout_year, course:institute_courses(course_name)))"
       )
       .eq("test_id", testId)
       .not("started_at", "is", null)

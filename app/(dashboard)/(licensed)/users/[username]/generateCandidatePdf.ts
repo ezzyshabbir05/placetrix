@@ -303,7 +303,7 @@ export function generateCandidatePdfReport({
 
         const scoreStr = score !== null && totalMarks ? `${score} / ${totalMarks}` : "—";
         const pctStr = pct !== null ? `${pct.toFixed(1)}%` : "—";
-        const timeSpentStr = formatDuration(t.attempt?.timeSpentSeconds);
+        const timeSpentStr = formatDuration(t.attempt?.activeTimeTaken);
         const tabSwitchesStr = t.attempt ? `${t.attempt.tabSwitchCount} switches` : "0";
         const dateStr = formatDate(t.attempt?.submittedAt);
 

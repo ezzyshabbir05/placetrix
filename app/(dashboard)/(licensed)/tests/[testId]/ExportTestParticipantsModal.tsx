@@ -74,7 +74,7 @@ export function ExportTestParticipantsModal({ testId, testName, totalAttempts, t
       const { data, error } = await (supabase as any)
         .from("test_attempts")
         .select(
-          "id, tab_switch_count, status, score, total_marks, percentage, time_spent_seconds, actual_time_spent_seconds, started_at, submitted_at, profile:profiles!candidate_id(full_name, email, candidate_academic_details(passout_year, course:institute_courses(course_name)))"
+          "id, tab_switch_count, status, score, total_marks, percentage, active_time_taken, total_time_taken, started_at, submitted_at, profile:profiles!candidate_id(full_name, email, candidate_academic_details(passout_year, course:institute_courses(course_name)))"
         )
         .eq("test_id", testId)
         .not("started_at", "is", null)
@@ -103,8 +103,8 @@ export function ExportTestParticipantsModal({ testId, testName, totalAttempts, t
           score: a.score ?? null,
           total_marks: a.total_marks ?? null,
           percentage: a.percentage ?? null,
-          time_spent_seconds: a.time_spent_seconds ?? null,
-          actual_time_spent_seconds: a.actual_time_spent_seconds ?? (a.started_at && a.submitted_at ? Math.max(0, Math.round((new Date(a.submitted_at).getTime() - new Date(a.started_at).getTime()) / 1000)) : null),
+          active_time_taken: a.active_time_taken ?? null,
+          total_time_taken: a.total_time_taken ?? (a.started_at && a.submitted_at ? Math.max(0, Math.round((new Date(a.submitted_at).getTime() - new Date(a.started_at).getTime()) / 1000)) : null),
           started_at: a.started_at,
           submitted_at: a.submitted_at ?? null,
           tab_switch_count: a.tab_switch_count ?? null,
@@ -130,8 +130,8 @@ export function ExportTestParticipantsModal({ testId, testName, totalAttempts, t
         if (selectedFields.includes("score")) row["Score"] = a.score != null ? a.score : "N/A"
         if (selectedFields.includes("totalScore")) row["Total Score"] = a.total_marks != null ? a.total_marks : "N/A"
         if (selectedFields.includes("percentage")) row["Percentage (%)"] = a.percentage != null ? a.percentage : "N/A"
-        if (selectedFields.includes("timeSpent")) row["Active Time Spent"] = formatSeconds(a.time_spent_seconds)
-        if (selectedFields.includes("actualTimeSpent")) row["Total Duration"] = formatSeconds(a.actual_time_spent_seconds ?? (a.submitted_at && a.started_at ? Math.max(0, Math.round((new Date(a.submitted_at).getTime() - new Date(a.started_at).getTime()) / 1000)) : null))
+        if (selectedFields.includes("timeSpent")) row["Active Time Spent"] = formatSeconds(a.active_time_taken)
+        if (selectedFields.includes("actualTimeSpent")) row["Total Duration"] = formatSeconds(a.total_time_taken ?? (a.submitted_at && a.started_at ? Math.max(0, Math.round((new Date(a.submitted_at).getTime() - new Date(a.started_at).getTime()) / 1000)) : null))
         if (selectedFields.includes("tabSwitches")) row["Tab Switches"] = a.tab_switch_count ?? "0"
         if (selectedFields.includes("submittedAt")) row["Submission Date"] = a.submitted_at ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(a.submitted_at)) : "N/A"
         return row

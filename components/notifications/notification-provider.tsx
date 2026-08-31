@@ -248,7 +248,11 @@ export function NotificationProvider({ user, children }: NotificationProviderPro
           }
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          // Realtime WebSocket might not be reverse-proxied on self-hosted domain; polling/REST serves as fallback
+        }
+      })
 
     return () => {
       supabase.removeChannel(channel)

@@ -140,11 +140,9 @@ async function saveTestToDb(
 }
 
 async function requireAuth(): Promise<string> {
-  const supabase = await createClient()
-  const { data } = await supabase.auth.getClaims()
-  const user = data?.claims
-  if (!user) throw new Error("Not authenticated")
-  return user.sub as string
+  const profile = await getUserProfile()
+  if (!profile) throw new Error("Not authenticated")
+  return profile.id
 }
 
 export async function loadTestAction(

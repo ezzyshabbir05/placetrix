@@ -529,7 +529,7 @@ BEGIN
     v_passed := true;
   END IF;
 
-  -- 7. Mark attempt as submitted with final score (percentage is auto-computed as a GENERATED column)
+  -- 7. Mark attempt as submitted with final score
   UPDATE public.test_attempts
   SET
     status = 'submitted',
@@ -537,8 +537,8 @@ BEGIN
     score = v_total_score,
     total_marks = v_total_possible_marks,
     passed = v_passed,
-    time_spent_seconds = v_total_time_spent,
-    actual_time_spent_seconds = v_actual_time_spent,
+    active_time_taken = v_total_time_spent,
+    total_time_taken = v_actual_time_spent,
     updated_at = now()
   WHERE id = p_attempt_id
   RETURNING percentage INTO v_percentage;
@@ -548,7 +548,9 @@ BEGIN
     'score', v_total_score,
     'total_marks', v_total_possible_marks,
     'percentage', COALESCE(v_percentage, 0),
-    'passed', v_passed
+    'passed', v_passed,
+    'active_time_taken', v_total_time_spent,
+    'total_time_taken', v_actual_time_spent
   );
 END;
 $$;

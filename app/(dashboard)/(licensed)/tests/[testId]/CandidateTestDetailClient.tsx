@@ -442,11 +442,11 @@ export function CandidateTestDetailClient({ test, attempt, serverNow }: Props) {
                       <span className="font-semibold text-foreground">Attempt #{attemptNum}</span>
                       <div className="flex flex-wrap items-center gap-x-2 text-[10px] text-muted-foreground">
                         <span>{formatDateTime(att.submitted_at)}</span>
-                        {att.time_spent_seconds != null && (
-                          <span>· Active: {formatSeconds(att.time_spent_seconds)}</span>
+                        {att.active_time_taken != null && (
+                          <span>· Active: {formatSeconds(att.active_time_taken)}</span>
                         )}
-                        {att.actual_time_spent_seconds != null && (
-                          <span>· Total: {formatSeconds(att.actual_time_spent_seconds)}</span>
+                        {att.total_time_taken != null && (
+                          <span>· Total: {formatSeconds(att.total_time_taken)}</span>
                         )}
                       </div>
                     </div>
@@ -599,14 +599,14 @@ export function CandidateTestDetailClient({ test, attempt, serverNow }: Props) {
                 <div className="rounded-lg border bg-muted/20 p-3">
                   <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Active Time</p>
                   <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
-                    {attempt?.time_spent_seconds ? formatSeconds(attempt.time_spent_seconds) : "—"}
+                    {attempt?.active_time_taken ? formatSeconds(attempt.active_time_taken) : "—"}
                   </p>
                 </div>
                 <div className="rounded-lg border bg-muted/20 p-3">
                   <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Total Duration</p>
                   <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
-                    {attempt?.actual_time_spent_seconds
-                      ? formatSeconds(attempt.actual_time_spent_seconds)
+                    {attempt?.total_time_taken
+                      ? formatSeconds(attempt.total_time_taken)
                       : attempt?.submitted_at && attempt?.started_at
                       ? formatSeconds(Math.max(0, Math.round((new Date(attempt.submitted_at).getTime() - new Date(attempt.started_at).getTime()) / 1000)))
                       : "—"}

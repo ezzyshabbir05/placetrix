@@ -590,13 +590,13 @@ const MobileAttemptRow = React.memo(function MobileAttemptRow({
 
             <div className={cn('px-3.5', 'py-2.5', 'flex', 'items-baseline', 'justify-between', 'gap-4')}>
               <span className={cn('text-[10px]', 'font-bold', 'text-muted-foreground', 'uppercase', 'tracking-widest', 'shrink-0')}>Active Time</span>
-              <span className={cn('text-xs', 'font-mono', 'font-medium', 'text-foreground', 'text-right')}>{formatSeconds(attempt.time_spent_seconds)}</span>
+              <span className={cn('text-xs', 'font-mono', 'font-medium', 'text-foreground', 'text-right')}>{formatSeconds(attempt.active_time_taken)}</span>
             </div>
 
             <div className={cn('px-3.5', 'py-2.5', 'flex', 'items-baseline', 'justify-between', 'gap-4')}>
               <span className={cn('text-[10px]', 'font-bold', 'text-muted-foreground', 'uppercase', 'tracking-widest', 'shrink-0')}>Total Duration</span>
               <span className={cn('text-xs', 'font-mono', 'font-medium', 'text-foreground', 'text-right')}>
-                {formatSeconds(attempt.actual_time_spent_seconds ?? (attempt.submitted_at && attempt.started_at ? Math.max(0, Math.round((new Date(attempt.submitted_at).getTime() - new Date(attempt.started_at).getTime()) / 1000)) : null))}
+                {formatSeconds(attempt.total_time_taken ?? (attempt.submitted_at && attempt.started_at ? Math.max(0, Math.round((new Date(attempt.submitted_at).getTime() - new Date(attempt.started_at).getTime()) / 1000)) : null))}
               </span>
             </div>
 
@@ -693,10 +693,10 @@ const DesktopAttemptRow = React.memo(function DesktopAttemptRow({
       <TableCell className={cn('text-right', 'text-sm', 'tabular-nums')}>
         <div className="flex flex-col items-end gap-0.5">
           <span className="font-medium text-foreground" title="Active Question Time">
-            {formatSeconds(attempt.time_spent_seconds)}
+            {formatSeconds(attempt.active_time_taken)}
           </span>
           <span className="text-[11px] text-muted-foreground" title="Total Duration (Start to End)">
-            {formatSeconds(attempt.actual_time_spent_seconds ?? (attempt.submitted_at && attempt.started_at ? Math.max(0, Math.round((new Date(attempt.submitted_at).getTime() - new Date(attempt.started_at).getTime()) / 1000)) : null))} total
+            {formatSeconds(attempt.total_time_taken ?? (attempt.submitted_at && attempt.started_at ? Math.max(0, Math.round((new Date(attempt.submitted_at).getTime() - new Date(attempt.started_at).getTime()) / 1000)) : null))} total
           </span>
         </div>
       </TableCell>
@@ -756,7 +756,7 @@ const SORT_COL_MAP: Record<SortColumn, string> = {
   education: "student_name",
   status: "status",
   score: "percentage",
-  time: "time_spent_seconds",
+  time: "active_time_taken",
   violations: "tab_switch_count",
   started: "started_at",
   submitted: "submitted_at",
@@ -1559,7 +1559,7 @@ async function fetchAttemptsClient(
     let q = (supabase as any)
       .from("test_attempts")
       .select(
-        "id, tab_switch_count, status, score, total_marks, percentage, time_spent_seconds, actual_time_spent_seconds, started_at, submitted_at, profile:profiles!candidate_id(full_name, email, candidate_academic_details(passout_year, course:institute_courses(course_name)))",
+        "id, tab_switch_count, status, score, total_marks, percentage, active_time_taken, total_time_taken, started_at, submitted_at, profile:profiles!candidate_id(full_name, email, candidate_academic_details(passout_year, course:institute_courses(course_name)))",
         { count: "exact" }
       )
       .eq("test_id", testId)
@@ -1581,7 +1581,8 @@ async function fetchAttemptsClient(
     const sortColMap: Record<string, string> = {
       status: "status",
       score: "percentage",
-      time: "time_spent_seconds",
+      time: "active_time_taken",
+      total_time: "total_time_taken",
       violations: "tab_switch_count",
       started: "started_at",
       submitted: "submitted_at",
@@ -1619,8 +1620,8 @@ async function fetchAttemptsClient(
         score: a.score ?? null,
         total_marks: a.total_marks ?? null,
         percentage: a.percentage ?? null,
-        time_spent_seconds: a.time_spent_seconds ?? null,
-        actual_time_spent_seconds: a.actual_time_spent_seconds ?? (a.started_at && a.submitted_at ? Math.max(0, Math.round((new Date(a.submitted_at).getTime() - new Date(a.started_at).getTime()) / 1000)) : null),
+        active_time_taken: a.active_time_taken ?? null,
+        total_time_taken: a.total_time_taken ?? (a.started_at && a.submitted_at ? Math.max(0, Math.round((new Date(a.submitted_at).getTime() - new Date(a.started_at).getTime()) / 1000)) : null),
         started_at: a.started_at,
         submitted_at: a.submitted_at ?? null,
         tab_switch_count: a.tab_switch_count ?? null,
@@ -1731,6 +1732,13 @@ export function InstituteTestDetailClient({
     const result = await fetchAttemptsClient(testId, { ...params, page: 0 } as AttemptQueryParams)
     return result.data || []
   }, [testId])
+
+  // Self-heal: If initial attempts were empty on SSR but totalCount > 0, fetch immediately
+  useEffect(() => {
+    if (pageRows.length === 0 && totalCount > 0) {
+      handleFetchPage(lastParamsRef.current)
+    }
+  }, [pageRows.length, totalCount, handleFetchPage])
 
 
 

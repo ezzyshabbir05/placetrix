@@ -49,9 +49,9 @@ export interface CandidateAnswerDetail {
 export interface CandidateAttemptDetail
   extends Pick<
     AttemptRow,
-    "id" | "status" | "submitted_at" | "score" | "total_marks" | "percentage" | "time_spent_seconds" | "tab_switch_count"
+    "id" | "status" | "submitted_at" | "score" | "total_marks" | "percentage" | "active_time_taken" | "tab_switch_count"
   > {
-  actual_time_spent_seconds?: number | null
+  total_time_taken?: number | null
   started_at?: string | null
   status: "in_progress" | "submitted"   // narrow the DB string union
   student_name?: string | null
@@ -96,8 +96,8 @@ export interface CandidateTestDetail
     percentage: number | null
     status: string
     submitted_at: string | null
-    time_spent_seconds?: number | null
-    actual_time_spent_seconds?: number | null
+    active_time_taken?: number | null
+    total_time_taken?: number | null
   }[]
   /** Lightweight list — only marks needed for the pre-test totals display */
   questions: Pick<QuestionRow, "marks">[]
@@ -152,14 +152,14 @@ export interface InstituteAttemptRow
     | "score"
     | "total_marks"
     | "percentage"
-    | "time_spent_seconds"
     | "submitted_at"
   > {
   id: string             // view types nullable, but we filter nulls before mapping
   started_at: string     // same — guaranteed by .filter() in page.tsx
   status: "in_progress" | "submitted" | "abandoned" | "auto_submitted"
   tab_switch_count: number | null
-  actual_time_spent_seconds: number | null
+  active_time_taken: number | null
+  total_time_taken: number | null
   branch: string | null
   passout_year: number | null
 }

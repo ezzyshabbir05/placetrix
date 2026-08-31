@@ -2003,7 +2003,7 @@ export type Database = {
       test_attempts: {
         Row: {
           active_session_token: string | null
-          actual_time_spent_seconds: number | null
+          active_time_taken: number | null
           ai_diagnosis: Json | null
           attempt_number: number
           candidate_id: string
@@ -2021,14 +2021,14 @@ export type Database = {
           submitted_at: string | null
           tab_switch_count: number
           test_id: string
-          time_spent_seconds: number | null
           total_marks: number | null
+          total_time_taken: number | null
           updated_at: string
           user_agent: string | null
         }
         Insert: {
           active_session_token?: string | null
-          actual_time_spent_seconds?: number | null
+          active_time_taken?: number | null
           ai_diagnosis?: Json | null
           attempt_number?: number
           candidate_id: string
@@ -2046,14 +2046,14 @@ export type Database = {
           submitted_at?: string | null
           tab_switch_count?: number
           test_id: string
-          time_spent_seconds?: number | null
           total_marks?: number | null
+          total_time_taken?: number | null
           updated_at?: string
           user_agent?: string | null
         }
         Update: {
           active_session_token?: string | null
-          actual_time_spent_seconds?: number | null
+          active_time_taken?: number | null
           ai_diagnosis?: Json | null
           attempt_number?: number
           candidate_id?: string
@@ -2071,8 +2071,8 @@ export type Database = {
           submitted_at?: string | null
           tab_switch_count?: number
           test_id?: string
-          time_spent_seconds?: number | null
           total_marks?: number | null
+          total_time_taken?: number | null
           updated_at?: string
           user_agent?: string | null
         }
@@ -2613,6 +2613,7 @@ export type Database = {
       }
       view_test_attempt_details: {
         Row: {
+          active_time_taken: number | null
           attempt_number: number | null
           id: string | null
           passed: boolean | null
@@ -2626,8 +2627,8 @@ export type Database = {
           submitted_at: string | null
           tab_switch_count: number | null
           test_id: string | null
-          time_spent_seconds: number | null
           total_marks: number | null
+          total_time_taken: number | null
         }
         Relationships: [
           {

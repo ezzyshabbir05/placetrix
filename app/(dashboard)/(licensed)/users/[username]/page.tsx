@@ -189,7 +189,7 @@ export default async function UserReportPage({ params }: PageProps) {
       .eq("student_id", targetProfile.id),
     (supabase as any)
       .from("test_attempts")
-      .select("id, test_id, attempt_number, status, score, total_marks, percentage, passed, started_at, submitted_at, time_spent_seconds, actual_time_spent_seconds, tab_switch_count")
+      .select("id, test_id, attempt_number, status, score, total_marks, percentage, passed, started_at, submitted_at, active_time_taken, total_time_taken, tab_switch_count")
       .eq("candidate_id", targetProfile.id)
       .order("created_at", { ascending: false }),
     getCachedGlobalTagCounts(),
@@ -506,8 +506,8 @@ export default async function UserReportPage({ params }: PageProps) {
     }
 
     if (attempt) {
-      if (attempt.time_spent_seconds) {
-        totalTimeSpentSeconds += Number(attempt.time_spent_seconds);
+      if (attempt.active_time_taken) {
+        totalTimeSpentSeconds += Number(attempt.active_time_taken);
       }
       if (attempt.tab_switch_count) {
         totalTabSwitches += Number(attempt.tab_switch_count);
@@ -560,8 +560,8 @@ export default async function UserReportPage({ params }: PageProps) {
         passed: attempt.passed,
         startedAt: attempt.started_at,
         submittedAt: attempt.submitted_at,
-        timeSpentSeconds: attempt.time_spent_seconds,
-        actualTimeSpentSeconds: attempt.actual_time_spent_seconds ?? (attempt.started_at && attempt.submitted_at ? Math.max(0, Math.round((new Date(attempt.submitted_at).getTime() - new Date(attempt.started_at).getTime()) / 1000)) : null),
+        activeTimeTaken: attempt.active_time_taken,
+        totalTimeTaken: attempt.total_time_taken ?? (attempt.started_at && attempt.submitted_at ? Math.max(0, Math.round((new Date(attempt.submitted_at).getTime() - new Date(attempt.started_at).getTime()) / 1000)) : null),
         tabSwitchCount: attempt.tab_switch_count || 0,
       } : undefined,
     };
