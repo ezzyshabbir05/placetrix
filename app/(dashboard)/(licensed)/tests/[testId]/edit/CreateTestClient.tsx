@@ -23,7 +23,7 @@ import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion"
 import { DateTimePicker } from "@/components/datetime-picker"
-import { MathText } from "@/components/others/latex-renderer"
+import { InlineRichText } from "@/components/others/rich-text"
 import { cn } from "@/lib/utils"
 import {
   Loader2, Save, Send, AlertCircle, AlertTriangle, BookOpen, CheckCircle2, Circle, Plus, Tag, X,
@@ -154,7 +154,7 @@ export function CreateTestClient({
   const [settings, setSettings] = useState<SettingsForm>(() =>
     normalizeDefaults(initialData?.settings ?? EMPTY_SETTINGS)
   )
-  
+
   // Ensure default Section A exists if test has no sections
   const [sections, setSections] = useState<LocalSection[]>(() => {
     if (initialData?.sections && initialData.sections.length > 0) {
@@ -569,7 +569,7 @@ function TestContentPanel({
   const [questionSheetOpen, setQuestionSheetOpen] = useState(false)
   const [editingQuestion, setEditingQuestion] = useState<LocalQuestion | null>(null)
   const [targetSectionId, setTargetSectionId] = useState<string | null>(null)
-  
+
   const [aiSheetOpen, setAiSheetOpen] = useState(false)
   const [importSheetOpen, setImportSheetOpen] = useState(false)
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -811,7 +811,6 @@ function TestContentPanel({
             <div className="flex flex-wrap gap-2">
               <Button size="sm" variant="outline" onClick={() => openAiGenerate()}>
                 <Sparkles className="mr-1.5 size-4 text-violet-500" /> Trixy AI Generate
-                <Badge variant="secondary" className="ml-1.5 text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">Paused</Badge>
               </Button>
               <Button size="sm" variant="outline" onClick={() => openImportJson()}>
                 <Upload className="mr-1.5 size-4" /> Import JSON
@@ -868,7 +867,7 @@ function TestContentPanel({
                 </div>
               ) : activeQuestion ? (
                 <div className="rounded-lg border border-primary bg-background p-3 shadow-xl opacity-95 text-xs font-medium max-w-md">
-                  <MathText>{activeQuestion.question_text}</MathText>
+                  <InlineRichText>{activeQuestion.question_text}</InlineRichText>
                 </div>
               ) : null}
             </DragOverlay>
@@ -894,13 +893,13 @@ function TestContentPanel({
         defaultValues={
           editingQuestion
             ? {
-                question_text: editingQuestion.question_text,
-                question_type: editingQuestion.question_type,
-                marks: editingQuestion.marks,
-                explanation: editingQuestion.explanation,
-                options: editingQuestion.options,
-                tag_names: editingQuestion.tag_names,
-              }
+              question_text: editingQuestion.question_text,
+              question_type: editingQuestion.question_type,
+              marks: editingQuestion.marks,
+              explanation: editingQuestion.explanation,
+              options: editingQuestion.options,
+              tag_names: editingQuestion.tag_names,
+            }
             : undefined
         }
         defaultSectionId={editingQuestion ? editingQuestion.section_id : targetSectionId}
@@ -1246,7 +1245,7 @@ function SortableQuestionRow({
 
       <div className="min-w-0 flex-1 space-y-1.5">
         <p className="truncate text-sm font-medium leading-snug">
-          <MathText>{question.question_text}</MathText>
+          <InlineRichText>{question.question_text}</InlineRichText>
         </p>
 
         <div className="flex flex-wrap gap-1">
@@ -1918,15 +1917,6 @@ function AiGenerateSheet({
         </SheetHeader>
 
         <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
-          <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3.5 text-xs text-amber-800 dark:text-amber-300">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-            <div>
-              <p className="font-semibold text-amber-900 dark:text-amber-200">Trixy AI Generation Temporarily Paused</p>
-              <p className="mt-0.5 text-amber-800/90 dark:text-amber-300/90">
-                AI question authoring is temporarily undergoing scheduled maintenance and performance upgrades. In the meantime, please create questions manually or import them via JSON.
-              </p>
-            </div>
-          </div>
 
           {error && (
             <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
@@ -2036,11 +2026,10 @@ function AiGenerateSheet({
           <GenerateButton
             onClick={handleGenerate}
             isGenerating={isPending}
-            disabled={true}
-            text="Temporarily Paused"
-            generatingText="Generating"
+            disabled={isPending || !form.topic.trim() || !!countFieldError}
+            text="Generate"
+            generatingText="Generating..."
             hue={275}
-            className="w-full opacity-70 cursor-not-allowed"
           />
 
           {isPending && (
@@ -2115,7 +2104,7 @@ function AiGenerateSheet({
                       onClick={(e) => e.stopPropagation()}
                     />
                     <p className="flex-1 text-sm font-medium leading-snug">
-                      {idx + 1}. <MathText>{q.question_text}</MathText>
+                      {idx + 1}. <InlineRichText>{q.question_text}</InlineRichText>
                     </p>
                     {q._warnings.length > 0 && (
                       <Badge className="shrink-0 border-amber-300 bg-amber-100 text-xs text-amber-700 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-400">
@@ -2140,7 +2129,7 @@ function AiGenerateSheet({
                         ) : (
                           <Circle className="h-3 w-3 shrink-0" />
                         )}
-                        {String.fromCharCode(65 + oi)}. <MathText>{opt.option_text}</MathText>
+                        {String.fromCharCode(65 + oi)}. <InlineRichText>{opt.option_text}</InlineRichText>
                       </div>
                     ))}
                   </div>
@@ -2197,7 +2186,7 @@ function AiGenerateSheet({
 
                       {q._showExplanation && (
                         <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-                          <MathText>{q.explanation}</MathText>
+                          <InlineRichText>{q.explanation}</InlineRichText>
                         </p>
                       )}
                     </div>
@@ -2527,8 +2516,8 @@ function ImportSheet({
                       hasError
                         ? "border-destructive/40 bg-destructive/5 opacity-75"
                         : q._selected
-                        ? "border-primary/40 bg-primary/5"
-                        : "opacity-50"
+                          ? "border-primary/40 bg-primary/5"
+                          : "opacity-50"
                     )}
                   >
                     <div className="flex items-start gap-2">
@@ -2546,7 +2535,7 @@ function ImportSheet({
                         />
                       )}
                       <p className="flex-1 font-medium leading-snug">
-                        {idx + 1}. <MathText>{q.question_text}</MathText>
+                        {idx + 1}. <InlineRichText>{q.question_text}</InlineRichText>
                       </p>
                     </div>
 
@@ -2578,7 +2567,7 @@ function ImportSheet({
                             ) : (
                               <Circle className="h-3 w-3 shrink-0" />
                             )}
-                            {String.fromCharCode(65 + oi)}. <MathText>{opt.option_text}</MathText>
+                            {String.fromCharCode(65 + oi)}. <InlineRichText>{opt.option_text}</InlineRichText>
                           </p>
                         ))}
                       </div>

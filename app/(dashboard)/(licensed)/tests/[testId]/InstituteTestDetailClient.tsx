@@ -97,7 +97,7 @@ import {
 import { toast } from "sonner"
 import { getFriendlyErrorMessage } from "@/lib/errors"
 import { cn } from "@/lib/utils"
-import { MathText } from "@/components/others/latex-renderer"
+import { InlineRichText } from "@/components/others/rich-text"
 import type { InstituteTestDetail, InstituteQuestion, InstituteSection, InstituteAttemptRow } from "./_types"
 import { formatDuration, formatDateTime, formatSeconds, resolvePct } from "./_types"
 import { ExportTestParticipantsModal } from "./ExportTestParticipantsModal"
@@ -264,7 +264,7 @@ function QuestionCard({
           </span>
           <div className="min-w-0 flex-1 space-y-1">
             <p className="text-sm font-medium leading-relaxed text-foreground line-clamp-2">
-              <MathText>{question.question_text}</MathText>
+              <InlineRichText>{question.question_text}</InlineRichText>
             </p>
             <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
               <Badge variant="outline" className="h-4 px-1.5 text-[10px] font-medium">
@@ -306,7 +306,7 @@ function QuestionCard({
                 </span>
 
                 <div className="min-w-0 flex-1 break-words leading-relaxed">
-                  <MathText>{opt.option_text}</MathText>
+                  <InlineRichText>{opt.option_text}</InlineRichText>
                 </div>
 
                 {opt.is_correct ? (
@@ -339,7 +339,7 @@ function QuestionCard({
             <div className="space-y-1">
               <span className="font-semibold text-foreground">Explanation</span>
               <p className="leading-relaxed text-muted-foreground">
-                <MathText>{question.explanation}</MathText>
+                <InlineRichText>{question.explanation}</InlineRichText>
               </p>
             </div>
           </div>
@@ -2050,7 +2050,7 @@ function AnalyticsTab({ test }: { test: InstituteTestDetail }) {
                     return (
                       <TableRow key={qa.question_id}>
                         <TableCell className={cn('max-w-md', 'truncate', 'text-sm')}>
-                          <MathText>{qa.question_text}</MathText>
+                          <InlineRichText>{qa.question_text}</InlineRichText>
                         </TableCell>
                         <TableCell className={cn('text-right', 'tabular-nums')}>{qa.marks}</TableCell>
                         <TableCell className={cn('text-right', 'tabular-nums')}>{qa.total_answers}</TableCell>

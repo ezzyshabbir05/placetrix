@@ -41,7 +41,7 @@ import {
   RotateCw,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { MathText } from "@/components/others/latex-renderer"
+import { InlineRichText } from "@/components/others/rich-text"
 import type {
   CandidateTestDetail,
   CandidateAttemptDetail,
@@ -131,7 +131,7 @@ function OptionItem({
           <Check className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
           <div className="flex flex-col gap-1.5 flex-1 min-w-0">
             <span className="text-sm leading-snug break-words text-foreground font-medium">
-              <MathText>{opt.option_text}</MathText>
+              <InlineRichText>{opt.option_text}</InlineRichText>
             </span>
             <span className="text-[10px] font-medium uppercase tracking-wide text-blue-600 dark:text-blue-400">
               Selected Answer
@@ -145,7 +145,7 @@ function OptionItem({
         <div className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded-full border border-muted-foreground/30" />
         <div className="flex flex-col gap-1.5 flex-1 min-w-0">
           <span className="text-sm leading-snug break-words text-muted-foreground">
-            <MathText>{opt.option_text}</MathText>
+            <InlineRichText>{opt.option_text}</InlineRichText>
           </span>
         </div>
       </div>
@@ -194,7 +194,7 @@ function OptionItem({
     <div className={cn("flex items-start gap-3 rounded-xl border px-3 py-3", containerClass)}>
       {Icon}
       <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-        <span className={cn("text-sm leading-snug break-words", textClass)}><MathText>{opt.option_text}</MathText></span>
+        <span className={cn("text-sm leading-snug break-words", textClass)}><InlineRichText>{opt.option_text}</InlineRichText></span>
         {label}
       </div>
     </div>
@@ -234,7 +234,7 @@ function QuestionReviewItem({
           </span>
           <div className="min-w-0 flex-1">
             <p className="line-clamp-2 text-sm font-medium leading-relaxed text-foreground">
-              <MathText>{answer.question_text}</MathText>
+              <InlineRichText>{answer.question_text}</InlineRichText>
             </p>
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
               {isSkipped ? (
@@ -298,7 +298,7 @@ function QuestionReviewItem({
               <div className="flex items-start gap-2.5">
                 <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <p className="text-xs leading-relaxed text-muted-foreground">
-                  <MathText>{answer.explanation}</MathText>
+                  <InlineRichText>{answer.explanation}</InlineRichText>
                 </p>
               </div>
             )}

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { cn, formatDuration, parseDurationToMinutes } from "@/lib/utils"
 import { toast } from "sonner"
 import { toggleModuleCompletionAction } from "../../../actions"
-import { LatexRenderer } from "@/components/others/latex-renderer"
+import { RichText } from "@/components/others/rich-text"
 
 interface Module {
   id: string;
@@ -223,7 +223,7 @@ export function CandidateModuleClient({ course, module, isAdmin = false }: Props
 
       {/* Reading Material Container */}
       <div className="space-y-4 ">
-        <LatexRenderer content={currentModule.content} />
+        <RichText content={currentModule.content} />
 
 
         {/* Next Module / Finish Course Button */}

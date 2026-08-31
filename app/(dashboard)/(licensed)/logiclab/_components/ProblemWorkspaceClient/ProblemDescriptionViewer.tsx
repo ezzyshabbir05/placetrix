@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import Prism from "prismjs";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +43,8 @@ export function ProblemDescriptionViewer({ content, isSpoilerMode = false }: { c
   return (
     <div className={cn('text-zinc-800 dark:text-zinc-200', 'leading-relaxed', 'text-sm', 'space-y-4', 'font-sans', 'markdown-body')}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
         components={{
           h1: ({node, ...props}) => <h1 className="text-[28px] leading-tight font-extrabold text-zinc-900 dark:text-zinc-50 mt-10 mb-5 tracking-tight first:mt-0" {...props} />,
           h2: ({node, ...props}) => <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50 mt-8 mb-4 tracking-tight first:mt-0" {...props} />,

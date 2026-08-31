@@ -28,7 +28,7 @@ import { Separator } from "@/components/ui/separator"
 import { cn, parseDurationToMinutes } from "@/lib/utils"
 import { toast } from "sonner"
 import { createCourseAction, updateCourseAction, AdminCourseInput, AdminModuleInput } from "../../actions"
-import { LatexRenderer } from "@/components/others/latex-renderer"
+import { RichText } from "@/components/others/rich-text"
 
 interface Props {
   initialCourse?: {
@@ -777,7 +777,7 @@ export function CreateCourseClient({ initialCourse, initialModules = [], adminPr
                               </div>
                               {isPreviewActive ? (
                                 <div className="max-h-[300px] overflow-y-auto rounded-lg border border-border/40 bg-background/50 p-4 leading-relaxed">
-                                  <LatexRenderer content={mod.content ?? ""} />
+                                  <RichText content={mod.content ?? ""} />
                                 </div>
                               ) : (
                                 <Textarea

@@ -63,7 +63,7 @@ import {
     WifiOff,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { MathText } from "@/components/others/latex-renderer"
+import { InlineRichText } from "@/components/others/rich-text"
 import { Textarea } from "@/components/ui/textarea"
 import { createClient } from "@/lib/supabase/client"
 import { isDeploymentError, getFriendlyErrorMessage } from "@/lib/errors"
@@ -529,7 +529,7 @@ function OptionButton({
                 )}
             </span>
             <span className={cn("min-w-0 flex-1 break-words leading-snug space-y-2", isSelected && "font-medium")}>
-                <div><MathText>{option.option_text}</MathText></div>
+                <div><InlineRichText>{option.option_text}</InlineRichText></div>
             </span>
             {isSaving && isSelected && (
                 <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
@@ -640,7 +640,7 @@ function QuestionView({
                 </div>
 
                 <p className="break-words text-base font-medium leading-relaxed">
-                    <MathText>{question.question_text}</MathText>
+                    <InlineRichText>{question.question_text}</InlineRichText>
                 </p>
 
                 {question.tags.length > 0 && (

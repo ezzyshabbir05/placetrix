@@ -403,9 +403,7 @@ function cleanAiString(input: any): string {
   str = str.replace(/\\\(([\s\S]*?)\\\)/g, "$$$1$")
   str = str.replace(/_DOUBLE_BACKSLASH_/g, "\\\\")
 
-  // Strip markdown **bold** and *italic* that AI sometimes emits in text fields
-  str = str.replace(/\*\*([^*]+?)\*\*/g, "$1")
-  str = str.replace(/\*([^*]+?)\*/g, "$1")
+  // Markdown bold and italics are now natively supported by our unified RichText renderer
 
   // Strip \begin{enumerate} / \begin{itemize} environments -- replace \item with a dash
   str = str.replace(/\\begin\{(?:enumerate|itemize)\}/g, "")
@@ -487,13 +485,276 @@ function sanitizeQuestions(raw: any[], marksDefault: number): QuestionForm[] {
 }
 
 export async function generateQuestionsAction(
-  _input: AiGenerateForm
+  input: AiGenerateForm
 ): Promise<GenerateQuestionsResult> {
-  await requireAuth()
+  const profile = await getUserProfile()
+  if (!profile) return { error: "Authentication required." }
+
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return { error: "AI generation is not configured. Missing GEMINI_API_KEY in environment." }
+
+  const count = Math.min(60, Math.max(1, parseInt(input.count, 10) || 5))
+  const marksDefault = DIFFICULTY_MARKS[input.difficulty]
+
+  const typeInstruction =
+    input.question_type === "mixed"
+      ? `Distribute types evenly: roughly half "single_correct" (exactly 1 correct option) and half "multiple_correct" (2–3 correct options).`
+      : input.question_type === "multiple_correct"
+        ? `All questions must be "multiple_correct" with exactly 2–3 correct options out of 4.`
+        : `All questions must be "single_correct" with exactly 1 correct option out of 4.`
+
+  const ai = new GoogleGenAI({ apiKey })
+
+  const systemPrompt = `You are Trixy AI — an elite exam author and assessment designer for university-level, competitive, and technical examinations.
+
+Generate rigorous, unambiguous, and pedagogy-grade multiple-choice questions following these strict specifications:
+
+==================================================
+1. QUESTION STRUCTURE & OPTIONS (STRICT)
+==================================================
+- Every question MUST have EXACTLY 4 options — no more, no less.
+- "single_correct": Exactly 1 option must have is_correct=true; the other 3 must be is_correct=false.
+- "multiple_correct": Exactly 2 or 3 options must have is_correct=true; the remaining must be is_correct=false.
+- Every distractor (wrong option) must be scientifically plausible, reflecting common cognitive misconceptions or calculation pitfalls, but unequivocally incorrect to an expert.
+- Marks = 1 for all questions.
+
+==================================================
+2. EXPLANATION & PEDAGOGY
+==================================================
+- "explanation": Must provide a clear, step-by-step derivation or proof explaining:
+  (a) Why the correct option(s) are true, and
+  (b) Why the key distractors are flawed.
+- "tag_names": 1–3 precise subject/concept tags. Prioritize the exact tags provided in the prompt's 'EXISTING TAGS' list.
+
+==================================================
+3. LATEX MATHEMATICAL FORMATTING (KaTeX)
+==================================================
+Our platform renders math using KaTeX:
+- INLINE MATH: Wrap ALL variables, algebraic expressions, formulas, matrices, units, exponents, square roots, fractions, and Greek letters in SINGLE DOLLAR DELIMITERS ($...$).
+  * Good: "If $f(x) = x^2 + 2x$, find $f'(3)$."
+  * Good: "Calculate the energy in $\\\\text{Joules}$ given $E = mc^2$."
+  * Bad: "If f(x) = x^2 + 2x" (Never write plain text math)
+- DISPLAY / MULTI-LINE EQUATIONS: Wrap standalone equations in DOUBLE DOLLAR DELIMITERS ($$...$$):
+  * Good: "$$\\\\int_{0}^{\\\\infty} e^{-x^2} dx = \\\\frac{\\\\sqrt{\\\\pi}}{2}$$"
+- GREEK LETTERS & OPERATORS: Always in math mode: "$\\\\alpha$", "$\\\\beta$", "$\\\\theta$", "$\\\\lambda$", "$\\\\mu$", "$\\\\sigma$", "$\\\\Omega$", "$\\\\Delta$", "$\\\\nabla$".
+- PERCENTAGES: Write "$20\\\\%$" inside math or "20%" in regular text.
+- CURRENCY SAFETY: To avoid accidentally opening an unclosed math block with '$', ALWAYS write currencies as either:
+  * "USD 5,000" or "$5{,}000$ dollars" (never leave a lone '$' without a closing '$').
+- DELIMITER MATCHING: Every '$' MUST close on the same expression. Never span a '$' across plain sentences.
+- JSON BACKSLASH ESCAPING: Because your output is valid JSON, EVERY backslash in LaTeX MUST be double-escaped:
+  * Write "\\\\frac", "\\\\sqrt", "\\\\sum", "\\\\times", "\\\\cdot", "\\\\le", "\\\\ge", "\\\\neq", "\\\\infty".
+
+==================================================
+4. CODE BLOCKS & INLINE CODE (Prism.js)
+==================================================
+Our platform renders code blocks with Prism.js syntax highlighting:
+- INLINE CODE: Wrap keywords, types, function names, variables, and short statements in single backticks: \`x\`, \`ArrayList<String>\`, \`SELECT * FROM users\`, \`malloc()\`.
+- CODE BLOCKS: When a question or explanation involves code, ALWAYS use triple backticks with the exact language identifier:
+  * Example:
+    \`\`\`python\\ndef solve(arr):\\n    return [x * 2 for x in arr]\\n\`\`\`
+  * Supported languages: python, javascript, typescript, java, cpp, c, csharp, sql, bash, json, html, css.
+  * In the JSON string, format newlines inside code blocks explicitly as \\n.
+
+==================================================
+5. TABLES & TABULAR DATA (GFM Markdown)
+==================================================
+- Format all datasets, truth tables, comparison charts, and matrix tables as standard GitHub-Flavored Markdown tables.
+- Separate table rows with explicit \\n characters in the JSON string.
+- You may use LaTeX math inside table cells (e.g. "| $x$ | $f(x) = x^2$ |\\n|---|---|\\n| $1$ | $1$ |\\n| $2$ | $4$ |").
+
+==================================================
+6. RICH TEXT FORMATTING
+==================================================
+- Use Markdown **bold** to highlight key constraints (e.g. "**NOT**", "**EXCEPT**", "**ALWAYS**", "**FALSE**").
+- Use Markdown *italic* for technical terminology or foreign phrases.
+
+==================================================
+7. OUTPUT SCHEMA (JSON ONLY)
+==================================================
+Output must be a single, strictly valid JSON object matching this schema:
+{
+  "questions": [
+    {
+      "question_text": "string",
+      "question_type": "single_correct" | "multiple_correct",
+      "marks": 1,
+      "explanation": "string",
+      "tag_names": ["string"],
+      "options": [
+        { "option_text": "string", "is_correct": true | false }
+      ]
+    }
+  ]
+}`
+
+  const supabase = await createClient()
+  const { data: tagData } = await (supabase as any)
+    .from("test_question_tags")
+    .select("name")
+    .order("name")
+    
+  const existingTagsStr = tagData && tagData.length > 0 
+    ? tagData.map((t: any) => t.name).join(", ")
+    : "No existing tags yet."
+
+  const executeSingleBatch = async (
+    model: string,
+    batchCount: number
+  ): Promise<QuestionForm[]> => {
+    const batchPrompt = `[Request ID: ${crypto.randomUUID()}]
+[Random Seed: ${Math.floor(Math.random() * 1000000)}]
+Generate exactly ${batchCount} questions on the topic: "${input.topic}".
+Difficulty: ${input.difficulty}. Each question carries 1 mark.
+${typeInstruction}
+Ensure all questions are entirely distinct, unique, use creative scenarios, and are not reused from any prior generation.
+
+EXISTING TAGS (Use these exactly if they fit):
+${existingTagsStr}`
+
+    const streamRes = await ai.models.generateContentStream({
+      model,
+      contents: batchPrompt,
+      config: {
+        systemInstruction: systemPrompt,
+        temperature: 0.25 + Math.random() * 0.15,
+        maxOutputTokens: 14000,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "object",
+          properties: {
+            questions: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  question_text: { type: "string" },
+                  question_type: { type: "string", enum: ["single_correct", "multiple_correct"] },
+                  marks: { type: "integer" },
+                  explanation: { type: "string" },
+                  tag_names: {
+                    type: "array",
+                    items: { type: "string" }
+                  },
+                  options: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        option_text: { type: "string" },
+                        is_correct: { type: "boolean" }
+                      },
+                      required: ["option_text", "is_correct"]
+                    }
+                  }
+                },
+                required: ["question_text", "question_type", "marks", "explanation", "tag_names", "options"]
+              }
+            }
+          },
+          required: ["questions"]
+        }
+      }
+    })
+
+    let raw = ""
+    for await (const chunk of streamRes) {
+      raw += chunk.text ?? ""
+    }
+
+    if (!raw) throw new Error("Empty response from AI.")
+
+    const text = stripCodeFences(raw)
+    let parsed: any
+    try {
+      parsed = JSON.parse(text)
+    } catch (parseErr) {
+      console.error("[generateQuestionsAction] Failed to parse AI JSON:", text)
+      throw new Error("The AI returned an invalid format. Retrying with another model...")
+    }
+
+    const rawList: any[] = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray(parsed?.questions)
+        ? parsed.questions
+        : []
+
+    const questions = sanitizeQuestions(rawList, marksDefault)
+    if (questions.length === 0) {
+      throw new Error("No valid questions returned by the AI.")
+    }
+    return questions
+  }
+
+  const attemptWithModel = async (
+    model: string
+  ): Promise<GenerateQuestionsResult> => {
+    const BATCH_SIZE = 15
+    const MAX_CONCURRENCY = 4
+    const STAGGER_MS = 300
+
+    if (count <= BATCH_SIZE) {
+      const questions = await withRetry(() => executeSingleBatch(model, count))
+      return { questions, generatedWith: model }
+    }
+
+    const chunks: number[] = []
+    let remaining = count
+    while (remaining > 0) {
+      const chunkSize = Math.min(BATCH_SIZE, remaining)
+      chunks.push(chunkSize)
+      remaining -= chunkSize
+    }
+
+    const allResults: QuestionForm[][] = []
+    for (let i = 0; i < chunks.length; i += MAX_CONCURRENCY) {
+      const wave = chunks.slice(i, i + MAX_CONCURRENCY)
+      const wavePromises = wave.map((chunkSize, waveIdx) =>
+        new Promise<QuestionForm[]>((resolve, reject) => {
+          setTimeout(() => {
+            withRetry(() => executeSingleBatch(model, chunkSize)).then(resolve).catch(reject)
+          }, waveIdx * STAGGER_MS)
+        })
+      )
+      const waveResults = await Promise.all(wavePromises)
+      allResults.push(...waveResults)
+    }
+
+    const seen = new Set<string>()
+    const combined = allResults.flat().filter((q) => {
+      const key = q.question_text.trim().toLowerCase().slice(0, 120)
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+
+    return { questions: combined, generatedWith: model }
+  }
+
+  let lastError: unknown
+
+  for (const model of MODEL_FALLBACK_CHAIN) {
+    try {
+      return await attemptWithModel(model)
+    } catch (err) {
+      lastError = err
+      if (!isRetryableOnNextModel(err)) {
+        console.error(`[generateQuestionsAction] Non-retryable error on model ${model}, aborting fallback chain:`, err)
+        break
+      }
+      console.warn(`[generateQuestionsAction] Model ${model} quota/rate-limited, trying next model…`)
+      await new Promise((r) => setTimeout(r, 500))
+    }
+  }
+
+  console.error("[generateQuestionsAction] All models exhausted.", lastError)
+
   return {
-    error: "Trixy AI question generation is temporarily paused for scheduled maintenance and performance optimization. Please add questions manually or try again later.",
+    error: lastError instanceof Error
+      ? `AI generation failed: ${lastError.message}`
+      : "Failed to generate questions. Please try again."
   }
 }
+
 
 
 
