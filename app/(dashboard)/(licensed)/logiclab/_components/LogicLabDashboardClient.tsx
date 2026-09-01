@@ -251,7 +251,7 @@ export function LogicLabDashboardClient({
   const [deletingProblemId, setDeletingProblemId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Direct Client-Side Supabase RPC fetcher
+  // Fetch problems using the robust Server Action which includes fallback logic
   const fetchProblemsClient = useCallback(
     async (params: {
       offset: number
@@ -263,29 +263,19 @@ export function LogicLabDashboardClient({
       sortBy: string
     }) => {
       try {
-        const supabase = createClient()
-        const { data, error } = await (supabase as any).rpc("get_paginated_problems", {
-          p_user_id: userId || null,
-          p_limit: params.limit,
-          p_offset: params.offset,
-          p_search: params.search.trim() || null,
-          p_tab: params.tab || "all",
-          p_difficulty: params.difficulty || "All",
-          p_tag: params.tag || "All",
-          p_sort_by: params.sortBy || "number-asc",
+        const result = await fetchProblemsInfinite({
+          userId: userId || "",
+          offset: params.offset,
+          limit: params.limit,
+          search: params.search,
+          tab: params.tab,
+          difficulty: params.difficulty,
+          tag: params.tag,
+          sortBy: params.sortBy,
         })
-
-        if (!error && data) {
-          const total = data.length > 0 ? Number(data[0].total_count) : 0
-          const hasMore = params.offset + params.limit < total
-          return { problems: data, hasMore, totalCount: total }
-        }
-
-        if (error) {
-          console.error("[LogicLabDashboardClient] get_paginated_problems error:", error)
-        }
+        return result
       } catch (err) {
-        console.error("[LogicLabDashboardClient] Exception fetching problems on client:", err)
+        console.error("[LogicLabDashboardClient] Exception fetching problems on client via server action:", err)
       }
       return { problems: [], hasMore: false, totalCount: 0 }
     },

@@ -152,11 +152,11 @@ export default async function UserReportPage({ params }: PageProps) {
       : Promise.resolve({ data: null }),
     (supabase as any)
       .from("logiclab_problem_submissions")
-      .select("created_at, status, logiclab_problems(difficulty)")
+      .select("created_at, status, problem_id, logiclab_problems(difficulty)")
       .eq("user_id", targetProfile.id),
     (supabase as any)
       .from("logiclab_daily_challenge_submissions")
-      .select("created_at, status, logiclab_problems(difficulty)")
+      .select("created_at, status, problem_id, logiclab_problems(difficulty)")
       .eq("user_id", targetProfile.id),
     (supabase as any).rpc("get_user_global_stats", { p_user_id: targetProfile.id }),
     (supabase as any)
@@ -215,24 +215,39 @@ export default async function UserReportPage({ params }: PageProps) {
 
   const selectedSkillIds: string[] = (candidateSkillRows ?? []).map((r: any) => r.skill_id);
 
-  // UTC-based activity calendar and streak computation directly from actual submission timestamps
+  // IST-based activity calendar and streak computation directly from actual submission timestamps
+  function getISTDateString(dateObj: Date | string) {
+    const d = new Date(dateObj);
+    return new Date(d.getTime() + 5.5 * 60 * 60 * 1000).toISOString().split("T")[0];
+  }
+
   const todayUtc = new Date();
-  const todayStr = todayUtc.toISOString().split("T")[0];
+  const todayStr = getISTDateString(todayUtc);
   const yesterdayUtc = new Date(todayUtc.getTime() - 24 * 60 * 60 * 1000);
-  const yesterdayStr = yesterdayUtc.toISOString().split("T")[0];
+  const yesterdayStr = getISTDateString(yesterdayUtc);
 
   const allSubs = [...(regActivitySubs || []), ...(dailyActivitySubs || [])];
 
   const uniqueDatesWithStatus = new Map<string, any>();
   const allActiveDates = new Map<string, boolean>();
+  const dailySolvedProblems = new Map<string, Set<string>>();
+
+  const userSolvedProblemsMap = new Map<string, string>(); // problem_id -> difficulty
 
   for (const sub of allSubs) {
-    if (!sub.created_at) continue;
-    const dateStr = sub.created_at.split("T")[0];
+    if (!sub.created_at || !sub.problem_id) continue;
+    const dateStr = getISTDateString(sub.created_at);
     const diff = sub.logiclab_problems?.difficulty;
     const isSolved = sub.status === "Accepted";
+    const probIdStr = String(sub.problem_id);
+
+    if (isSolved) {
+      userSolvedProblemsMap.set(probIdStr, diff || "Medium");
+    }
 
     allActiveDates.set(dateStr, true);
+
+    if (!dailySolvedProblems.has(dateStr)) dailySolvedProblems.set(dateStr, new Set());
 
     if (!uniqueDatesWithStatus.has(dateStr)) {
       uniqueDatesWithStatus.set(dateStr, {
@@ -250,17 +265,18 @@ export default async function UserReportPage({ params }: PageProps) {
 
     const state = uniqueDatesWithStatus.get(dateStr);
     state.submission_count += 1;
-    if (isSolved) state.solved = true;
 
-    if (diff === "Easy") {
-      state.easy_attempted += 1;
-      if (isSolved) state.easy_solved += 1;
-    } else if (diff === "Medium") {
-      state.medium_attempted += 1;
-      if (isSolved) state.medium_solved += 1;
-    } else if (diff === "Hard") {
-      state.hard_attempted += 1;
-      if (isSolved) state.hard_solved += 1;
+    if (diff === "Easy") state.easy_attempted += 1;
+    else if (diff === "Medium") state.medium_attempted += 1;
+    else if (diff === "Hard") state.hard_attempted += 1;
+
+    if (isSolved && !dailySolvedProblems.get(dateStr)!.has(probIdStr)) {
+      state.solved = true;
+      dailySolvedProblems.get(dateStr)!.add(probIdStr);
+
+      if (diff === "Easy") state.easy_solved += 1;
+      else if (diff === "Medium") state.medium_solved += 1;
+      else if (diff === "Hard") state.hard_solved += 1;
     }
   }
 
@@ -293,12 +309,12 @@ export default async function UserReportPage({ params }: PageProps) {
 
     const hasActiveStreak = allActiveDates.has(todayStr) || allActiveDates.has(yesterdayStr);
     if (hasActiveStreak) {
-      const checkDate = allActiveDates.has(todayStr) ? new Date(todayUtc) : new Date(yesterdayUtc);
-      let checkStr = checkDate.toISOString().split("T")[0];
+      let checkDate = allActiveDates.has(todayStr) ? new Date(todayUtc) : new Date(yesterdayUtc);
+      let checkStr = getISTDateString(checkDate);
       while (allActiveDates.has(checkStr)) {
         currentStreak++;
-        checkDate.setUTCDate(checkDate.getUTCDate() - 1);
-        checkStr = checkDate.toISOString().split("T")[0];
+        checkDate = new Date(checkDate.getTime() - 24 * 60 * 60 * 1000);
+        checkStr = getISTDateString(checkDate);
       }
     }
   }
@@ -307,13 +323,13 @@ export default async function UserReportPage({ params }: PageProps) {
   const activityCalendar: any[] = [];
   for (let i = 139; i >= 0; i--) {
     const d = new Date(todayUtc.getTime() - i * 24 * 60 * 60 * 1000);
-    const dateStr = d.toISOString().split("T")[0];
+    const dateStr = getISTDateString(d);
     const activity = uniqueDatesWithStatus.get(dateStr);
     activityCalendar.push({
       date: dateStr,
       count: Number(activity?.submission_count || 0),
       status: activity?.solved ? "solved" : (activity?.submission_count > 0 ? "attempted" : "none"),
-      dayOfWeek: d.getUTCDay(),
+      dayOfWeek: new Date(d.getTime() + 5.5 * 60 * 60 * 1000).getUTCDay(),
       easySolved: Number(activity?.easy_solved || 0),
       mediumSolved: Number(activity?.medium_solved || 0),
       hardSolved: Number(activity?.hard_solved || 0),
@@ -369,6 +385,19 @@ export default async function UserReportPage({ params }: PageProps) {
     medium: { total: 0, solved: 0 },
     hard: { total: 0, solved: 0 },
   };
+
+  // Override solved counts with strictly deduplicated accurate counts
+  let uniqueEasy = 0, uniqueMedium = 0, uniqueHard = 0;
+  for (const diff of userSolvedProblemsMap.values()) {
+    if (diff === "Easy") uniqueEasy++;
+    else if (diff === "Medium") uniqueMedium++;
+    else if (diff === "Hard") uniqueHard++;
+  }
+
+  globalStats.solved = userSolvedProblemsMap.size;
+  if (globalStats.easy) globalStats.easy.solved = uniqueEasy;
+  if (globalStats.medium) globalStats.medium.solved = uniqueMedium;
+  if (globalStats.hard) globalStats.hard.solved = uniqueHard;
 
   let userRank: number | null = null;
   if (targetProfile.logiclab_points && targetProfile.logiclab_points > 0 && targetProfile.institute_id) {
