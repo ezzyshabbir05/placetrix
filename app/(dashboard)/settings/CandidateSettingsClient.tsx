@@ -161,7 +161,7 @@ export function CandidateSettingsClient({ userProfile, initialData }: Props) {
 
   // ── Privacy state ──
   const [privacySettings, setPrivacySettings] = useState<Record<string, boolean>>(
-    userProfile.privacy_settings || { is_private: false, hide_logiclab: false, hide_education: false, hide_experience: false }
+    userProfile.privacy_settings || { is_private: false, hide_logiclab: false, hide_education: false, hide_experience: false, hide_test_performance: true }
   );
   const [isPrivacyPending, startPrivacyTransition] = useTransition();
 
@@ -762,11 +762,12 @@ export function CandidateSettingsClient({ userProfile, initialData }: Props) {
                   { label: "Hide LogicLab Stats", key: "hide_logiclab", desc: "Hide your problem solving stats and score" },
                   { label: "Hide Education", key: "hide_education", desc: "Hide your academic details and grades" },
                   { label: "Hide Work Experience", key: "hide_experience", desc: "Hide your professional experience" },
+                  { label: "Hide Test Performance", key: "hide_test_performance", desc: "Hide your assigned test scores and performance from other students" },
                 ].map(({ label, key, desc }) => (
                   <div key={label} className="flex items-center justify-between">
                     <div><Label>{label}</Label><p className="text-sm text-muted-foreground">{desc}</p></div>
                     <Switch
-                      checked={privacySettings[key] ?? false}
+                      checked={privacySettings[key] ?? (key === 'hide_test_performance' ? true : false)}
                       onCheckedChange={(val) => handleUpdatePrivacy(key, val)}
                       disabled={isPrivacyPending || (key !== "is_private" && privacySettings.is_private === true)}
                     />

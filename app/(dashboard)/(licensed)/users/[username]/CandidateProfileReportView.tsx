@@ -109,6 +109,7 @@ interface Props {
   semestersCount: number;
   logicLabData?: LogicLabData | null;
   assignedTestsData?: CandidateTestsPerformanceData | null;
+  viewerRole?: "admin" | "staff" | "owner" | "student";
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -266,6 +267,7 @@ export function CandidateProfileReportView({
   semestersCount,
   logicLabData,
   assignedTestsData,
+  viewerRole,
 }: Props) {
   const supabase = createClient();
 
@@ -345,7 +347,9 @@ export function CandidateProfileReportView({
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-xl font-bold tracking-tight">Candidate Profile & Progress Report</h1>
+              <h1 className="text-xl font-bold tracking-tight">
+                {viewerRole === "student" ? "Candidate Profile and Progress" : "Candidate Comprehensive Report"}
+              </h1>
               <p className="text-xs text-muted-foreground">
                 Confidential Student Academic & Performance Progress Report
               </p>
@@ -366,10 +370,12 @@ export function CandidateProfileReportView({
                 <Share2 className="size-4" />
                 Share Profile
               </Button>
-              <Button onClick={handleExportPdf} disabled={isExporting} className="gap-2 bg-primary text-primary-foreground">
-                <FileText className="size-4" />
-                {isExporting ? "Generating PDF..." : "Export PDF Report"}
-              </Button>
+              {viewerRole !== "student" && (
+                <Button onClick={handleExportPdf} disabled={isExporting} className="gap-2 bg-primary text-primary-foreground">
+                  <FileText className="size-4" />
+                  {isExporting ? "Generating PDF..." : "Export PDF Report"}
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -544,7 +550,6 @@ export function CandidateProfileReportView({
                   <div className="text-xs text-muted-foreground flex flex-wrap items-center justify-center sm:justify-start gap-4 pt-1">
                     <span>Email: {publicData.email}</span>
                     {publicData.passout_year && <span>Passout Year: {publicData.passout_year}</span>}
-                    {publicData.university_prn && <span>PRN: {publicData.university_prn}</span>}
                   </div>
                 </div>
               </div>
@@ -586,7 +591,11 @@ export function CandidateProfileReportView({
                   {publicData.university_prn && (
                     <div className="space-y-0.5">
                       <p className="text-xs text-muted-foreground">University PRN</p>
-                      <p className="text-sm font-medium">{publicData.university_prn}</p>
+                      <p className="text-sm font-medium">
+                        {viewerRole === "student" && publicData.university_prn.length > 4
+                          ? `********${publicData.university_prn.slice(-4)}`
+                          : publicData.university_prn}
+                      </p>
                     </div>
                   )}
                 </div>

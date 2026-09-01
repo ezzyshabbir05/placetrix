@@ -623,8 +623,10 @@ export default async function UserReportPage({ params }: PageProps) {
   };
 
   // Enforce granular privacy settings for external viewers
+  const viewerRole = isOwner ? "owner" : (isAdmin ? "admin" : (isStaff ? "staff" : "student"));
   const hideFromViewer = !isOwner && !isAdmin && !isStaff;
   const hideEdu = hideFromViewer && privacySettings.hide_education;
+  const hideTests = hideFromViewer && privacySettings.hide_test_performance !== false;
 
   const publicData = {
     profile_id: targetProfile.id,
@@ -658,7 +660,8 @@ export default async function UserReportPage({ params }: PageProps) {
       selectedSkillIds={selectedSkillIds}
       semestersCount={semestersCount}
       logicLabData={hideFromViewer && privacySettings.hide_logiclab ? null : logicLabData}
-      assignedTestsData={assignedTestsData}
+      assignedTestsData={hideTests ? null : assignedTestsData}
+      viewerRole={viewerRole}
     />
   );
 }
