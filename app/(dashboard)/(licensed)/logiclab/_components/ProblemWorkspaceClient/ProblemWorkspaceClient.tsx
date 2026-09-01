@@ -589,7 +589,7 @@ export function ProblemWorkspaceClient({
     }
   };
   const [activeTab, setActiveTab] = useState<
-    "description" | "submissions" | "submission_result"
+    "description" | "submissions" | "submission_result" | "notes"
   >("description");
   const [activeOutputTab, setActiveOutputTab] = useState<
     "testcases" | "result"
@@ -1711,7 +1711,7 @@ export function ProblemWorkspaceClient({
         <TabsList className={cn('flex', 'bg-card', 'shrink-0', 'justify-start', 'h-[40px]', 'p-0', 'rounded-none', 'border-b', 'border-border/50', 'bg-transparent', 'overflow-x-auto', 'scrollbar-hide')}>
           <TabsTrigger
             value="description"
-            className={cn('flex', 'items-center', 'px-4', 'h-full', 'text-[11px]', 'font-bold', 'uppercase', 'tracking-widest', 'transition-colors', 'cursor-pointer', 'data-[state=active]:text-foreground', 'data-[state=active]:border-b-2', 'data-[state=active]:border-foreground', 'data-[state=active]:!bg-transparent', 'dark:data-[state=active]:!bg-transparent', 'data-[state=active]:!border-t-transparent', 'data-[state=active]:!border-x-transparent', 'dark:data-[state=active]:!border-t-transparent', 'dark:data-[state=active]:!border-x-transparent', 'data-[state=active]:shadow-none', 'text-zinc-550 dark:text-muted-foreground/80', 'hover:text-foreground/80', '!rounded-none', 'border-b-2', 'border-transparent', 'focus-visible:ring-0', 'focus-visible:outline-none')}
+            className={cn('flex', 'items-center', 'px-4', 'h-full', 'text-[11px]', 'font-bold', 'uppercase', 'tracking-widest', 'transition-colors', 'cursor-pointer', 'data-[state=active]:text-foreground', 'data-[state=active]:border-b-2', 'data-[state=active]:border-foreground', 'data-[state=active]:!bg-transparent', 'dark:data-[state=active]:!bg-transparent', 'data-[state=active]:!border-t-transparent', 'data-[state=active]:!border-x-transparent', 'dark:data-[state=active]:!border-t-transparent', 'dark:data-[state=active]:!border-x-transparent', 'data-[state=active]:shadow-none', 'text-zinc-550 dark:text-muted-foreground/80', 'hover:text-foreground/80', '!rounded-none', 'border-y-2', 'border-transparent', 'focus-visible:ring-0', 'focus-visible:outline-none')}
           >
             <IconFileDescription className={cn('h-3.5', 'w-3.5', 'mr-1.5')} /> Description
           </TabsTrigger>
@@ -1720,7 +1720,7 @@ export function ProblemWorkspaceClient({
             submitting) && (
               <TabsTrigger
                 value="submission_result"
-                className={cn('flex', 'items-center', 'px-4', 'h-full', 'text-[11px]', 'font-bold', 'uppercase', 'tracking-widest', 'transition-colors', 'cursor-pointer', 'data-[state=active]:text-foreground', 'data-[state=active]:border-b-2', 'data-[state=active]:border-foreground', 'data-[state=active]:!bg-transparent', 'dark:data-[state=active]:!bg-transparent', 'data-[state=active]:!border-t-transparent', 'data-[state=active]:!border-x-transparent', 'dark:data-[state=active]:!border-t-transparent', 'dark:data-[state=active]:!border-x-transparent', 'data-[state=active]:shadow-none', 'text-zinc-550 dark:text-muted-foreground/80', 'hover:text-foreground/80', '!rounded-none', 'border-b-2', 'border-transparent', 'focus-visible:ring-0', 'focus-visible:outline-none')}
+                className={cn('flex', 'items-center', 'px-4', 'h-full', 'text-[11px]', 'font-bold', 'uppercase', 'tracking-widest', 'transition-colors', 'cursor-pointer', 'data-[state=active]:text-foreground', 'data-[state=active]:border-b-2', 'data-[state=active]:border-foreground', 'data-[state=active]:!bg-transparent', 'dark:data-[state=active]:!bg-transparent', 'data-[state=active]:!border-t-transparent', 'data-[state=active]:!border-x-transparent', 'dark:data-[state=active]:!border-t-transparent', 'dark:data-[state=active]:!border-x-transparent', 'data-[state=active]:shadow-none', 'text-zinc-550 dark:text-muted-foreground/80', 'hover:text-foreground/80', '!rounded-none', 'border-y-2', 'border-transparent', 'focus-visible:ring-0', 'focus-visible:outline-none')}
               >
                 {submitting ? (
                   <IconRefresh className={cn('h-3.5', 'w-3.5', 'text-blue-400', 'animate-spin', 'mr-1.5')} />
@@ -1744,14 +1744,14 @@ export function ProblemWorkspaceClient({
             )}
           <TabsTrigger
             value="submissions"
-            className={cn('flex', 'items-center', 'px-4', 'h-full', 'text-[11px]', 'font-bold', 'uppercase', 'tracking-widest', 'transition-colors', 'cursor-pointer', 'data-[state=active]:text-foreground', 'data-[state=active]:border-b-2', 'data-[state=active]:border-foreground', 'data-[state=active]:!bg-transparent', 'dark:data-[state=active]:!bg-transparent', 'data-[state=active]:!border-t-transparent', 'data-[state=active]:!border-x-transparent', 'dark:data-[state=active]:!border-t-transparent', 'dark:data-[state=active]:!border-x-transparent', 'data-[state=active]:shadow-none', 'text-zinc-550 dark:text-muted-foreground/80', 'hover:text-foreground/80', '!rounded-none', 'border-b-2', 'border-transparent', 'focus-visible:ring-0', 'focus-visible:outline-none')}
+            className={cn('flex', 'items-center', 'px-4', 'h-full', 'text-[11px]', 'font-bold', 'uppercase', 'tracking-widest', 'transition-colors', 'cursor-pointer', 'data-[state=active]:text-foreground', 'data-[state=active]:border-b-2', 'data-[state=active]:border-foreground', 'data-[state=active]:!bg-transparent', 'dark:data-[state=active]:!bg-transparent', 'data-[state=active]:!border-t-transparent', 'data-[state=active]:!border-x-transparent', 'dark:data-[state=active]:!border-t-transparent', 'dark:data-[state=active]:!border-x-transparent', 'data-[state=active]:shadow-none', 'text-zinc-550 dark:text-muted-foreground/80', 'hover:text-foreground/80', '!rounded-none', 'border-y-2', 'border-transparent', 'focus-visible:ring-0', 'focus-visible:outline-none')}
           >
             <IconHistory className={cn('h-3.5', 'w-3.5', 'mr-1.5')} /> Submissions (
             {submissions.length})
           </TabsTrigger>
           <TabsTrigger
             value="notes"
-            className={cn('flex', 'items-center', 'px-4', 'h-full', 'text-[11px]', 'font-bold', 'uppercase', 'tracking-widest', 'transition-colors', 'cursor-pointer', 'data-[state=active]:text-foreground', 'data-[state=active]:border-b-2', 'data-[state=active]:border-foreground', 'data-[state=active]:!bg-transparent', 'dark:data-[state=active]:!bg-transparent', 'data-[state=active]:!border-t-transparent', 'data-[state=active]:!border-x-transparent', 'dark:data-[state=active]:!border-t-transparent', 'dark:data-[state=active]:!border-x-transparent', 'data-[state=active]:shadow-none', 'text-zinc-550 dark:text-muted-foreground/80', 'hover:text-foreground/80', '!rounded-none', 'border-b-2', 'border-transparent', 'focus-visible:ring-0', 'focus-visible:outline-none')}
+            className={cn('flex', 'items-center', 'px-4', 'h-full', 'text-[11px]', 'font-bold', 'uppercase', 'tracking-widest', 'transition-colors', 'cursor-pointer', 'data-[state=active]:text-foreground', 'data-[state=active]:border-b-2', 'data-[state=active]:border-foreground', 'data-[state=active]:!bg-transparent', 'dark:data-[state=active]:!bg-transparent', 'data-[state=active]:!border-t-transparent', 'data-[state=active]:!border-x-transparent', 'dark:data-[state=active]:!border-t-transparent', 'dark:data-[state=active]:!border-x-transparent', 'data-[state=active]:shadow-none', 'text-zinc-550 dark:text-muted-foreground/80', 'hover:text-foreground/80', '!rounded-none', 'border-y-2', 'border-transparent', 'focus-visible:ring-0', 'focus-visible:outline-none')}
           >
             <IconFileText className={cn('h-3.5', 'w-3.5', 'mr-1.5')} /> Notes
           </TabsTrigger>
@@ -2709,7 +2709,7 @@ export function ProblemWorkspaceClient({
               </div>
             </div>
           </TabsContent>
-          <TabsContent value="notes" className={cn('mt-0', 'outline-none', 'flex-1', 'w-full', 'overflow-hidden', 'relative', 'flex', 'flex-col')}>
+          <TabsContent value="notes" forceMount hidden={activeTab !== "notes"} className={cn('mt-0', 'outline-none', 'flex-1', 'w-full', 'overflow-hidden', 'relative', 'flex', 'flex-col', activeTab !== "notes" && "hidden")}>
             <ProblemNotes
               problemId={problem.id}
               currentCode={code}
@@ -3036,13 +3036,23 @@ export function ProblemWorkspaceClient({
           <TabsList className={cn('flex', 'bg-transparent', 'h-full', 'p-0', 'rounded-none', 'justify-start', 'min-w-0')}>
             <TabsTrigger
               value="testcases"
-              className={cn('flex', 'items-center', 'px-4', 'h-full', 'text-[11px]', 'font-bold', 'uppercase', 'tracking-widest', 'transition-colors', 'cursor-pointer', 'data-[state=active]:text-foreground', 'data-[state=active]:border-b-2', 'data-[state=active]:border-foreground', 'data-[state=active]:!bg-transparent', 'dark:data-[state=active]:!bg-transparent', 'data-[state=active]:!border-t-transparent', 'data-[state=active]:!border-x-transparent', 'dark:data-[state=active]:!border-t-transparent', 'dark:data-[state=active]:!border-x-transparent', 'data-[state=active]:shadow-none', 'text-zinc-600 dark:text-muted-foreground/80', 'hover:text-foreground/80', '!rounded-none', 'border-b-2', 'border-transparent', 'focus-visible:ring-0', 'focus-visible:outline-none')}
+              onClick={() => setActiveOutputTab("testcases")}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setActiveOutputTab("testcases");
+              }}
+              className={cn('flex', 'items-center', 'px-4', 'h-full', 'text-[11px]', 'font-bold', 'uppercase', 'tracking-widest', 'transition-colors', 'cursor-pointer', 'data-[state=active]:text-foreground', 'data-[state=active]:border-b-2', 'data-[state=active]:border-foreground', 'data-[state=active]:!bg-transparent', 'dark:data-[state=active]:!bg-transparent', 'data-[state=active]:!border-t-transparent', 'data-[state=active]:!border-x-transparent', 'dark:data-[state=active]:!border-t-transparent', 'dark:data-[state=active]:!border-x-transparent', 'data-[state=active]:shadow-none', 'text-zinc-600 dark:text-muted-foreground/80', 'hover:text-foreground/80', '!rounded-none', 'border-y-2', 'border-transparent', 'focus-visible:ring-0', 'focus-visible:outline-none')}
             >
               <IconCircleCheck className={cn('h-3.5', 'w-3.5', 'mr-1.5', 'text-emerald-500')} /> Testcase
             </TabsTrigger>
             <TabsTrigger
               value="result"
-              className={cn('flex', 'items-center', 'px-4', 'h-full', 'text-[11px]', 'font-bold', 'uppercase', 'tracking-widest', 'transition-colors', 'cursor-pointer', 'data-[state=active]:text-foreground', 'data-[state=active]:border-b-2', 'data-[state=active]:border-foreground', 'data-[state=active]:!bg-transparent', 'dark:data-[state=active]:!bg-transparent', 'data-[state=active]:!border-t-transparent', 'data-[state=active]:!border-x-transparent', 'dark:data-[state=active]:!border-t-transparent', 'dark:data-[state=active]:!border-x-transparent', 'data-[state=active]:shadow-none', 'text-zinc-600 dark:text-muted-foreground/80', 'hover:text-foreground/80', '!rounded-none', 'border-b-2', 'border-transparent', 'focus-visible:ring-0', 'focus-visible:outline-none')}
+              onClick={() => setActiveOutputTab("result")}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setActiveOutputTab("result");
+              }}
+              className={cn('flex', 'items-center', 'px-4', 'h-full', 'text-[11px]', 'font-bold', 'uppercase', 'tracking-widest', 'transition-colors', 'cursor-pointer', 'data-[state=active]:text-foreground', 'data-[state=active]:border-b-2', 'data-[state=active]:border-foreground', 'data-[state=active]:!bg-transparent', 'dark:data-[state=active]:!bg-transparent', 'data-[state=active]:!border-t-transparent', 'data-[state=active]:!border-x-transparent', 'dark:data-[state=active]:!border-t-transparent', 'dark:data-[state=active]:!border-x-transparent', 'data-[state=active]:shadow-none', 'text-zinc-600 dark:text-muted-foreground/80', 'hover:text-foreground/80', '!rounded-none', 'border-y-2', 'border-transparent', 'focus-visible:ring-0', 'focus-visible:outline-none')}
             >
               <IconTerminal2 className={cn('h-3.5', 'w-3.5', 'mr-1.5', 'text-zinc-600 dark:text-muted-foreground')} /> Test Result
             </TabsTrigger>
@@ -3452,10 +3462,10 @@ export function ProblemWorkspaceClient({
     <div
       ref={ideContainerRef}
       className={cn(
-        "flex flex-col w-full flex-1 min-h-0 bg-background text-foreground overflow-hidden",
+        "flex flex-col flex-1 min-h-0 bg-background text-foreground overflow-hidden",
         isFullScreen
           ? "fixed inset-0 z-[9990] h-screen w-screen"
-          : "flex-1 h-full min-h-0 relative",
+          : "fixed top-12 left-0 md:left-12 right-0 bottom-0 z-10",
       )}
     >
       {/* Mobile/Tablet Screen Workspace */}
@@ -3536,19 +3546,16 @@ export function ProblemWorkspaceClient({
         </div>
 
         {/* Mobile Panel Content */}
-        {mobileActiveTab === "notes" ? (
-          /* Notes tab: no padding, no scroll wrapper — ProblemNotes manages its own layout */
-          <div className={cn('flex-1', 'min-h-0', 'flex', 'flex-col', 'overflow-hidden')}>
-            <ProblemNotes
-              problemId={problem.id}
-              currentCode={code}
-              currentLanguage={selectedLang.name}
-              submissions={submissions}
-              isDailyChallenge={isDailyChallenge}
-            />
-          </div>
-        ) : (
-          <div className={cn('flex-1', 'overflow-y-auto', 'min-h-0', 'bg-card', 'p-4')}>
+        <div className={cn('flex-1', 'min-h-0', 'flex', 'flex-col', 'overflow-hidden', mobileActiveTab !== "notes" && "hidden")}>
+          <ProblemNotes
+            problemId={problem.id}
+            currentCode={code}
+            currentLanguage={selectedLang.name}
+            submissions={submissions}
+            isDailyChallenge={isDailyChallenge}
+          />
+        </div>
+        <div className={cn('flex-1', 'overflow-y-auto', 'min-h-0', 'bg-card', 'p-4', mobileActiveTab === "notes" && "hidden")}>
             {mobileActiveTab === "description" && (
               <div className="space-y-6">
                 {/* Title & Tags */}
@@ -3771,9 +3778,6 @@ export function ProblemWorkspaceClient({
               </div>
             )}
           </div>
-        )}
-
-
       </div>
 
       {/* Large Screen Desktop IDE */}

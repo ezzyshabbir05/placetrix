@@ -136,7 +136,6 @@ export function ProblemNotes({ problemId, currentCode, currentLanguage, submissi
   const [attachedCode, setAttachedCode] = useState<string | null>(null)
   const [attachedLanguage, setAttachedLanguage] = useState<string | null>(null)
   const [previewMode, setPreviewMode] = useState(false)
-  const [startedWriting, setStartedWriting] = useState(false) // tracks if user clicked "Start writing"
 
   // ── Save state ────────────────────────────────────────────────────────────
   const [isSaving, setIsSaving] = useState(false)
@@ -172,7 +171,6 @@ export function ProblemNotes({ problemId, currentCode, currentLanguage, submissi
     setAttachedCode(null)
     setAttachedLanguage(null)
     setSaveStatus("idle")
-    setStartedWriting(false)
     setPreviewMode(false)
   }, [problemId])
 
@@ -198,7 +196,6 @@ export function ProblemNotes({ problemId, currentCode, currentLanguage, submissi
           setAttachedLanguage(res.note.attached_language || null)
           if (loadedContent) {
             setSaveStatus("saved")
-            setStartedWriting(true)
           }
         }
         setHasSolved(res.hasSolved ?? false)
@@ -508,15 +505,6 @@ export function ProblemNotes({ problemId, currentCode, currentLanguage, submissi
                   ? <ProblemDescriptionViewer content={personalContent} />
                   : <span className="italic text-muted-foreground text-[13px]">Nothing to preview</span>}
               </div>
-            ) : !startedWriting && !personalContent ? (
-              /* ── Empty state ── */
-              <EmptyNoteState onStart={() => {
-                setStartedWriting(true)
-                setTimeout(() => {
-                  textareaRef.current?.focus()
-                  monacoEditorRef.current?.focus()
-                }, 50)
-              }} />
             ) : (
               <>
                 {/* Mobile textarea */}
@@ -525,7 +513,6 @@ export function ProblemNotes({ problemId, currentCode, currentLanguage, submissi
                   value={personalContent}
                   onChange={(e) => handleContentChange(e.target.value)}
                   placeholder="Write your notes here… (Markdown supported)"
-                  autoFocus={startedWriting && !personalContent}
                   className="flex md:hidden flex-1 w-full font-mono text-[13px] bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-100 p-4 resize-none outline-none border-0 min-h-0"
                   style={{ height: "100%" }}
                 />
@@ -541,7 +528,7 @@ export function ProblemNotes({ problemId, currentCode, currentLanguage, submissi
                     onChange={(v) => handleContentChange(v || "")}
                     language="markdown"
                     theme={monacoTheme}
-                    onMount={(editor) => { monacoEditorRef.current = editor; if (startedWriting && !personalContent) editor.focus() }}
+                    onMount={(editor) => { monacoEditorRef.current = editor; }}
                     options={{
                       minimap: { enabled: false },
                       automaticLayout: true,
@@ -567,7 +554,7 @@ export function ProblemNotes({ problemId, currentCode, currentLanguage, submissi
             )}
 
             {/* Desktop floating footer */}
-            {!isLoadingPersonal && (startedWriting || !!personalContent) && (
+            {!isLoadingPersonal && (
               <div className="hidden md:flex absolute bottom-0 left-0 right-0 items-center justify-end px-5 py-3 pointer-events-none bg-gradient-to-t from-white dark:from-[#1e1e1e] to-transparent pt-8">
                 <div className="pointer-events-auto flex items-center gap-2">
                   <Button
@@ -589,7 +576,7 @@ export function ProblemNotes({ problemId, currentCode, currentLanguage, submissi
           </div>
 
           {/* ── Mobile sticky footer ── */}
-          {!isLoadingPersonal && (startedWriting || !!personalContent) && (
+          {!isLoadingPersonal && (
             <div className="flex md:hidden shrink-0 items-center border-t border-border/30 bg-card px-2 py-2 gap-2">
               {/* Save — left */}
               <Button
