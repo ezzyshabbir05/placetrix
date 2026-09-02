@@ -108,7 +108,7 @@ import {
 import { toast } from "sonner"
 import { getFriendlyErrorMessage } from "@/lib/errors"
 import { cn } from "@/lib/utils"
-import { InlineRichText, RichText } from "@/components/others/rich-text"
+import { InlineRichText } from "@/components/others/rich-text"
 import type { InstituteTestDetail, InstituteQuestion, InstituteSection, InstituteAttemptRow } from "./_types"
 import { formatDuration, formatDateTime, formatSeconds, resolvePct } from "./_types"
 import { ExportTestParticipantsModal } from "./ExportTestParticipantsModal"
@@ -274,9 +274,9 @@ function QuestionCard({
             {index + 1}
           </span>
           <div className="min-w-0 flex-1 space-y-1">
-            <p className="text-sm font-medium leading-relaxed text-foreground line-clamp-2">
+            <div className="text-sm font-medium leading-relaxed text-foreground">
               <InlineRichText>{question.question_text}</InlineRichText>
-            </p>
+            </div>
             <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
               <Badge variant="outline" className="h-4 px-1.5 text-[10px] font-medium">
                 {question.question_type === "single_correct" ? "Single Choice" : "Multiple Choice"}
@@ -293,9 +293,7 @@ function QuestionCard({
       </AccordionTrigger>
 
       <AccordionContent className="px-4 pb-4 pt-0 space-y-3">
-        <div className="pt-1 pb-3 text-sm text-foreground/90 leading-relaxed border-b border-border/40">
-          <RichText content={question.question_text} />
-        </div>
+        <Separator className="mb-3" />
         <div className="space-y-2">
           {sortedOptions.map((opt, optIdx) => {
             const letter = String.fromCharCode(65 + optIdx)

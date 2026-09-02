@@ -19,7 +19,7 @@ import remarkGfm from "remark-gfm"
 import rehypeKatex from "rehype-katex"
 import Prism from "prismjs"
 import "katex/dist/katex.min.css"
-import { Copy, Check, ZoomIn, ExternalLink, AlertTriangle } from "lucide-react"
+import { Copy, Check, ZoomIn, AlertTriangle } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -338,16 +338,13 @@ function ZoomableImage({
             setOpen(true)
           }
         }}
-        className={cn(
-          "group relative cursor-zoom-in rounded-xl transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary",
-          inline ? "my-1 inline-block align-middle max-w-full" : "my-3 block w-fit max-w-full"
-        )}
+        className="group relative block my-2.5 w-fit max-w-full clear-both cursor-zoom-in rounded-lg transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         <span className={cn(
-          "relative flex items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-muted/20 p-1.5 shadow-xs transition-all duration-300 group-hover:border-primary/60 group-hover:shadow-md",
+          "relative flex items-center justify-center overflow-hidden rounded-lg border border-border/70 bg-muted/20 p-1 shadow-xs transition-all duration-300 group-hover:border-primary/60 group-hover:shadow-md",
           inline
-            ? "max-w-[260px] max-h-[180px] w-auto h-auto"
-            : "max-w-xl max-h-[420px] w-auto h-auto min-h-[80px]"
+            ? "max-w-[160px] max-h-[110px] w-auto h-auto"
+            : "max-w-[280px] sm:max-w-[340px] max-h-[190px] w-auto h-auto"
         )}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -355,19 +352,19 @@ function ZoomableImage({
             alt={alt ?? "Image"}
             onError={() => setHasError(true)}
             className={cn(
-              "object-contain select-none rounded-lg transition-transform duration-300 group-hover:scale-[1.01]",
-              inline ? "max-w-[250px] max-h-[170px] w-auto h-auto" : "max-w-full max-h-[400px] w-auto h-auto"
+              "object-contain select-none rounded-md transition-transform duration-300 group-hover:scale-[1.02]",
+              inline ? "max-w-[152px] max-h-[102px] w-auto h-auto" : "max-w-full max-h-[180px] w-auto h-auto"
             )}
           />
 
-          <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-background/90 px-1.5 py-0.5 text-[10px] sm:text-[11px] font-medium text-foreground backdrop-blur-md opacity-0 shadow-sm transition-opacity duration-200 group-hover:opacity-100 border border-border/50 select-none pointer-events-none">
-            <ZoomIn className="size-3 text-primary" />
-            <span>Click to zoom</span>
+          <span className="absolute bottom-1.5 right-1.5 flex items-center gap-1 rounded bg-background/90 px-1 py-0.5 text-[9px] font-medium text-foreground backdrop-blur-md opacity-0 shadow-xs transition-opacity duration-200 group-hover:opacity-100 border border-border/50 select-none pointer-events-none">
+            <ZoomIn className="size-2.5 text-primary" />
+            <span>Zoom</span>
           </span>
         </span>
 
-        {alt && !inline && (
-          <span className="mt-1.5 block text-left text-xs text-muted-foreground select-none italic max-w-md truncate">
+        {alt && !inline && !/^(image|img|diagram|preview|[0-9a-f]{8,}|img_[0-9a-f]+)$/i.test(alt.trim()) && (
+          <span className="mt-1 block text-left text-[11px] text-muted-foreground select-none italic max-w-xs truncate">
             {alt}
           </span>
         )}
@@ -411,17 +408,6 @@ function ZoomableImage({
               >
                 <ZoomIn className="size-3.5" />
                 {isZoomed ? "Reset Zoom" : "2x Zoom"}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs gap-1 px-2"
-                asChild
-              >
-                <a href={src} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="size-3.5" />
-                  Open Full
-                </a>
               </Button>
             </div>
           </div>
@@ -596,6 +582,15 @@ const KATEX_INLINE_OPTIONS: any = {
   displayMode: false,
 }
 
+/**
+ * Custom URL transformer allowing blob:, data:, http:, https: URLs.
+ * Default react-markdown behavior strips blob: URLs, preventing local staged image previews.
+ */
+function allowBlobAndHttpUrls(url: string): string {
+  if (!url) return ""
+  return url
+}
+
 export function RichText({ content = "", className, allowCopy = true }: RichTextProps) {
   const normalized = useMemo(() => normalizeContent(content), [content])
 
@@ -607,6 +602,7 @@ export function RichText({ content = "", className, allowCopy = true }: RichText
     <div className={cn("w-full text-foreground/80", className)}>
       <style dangerouslySetInnerHTML={{ __html: PRISM_CSS }} />
       <ReactMarkdown
+        urlTransform={allowBlobAndHttpUrls}
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[[rehypeKatex, KATEX_BLOCK_OPTIONS]]}
         components={buildComponents(false, allowCopy)}
@@ -641,6 +637,7 @@ export function InlineRichText({ children, className, allowCopy = false }: Inlin
     <span className={cn("inline", className)}>
       <style dangerouslySetInnerHTML={{ __html: PRISM_CSS }} />
       <ReactMarkdown
+        urlTransform={allowBlobAndHttpUrls}
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[[rehypeKatex, KATEX_INLINE_OPTIONS]]}
         components={buildComponents(true, allowCopy)}
