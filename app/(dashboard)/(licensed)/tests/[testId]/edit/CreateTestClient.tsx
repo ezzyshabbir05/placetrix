@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils"
 import {
   Loader2, Save, Send, AlertCircle, AlertTriangle, BookOpen, CheckCircle2, Circle, Plus, Tag, X,
   PlusCircle, Sparkles, Upload, Trash2, Pencil, ChevronDown, ChevronUp, Info, FileJson, Image,
-  GripVertical, Layers, Check
+  GripVertical, Layers, Check, Eye, Code
 } from "lucide-react"
 import {
   Combobox,
@@ -79,11 +79,9 @@ import type {
 } from "./actions"
 import {
   uploadStagedTestImages,
-  extractMarkdownImageUrl,
-  stripMarkdownImage,
-  setMarkdownImage,
   replaceBlobUrlsInQuestions,
 } from "@/lib/test-image-upload"
+import { RichText } from "@/components/others/rich-text"
 
 interface Props {
   testId?: string
@@ -1333,27 +1331,61 @@ function SortableQuestionRow({
   )
 }
 
-// ─── ImageAttachmentField ──────────────────────────────────────────────────
+// ─── MarkdownEditor ─────────────────────────────────────────────────────────
+// Replaces the old single-image ImageAttachmentField.
+// Supports: Write / Preview tabs, multi-image MD insertion at cursor,
+// drag-and-drop image upload, compact inline mode for options.
 
-function ImageAttachmentField({
-  text,
-  onChangeText,
-  onStageFile,
-  label = "Attach Image",
-  defaultAlt = "Image",
-  compact = false,
-}: {
-  text: string
-  onChangeText: (newText: string) => void
-  onStageFile: (file: File) => string
-  label?: string
-  defaultAlt?: string
+interface MarkdownEditorProps {
+  value: string
+  onChange: (value: string) => void
+  onStageFile?: (file: File) => string
+  placeholder?: string
+  rows?: number
   compact?: boolean
-}) {
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const imageInfo = extractMarkdownImageUrl(text)
+  label?: string
+  disabled?: boolean
+  className?: string
+}
 
-  const handleFile = (file: File) => {
+function MarkdownEditor({
+  value,
+  onChange,
+  onStageFile,
+  placeholder = "Write markdown here… LaTeX: $x^2$, code: `fn()`, images: ![alt](url)",
+  rows = 4,
+  compact = false,
+  label,
+  disabled = false,
+  className,
+}: MarkdownEditorProps) {
+  const [activeTab, setActiveTab] = useState<"write" | "preview">("write")
+  const [isDraggingOver, setIsDraggingOver] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Insert text at cursor position in the textarea
+  const insertAtCursor = useCallback((insertion: string) => {
+    const el = textareaRef.current
+    if (!el) {
+      onChange(value + insertion)
+      return
+    }
+    const start = el.selectionStart ?? value.length
+    const end = el.selectionEnd ?? value.length
+    const newValue = value.slice(0, start) + insertion + value.slice(end)
+    onChange(newValue)
+    // Restore cursor after React re-render
+    requestAnimationFrame(() => {
+      if (el) {
+        const cursorPos = start + insertion.length
+        el.focus()
+        el.setSelectionRange(cursorPos, cursorPos)
+      }
+    })
+  }, [value, onChange])
+
+  const stageAndInsertImage = useCallback((file: File) => {
     if (!file.type.startsWith("image/")) {
       toast.error("Please select a valid image file (PNG, JPEG, WEBP, GIF, SVG).")
       return
@@ -1362,112 +1394,205 @@ function ImageAttachmentField({
       toast.error("Image file size exceeds 10MB limit.")
       return
     }
+    if (!onStageFile) return
     const blobUrl = onStageFile(file)
-    const updated = setMarkdownImage(text, blobUrl, defaultAlt || "Image")
-    onChangeText(updated)
-  }
+    const altText = file.name.replace(/\.[^.]+$/, "").replace(/[-_]/g, " ") || "Image"
+    // Insert with a preceding newline only if there's existing content and the cursor isn't at start of line
+    const el = textareaRef.current
+    const start = el?.selectionStart ?? value.length
+    const prevChar = value[start - 1]
+    const prefix = value.length > 0 && prevChar && prevChar !== "\n" ? "\n\n" : ""
+    insertAtCursor(`${prefix}![${altText}](${blobUrl})\n`)
+  }, [onStageFile, insertAtCursor, value])
 
-  const handleRemove = () => {
-    const updated = stripMarkdownImage(text)
-    onChangeText(updated)
-  }
+  const handleDrop = useCallback((e: React.DragEvent<HTMLTextAreaElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDraggingOver(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) stageAndInsertImage(file)
+  }, [stageAndInsertImage])
 
-  if (imageInfo) {
+  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    files.forEach((f) => stageAndInsertImage(f))
+    e.target.value = ""
+  }, [stageAndInsertImage])
+
+  const hasContent = value.trim().length > 0
+
+  if (compact) {
+    // Compact mode: single-line input area with image insert + inline preview toggle
     return (
-      <div className={cn("relative rounded-lg border border-border/80 bg-muted/20 p-2", compact ? "text-xs mt-1" : "text-sm mt-2")}>
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={imageInfo.url}
-              alt={imageInfo.alt || "Attached preview"}
-              className={cn("shrink-0 rounded-md border object-contain bg-background p-0.5", compact ? "size-9" : "size-14")}
-            />
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium text-foreground text-xs">{imageInfo.alt || "Image attached"}</p>
-              <p className="text-[11px] text-muted-foreground">Will be uploaded on save</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              Replace
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-              onClick={handleRemove}
-            >
-              <Trash2 className="size-3.5" />
-            </Button>
-          </div>
+      <div className={cn("space-y-1", className)}>
+        <div className={cn(
+          "relative rounded-lg border transition-colors",
+          isDraggingOver ? "border-primary bg-primary/5" : "border-border/80 bg-background",
+        )}>
+          <textarea
+            ref={textareaRef}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            rows={rows}
+            disabled={disabled}
+            className={cn(
+              "w-full resize-none rounded-lg bg-transparent px-2.5 py-2 text-sm font-normal placeholder:text-muted-foreground/50 focus:outline-none",
+              onStageFile && "pr-8"
+            )}
+            onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true) }}
+            onDragLeave={() => setIsDraggingOver(false)}
+            onDrop={handleDrop}
+          />
+          {onStageFile && (
+            <>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute right-1.5 bottom-1.5 text-muted-foreground/50 hover:text-primary transition-colors p-0.5 rounded"
+                title="Attach image"
+              >
+                <Image className="size-3.5" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleFileInput}
+              />
+            </>
+          )}
         </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0]
-            if (f) handleFile(f)
-            e.target.value = ""
-          }}
-        />
+        {/* Inline preview strip when content has images/math */}
+        {activeTab === "preview" && hasContent && (
+          <div className="rounded-md border border-border/50 bg-muted/10 px-2.5 py-2 text-sm">
+            <RichText content={value} allowCopy={false} />
+          </div>
+        )}
+        <div className="flex items-center justify-between">
+          {onStageFile && (
+            <span className="text-[10px] text-muted-foreground/50">Drop image to embed · MD + $LaTeX$ supported</span>
+          )}
+          {hasContent && (
+            <button
+              type="button"
+              onClick={() => setActiveTab(t => t === "preview" ? "write" : "preview")}
+              className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {activeTab === "preview" ? <Code className="size-2.5" /> : <Eye className="size-2.5" />}
+              {activeTab === "preview" ? "Edit" : "Preview"}
+            </button>
+          )}
+        </div>
       </div>
     )
   }
 
+  // Full editor mode: Write / Preview tabs
   return (
-    <div className={compact ? "mt-1" : "mt-2"}>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0]
-          if (f) handleFile(f)
-          e.target.value = ""
-        }}
-      />
-      {compact ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => fileInputRef.current?.click()}
-          className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-foreground gap-1"
-          title="Attach image to option"
-        >
-          <Image className="size-3 text-primary/70" />
-          <span>Add Image</span>
-        </Button>
-      ) : (
+    <div className={cn("space-y-0 rounded-lg border border-border/80 overflow-hidden focus-within:ring-1 focus-within:ring-ring", className)}>
+      {/* Tab bar */}
+      <div className="flex items-center justify-between border-b border-border/60 bg-muted/20 px-2 py-1">
+        <div className="flex items-center gap-0.5">
+          <button
+            type="button"
+            onClick={() => setActiveTab("write")}
+            className={cn(
+              "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+              activeTab === "write"
+                ? "bg-background text-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <span className="flex items-center gap-1.5">
+              <Code className="size-3" />
+              Write
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("preview")}
+            className={cn(
+              "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+              activeTab === "preview"
+                ? "bg-background text-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <span className="flex items-center gap-1.5">
+              <Eye className="size-3" />
+              Preview
+            </span>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-1">
+          {onStageFile && (
+            <>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-background/60 transition-colors"
+                title="Insert image(s) at cursor"
+              >
+                <Image className="size-3 text-primary/70" />
+                Add Image
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleFileInput}
+              />
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Write pane */}
+      {activeTab === "write" && (
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          rows={rows}
+          disabled={disabled}
+          className={cn(
+            "w-full resize-none bg-transparent px-3 py-2.5 text-sm placeholder:text-muted-foreground/50 focus:outline-none font-normal",
+            isDraggingOver && "bg-primary/5"
+          )}
+          onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true) }}
+          onDragLeave={() => setIsDraggingOver(false)}
+          onDrop={handleDrop}
+        />
+      )}
+
+      {/* Preview pane */}
+      {activeTab === "preview" && (
         <div
-          onDragOver={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-          }}
-          onDrop={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            const f = e.dataTransfer.files?.[0]
-            if (f) handleFile(f)
-          }}
-          onClick={() => fileInputRef.current?.click()}
-          className="group flex items-center justify-center gap-2 rounded-lg border border-dashed border-border/80 bg-muted/10 px-3 py-2.5 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:bg-muted/20 hover:text-foreground cursor-pointer"
+          className="min-h-[6rem] px-3 py-2.5"
+          style={{ minHeight: `${rows * 1.5 + 1.25}rem` }}
         >
-          <Image className="size-4 text-primary/70 group-hover:text-primary transition-colors" />
-          <span>Click or drop an image to attach to this question</span>
+          {hasContent ? (
+            <RichText content={value} allowCopy={false} />
+          ) : (
+            <p className="text-sm italic text-muted-foreground/50">Nothing to preview yet.</p>
+          )}
         </div>
       )}
+
+      {/* Footer hint */}
+      <div className="flex items-center gap-2 border-t border-border/40 bg-muted/10 px-3 py-1">
+        <span className="text-[10px] text-muted-foreground/50">
+          Markdown · $LaTeX$ · `code` · ![img](url)
+          {onStageFile && " · Drop images to embed"}
+        </span>
+      </div>
     </div>
   )
 }
@@ -1504,61 +1629,58 @@ function OptionsBuilder({
   return (
     <div className="space-y-3">
       {options.map((opt, idx) => (
-        <div key={opt._key} className="flex flex-col gap-2 rounded-lg border p-3 bg-muted/5">
+        <div key={opt._key} className={cn(
+          "rounded-lg border p-3 space-y-2 transition-colors",
+          opt.is_correct
+            ? "border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/10"
+            : "border-border bg-muted/5"
+        )}>
           <div className="flex items-center gap-2">
-            <span className="w-5 shrink-0 text-center text-xs font-bold text-muted-foreground">
+            <span className={cn(
+              "flex size-5 shrink-0 items-center justify-center rounded-md border text-[10px] font-bold",
+              opt.is_correct
+                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 dark:text-emerald-400"
+                : "bg-muted text-muted-foreground border-border"
+            )}>
               {String.fromCharCode(65 + idx)}
             </span>
-            <Input
-              placeholder={`Option ${String.fromCharCode(65 + idx)}`}
-              value={stripMarkdownImage(opt.option_text)}
-              onChange={(e) => {
-                const imgInfo = extractMarkdownImageUrl(opt.option_text)
-                const newText = setMarkdownImage(e.target.value, imgInfo ? imgInfo.url : null, imgInfo ? imgInfo.alt : undefined)
-                updateText(opt._key, newText)
-              }}
-              className={cn(
-                "flex-1 text-sm",
-                opt.is_correct && "border-emerald-500 focus-visible:ring-emerald-400"
-              )}
-            />
-            <button
-              type="button"
-              onClick={() => toggleCorrect(opt._key)}
-              title="Mark as correct"
-              className={cn(
-                "flex shrink-0 items-center gap-1 rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
-                opt.is_correct
-                  ? "border-emerald-400 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
-                  : "border-border text-muted-foreground hover:border-emerald-400 hover:text-emerald-600"
-              )}
-            >
-              {opt.is_correct ? (
-                <CheckCircle2 className="h-3.5 w-3.5" />
-              ) : (
-                <Circle className="h-3.5 w-3.5" />
-              )}
-              <span className="hidden sm:inline">Correct</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => remove(opt._key)}
-              disabled={options.length <= 2}
-              className="text-muted-foreground transition-colors hover:text-destructive disabled:opacity-25"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-1 ml-auto shrink-0">
+              <button
+                type="button"
+                onClick={() => toggleCorrect(opt._key)}
+                title="Mark as correct"
+                className={cn(
+                  "flex shrink-0 items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium transition-colors",
+                  opt.is_correct
+                    ? "border-emerald-400 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
+                    : "border-border text-muted-foreground hover:border-emerald-400 hover:text-emerald-600"
+                )}
+              >
+                {opt.is_correct ? (
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                ) : (
+                  <Circle className="h-3.5 w-3.5" />
+                )}
+                <span className="hidden sm:inline">Correct</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => remove(opt._key)}
+                disabled={options.length <= 2}
+                className="text-muted-foreground transition-colors hover:text-destructive disabled:opacity-25 p-1"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
-          <div className="pl-7">
-            <ImageAttachmentField
-              text={opt.option_text}
-              onChangeText={(newText) => updateText(opt._key, newText)}
-              onStageFile={onStageFile}
-              label="Option Image"
-              defaultAlt={`Option ${String.fromCharCode(65 + idx)} Image`}
-              compact={true}
-            />
-          </div>
+          <MarkdownEditor
+            value={opt.option_text}
+            onChange={(text) => updateText(opt._key, text)}
+            onStageFile={onStageFile}
+            placeholder={`Option ${String.fromCharCode(65 + idx)} — text, $LaTeX$, code, images…`}
+            rows={2}
+            compact={true}
+          />
         </div>
       ))}
       {options.length < 6 && (
@@ -1769,9 +1891,7 @@ function QuestionSheet({
 
   const validate = (): string[] => {
     const e: string[] = []
-    const cleanText = stripMarkdownImage(form.question_text)
-    const hasQuestionImg = !!extractMarkdownImageUrl(form.question_text)
-    if (!cleanText && !hasQuestionImg) e.push("Question text or image is required.")
+    if (!form.question_text.trim()) e.push("Question text is required.")
     if (!selectedSectionId) e.push("Select a section for this question.")
     if (form.options.some((o) => !o.option_text.trim())) e.push("All options must have text or an image.")
     if (!form.options.some((o) => o.is_correct)) e.push("Mark at least one correct answer.")
@@ -1820,23 +1940,12 @@ function QuestionSheet({
             <Label>
               Question <span className="text-destructive">*</span>
             </Label>
-            <Textarea
-              placeholder="Enter the question text…"
-              value={stripMarkdownImage(form.question_text)}
-              onChange={(e) => {
-                const imgInfo = extractMarkdownImageUrl(form.question_text)
-                const newText = setMarkdownImage(e.target.value, imgInfo ? imgInfo.url : null, imgInfo ? imgInfo.alt : undefined)
-                set("question_text", newText)
-              }}
-              rows={3}
-              className="resize-none text-sm"
-            />
-            <ImageAttachmentField
-              text={form.question_text}
-              onChangeText={(newText) => set("question_text", newText)}
+            <MarkdownEditor
+              value={form.question_text}
+              onChange={(v) => set("question_text", v)}
               onStageFile={onStageFile}
-              label="Attach Question Image"
-              defaultAlt="Question Diagram"
+              placeholder="Enter question text… supports $LaTeX$, **bold**, `code`, ![img](url)…"
+              rows={4}
             />
           </div>
 
@@ -1923,24 +2032,12 @@ function QuestionSheet({
                 </span>
               </AccordionTrigger>
               <AccordionContent className="px-3 pb-3 space-y-2">
-                <Textarea
-                  placeholder="Explain why the correct answer is correct…"
-                  value={stripMarkdownImage(form.explanation)}
-                  onChange={(e) => {
-                    const imgInfo = extractMarkdownImageUrl(form.explanation)
-                    const newText = setMarkdownImage(e.target.value, imgInfo ? imgInfo.url : null, imgInfo ? imgInfo.alt : undefined)
-                    set("explanation", newText)
-                  }}
-                  rows={3}
-                  className="resize-none text-sm"
-                />
-                <ImageAttachmentField
-                  text={form.explanation}
-                  onChangeText={(newText) => set("explanation", newText)}
+                <MarkdownEditor
+                  value={form.explanation}
+                  onChange={(v) => set("explanation", v)}
                   onStageFile={onStageFile}
-                  label="Attach Explanation Image"
-                  defaultAlt="Explanation Diagram"
-                  compact={true}
+                  placeholder="Explain why the correct answer is correct… supports $LaTeX$, code blocks, and images"
+                  rows={4}
                 />
               </AccordionContent>
             </AccordionItem>

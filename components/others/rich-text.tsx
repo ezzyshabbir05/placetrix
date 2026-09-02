@@ -327,18 +327,23 @@ function ZoomableImage({
         }}
         className={cn(
           "group relative block w-fit text-left cursor-zoom-in rounded-xl transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary",
-          inline ? "my-2.5" : "my-4"
+          inline ? "my-1.5 inline-block align-middle" : "my-4"
         )}
       >
         <span className={cn(
-          "relative flex items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-muted/20 p-2 shadow-xs transition-all duration-300 group-hover:border-primary/60 group-hover:shadow-md",
-          inline ? "w-44 h-44 sm:w-52 sm:h-52" : "w-56 h-56 sm:w-64 sm:h-64"
+          "relative flex items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-muted/20 p-1.5 shadow-xs transition-all duration-300 group-hover:border-primary/60 group-hover:shadow-md",
+          inline
+            ? "max-w-[200px] max-h-[160px] w-auto h-auto"
+            : "w-56 h-56 sm:w-72 sm:h-72"
         )}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={getOptimizedImageUrl(src, { width: inline ? 360 : 520, quality: 80, resize: "contain" })}
+            src={getOptimizedImageUrl(src, { width: inline ? 280 : 520, quality: 80, resize: "contain" })}
             alt={alt ?? "Image"}
-            className="w-full h-full object-contain select-none rounded-lg transition-transform duration-300 group-hover:scale-[1.02]"
+            className={cn(
+              "object-contain select-none rounded-lg transition-transform duration-300 group-hover:scale-[1.02]",
+              inline ? "max-w-[196px] max-h-[152px] w-auto h-auto" : "w-full h-full"
+            )}
             loading="lazy"
           />
 
@@ -563,6 +568,21 @@ export interface RichTextProps {
  *
  * Drop-in replacement for <LatexRenderer>.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const KATEX_BLOCK_OPTIONS: any = {
+  throwOnError: false,
+  strict: false,
+  output: "html",
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const KATEX_INLINE_OPTIONS: any = {
+  throwOnError: false,
+  strict: false,
+  output: "html",
+  displayMode: false,
+}
+
 export function RichText({ content = "", className, allowCopy = true }: RichTextProps) {
   const normalized = useMemo(() => normalizeContent(content), [content])
 
@@ -575,7 +595,7 @@ export function RichText({ content = "", className, allowCopy = true }: RichText
       <style dangerouslySetInnerHTML={{ __html: PRISM_CSS }} />
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex]}
+        rehypePlugins={[[rehypeKatex, KATEX_BLOCK_OPTIONS]]}
         components={buildComponents(false, allowCopy)}
       >
         {normalized}
@@ -605,11 +625,11 @@ export function InlineRichText({ children, className, allowCopy = false }: Inlin
   const normalized = useMemo(() => normalizeContent(children ?? ""), [children])
 
   return (
-    <span className={className}>
+    <span className={cn("inline", className)}>
       <style dangerouslySetInnerHTML={{ __html: PRISM_CSS }} />
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex]}
+        rehypePlugins={[[rehypeKatex, KATEX_INLINE_OPTIONS]]}
         components={buildComponents(true, allowCopy)}
       >
         {normalized}

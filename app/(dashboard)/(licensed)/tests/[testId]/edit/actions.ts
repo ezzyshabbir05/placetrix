@@ -526,51 +526,75 @@ Generate rigorous, unambiguous, and pedagogy-grade multiple-choice questions fol
 - "tag_names": 1–3 precise subject/concept tags. Prioritize the exact tags provided in the prompt's 'EXISTING TAGS' list.
 
 ==================================================
-3. LATEX MATHEMATICAL FORMATTING (KaTeX)
+3. LATEX MATHEMATICAL FORMATTING (KaTeX) — READ CAREFULLY
 ==================================================
-Our platform renders math using KaTeX:
-- INLINE MATH: Wrap ALL variables, algebraic expressions, formulas, matrices, units, exponents, square roots, fractions, and Greek letters in SINGLE DOLLAR DELIMITERS ($...$).
+Our platform renders math using KaTeX via react-markdown + remark-math + rehype-katex.
+
+DELIMITER RULES:
+- INLINE MATH: Wrap ALL variables, algebraic expressions, formulas, units, exponents, square roots, fractions, and Greek letters in SINGLE DOLLAR SIGNS: $...$
   * Good: "If $f(x) = x^2 + 2x$, find $f'(3)$."
   * Good: "Calculate the energy in $\\\\text{Joules}$ given $E = mc^2$."
-  * Bad: "If f(x) = x^2 + 2x" (Never write plain text math)
-- DISPLAY / MULTI-LINE EQUATIONS: Wrap standalone equations in DOUBLE DOLLAR DELIMITERS ($$...$$):
+  * Good: "The velocity is $v = \\\\frac{d}{t}$ where $d$ is distance in $\\\\text{m}$."
+  * BAD:  "If f(x) = x^2 + 2x"  (Never write math as plain text)
+- DISPLAY / BLOCK MATH: For standalone, full-width equations use DOUBLE DOLLAR SIGNS on their own line: $$...$$
   * Good: "$$\\\\int_{0}^{\\\\infty} e^{-x^2} dx = \\\\frac{\\\\sqrt{\\\\pi}}{2}$$"
+  * NOTE: In options, prefer $...$ inline. Use $$$$ only in question_text or explanation for major equations.
 - GREEK LETTERS & OPERATORS: Always in math mode: "$\\\\alpha$", "$\\\\beta$", "$\\\\theta$", "$\\\\lambda$", "$\\\\mu$", "$\\\\sigma$", "$\\\\Omega$", "$\\\\Delta$", "$\\\\nabla$".
-- PERCENTAGES: Write "$20\\\\%$" inside math or "20%" in regular text.
-- CURRENCY SAFETY: To avoid accidentally opening an unclosed math block with '$', ALWAYS write currencies as either:
-  * "USD 5,000" or "$5{,}000$ dollars" (never leave a lone '$' without a closing '$').
+- PERCENTAGES: Write "$20\\\\%$" inside math or "20%" in regular plain text.
+
+CRITICAL — JSON BACKSLASH ESCAPING:
+Because your output is a JSON string, EVERY LaTeX backslash MUST be doubled (\\\\):
+  * Write "\\\\frac", "\\\\sqrt", "\\\\sum", "\\\\int", "\\\\lim", "\\\\infty"
+  * Write "\\\\alpha", "\\\\beta", "\\\\gamma", "\\\\theta", "\\\\lambda", "\\\\mu", "\\\\sigma", "\\\\pi", "\\\\Omega", "\\\\Delta", "\\\\nabla"
+  * Write "\\\\times", "\\\\cdot", "\\\\div", "\\\\pm", "\\\\leq", "\\\\geq", "\\\\neq", "\\\\approx", "\\\\equiv"
+  * Write "\\\\text{...}", "\\\\mathrm{...}", "\\\\mathbf{...}", "\\\\vec{...}", "\\\\hat{...}"
+  * Write "\\\\left(", "\\\\right)", "\\\\left[", "\\\\right]"
+  * Write "\\\\begin{pmatrix}", "\\\\end{pmatrix}", "\\\\begin{bmatrix}", "\\\\end{bmatrix}"
+
+MATRIX ROW SEPARATOR EXAMPLE (most tricky escaping):
+  Inside a $...$ math block, LaTeX row separator is \\\\.
+  In a JSON string, that becomes \\\\\\\\.
+  Example: "$\\\\begin{pmatrix} a & b \\\\\\\\ c & d \\\\end{pmatrix}$"
+
+DOLLAR SIGN SAFETY — Avoid Accidental Math Blocks:
+  Wrong: "earns $5,000 per month" — this opens an unclosed $math block!
+  Right: "earns USD 5,000 per month"
+  Right: "$5{,}000$ dollars" (both dollar signs closed)
 - DELIMITER MATCHING: Every '$' MUST close on the same expression. Never span a '$' across plain sentences.
-- JSON BACKSLASH ESCAPING: Because your output is valid JSON, EVERY backslash in LaTeX MUST be double-escaped:
-  * Write "\\\\frac", "\\\\sqrt", "\\\\sum", "\\\\times", "\\\\cdot", "\\\\le", "\\\\ge", "\\\\neq", "\\\\infty".
 
 ==================================================
 4. CODE BLOCKS & INLINE CODE (Prism.js)
 ==================================================
-Our platform renders code blocks with Prism.js syntax highlighting:
-- INLINE CODE: Wrap keywords, types, function names, variables, and short statements in single backticks: \`x\`, \`ArrayList<String>\`, \`SELECT * FROM users\`, \`malloc()\`.
+Our platform renders code with Prism.js syntax highlighting via react-markdown + remark-gfm:
+- INLINE CODE: Wrap keywords, types, function names, variables, and short statements in single backticks: \`x\`, \`ArrayList<String>\`, \`SELECT * FROM users\`, \`malloc()\`, \`O(n log n)\`.
 - CODE BLOCKS: When a question or explanation involves code, ALWAYS use triple backticks with the exact language identifier:
-  * Example:
-    \`\`\`python\\ndef solve(arr):\\n    return [x * 2 for x in arr]\\n\`\`\`
-  * Supported languages: python, javascript, typescript, java, cpp, c, csharp, sql, bash, json, html, css.
-  * In the JSON string, format newlines inside code blocks explicitly as \\n.
+  * Supported languages: python, javascript, typescript, java, cpp, c, csharp, sql, bash, json, html, css, go, rust, kotlin, swift
+  * In the JSON string, format newlines inside code blocks explicitly as \n.
+  * Example in JSON: "question_text": "What does this output?\n\`\`\`python\ndef solve(arr):\n    return [x * 2 for x in arr]\nprint(solve([1,2,3]))\n\`\`\`"
 
 ==================================================
 5. TABLES & TABULAR DATA (GFM Markdown)
 ==================================================
 - Format all datasets, truth tables, comparison charts, and matrix tables as standard GitHub-Flavored Markdown tables.
-- Separate table rows with explicit \\n characters in the JSON string.
-- You may use LaTeX math inside table cells (e.g. "| $x$ | $f(x) = x^2$ |\\n|---|---|\\n| $1$ | $1$ |\\n| $2$ | $4$ |").
+- Separate table rows with explicit \n characters in the JSON string.
+- You may use LaTeX math inside table cells: "| $x$ | $f(x) = x^2$ |\n|---|---|\n| $1$ | $1$ |\n| $2$ | $4$ |".
+- Full table example in JSON: "question_text": "Given the truth table:\n\n| A | B | A AND B |\n|---|---|---------|\n| 0 | 0 | 0 |\n| 1 | 1 | 1 |\n\nWhat gate is this?"
 
 ==================================================
 6. RICH TEXT FORMATTING
 ==================================================
-- Use Markdown **bold** to highlight key constraints (e.g. "**NOT**", "**EXCEPT**", "**ALWAYS**", "**FALSE**").
+- Use Markdown **bold** to highlight key constraints: "**NOT**", "**EXCEPT**", "**ALWAYS**", "**FALSE**".
 - Use Markdown *italic* for technical terminology or foreign phrases.
 
 ==================================================
-7. OUTPUT SCHEMA (JSON ONLY)
+7. IMAGES — DO NOT INCLUDE
 ==================================================
-Output must be a single, strictly valid JSON object matching this schema:
+Do NOT output any Markdown image syntax ![alt](url) or external URLs. Images will only be added by the user manually.
+
+==================================================
+8. OUTPUT SCHEMA (JSON ONLY — NO OTHER TEXT)
+==================================================
+Output ONLY a single, valid JSON object. Do not include any text, comments, or markdown fences before or after.
 {
   "questions": [
     {
