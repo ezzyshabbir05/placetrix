@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useEffect, useTransition, useRef } from "react"
+import { useState, useCallback, useEffect, useTransition, useRef, useMemo } from "react"
 import { toast } from "sonner"
 import { getFriendlyErrorMessage } from "@/lib/errors"
 import { Button } from "@/components/ui/button"
@@ -1364,6 +1364,22 @@ function MarkdownEditor({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Extract all markdown images from text
+  const attachedImages = useMemo<{ alt: string; url: string; fullMatch: string }[]>(() => {
+    const regex = /!\[(.*?)\]\(((?:https?:\/\/|blob:)[^)]+)\)/g
+    const matches: { alt: string; url: string; fullMatch: string }[] = []
+    let match: RegExpExecArray | null
+    while ((match = regex.exec(value)) !== null) {
+      matches.push({ alt: match[1], url: match[2], fullMatch: match[0] })
+    }
+    return matches
+  }, [value])
+
+  const removeImage = useCallback((fullMatch: string) => {
+    const updated = value.replace(fullMatch, "").replace(/\n{3,}/g, "\n\n").trim()
+    onChange(updated)
+  }, [value, onChange])
+
   // Insert text at cursor position in the textarea
   const insertAtCursor = useCallback((insertion: string) => {
     const el = textareaRef.current
@@ -1397,7 +1413,6 @@ function MarkdownEditor({
     if (!onStageFile) return
     const blobUrl = onStageFile(file)
     const altText = file.name.replace(/\.[^.]+$/, "").replace(/[-_]/g, " ") || "Image"
-    // Insert with a preceding newline only if there's existing content and the cursor isn't at start of line
     const el = textareaRef.current
     const start = el?.selectionStart ?? value.length
     const prevChar = value[start - 1]
@@ -1422,11 +1437,11 @@ function MarkdownEditor({
   const hasContent = value.trim().length > 0
 
   if (compact) {
-    // Compact mode: single-line input area with image insert + inline preview toggle
+    // Compact mode: input area with image attach button + attached thumbnails + preview toggle
     return (
-      <div className={cn("space-y-1", className)}>
+      <div className={cn("space-y-1.5", className)}>
         <div className={cn(
-          "relative rounded-lg border transition-colors",
+          "relative rounded-lg border transition-colors overflow-hidden",
           isDraggingOver ? "border-primary bg-primary/5" : "border-border/80 bg-background",
         )}>
           <textarea
@@ -1437,7 +1452,7 @@ function MarkdownEditor({
             rows={rows}
             disabled={disabled}
             className={cn(
-              "w-full resize-none rounded-lg bg-transparent px-2.5 py-2 text-sm font-normal placeholder:text-muted-foreground/50 focus:outline-none",
+              "w-full resize-none bg-transparent px-2.5 py-2 text-sm font-normal placeholder:text-muted-foreground/50 focus:outline-none",
               onStageFile && "pr-8"
             )}
             onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true) }}
@@ -1449,8 +1464,8 @@ function MarkdownEditor({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute right-1.5 bottom-1.5 text-muted-foreground/50 hover:text-primary transition-colors p-0.5 rounded"
-                title="Attach image"
+                className="absolute right-1.5 bottom-1.5 text-muted-foreground/60 hover:text-primary transition-colors p-1 rounded hover:bg-muted/50"
+                title="Attach image to option"
               >
                 <Image className="size-3.5" />
               </button>
@@ -1464,25 +1479,48 @@ function MarkdownEditor({
               />
             </>
           )}
+
+          {/* Attached image preview chips in compact mode */}
+          {attachedImages.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 border-t border-border/40 bg-muted/20 px-2.5 py-1.5">
+              {attachedImages.map((img, i) => (
+                <div key={i} className="flex items-center gap-1 rounded border border-border/70 bg-background px-1.5 py-0.5 text-[11px] shadow-2xs">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img.url} alt={img.alt || "preview"} className="size-4 rounded object-contain" />
+                  <span className="max-w-[90px] truncate text-[10px] font-medium">{img.alt || "Image"}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeImage(img.fullMatch)}
+                    className="text-muted-foreground hover:text-destructive"
+                    title="Remove image"
+                  >
+                    <X className="size-2.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-        {/* Inline preview strip when content has images/math */}
+
+        {/* Inline preview strip */}
         {activeTab === "preview" && hasContent && (
-          <div className="rounded-md border border-border/50 bg-muted/10 px-2.5 py-2 text-sm">
+          <div className="rounded-lg border border-border/60 bg-muted/15 p-2.5 text-sm">
             <RichText content={value} allowCopy={false} />
           </div>
         )}
-        <div className="flex items-center justify-between">
+
+        <div className="flex items-center justify-between px-0.5">
           {onStageFile && (
-            <span className="text-[10px] text-muted-foreground/50">Drop image to embed · MD + $LaTeX$ supported</span>
+            <span className="text-[10px] text-muted-foreground/50">MD + $LaTeX$ + images supported</span>
           )}
           {hasContent && (
             <button
               type="button"
-              onClick={() => setActiveTab(t => t === "preview" ? "write" : "preview")}
-              className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setActiveTab((t) => (t === "preview" ? "write" : "preview"))}
+              className="ml-auto flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
-              {activeTab === "preview" ? <Code className="size-2.5" /> : <Eye className="size-2.5" />}
-              {activeTab === "preview" ? "Edit" : "Preview"}
+              {activeTab === "preview" ? <Code className="size-3" /> : <Eye className="size-3" />}
+              {activeTab === "preview" ? "Hide Preview" : "Preview"}
             </button>
           )}
         </div>
@@ -1490,7 +1528,7 @@ function MarkdownEditor({
     )
   }
 
-  // Full editor mode: Write / Preview tabs
+  // Full editor mode: Write / Preview tabs + attached image bar
   return (
     <div className={cn("space-y-0 rounded-lg border border-border/80 overflow-hidden focus-within:ring-1 focus-within:ring-ring", className)}>
       {/* Tab bar */}
@@ -1555,27 +1593,60 @@ function MarkdownEditor({
 
       {/* Write pane */}
       {activeTab === "write" && (
-        <textarea
-          ref={textareaRef}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          rows={rows}
-          disabled={disabled}
-          className={cn(
-            "w-full resize-none bg-transparent px-3 py-2.5 text-sm placeholder:text-muted-foreground/50 focus:outline-none font-normal",
-            isDraggingOver && "bg-primary/5"
+        <div className="space-y-0">
+          <textarea
+            ref={textareaRef}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            rows={rows}
+            disabled={disabled}
+            className={cn(
+              "w-full resize-none bg-transparent px-3 py-2.5 text-sm placeholder:text-muted-foreground/50 focus:outline-none font-normal",
+              isDraggingOver && "bg-primary/5"
+            )}
+            onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true) }}
+            onDragLeave={() => setIsDraggingOver(false)}
+            onDrop={handleDrop}
+          />
+
+          {/* Attached image preview bar inside Write tab */}
+          {attachedImages.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 border-t border-border/40 bg-muted/15 px-3 py-2">
+              <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+                <Image className="size-3 text-primary" />
+                {attachedImages.length} Attached Image{attachedImages.length > 1 ? "s" : ""}:
+              </span>
+              {attachedImages.map((img, i) => (
+                <div key={i} className="flex items-center gap-1.5 rounded-md border border-border/70 bg-background px-2 py-1 shadow-2xs text-xs">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={img.url}
+                    alt={img.alt || "preview"}
+                    className="size-6 rounded object-contain border bg-muted/20"
+                  />
+                  <span className="text-[11px] font-medium max-w-[120px] truncate text-foreground">
+                    {img.alt || `Image ${i + 1}`}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeImage(img.fullMatch)}
+                    className="text-muted-foreground hover:text-destructive p-0.5 rounded transition-colors"
+                    title="Remove image from markdown"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
           )}
-          onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true) }}
-          onDragLeave={() => setIsDraggingOver(false)}
-          onDrop={handleDrop}
-        />
+        </div>
       )}
 
       {/* Preview pane */}
       {activeTab === "preview" && (
         <div
-          className="min-h-[6rem] px-3 py-2.5"
+          className="min-h-[6rem] p-3 overflow-y-auto bg-background/50"
           style={{ minHeight: `${rows * 1.5 + 1.25}rem` }}
         >
           {hasContent ? (

@@ -115,12 +115,12 @@ export function replaceBlobUrlsInQuestions<
 }
 
 /**
- * Uses Supabase's image transformation service (imgproxy) to compress, resize,
- * and optimize images on the fly with custom dimensions and quality settings.
+ * Returns the image URL. Safe against environments where Supabase Image Transformation
+ * (imgproxy) is not enabled, avoiding 404/400 broken image errors.
  */
 export function getOptimizedImageUrl(
   url: string,
-  options: {
+  _options: {
     width?: number
     height?: number
     quality?: number
@@ -129,23 +129,6 @@ export function getOptimizedImageUrl(
   } = {}
 ): string {
   if (!url) return ""
-  if (!url.startsWith("http") || url.startsWith("blob:")) {
-    return url
-  }
-
-  const { width, height, quality = 80, resize = "contain", format } = options
-
-  if (url.includes("/storage/v1/object/public/")) {
-    const renderUrl = url.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/")
-    const params = new URLSearchParams()
-    if (width) params.set("width", String(width))
-    if (height) params.set("height", String(height))
-    if (quality) params.set("quality", String(quality))
-    if (resize) params.set("resize", resize)
-    if (format) params.set("format", format)
-    const qs = params.toString()
-    return qs ? `${renderUrl}?${qs}` : renderUrl
-  }
-
   return url
 }
+

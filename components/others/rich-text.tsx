@@ -19,7 +19,7 @@ import remarkGfm from "remark-gfm"
 import rehypeKatex from "rehype-katex"
 import Prism from "prismjs"
 import "katex/dist/katex.min.css"
-import { Copy, Check, ZoomIn, ExternalLink } from "lucide-react"
+import { Copy, Check, ZoomIn, ExternalLink, AlertTriangle } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -307,8 +307,21 @@ function ZoomableImage({
 }) {
   const [open, setOpen] = useState(false)
   const [isZoomed, setIsZoomed] = useState(false)
+  const [hasError, setHasError] = useState(false)
 
   if (!src) return null
+
+  if (hasError) {
+    return (
+      <span className={cn(
+        "inline-flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive",
+        inline ? "my-1 align-middle" : "my-2"
+      )}>
+        <AlertTriangle className="size-3.5 shrink-0" />
+        <span>Failed to load image{alt ? `: ${alt}` : ""}</span>
+      </span>
+    )
+  }
 
   return (
     <>
@@ -326,25 +339,25 @@ function ZoomableImage({
           }
         }}
         className={cn(
-          "group relative block w-fit text-left cursor-zoom-in rounded-xl transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary",
-          inline ? "my-1.5 inline-block align-middle" : "my-4"
+          "group relative cursor-zoom-in rounded-xl transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary",
+          inline ? "my-1 inline-block align-middle max-w-full" : "my-3 block w-fit max-w-full"
         )}
       >
         <span className={cn(
           "relative flex items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-muted/20 p-1.5 shadow-xs transition-all duration-300 group-hover:border-primary/60 group-hover:shadow-md",
           inline
-            ? "max-w-[200px] max-h-[160px] w-auto h-auto"
-            : "w-56 h-56 sm:w-72 sm:h-72"
+            ? "max-w-[260px] max-h-[180px] w-auto h-auto"
+            : "max-w-xl max-h-[420px] w-auto h-auto min-h-[80px]"
         )}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={getOptimizedImageUrl(src, { width: inline ? 280 : 520, quality: 80, resize: "contain" })}
+            src={getOptimizedImageUrl(src)}
             alt={alt ?? "Image"}
+            onError={() => setHasError(true)}
             className={cn(
-              "object-contain select-none rounded-lg transition-transform duration-300 group-hover:scale-[1.02]",
-              inline ? "max-w-[196px] max-h-[152px] w-auto h-auto" : "w-full h-full"
+              "object-contain select-none rounded-lg transition-transform duration-300 group-hover:scale-[1.01]",
+              inline ? "max-w-[250px] max-h-[170px] w-auto h-auto" : "max-w-full max-h-[400px] w-auto h-auto"
             )}
-            loading="lazy"
           />
 
           <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-background/90 px-1.5 py-0.5 text-[10px] sm:text-[11px] font-medium text-foreground backdrop-blur-md opacity-0 shadow-sm transition-opacity duration-200 group-hover:opacity-100 border border-border/50 select-none pointer-events-none">
@@ -354,7 +367,7 @@ function ZoomableImage({
         </span>
 
         {alt && !inline && (
-          <span className="mt-1.5 block text-left text-xs text-muted-foreground select-none italic max-w-xs truncate">
+          <span className="mt-1.5 block text-left text-xs text-muted-foreground select-none italic max-w-md truncate">
             {alt}
           </span>
         )}
@@ -363,7 +376,7 @@ function ZoomableImage({
       {/* Lightbox Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
-          className="max-w-[94vw] lg:max-w-6xl w-full p-2 sm:p-4 bg-background/95 backdrop-blur-xl border border-border/80 shadow-2xl rounded-2xl overflow-hidden flex flex-col max-h-[92vh]"
+          className="z-[100] max-w-[94vw] lg:max-w-6xl w-full p-2 sm:p-4 bg-background/95 backdrop-blur-xl border border-border/80 shadow-2xl rounded-2xl overflow-hidden flex flex-col max-h-[92vh]"
           showCloseButton={true}
           onClick={(e) => e.stopPropagation()}
         >
@@ -375,7 +388,7 @@ function ZoomableImage({
           <div className="relative flex-1 overflow-auto flex items-center justify-center min-h-[300px] max-h-[78vh] p-2 bg-muted/10 rounded-xl">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={getOptimizedImageUrl(src, { width: 1400, quality: 90, resize: "contain" })}
+              src={getOptimizedImageUrl(src)}
               alt={alt ?? "Enlarged view"}
               onClick={() => setIsZoomed((z) => !z)}
               className={cn(

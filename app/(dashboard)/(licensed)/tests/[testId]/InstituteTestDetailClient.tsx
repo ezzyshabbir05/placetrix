@@ -108,7 +108,7 @@ import {
 import { toast } from "sonner"
 import { getFriendlyErrorMessage } from "@/lib/errors"
 import { cn } from "@/lib/utils"
-import { InlineRichText } from "@/components/others/rich-text"
+import { InlineRichText, RichText } from "@/components/others/rich-text"
 import type { InstituteTestDetail, InstituteQuestion, InstituteSection, InstituteAttemptRow } from "./_types"
 import { formatDuration, formatDateTime, formatSeconds, resolvePct } from "./_types"
 import { ExportTestParticipantsModal } from "./ExportTestParticipantsModal"
@@ -293,7 +293,9 @@ function QuestionCard({
       </AccordionTrigger>
 
       <AccordionContent className="px-4 pb-4 pt-0 space-y-3">
-        <Separator className="mb-3" />
+        <div className="pt-1 pb-3 text-sm text-foreground/90 leading-relaxed border-b border-border/40">
+          <RichText content={question.question_text} />
+        </div>
         <div className="space-y-2">
           {sortedOptions.map((opt, optIdx) => {
             const letter = String.fromCharCode(65 + optIdx)
