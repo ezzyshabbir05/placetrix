@@ -285,7 +285,6 @@ export async function markAttendanceAction(scannedPayload: string, eventId: stri
     throw new Error(error.message || "Failed to mark attendance.")
   }
 
-  revalidatePath("/events")
   const candidateName = ticket.profile?.full_name || "Attendee"
   return { success: true, candidateId: ticket.candidate_id, candidateName }
 }

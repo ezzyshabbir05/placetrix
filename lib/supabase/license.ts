@@ -28,17 +28,27 @@ export const getInstituteLicense = cache(async (
 
     const { data, error } = await (supabase as any)
       .from("institute_licenses")
-      .select("status, plan_name, starts_at, ends_at")
+      .select("status, plan_name, starts_at, ends_at, institutes(institute_name)")
       .eq("institute_id", institute_id)
       .maybeSingle();
 
     if (error) {
       console.error("[getInstituteLicense] Error fetching license:", error);
-      return { status: null, plan_name: null, starts_at: null, ends_at: null };
+      return { status: null, plan_name: null, starts_at: null, ends_at: null, institute_name: null };
     }
 
+    let instName = (data?.institutes as any)?.institute_name ?? null;
+
     if (!data) {
-      return { status: null, plan_name: null, starts_at: null, ends_at: null };
+      if (!instName) {
+        const { data: instData } = await (supabase as any)
+          .from("institutes")
+          .select("institute_name")
+          .eq("id", institute_id)
+          .maybeSingle();
+        instName = instData?.institute_name ?? null;
+      }
+      return { status: null, plan_name: null, starts_at: null, ends_at: null, institute_name: instName };
     }
 
     const now = new Date();
@@ -59,10 +69,11 @@ export const getInstituteLicense = cache(async (
       plan_name: data.plan_name ?? null,
       starts_at: data.starts_at ?? null,
       ends_at: data.ends_at ?? null,
+      institute_name: instName,
     };
   } catch (e) {
     console.error("[getInstituteLicense] Unexpected error:", e);
-    return { status: null, plan_name: null, starts_at: null, ends_at: null };
+    return { status: null, plan_name: null, starts_at: null, ends_at: null, institute_name: null };
   }
 });
 

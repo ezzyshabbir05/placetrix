@@ -203,6 +203,7 @@ const TestCard = React.memo(function TestCard({
                       <div className="flex">
                         <Link
                           href={`/tests/${test.id}`}
+                          prefetch={false}
                           onClick={(e) => e.stopPropagation()}
                           className="font-semibold text-sm sm:text-base leading-tight truncate hover:text-primary hover:underline transition-colors inline-block max-w-full text-foreground"
                         >
@@ -388,7 +389,7 @@ const TestCard = React.memo(function TestCard({
                         asChild
                         className="h-8 gap-1.5 text-xs font-normal justify-center"
                       >
-                        <Link href={`/tests/${test.id}/edit`}>
+                        <Link href={`/tests/${test.id}/edit`} prefetch={false}>
                           <PenLine className="size-3.5" />
                           <span>Edit Test</span>
                         </Link>
@@ -401,7 +402,7 @@ const TestCard = React.memo(function TestCard({
                       asChild
                       className="w-full sm:w-auto h-8 gap-1.5 text-xs font-medium justify-center px-3"
                     >
-                      <Link href={`/tests/${test.id}`}>
+                      <Link href={`/tests/${test.id}`} prefetch={false}>
                         <span>View Test</span>
                         <ExternalLink className="size-3.5" />
                       </Link>
@@ -423,7 +424,7 @@ const TestCard = React.memo(function TestCard({
           Copy Link
         </ContextMenuItem>
         <ContextMenuItem asChild>
-          <Link href={`/tests/${test.id}/edit`}>
+          <Link href={`/tests/${test.id}/edit`} prefetch={false}>
             <PenLine className="size-4 mr-2" />
             Edit Settings
           </Link>

@@ -528,176 +528,155 @@ export default async function HomePage() {
     const nowIso = new Date().toISOString();
     const twoHoursAgoIso = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
 
-    // 1. Featured Test Query (Live -> Upcoming -> Latest fallback)
-    let featuredTest: any = null;
-    if (instituteId) {
-      // 1a. Live test query
-      const { data: liveTestData } = await (supabase as any)
-        .from("tests")
-        .select("id, title, description, time_limit_seconds, available_from, available_until, status")
-        .eq("institute_id", instituteId)
-        .eq("status", "published")
-        .lte("available_from", nowIso)
-        .or(`available_until.gt.${nowIso},available_until.is.null`)
-        .order("available_until", { ascending: true, nullsFirst: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (liveTestData) {
-        featuredTest = { ...liveTestData, derived_status: "live", isLive: true };
-      } else {
-        // 1b. Upcoming test query
-        const { data: upcomingTestData } = await (supabase as any)
-          .from("tests")
-          .select("id, title, description, time_limit_seconds, available_from, available_until, status")
-          .eq("institute_id", instituteId)
-          .eq("status", "published")
-          .gt("available_from", nowIso)
-          .order("available_from", { ascending: true })
-          .limit(1)
-          .maybeSingle();
-
-        if (upcomingTestData) {
-          featuredTest = { ...upcomingTestData, derived_status: "upcoming", isLive: false };
-        } else {
-          // 1c. Latest created test fallback (could be ended or draft)
-          const { data: latestTestData } = await (supabase as any)
-            .from("tests")
-            .select("id, title, description, time_limit_seconds, available_from, available_until, status")
-            .eq("institute_id", instituteId)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (latestTestData) {
-            let derived_status: "live" | "upcoming" | "past" | "draft" = "draft";
-            if (latestTestData.status === "published") {
-              const fromTime = latestTestData.available_from ? new Date(latestTestData.available_from).getTime() : null;
-              const untilTime = latestTestData.available_until ? new Date(latestTestData.available_until).getTime() : null;
-              const nowTime = Date.now();
-              if (fromTime && fromTime > nowTime) {
-                derived_status = "upcoming";
-              } else if (untilTime && untilTime < nowTime) {
-                derived_status = "past";
-              } else {
-                derived_status = "live";
-              }
-            }
-            featuredTest = { ...latestTestData, derived_status, isLive: derived_status === "live" };
-          }
-        }
-      }
-    }
-
-    // 2. Featured Opportunity Query (Active deadline -> Latest fallback)
-    let featuredOpportunity: any = null;
-    if (instituteId) {
-      const { data: activeOppData } = await (supabase as any)
-        .from("opportunities")
-        .select("id, title, job_role, location, ctc_lpa, stipend_monthly, deadline, company:companies(name, logo_url)")
-        .eq("institute_id", instituteId)
-        .gte("deadline", nowIso)
-        .order("deadline", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-
-      if (activeOppData) {
-        featuredOpportunity = { ...activeOppData, derived_status: "active" };
-      } else {
-        const { data: latestOppData } = await (supabase as any)
-          .from("opportunities")
-          .select("id, title, job_role, location, ctc_lpa, stipend_monthly, deadline, company:companies(name, logo_url)")
-          .eq("institute_id", instituteId)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (latestOppData) {
-          const isPast = latestOppData.deadline && new Date(latestOppData.deadline).getTime() < Date.now();
-          featuredOpportunity = { ...latestOppData, derived_status: isPast ? "past" : "active" };
-        }
-      }
-    }
-
-    // 3. Featured Event Query (Live/Upcoming date -> Latest fallback)
-    let featuredEvent: any = null;
-    if (instituteId) {
-      const { data: upcomingEventData } = await (supabase as any)
-        .from("events")
-        .select("id, title, description, date, venue, speaker_name, duration_minutes, status")
-        .eq("institute_id", instituteId)
-        .gte("date", twoHoursAgoIso)
-        .order("date", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-
-      if (upcomingEventData) {
-        featuredEvent = upcomingEventData;
-      } else {
-        const { data: latestEventData } = await (supabase as any)
-          .from("events")
-          .select("id, title, description, date, venue, speaker_name, duration_minutes, status")
-          .eq("institute_id", instituteId)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (latestEventData) {
-          featuredEvent = latestEventData;
-        }
-      }
-
-      if (featuredEvent && featuredEvent.date) {
-        const startTime = new Date(featuredEvent.date).getTime();
-        const endTime = startTime + (featuredEvent.duration_minutes || 120) * 60 * 1000;
-        const nowTime = Date.now();
-        const derived_status =
-          nowTime >= startTime && nowTime <= endTime
-            ? "live"
-            : nowTime < startTime
-              ? "upcoming"
-              : "past";
-        featuredEvent = { ...featuredEvent, derived_status };
-      }
-    }
-
-    // Parallel data fetching for institute dashboard stats & metadata
+    // Parallel data fetching for institute dashboard: stats, featured items, and calendar
     const [
+      recentTestsRes,
+      recentOppsRes,
+      recentEventsRes,
       homeStatsRes,
       candidatesCountRes,
       cohortsCountRes,
       instituteProfileRes,
       activityAttemptsRes,
     ] = await Promise.all([
+      instituteId
+        ? (supabase as any)
+            .from("tests")
+            .select("id, title, description, time_limit_seconds, available_from, available_until, status, created_at")
+            .eq("institute_id", instituteId)
+            .in("status", ["published", "draft"])
+            .order("created_at", { ascending: false })
+            .limit(20)
+        : Promise.resolve({ data: [] }),
+      instituteId
+        ? (supabase as any)
+            .from("opportunities")
+            .select("id, title, job_role, location, ctc_lpa, stipend_monthly, deadline, company:companies(name, logo_url), created_at")
+            .eq("institute_id", instituteId)
+            .order("created_at", { ascending: false })
+            .limit(10)
+        : Promise.resolve({ data: [] }),
+      instituteId
+        ? (supabase as any)
+            .from("events")
+            .select("id, title, description, date, venue, speaker_name, duration_minutes, status, created_at")
+            .eq("institute_id", instituteId)
+            .order("date", { ascending: false })
+            .limit(10)
+        : Promise.resolve({ data: [] }),
       (supabase as any).rpc("get_institute_home_stats" as any, {
         p_profile_id: primaryProfileId,
       }),
       instituteId
         ? (supabase as any)
-          .from("profiles")
-          .select("*", { count: "exact", head: true })
-          .eq("institute_id", instituteId)
-          .eq("account_type", "institute_candidate")
+            .from("profiles")
+            .select("*", { count: "exact", head: true })
+            .eq("institute_id", instituteId)
+            .eq("account_type", "institute_candidate")
         : Promise.resolve({ count: 0 }),
       instituteId
         ? (supabase as any)
-          .from("cohorts")
-          .select("*", { count: "exact", head: true })
-          .eq("institute_id", instituteId)
+            .from("cohorts")
+            .select("*", { count: "exact", head: true })
+            .eq("institute_id", instituteId)
         : Promise.resolve({ count: 0 }),
       instituteId
         ? (supabase as any)
-          .from("institutes")
-          .select("institute_name")
-          .eq("id", instituteId)
-          .maybeSingle()
+            .from("institutes")
+            .select("institute_name")
+            .eq("id", instituteId)
+            .maybeSingle()
         : Promise.resolve({ data: null }),
-      (supabase as any)
-        .from("test_attempts")
-        .select("submitted_at")
-        .eq("status", "submitted")
-        .gte("submitted_at", cutOffStr20Weeks),
+      instituteId
+        ? (supabase as any)
+            .from("test_attempts")
+            .select("submitted_at, tests!inner(institute_id)")
+            .eq("status", "submitted")
+            .eq("tests.institute_id", instituteId)
+            .gte("submitted_at", cutOffStr20Weeks)
+        : Promise.resolve({ data: [] }),
     ]);
+
+    const nowMs = Date.now();
+
+    // 1. Process Featured Test in memory
+    let featuredTest: any = null;
+    const testsList = recentTestsRes.data || [];
+    const liveTest = testsList.find((t: any) => {
+      if (t.status !== "published" || !t.available_from) return false;
+      const fromMs = new Date(t.available_from).getTime();
+      const untilMs = t.available_until ? new Date(t.available_until).getTime() : Infinity;
+      return nowMs >= fromMs && nowMs <= untilMs;
+    });
+
+    if (liveTest) {
+      featuredTest = { ...liveTest, derived_status: "live", isLive: true };
+    } else {
+      const upcomingTest = testsList
+        .filter((t: any) => t.status === "published" && t.available_from && new Date(t.available_from).getTime() > nowMs)
+        .sort((a: any, b: any) => new Date(a.available_from).getTime() - new Date(b.available_from).getTime())[0];
+
+      if (upcomingTest) {
+        featuredTest = { ...upcomingTest, derived_status: "upcoming", isLive: false };
+      } else if (testsList.length > 0) {
+        const latest = testsList[0];
+        let derived_status: "live" | "upcoming" | "past" | "draft" = "draft";
+        if (latest.status === "published") {
+          const fromTime = latest.available_from ? new Date(latest.available_from).getTime() : null;
+          const untilTime = latest.available_until ? new Date(latest.available_until).getTime() : null;
+          if (fromTime && fromTime > nowMs) {
+            derived_status = "upcoming";
+          } else if (untilTime && untilTime < nowMs) {
+            derived_status = "past";
+          } else {
+            derived_status = "live";
+          }
+        }
+        featuredTest = { ...latest, derived_status, isLive: derived_status === "live" };
+      }
+    }
+
+    // 2. Process Featured Opportunity in memory
+    let featuredOpportunity: any = null;
+    const oppsList = recentOppsRes.data || [];
+    const activeOpp = oppsList
+      .filter((o: any) => o.deadline && new Date(o.deadline).getTime() >= nowMs)
+      .sort((a: any, b: any) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())[0];
+
+    if (activeOpp) {
+      featuredOpportunity = { ...activeOpp, derived_status: "active" };
+    } else if (oppsList.length > 0) {
+      const latest = oppsList[0];
+      const isPast = latest.deadline && new Date(latest.deadline).getTime() < nowMs;
+      featuredOpportunity = { ...latest, derived_status: isPast ? "past" : "active" };
+    }
+
+    // 3. Process Featured Event in memory
+    let featuredEvent: any = null;
+    const eventsList = recentEventsRes.data || [];
+    const liveEvent = eventsList.find((e: any) => {
+      if (!e.date) return false;
+      const start = new Date(e.date).getTime();
+      const end = start + (e.duration_minutes || 120) * 60 * 1000;
+      return nowMs >= start && nowMs <= end;
+    });
+
+    const upcomingEvent = eventsList
+      .filter((e: any) => e.date && new Date(e.date).getTime() > nowMs)
+      .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+
+    const selectedEvent = liveEvent || upcomingEvent || eventsList[0] || null;
+    if (selectedEvent && selectedEvent.date) {
+      const start = new Date(selectedEvent.date).getTime();
+      const end = start + (selectedEvent.duration_minutes || 120) * 60 * 1000;
+      const derived_status =
+        nowMs >= start && nowMs <= end
+          ? "live"
+          : nowMs < start
+            ? "upcoming"
+            : "past";
+      featuredEvent = { ...selectedEvent, derived_status };
+    }
 
     const instituteData = homeStatsRes.data as unknown as InstituteStatsResponse;
     const stats = instituteData?.stats || {

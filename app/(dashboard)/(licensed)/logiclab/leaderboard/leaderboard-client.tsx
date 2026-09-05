@@ -122,7 +122,7 @@ export default function LeaderboardClient({
 
                       <div className={cn('flex', 'items-center', 'justify-center', 'w-14', 'md:w-full')}>
                         {user.username ? (
-                          <Link href={`/users/${user.username}`} target="_blank" rel="noopener noreferrer">
+                          <Link href={`/users/${user.username}`} prefetch={false} target="_blank" rel="noopener noreferrer">
                             <Avatar className={cn("h-8 w-8 sm:h-9 sm:w-9 border shrink-0 transition-colors hover:ring-2 hover:ring-primary/50 border-border/50")}>
                               <AvatarImage src={user.avatar_path || ""} className="object-cover" />
                               <AvatarFallback className={cn('font-semibold', 'text-xs', 'bg-muted')}>
@@ -142,7 +142,7 @@ export default function LeaderboardClient({
 
                       <div className={cn('flex-1', 'md:w-full', 'min-w-0', 'flex', 'items-center', 'gap-2')}>
                         {user.username ? (
-                          <Link href={`/users/${user.username}`} target="_blank" rel="noopener noreferrer" className={cn('text-sm', 'font-medium', 'text-foreground', 'truncate', 'leading-snug', 'hover:text-primary', 'transition-colors')}>
+                          <Link href={`/users/${user.username}`} prefetch={false} target="_blank" rel="noopener noreferrer" className={cn('text-sm', 'font-medium', 'text-foreground', 'truncate', 'leading-snug', 'hover:text-primary', 'transition-colors')}>
                             {`${user.first_name} ${user.last_name}`.trim() || user.username}
                           </Link>
                         ) : (

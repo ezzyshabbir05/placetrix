@@ -96,10 +96,7 @@ export default async function UserReportPage({ params }: PageProps) {
     { data: regActivitySubs },
     { data: dailyActivitySubs },
     { data: statsData },
-    { data: standardSolvedSubs },
-    { data: dailySolvedSubs },
-    { data: recentStandardRaw },
-    { data: recentDailyRaw },
+    { data: targetUserStats },
     { data: memberRows },
     { data: attemptsRaw },
     cachedGlobalTags,
@@ -155,37 +152,18 @@ export default async function UserReportPage({ params }: PageProps) {
       : Promise.resolve({ data: null }),
     (adminSupabase as any)
       .from("logiclab_problem_submissions")
-      .select("created_at, status, problem_id, logiclab_problems(difficulty)")
+      .select("created_at, status, problem_id, logiclab_problems(id, title, difficulty, tags)")
       .eq("user_id", targetProfile.id),
     (adminSupabase as any)
       .from("logiclab_daily_challenge_submissions")
-      .select("created_at, status, problem_id, logiclab_problems(difficulty)")
+      .select("created_at, status, problem_id, logiclab_problems(id, title, difficulty, tags)")
       .eq("user_id", targetProfile.id),
     (adminSupabase as any).rpc("get_user_global_stats", { p_user_id: targetProfile.id }),
     (adminSupabase as any)
-      .from("logiclab_problem_submissions")
-      .select("problem_id")
+      .from("logiclab_user_stats")
+      .select("total_points")
       .eq("user_id", targetProfile.id)
-      .eq("status", "Accepted"),
-    (adminSupabase as any)
-      .from("logiclab_daily_challenge_submissions")
-      .select("problem_id")
-      .eq("user_id", targetProfile.id)
-      .eq("status", "Accepted"),
-    (adminSupabase as any)
-      .from("logiclab_problem_submissions")
-      .select("created_at, problem_id, logiclab_problems(id, title, difficulty)")
-      .eq("user_id", targetProfile.id)
-      .eq("status", "Accepted")
-      .order("created_at", { ascending: false })
-      .limit(50),
-    (adminSupabase as any)
-      .from("logiclab_daily_challenge_submissions")
-      .select("created_at, problem_id, logiclab_problems(id, title, difficulty)")
-      .eq("user_id", targetProfile.id)
-      .eq("status", "Accepted")
-      .order("created_at", { ascending: false })
-      .limit(50),
+      .maybeSingle(),
     (adminSupabase as any)
       .from("cohort_students")
       .select("cohort_id")
@@ -197,6 +175,16 @@ export default async function UserReportPage({ params }: PageProps) {
       .order("created_at", { ascending: false }),
     getCachedGlobalTagCounts(),
   ]);
+
+  // Derive standard, daily, and recent solved sets in memory from the single master queries
+  const standardSolvedSubs = (regActivitySubs || []).filter((s: any) => s.status === "Accepted");
+  const dailySolvedSubs = (dailyActivitySubs || []).filter((s: any) => s.status === "Accepted");
+  const recentStandardRaw = standardSolvedSubs.slice().sort((a: any, b: any) =>
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  ).slice(0, 50);
+  const recentDailyRaw = dailySolvedSubs.slice().sort((a: any, b: any) =>
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  ).slice(0, 50);
 
   const semestersCount = academicDetails?.course?.semesters_count ?? 8;
   const courseName = academicDetails?.course?.course_name ?? null;
@@ -347,15 +335,13 @@ export default async function UserReportPage({ params }: PageProps) {
   );
 
   let topicCounts: Record<string, number> = {};
-  if (solvedProblemIds.length > 0) {
-    const { data: solvedProblems } = await (adminSupabase as any)
-      .from("logiclab_problems")
-      .select("id, tags")
-      .in("id", solvedProblemIds);
-
-    for (const prob of solvedProblems || []) {
-      if (Array.isArray(prob.tags)) {
-        for (const tag of prob.tags) {
+  const countedProblems = new Set<string>();
+  for (const sub of allSubs) {
+    if (sub.status === "Accepted" && sub.problem_id && !countedProblems.has(String(sub.problem_id))) {
+      countedProblems.add(String(sub.problem_id));
+      const tags = sub.logiclab_problems?.tags;
+      if (Array.isArray(tags)) {
+        for (const tag of tags) {
           if (tag) {
             topicCounts[tag] = (topicCounts[tag] || 0) + 1;
           }
@@ -403,12 +389,6 @@ export default async function UserReportPage({ params }: PageProps) {
   if (globalStats.hard) globalStats.hard.solved = uniqueHard;
 
   let userRank: number | null = null;
-  const { data: targetUserStats } = await (adminSupabase as any)
-    .from("logiclab_user_stats")
-    .select("total_points")
-    .eq("user_id", targetProfile.id)
-    .maybeSingle();
-
   const targetPoints = targetUserStats?.total_points || 0;
   if (targetPoints > 0 && targetProfile.institute_id) {
     const { count: higherCount } = await (adminSupabase as any)

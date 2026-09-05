@@ -224,6 +224,7 @@ const TestCard = React.memo(function TestCard({
                       <div className="flex">
                         <Link
                           href={`/tests/${test.id}`}
+                          prefetch={false}
                           onClick={(e) => e.stopPropagation()}
                           className="font-semibold text-sm sm:text-base leading-tight truncate hover:text-primary hover:underline transition-colors inline-block max-w-full text-foreground"
                         >
@@ -457,7 +458,7 @@ const TestCard = React.memo(function TestCard({
                         asChild
                         className="w-full sm:w-auto h-8 gap-1.5 text-xs font-medium justify-center px-3"
                       >
-                        <Link href={`/tests/${test.id}`}>
+                        <Link href={`/tests/${test.id}`} prefetch={false}>
                           <PlayCircle className="size-3.5" />
                           <span>Resume Test</span>
                         </Link>
@@ -469,7 +470,7 @@ const TestCard = React.memo(function TestCard({
                         asChild
                         className="w-full sm:w-auto h-8 gap-1.5 text-xs font-medium justify-center px-3"
                       >
-                        <Link href={`/tests/${test.id}`}>
+                        <Link href={`/tests/${test.id}`} prefetch={false}>
                           <FileText className="size-3.5" />
                           <span>View Details & Results</span>
                           <ExternalLink className="size-3.5" />
@@ -482,7 +483,7 @@ const TestCard = React.memo(function TestCard({
                         asChild
                         className="w-full sm:w-auto h-8 gap-1.5 text-xs font-medium justify-center px-3"
                       >
-                        <Link href={`/tests/${test.id}`}>
+                        <Link href={`/tests/${test.id}`} prefetch={false}>
                           <PlayCircle className="size-3.5" />
                           <span>Start Test</span>
                           <ExternalLink className="size-3.5" />
@@ -495,7 +496,7 @@ const TestCard = React.memo(function TestCard({
                         asChild
                         className="w-full sm:w-auto h-8 gap-1.5 text-xs font-medium justify-center px-3"
                       >
-                        <Link href={`/tests/${test.id}`}>
+                        <Link href={`/tests/${test.id}`} prefetch={false}>
                           <span>View Details</span>
                           <ExternalLink className="size-3.5" />
                         </Link>
@@ -520,28 +521,28 @@ const TestCard = React.memo(function TestCard({
         <ContextMenuSeparator />
         {isInProgress ? (
           <ContextMenuItem asChild>
-            <Link href={`/tests/${test.id}`}>
+            <Link href={`/tests/${test.id}`} prefetch={false}>
               <PlayCircle className="size-4 mr-2" />
               Resume Test
             </Link>
           </ContextMenuItem>
         ) : isSubmitted ? (
           <ContextMenuItem asChild>
-            <Link href={`/tests/${test.id}`}>
+            <Link href={`/tests/${test.id}`} prefetch={false}>
               <FileText className="size-4 mr-2" />
               View Results
             </Link>
           </ContextMenuItem>
         ) : isLive ? (
           <ContextMenuItem asChild>
-            <Link href={`/tests/${test.id}`}>
+            <Link href={`/tests/${test.id}`} prefetch={false}>
               <PlayCircle className="size-4 mr-2" />
               Start Test
             </Link>
           </ContextMenuItem>
         ) : (
           <ContextMenuItem asChild>
-            <Link href={`/tests/${test.id}`}>
+            <Link href={`/tests/${test.id}`} prefetch={false}>
               <ExternalLink className="size-4 mr-2" />
               View Details
             </Link>

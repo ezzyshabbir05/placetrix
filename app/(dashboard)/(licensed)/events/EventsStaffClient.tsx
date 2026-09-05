@@ -162,7 +162,7 @@ function EventCard({
 
   return (
     <Card className="overflow-hidden border-border/70 bg-card p-0 shadow-xs">
-      <Link href={`/events/${event.id}`} className="block hover:bg-muted/30 transition-colors">
+      <Link href={`/events/${event.id}`} prefetch={false} className="block hover:bg-muted/30 transition-colors">
         {/* Mobile Compact View */}
         <div className="block md:hidden p-3.5">
           <div className="flex items-center justify-between gap-3">

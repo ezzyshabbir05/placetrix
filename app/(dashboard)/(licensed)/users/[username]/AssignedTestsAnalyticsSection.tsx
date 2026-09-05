@@ -702,7 +702,7 @@ export function AssignedTestsAnalyticsSection({ data }: Props) {
 
                           {isSubmitted && test.attempt?.id && (
                             <div className="shrink-0 print:hidden">
-                              <Link href={`/tests/${test.id}/result/${test.attempt.id}`}>
+                              <Link href={`/tests/${test.id}/result/${test.attempt.id}`} prefetch={false}>
                                 <Button variant="outline" size="sm" className="h-7 text-xs px-2.5 gap-1">
                                   View Result
                                   <ArrowUpRight className="size-3" />

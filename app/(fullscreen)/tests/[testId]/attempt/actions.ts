@@ -188,7 +188,7 @@ export async function recordViolationAction(
   _timestamp: string
 ): Promise<void> {
   try {
-    const { supabase, userId } = await requireAuth()
+    const { supabase, userId } = await requireFastAuth()
 
     const { error } = await (supabase as any)
       .from("test_attempts")

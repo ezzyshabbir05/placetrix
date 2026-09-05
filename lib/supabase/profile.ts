@@ -6,6 +6,7 @@ import { AuthApiError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { cache } from "react";
 import { headers } from "next/headers";
+import { getInstituteLicense, type InstituteLicense } from "@/lib/supabase/license";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -374,55 +375,14 @@ export const getUserProfileWithLicense = cache(async (): Promise<UserProfileWith
     return { profile, license: null };
   }
 
-  // Fetch license in the same request via a targeted single-row query.
-  // Since getUserProfile already used a cached client, this reuses the same
-  // connection without an extra createClient() overhead.
-  const supabase = await createClient();
-  const { data, error } = await (supabase as any)
-    .from("institute_licenses")
-    .select("status, plan_name, starts_at, ends_at, institutes(institute_name)")
-    .eq("institute_id", profile.institute_id)
-    .maybeSingle();
-
-  let instName = (data?.institutes as any)?.institute_name ?? null;
-
-  if (error || !data) {
-    if (!instName) {
-      const { data: instData } = await (supabase as any)
-        .from("institutes")
-        .select("institute_name")
-        .eq("id", profile.institute_id)
-        .maybeSingle();
-      instName = instData?.institute_name ?? null;
-    }
-    return {
-      profile,
-      license: instName ? { status: null, plan_name: null, starts_at: null, ends_at: null, institute_name: instName } : null,
-    };
-  }
-
-  const now = new Date();
-  const startsAt = data.starts_at ? new Date(data.starts_at) : null;
-  const endsAt = data.ends_at ? new Date(data.ends_at) : null;
-
-  let effectiveStatus: LicenseStatus = data.status as LicenseStatus;
-  if (data.status === "active") {
-    if (startsAt && startsAt > now) {
-      effectiveStatus = "pending";
-    } else if (endsAt && endsAt < now) {
-      effectiveStatus = "expired";
-    }
-  }
+  // Fetch license using the request-cached getInstituteLicense so that
+  // any subsequent call in (licensed)/layout.tsx reuses the exact same result
+  // without hitting the database again.
+  const license = await getInstituteLicense(profile.institute_id);
 
   return {
     profile,
-    license: {
-      status: effectiveStatus,
-      plan_name: data.plan_name ?? null,
-      starts_at: data.starts_at ?? null,
-      ends_at: data.ends_at ?? null,
-      institute_name: instName,
-    },
+    license,
   };
 });
 

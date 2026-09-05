@@ -130,6 +130,7 @@ function CandidateEventCard({
     <Card className="overflow-hidden border-border/70 bg-card p-0 shadow-xs">
       <Link 
         href={`/events/${event.id}`}
+        prefetch={false}
         className="block hover:bg-muted/30 transition-colors"
       >
         {/* Mobile Compact View */}
