@@ -61,6 +61,13 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   // Start with a plain pass-through response.
   let supabaseResponse = NextResponse.next({ request });
 
+  // Auth flow endpoints (/auth/callback, /auth/confirm) handle their own token exchange / OTP verification.
+  // Bypass middleware session refresh and cookie mutation completely so PKCE code verifiers and temporary auth tokens are not touched.
+  if (pathname.startsWith("/auth/callback") || pathname.startsWith("/auth/confirm")) {
+    supabaseResponse.headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+    return supabaseResponse;
+  }
+
   const userAgent = request.headers.get("user-agent");
   // Firebase App Hosting exposes the verified real client IP in x-fah-client-ip.
   // Fall back to x-real-ip, then to x-forwarded-for[0] (first non-proxy IP in the chain).
@@ -118,10 +125,14 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   const { data: claimsData } = await supabase.auth.getClaims();
   let user = claimsData?.claims ?? null;
 
+  // Helper to distinguish actual session tokens from PKCE code verifiers
+  const isAuthSessionCookie = (name: string) =>
+    name.includes("auth-token") && !name.includes("code-verifier");
+
   // 2. Fallback refresh
   if (!user) {
     const hasAuthCookie = request.cookies.getAll().some((c) =>
-      c.name.includes("auth-token")
+      isAuthSessionCookie(c.name)
     );
 
     if (hasAuthCookie) {
@@ -136,7 +147,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
           ) {
             console.warn("[Middleware] Invalid/revoked refresh token detected. Clearing auth cookies.");
             request.cookies.getAll().forEach((c) => {
-              if (c.name.includes("auth-token")) {
+              if (isAuthSessionCookie(c.name)) {
                 supabaseResponse.cookies.delete(c.name);
               }
             });
@@ -146,7 +157,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
         if (e?.code === "refresh_token_not_found" || e?.status === 400) {
           console.warn("[Middleware] Refresh token exception caught. Clearing auth cookies.");
           request.cookies.getAll().forEach((c) => {
-            if (c.name.includes("auth-token")) {
+            if (isAuthSessionCookie(c.name)) {
               supabaseResponse.cookies.delete(c.name);
             }
           });

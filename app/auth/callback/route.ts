@@ -20,8 +20,6 @@ export async function GET(request: NextRequest) {
   const nextParam = searchParams.get("next");
   const safeNext = sanitizeNext(nextParam);
 
-  // Explicitly define your base URL using an environment variable or request url.
-  // This bypasses the Docker 0.0.0.0 internal binding issue entirely.
   const getBaseUrl = () => {
     const requestUrl = new URL(request.url);
     // If the request came to localhost, keep it on localhost
@@ -29,10 +27,17 @@ export async function GET(request: NextRequest) {
       return `${requestUrl.protocol}//${requestUrl.host}`;
     }
 
+    // Check forwarded headers from reverse proxy (Firebase App Hosting, Cloud Run, Nginx)
+    const forwardedHost = request.headers.get("x-forwarded-host");
+    const forwardedProto = request.headers.get("x-forwarded-proto") ?? "https";
+    if (forwardedHost) {
+      return `${forwardedProto}://${forwardedHost}`;
+    }
+
     let url =
       process.env.NEXT_PUBLIC_SITE_URL ?? // Set this to https://placetrix.app in prod
       process.env.NEXT_PUBLIC_VERCEL_URL ?? // Automatically set by Vercel (if you ever use it)
-      "http://localhost:3000"; // Fallback for local dev
+      requestUrl.origin; // Dynamic origin fallback
     
     // Ensure it includes `https://`
     url = url.startsWith("http") ? url : `https://${url}`;
@@ -42,8 +47,14 @@ export async function GET(request: NextRequest) {
 
   const baseUrl = getBaseUrl();
 
+  const redirectWithNoCache = (url: string) => {
+    const res = NextResponse.redirect(url);
+    res.headers.set("Cache-Control", "no-store, max-age=0");
+    return res;
+  };
+
   if (!code) {
-    return NextResponse.redirect(
+    return redirectWithNoCache(
       `${baseUrl}/auth/error?error=${encodeURIComponent(
         "No authorisation code returned from provider."
       )}`
@@ -55,7 +66,7 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     console.error("[auth/callback] exchangeCodeForSession error:", error.message);
-    return NextResponse.redirect(
+    return redirectWithNoCache(
       `${baseUrl}/auth/error?error=${encodeURIComponent(error.message)}`
     );
   }
@@ -64,10 +75,10 @@ export async function GET(request: NextRequest) {
   // Direct redirect avoids a secondary middleware bounce through /home.
   const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (aalData?.currentLevel === "aal1" && aalData?.nextLevel === "aal2") {
-    return NextResponse.redirect(
+    return redirectWithNoCache(
       `${baseUrl}/auth/mfa?next=${encodeURIComponent(safeNext)}`
     );
   }
 
-  return NextResponse.redirect(`${baseUrl}${safeNext}`);
+  return redirectWithNoCache(`${baseUrl}${safeNext}`);
 }

@@ -219,7 +219,7 @@ export const getUserProfile = cache(async (): Promise<UserProfile | null> => {
   if (!user) {
     const cookieStore = await cookies();
     const hasAuthCookie = cookieStore.getAll().some((c: any) =>
-      c.name.includes("auth-token")
+      c.name.includes("auth-token") && !c.name.includes("code-verifier")
     );
 
     if (hasAuthCookie) {
