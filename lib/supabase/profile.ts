@@ -42,15 +42,6 @@ export interface UserProfile {
   linkedin_url?: string | null;
   github_url?: string | null;
   portfolio_links?: string[] | null;
-  logiclab_score?: number | null;
-  logiclab_points?: number | null;
-  logiclab_solved_count?: number | null;
-  current_streak?: number | null;
-  longest_streak?: number | null;
-  potd_streak?: number | null;
-  last_solve_date?: string | null;
-  last_potd_date?: string | null;
-  flawless_streak?: number | null;
 }
 
 // ─── License type (co-located to avoid circular imports) ──────────────────────
@@ -279,8 +270,7 @@ export const getUserProfile = cache(async (): Promise<UserProfile | null> => {
         .select(`
           username, full_name, first_name, middle_name, last_name, avatar_path, account_type, signature_path, 
           profile_updated, institute_id, bio, gender, phone_number, date_of_birth, 
-          aadhaar_number, current_address, permanent_address, linkedin_url, github_url, portfolio_links,
-          logiclab_score, logiclab_solved_count
+          aadhaar_number, current_address, permanent_address, linkedin_url, github_url, portfolio_links
         `)
         .eq("id", built.id)
         .maybeSingle();
@@ -313,8 +303,6 @@ export const getUserProfile = cache(async (): Promise<UserProfile | null> => {
         if (dbProfile.linkedin_url !== undefined) built.linkedin_url = dbProfile.linkedin_url;
         if (dbProfile.github_url !== undefined) built.github_url = dbProfile.github_url;
         if (dbProfile.portfolio_links !== undefined) built.portfolio_links = dbProfile.portfolio_links;
-        if (dbProfile.logiclab_score !== undefined) built.logiclab_score = dbProfile.logiclab_score;
-        if (dbProfile.logiclab_solved_count !== undefined) built.logiclab_solved_count = dbProfile.logiclab_solved_count;
 
         built._account_type_missing = false;
       }

@@ -42,7 +42,7 @@ export default async function UserReportPage({ params }: PageProps) {
   // 2. Look up target candidate profile
   const { data: targetProfile } = await (supabase as any)
     .from("profiles")
-    .select("id, full_name, first_name, last_name, email, username, avatar_path, bio, gender, linkedin_url, github_url, portfolio_links, institute_id, logiclab_points, account_type, privacy_settings")
+    .select("id, full_name, first_name, last_name, email, username, avatar_path, bio, gender, linkedin_url, github_url, portfolio_links, institute_id, account_type, privacy_settings")
     .eq("username", username)
     .eq("account_type", "institute_candidate")
     .maybeSingle();
@@ -400,8 +400,15 @@ export default async function UserReportPage({ params }: PageProps) {
   if (globalStats.hard) globalStats.hard.solved = uniqueHard;
 
   let userRank: number | null = null;
-  if (targetProfile.logiclab_points && targetProfile.logiclab_points > 0 && targetProfile.institute_id) {
-    userRank = await getCurrentUserRankAction(targetProfile.institute_id, targetProfile.id, targetProfile.logiclab_points);
+  const { data: targetUserStats } = await (supabase as any)
+    .from("logiclab_user_stats")
+    .select("total_points")
+    .eq("user_id", targetProfile.id)
+    .maybeSingle();
+
+  const targetPoints = targetUserStats?.total_points || 0;
+  if (targetPoints > 0 && targetProfile.institute_id) {
+    userRank = await getCurrentUserRankAction(targetProfile.institute_id, targetProfile.id, targetPoints);
   }
 
   const seenProblems = new Set();
@@ -428,7 +435,7 @@ export default async function UserReportPage({ params }: PageProps) {
     globalStats,
     topics: sortedTopics,
     uniqueSolvedCount: solvedProblemIds.length,
-    points: targetProfile.logiclab_points || 0,
+    points: targetPoints,
     rank: userRank,
     recentSolved,
     badges: userBadges?.map((ub: any) => ({

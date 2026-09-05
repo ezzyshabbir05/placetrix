@@ -89,8 +89,8 @@ export default async function DailyChallengesPage() {
     todayStr,
   })
 
-  // ── Activity heatmap data (20 weeks) ──
-  const [{ data: regSubs }, { data: dailySubs }] = await Promise.all([
+  // ── Activity heatmap data (20 weeks) & User Streak Stats ──
+  const [{ data: regSubs }, { data: dailySubs }, { data: userStats }] = await Promise.all([
     (supabase as any).from('logiclab_problem_submissions')
       .select('created_at, status, logiclab_problems!inner(difficulty)')
       .eq('user_id', profile.id)
@@ -98,7 +98,11 @@ export default async function DailyChallengesPage() {
     (supabase as any).from('logiclab_daily_challenge_submissions')
       .select('created_at, status, logiclab_problems!inner(difficulty)')
       .eq('user_id', profile.id)
-      .gte('created_at', cutOffStr20Weeks)
+      .gte('created_at', cutOffStr20Weeks),
+    (supabase as any).from('logiclab_user_stats')
+      .select('potd_streak, longest_streak')
+      .eq('user_id', profile.id)
+      .maybeSingle()
   ]);
 
   const allSubs = [...(regSubs || []), ...(dailySubs || [])];
@@ -136,10 +140,10 @@ export default async function DailyChallengesPage() {
   }
 
   // ── Streak calculation ──
-  // Streaks are natively tracked and updated by the gamification system on the profile
+  // Streaks are natively tracked and updated by the database triggers in logiclab_user_stats
   const streakStats = { 
-    currentStreak: profile.potd_streak || 0, // Since this is the POTD page, we can show potd_streak or current_streak. Let's use POTD streak if preferred, or standard streak.
-    maxStreak: profile.longest_streak || 0 
+    currentStreak: userStats?.potd_streak || 0,
+    maxStreak: userStats?.longest_streak || 0 
   }
 
   // ── Build 140-day activity calendar ──

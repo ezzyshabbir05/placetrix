@@ -10,6 +10,7 @@ const Editor = dynamic(() => import("@monaco-editor/react"), {
 import { useTheme } from "next-themes"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { startNavigationProgress } from "@/components/ui/navigation-progress"
 import {
   IconArrowLeft,
   IconPlus,
@@ -525,6 +526,7 @@ export function AdminProblemEditorClient({
       }
 
       toast.success(`Problem ${isEdit ? "updated" : "created"} successfully!`)
+      startNavigationProgress()
       router.push("/logiclab/admin")
     } catch (err: any) {
       console.error("Save error:", err)
@@ -558,6 +560,7 @@ export function AdminProblemEditorClient({
       const result = await seedProblemsAction(problemInserts);
 
       toast.success(`Successfully imported ${result.inserted} problems!`)
+      startNavigationProgress()
       router.push("/logiclab/admin")
     } catch (err: any) {
       console.error("Bulk Import Error:", err)

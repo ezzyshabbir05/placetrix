@@ -1440,6 +1440,64 @@ export type Database = {
           },
         ]
       }
+      logiclab_user_stats: {
+        Row: {
+          created_at: string
+          current_streak: number
+          easy_solved: number
+          flawless_streak: number
+          hard_solved: number
+          last_potd_date: string | null
+          last_solve_date: string | null
+          longest_streak: number
+          medium_solved: number
+          potd_streak: number
+          solved_count: number
+          total_points: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          easy_solved?: number
+          flawless_streak?: number
+          hard_solved?: number
+          last_potd_date?: string | null
+          last_solve_date?: string | null
+          longest_streak?: number
+          medium_solved?: number
+          potd_streak?: number
+          solved_count?: number
+          total_points?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          easy_solved?: number
+          flawless_streak?: number
+          hard_solved?: number
+          last_potd_date?: string | null
+          last_solve_date?: string | null
+          longest_streak?: number
+          medium_solved?: number
+          potd_streak?: number
+          solved_count?: number
+          total_points?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_logiclab_user_stats_profiles"
+            columns: ["user_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -1655,11 +1713,9 @@ export type Database = {
           bio: string | null
           created_at: string
           current_address: string | null
-          current_streak: number | null
           date_of_birth: string | null
           email: string
           first_name: string | null
-          flawless_streak: number | null
           full_name: string | null
           gender: string | null
           github_url: string | null
@@ -1668,18 +1724,11 @@ export type Database = {
           is_active: boolean
           is_public: boolean | null
           last_name: string | null
-          last_potd_date: string | null
-          last_solve_date: string | null
           linkedin_url: string | null
-          logiclab_points: number
-          logiclab_score: number | null
-          logiclab_solved_count: number | null
-          longest_streak: number | null
           middle_name: string | null
           permanent_address: string | null
           phone_number: string | null
           portfolio_links: string[] | null
-          potd_streak: number | null
           privacy_settings: Json | null
           profile_updated: boolean | null
           signature_path: string | null
@@ -1693,11 +1742,9 @@ export type Database = {
           bio?: string | null
           created_at?: string
           current_address?: string | null
-          current_streak?: number | null
           date_of_birth?: string | null
           email: string
           first_name?: string | null
-          flawless_streak?: number | null
           full_name?: string | null
           gender?: string | null
           github_url?: string | null
@@ -1706,18 +1753,11 @@ export type Database = {
           is_active?: boolean
           is_public?: boolean | null
           last_name?: string | null
-          last_potd_date?: string | null
-          last_solve_date?: string | null
           linkedin_url?: string | null
-          logiclab_points?: number
-          logiclab_score?: number | null
-          logiclab_solved_count?: number | null
-          longest_streak?: number | null
           middle_name?: string | null
           permanent_address?: string | null
           phone_number?: string | null
           portfolio_links?: string[] | null
-          potd_streak?: number | null
           privacy_settings?: Json | null
           profile_updated?: boolean | null
           signature_path?: string | null
@@ -1731,11 +1771,9 @@ export type Database = {
           bio?: string | null
           created_at?: string
           current_address?: string | null
-          current_streak?: number | null
           date_of_birth?: string | null
           email?: string
           first_name?: string | null
-          flawless_streak?: number | null
           full_name?: string | null
           gender?: string | null
           github_url?: string | null
@@ -1744,18 +1782,11 @@ export type Database = {
           is_active?: boolean
           is_public?: boolean | null
           last_name?: string | null
-          last_potd_date?: string | null
-          last_solve_date?: string | null
           linkedin_url?: string | null
-          logiclab_points?: number
-          logiclab_score?: number | null
-          logiclab_solved_count?: number | null
-          longest_streak?: number | null
           middle_name?: string | null
           permanent_address?: string | null
           phone_number?: string | null
           portfolio_links?: string[] | null
-          potd_streak?: number | null
           privacy_settings?: Json | null
           profile_updated?: boolean | null
           signature_path?: string | null
@@ -1927,76 +1958,6 @@ export type Database = {
             columns: ["question_id"]
             referencedRelation: "view_test_question_analysis"
             referencedColumns: ["question_id"]
-          },
-        ]
-      }
-      test_attempt_feedbacks: {
-        Row: {
-          attempt_id: string
-          bugs_issues: string | null
-          candidate_id: string
-          created_at: string
-          difficulty_felt: string | null
-          id: string
-          overall_comment: string | null
-          rating: number
-          suggestions: string | null
-          test_id: string
-        }
-        Insert: {
-          attempt_id: string
-          bugs_issues?: string | null
-          candidate_id: string
-          created_at?: string
-          difficulty_felt?: string | null
-          id?: string
-          overall_comment?: string | null
-          rating: number
-          suggestions?: string | null
-          test_id: string
-        }
-        Update: {
-          attempt_id?: string
-          bugs_issues?: string | null
-          candidate_id?: string
-          created_at?: string
-          difficulty_felt?: string | null
-          id?: string
-          overall_comment?: string | null
-          rating?: number
-          suggestions?: string | null
-          test_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "test_attempt_feedback_attempt_id_fkey"
-            columns: ["attempt_id"]
-            referencedRelation: "test_attempts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "test_attempt_feedback_attempt_id_fkey"
-            columns: ["attempt_id"]
-            referencedRelation: "view_test_attempt_details"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "test_attempt_feedback_test_id_fkey"
-            columns: ["test_id"]
-            referencedRelation: "tests"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "test_attempt_feedback_test_id_fkey"
-            columns: ["test_id"]
-            referencedRelation: "view_test_summary"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "test_attempt_feedbacks_candidate_id_profiles_fkey"
-            columns: ["candidate_id"]
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
           },
         ]
       }
@@ -2580,6 +2541,21 @@ export type Database = {
         }
         Relationships: []
       }
+      logiclab_problem_stats: {
+        Row: {
+          accepted_submissions: number | null
+          problem_id: string | null
+          total_submissions: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "logiclab_problem_submissions_problem_id_fkey"
+            columns: ["problem_id"]
+            referencedRelation: "logiclab_problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       view_question_tag_performance: {
         Row: {
           accuracy_pct: number | null
@@ -2684,6 +2660,9 @@ export type Database = {
           avg_score_pct: number | null
           created_at: string | null
           created_by: string | null
+          creator_avatar_path: string | null
+          creator_email: string | null
+          creator_name: string | null
           description: string | null
           id: string | null
           institute_id: string | null
@@ -2777,6 +2756,18 @@ export type Database = {
         Args: { p_profile_id: string }
         Returns: Json
       }
+      get_candidate_tests_overview: {
+        Args: {
+          p_institute_id: string
+          p_now?: string
+          p_page?: number
+          p_search?: string
+          p_size?: number
+          p_tab?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       get_global_tags_count: { Args: never; Returns: Json }
       get_ide_problem_list: {
         Args: { p_user_id: string }
@@ -2790,6 +2781,38 @@ export type Database = {
       }
       get_institute_home_stats: {
         Args: { p_profile_id: string }
+        Returns: Json
+      }
+      get_institute_test_attempts: {
+        Args: {
+          p_dir?: string
+          p_page?: number
+          p_score?: string
+          p_search?: string
+          p_size?: number
+          p_sort?: string
+          p_status?: string
+          p_test_id: string
+        }
+        Returns: Json
+      }
+      get_institute_tests_overview: {
+        Args: {
+          p_attempts?: string
+          p_author?: string
+          p_duration?: string
+          p_institute_id?: string
+          p_marks?: string
+          p_now?: string
+          p_page?: number
+          p_questions?: string
+          p_results?: string
+          p_search?: string
+          p_size?: number
+          p_sort?: string
+          p_tab?: string
+          p_user_id?: string
+        }
         Returns: Json
       }
       get_paginated_daily_challenges: {
@@ -2893,16 +2916,30 @@ export type Database = {
       get_test_attempt_stats: { Args: { p_test_id: string }; Returns: Json }
       get_user_global_stats: { Args: { p_user_id: string }; Returns: Json }
       get_user_institute_id: { Args: { p_user_id: string }; Returns: string }
-      is_admin: { Args: never; Returns: boolean }
-      record_attempt_violation: {
-        Args: {
-          p_attempt_id: string
-          p_count?: number
-          p_timestamp?: string
-          p_type: string
-        }
-        Returns: undefined
+      internal_grade_attempt: {
+        Args: { p_attempt_id: string; p_is_auto_submit?: boolean }
+        Returns: Json
       }
+      is_admin: { Args: never; Returns: boolean }
+      record_attempt_violation:
+        | {
+            Args: {
+              p_attempt_id: string
+              p_count?: number
+              p_timestamp?: string
+              p_type: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_attempt_id: string
+              p_timestamp?: string
+              p_total_count: number
+              p_type: string
+            }
+            Returns: Json
+          }
       regrade_all_submitted_attempts: {
         Args: never
         Returns: {
@@ -2919,6 +2956,7 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      submit_test_attempt: { Args: { p_attempt_id: string }; Returns: Json }
       test_attempt_bulk_save_answers: {
         Args: { p_attempt_id: string; p_batch: Json }
         Returns: undefined
@@ -2945,8 +2983,9 @@ export type Database = {
         }
         Returns: undefined
       }
+      test_attempt_start: { Args: { p_test_id: string }; Returns: Json }
       test_attempt_sync: {
-        Args: { p_attempt_id: string; p_batch?: Json; p_session_token: string }
+        Args: { p_attempt_id: string; p_batch: Json; p_session_token: string }
         Returns: Json
       }
       test_save: {

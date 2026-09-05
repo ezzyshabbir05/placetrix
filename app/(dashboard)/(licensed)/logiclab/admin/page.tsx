@@ -17,189 +17,53 @@ export default async function AdminPage() {
 
   const supabase = (await createClient()) as any
 
-  // ── 1. Fetch all coding problems ──
-  const { data: rawProblems } = await (supabase as any)
-    .from("logiclab_problems" as any)
-    .select("id, number, title, difficulty, tags, created_at")
-    .order("number", { ascending: true })
-
-  const rawProblemsList: any[] = rawProblems || []
-
-  // ── 2. Fetch lightweight submissions for analytics (Limit to 2000 to prevent memory exhaustion) ──
-  const { data: rawSubmissions } = await (supabase as any)
-    .from("logiclab_problem_submissions" as any)
-    .select("id, status, language_id, problem_id, user_id, passed_count, total_count, created_at")
-    .order("created_at", { ascending: false })
-    .limit(2000)
-
-  const submissions: any[] = rawSubmissions || []
-
-  // Fetch student profiles (limit to 500 to prevent huge payloads)
-  const { data: rawAllProfiles } = await (supabase as any)
-    .from("profiles" as any)
-    .select("id, full_name, email, account_type")
-    .in("account_type", ["institute_candidate", "user", null])
-    .limit(1000)
-
-  let profileMap: Record<string, { full_name: string; email: string; account_type: string }> = {}
-    ; (rawAllProfiles || []).forEach((p: any) => {
-      profileMap[p.id] = { full_name: p.full_name || "", email: p.email || "", account_type: p.account_type || "institute_candidate" }
-    })
-
-  // Fetch any missing profiles for users who have submitted (e.g. admins testing)
-  const submissionUserIds = Array.from(new Set(submissions.map((s: any) => s.user_id).filter(Boolean)))
-  const missingUserIds = submissionUserIds.filter(uid => !profileMap[uid as string])
-
-  if (missingUserIds.length > 0) {
-    const { data: missingProfiles } = await (supabase as any)
-      .from("profiles" as any)
+  // ── 1. Fetch live aggregate data using optimized PostgreSQL RPCs ──
+  const [
+    { data: adminProblemStats },
+    { data: adminStudentRankings },
+    { data: rawSubmissions },
+    { data: rawProfiles },
+  ] = await Promise.all([
+    supabase.rpc("get_admin_problem_stats", { p_limit: 1000, p_offset: 0 }),
+    supabase.rpc("get_admin_student_rankings", { p_limit: 500, p_offset: 0 }),
+    supabase
+      .from("logiclab_problem_submissions")
+      .select("id, status, language_id, problem_id, user_id, passed_count, total_count, failed_test_case_info, runtime, memory, created_at")
+      .order("created_at", { ascending: false })
+      .limit(100),
+    supabase
+      .from("profiles")
       .select("id, full_name, email, account_type")
-      .in("id", missingUserIds)
+      .in("account_type", ["institute_candidate", "admin", null])
+      .limit(500),
+  ])
 
-      ; (missingProfiles || []).forEach((p: any) => {
-        profileMap[p.id] = { full_name: p.full_name || "", email: p.email || "", account_type: p.account_type || "institute_candidate" }
-      })
-  }
+  const problemsList = (adminProblemStats || []).map((p: any) => ({
+    id: p.id,
+    number: p.number,
+    title: p.title,
+    difficulty: p.difficulty,
+    tags: Array.isArray(p.tags) ? p.tags : [],
+    created_at: p.created_at,
+    total_submissions: Number(p.total_submissions) || 0,
+    accepted_submissions: Number(p.accepted_submissions) || 0,
+    acceptance_rate: p.acceptance_rate !== null ? Math.round(Number(p.acceptance_rate)) : null,
+  }))
 
-  // ── 3. Enrich problems with in-memory submission metrics ──
-  const problems = rawProblemsList.map((p: any) => {
-    const pSubs = submissions.filter((s: any) => s.problem_id === p.id)
-    const pAcc = pSubs.filter((s: any) => s.status === "Accepted").length
-    const rate = pSubs.length ? Math.round((pAcc / pSubs.length) * 100) : null
-    return {
-      ...p,
-      acceptance_rate: rate,
-      total_submissions: pSubs.length,
-    }
+  const profileMap: Record<string, { full_name: string; email: string }> = {}
+  ;(rawProfiles || []).forEach((p: any) => {
+    profileMap[p.id] = { full_name: p.full_name || "", email: p.email || "" }
   })
 
-  // ── 4. Student leaderboard — include ALL students, even with 0 submissions ──
-  // Precompute a problem dictionary for fast lookups
-  const problemMap: Record<string, { title: string; difficulty: string; tags: string[] }> = {}
-  rawProblemsList.forEach((p: any) => {
-    problemMap[p.id] = {
-      title: p.title,
-      difficulty: p.difficulty,
-      tags: Array.isArray(p.tags) ? p.tags : [],
-    }
-  })
-
-  const studentMap: Record<string, {
-    user_id: string
-    student_name: string
-    student_email: string
-    solvedProblems: Set<string>
-    attemptCount: number
-    submissionsList: any[]
-  }> = {}
-
-  // Seed ALL student profiles so students with 0 submissions still appear
-  Object.entries(profileMap).forEach(([uid, prof]) => {
-    if (prof.account_type !== "admin") {
-      const email = prof.email || "student@placetrix.app"
-      const name = prof.full_name || email.split("@")[0] || "Active Student"
-      studentMap[uid] = {
-        user_id: uid,
-        student_name: name,
-        student_email: email,
-        solvedProblems: new Set<string>(),
-        attemptCount: 0,
-        submissionsList: [],
-      }
-    }
-  })
-
-  // Then layer in submission data
-  submissions.forEach((s: any) => {
-    if (!s.user_id) return
-    if (!studentMap[s.user_id]) {
-      // Submission from a user not in initial seed (e.g. an admin testing the code)
-      const prof = profileMap[s.user_id]
-      const email = prof?.email || "student@placetrix.app"
-      const name = prof?.full_name || email.split("@")[0] || "Active Student"
-
-      studentMap[s.user_id] = {
-        user_id: s.user_id,
-        student_name: name,
-        student_email: email,
-        solvedProblems: new Set<string>(),
-        attemptCount: 0,
-        submissionsList: [],
-      }
-    }
-
-    studentMap[s.user_id].attemptCount++
-    if (s.status === "Accepted" && s.problem_id) {
-      studentMap[s.user_id].solvedProblems.add(s.problem_id)
-    }
-
-    const prob = problemMap[s.problem_id]
-    if (prob) {
-      studentMap[s.user_id].submissionsList.push({
-        id: s.id,
-        created_at: s.created_at,
-        status: s.status,
-        problem_title: prob.title,
-        difficulty: prob.difficulty,
-        language_id: s.language_id,
-        passed_count: s.passed_count ?? null,
-        total_count: s.total_count ?? null,
-        failed_test_case_info: s.failed_test_case_info ?? null,
-      })
-    }
-  })
-
-  const studentStats = Object.values(studentMap).map((st) => {
-    const solvedDifficultyCounts = { Easy: 0, Medium: 0, Hard: 0 }
-    const solvedTags: Record<string, number> = {}
-
-    st.solvedProblems.forEach((pid) => {
-      const prob = problemMap[pid]
-      if (prob) {
-        const diff = prob.difficulty as "Easy" | "Medium" | "Hard"
-        if (solvedDifficultyCounts[diff] !== undefined) {
-          solvedDifficultyCounts[diff]++
-        }
-        prob.tags.forEach((tag) => {
-          const trimmed = tag.trim()
-          if (trimmed) {
-            solvedTags[trimmed] = (solvedTags[trimmed] || 0) + 1
-          }
-        })
-      }
-    })
-
-    const studentRecentSubmissions = [...st.submissionsList]
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, 5)
-
-    return {
-      user_id: st.user_id,
-      student_name: st.student_name,
-      student_email: st.student_email,
-      solvedCount: st.solvedProblems.size,
-      attemptCount: st.attemptCount,
-      solvedDifficultyCounts,
-      solvedTags,
-      recentSubmissions: studentRecentSubmissions,
-    }
-  }).sort((a, b) => b.solvedCount - a.solvedCount || b.attemptCount - a.attemptCount)
-
-  // ── 5. Recent submissions for Live Feed (Fetch detailed logs securely) ──
-  const { data: recentDetailedSubmissions } = await (supabase as any)
-    .from("logiclab_problem_submissions" as any)
-    .select("id, status, language_id, problem_id, user_id, passed_count, total_count, failed_test_case_info, runtime, memory, created_at")
-    .order("created_at", { ascending: false })
-    .limit(15)
-
-  const sortedSubmissions = recentDetailedSubmissions || []
-
-  // Build a problem title map
+  // Problem title lookup
   const problemTitleMap: Record<string, string> = {}
-  rawProblemsList.forEach((p: any) => { problemTitleMap[p.id] = p.title })
+  problemsList.forEach((p: any) => {
+    problemTitleMap[p.id] = p.title
+  })
 
-  const recentSubmissions = sortedSubmissions.map((s: any) => {
-    const prof = profileMap[s.user_id] || null
+  // ── 2. Live feed of recent detailed submissions ──
+  const recentSubmissions = (rawSubmissions || []).slice(0, 15).map((s: any) => {
+    const prof = profileMap[s.user_id]
     return {
       id: s.id,
       status: s.status,
@@ -215,58 +79,64 @@ export default async function AdminPage() {
     }
   })
 
-  // ── 6. Aggregate analytics ──
-  const totalProblems = problems.length
-  const totalSubmissions = submissions.length
-  const totalAccepted = submissions.filter((s: any) => s.status === "Accepted").length
-  const uniqueStudents = Object.keys(studentMap).length
+  // ── 3. Student Rankings from SQL RPC ──
+  const studentStats = (adminStudentRankings || []).map((st: any) => ({
+    user_id: st.user_id,
+    student_name: st.student_name || "Active Student",
+    student_email: st.student_email || "student@placetrix.app",
+    solvedCount: Number(st.solved_count) || 0,
+    attemptCount: Number(st.attempt_count) || 0,
+    solvedDifficultyCounts: { Easy: 0, Medium: 0, Hard: 0 },
+    solvedTags: {},
+    recentSubmissions: [],
+  }))
+
+  // ── 4. Aggregate metrics ──
+  const totalProblems = problemsList.length
+  let totalSubmissions = 0
+  let totalAccepted = 0
+
+  problemsList.forEach((p: any) => {
+    totalSubmissions += p.total_submissions
+    totalAccepted += p.accepted_submissions
+  })
 
   const difficultyCounts = {
-    Easy: rawProblemsList.filter((p: any) => p.difficulty === "Easy").length,
-    Medium: rawProblemsList.filter((p: any) => p.difficulty === "Medium").length,
-    Hard: rawProblemsList.filter((p: any) => p.difficulty === "Hard").length,
+    Easy: problemsList.filter((p: any) => p.difficulty === "Easy").length,
+    Medium: problemsList.filter((p: any) => p.difficulty === "Medium").length,
+    Hard: problemsList.filter((p: any) => p.difficulty === "Hard").length,
   }
 
   const languageCounts: Record<string, number> = { "71": 0, "63": 0, "54": 0, "62": 0 }
-  submissions.forEach((s: any) => {
+  ;(rawSubmissions || []).forEach((s: any) => {
     if (s.language_id) {
       const lid = String(s.language_id)
       languageCounts[lid] = (languageCounts[lid] || 0) + 1
     }
   })
 
-  const problemStats = problems.map((p: any) => {
-    const pSubs = submissions.filter((s: any) => s.problem_id === p.id)
-    const pAcc = pSubs.filter((s: any) => s.status === "Accepted").length
-    return {
-      id: p.id,
-      title: p.title,
-      difficulty: p.difficulty,
-      submissions: pSubs.length,
-      accepted: pAcc,
-      rate: pSubs.length ? Math.round((pAcc / pSubs.length) * 100) : 0,
-    }
-  }).sort((a: any, b: any) => b.submissions - a.submissions)
+  const problemStats = problemsList.map((p: any) => ({
+    id: p.id,
+    title: p.title,
+    difficulty: p.difficulty,
+    submissions: p.total_submissions,
+    accepted: p.accepted_submissions,
+    rate: p.acceptance_rate || 0,
+  })).sort((a: any, b: any) => b.submissions - a.submissions)
 
-  // ── 7. Tag Analytics — built from PROBLEMS (not just submissions) ──
-  // This ensures tags show even when submissions are 0
-  const tagMap: Record<string, { problemCount: number; total: number; accepted: number; studentsSolved: Set<string> }> = {}
-  rawProblemsList.forEach((p: any) => {
-    const pTags: string[] = Array.isArray(p.tags) ? p.tags : []
-    const pSubs = submissions.filter((s: any) => s.problem_id === p.id)
-    const pAcc = pSubs.filter((s: any) => s.status === "Accepted")
-    // Unique students who got Accepted on this problem
-    const studentsSolvedThisProblem = new Set(pAcc.map((s: any) => s.user_id).filter(Boolean))
-
+  // ── 5. Tag Statistics from problems ──
+  const tagMap: Record<string, { problemCount: number; total: number; accepted: number }> = {}
+  problemsList.forEach((p: any) => {
+    const pTags: string[] = p.tags || []
     pTags.forEach((tag: string) => {
       const trimmed = tag.trim()
       if (!trimmed) return
-      if (!tagMap[trimmed]) tagMap[trimmed] = { problemCount: 0, total: 0, accepted: 0, studentsSolved: new Set() }
+      if (!tagMap[trimmed]) {
+        tagMap[trimmed] = { problemCount: 0, total: 0, accepted: 0 }
+      }
       tagMap[trimmed].problemCount++
-      tagMap[trimmed].total += pSubs.length
-      tagMap[trimmed].accepted += pAcc.length
-      // Union of students who solved any problem with this tag
-      studentsSolvedThisProblem.forEach((uid) => tagMap[trimmed].studentsSolved.add(uid))
+      tagMap[trimmed].total += p.total_submissions
+      tagMap[trimmed].accepted += p.accepted_submissions
     })
   })
 
@@ -276,17 +146,15 @@ export default async function AdminPage() {
     submissions: stats.total,
     accepted: stats.accepted,
     rate: stats.total ? Math.round((stats.accepted / stats.total) * 100) : 0,
-    studentsSolved: stats.studentsSolved.size,
-    totalStudents: uniqueStudents,
-  }))
-    // Sort: first by submissions desc (active), then by problemCount desc
-    .sort((a, b) => b.submissions - a.submissions || b.problemCount - a.problemCount)
+    studentsSolved: 0,
+    totalStudents: studentStats.length,
+  })).sort((a, b) => b.submissions - a.submissions || b.problemCount - a.problemCount)
 
   const analytics = {
     totalProblems,
     totalSubmissions,
     totalAccepted,
-    uniqueStudents,
+    uniqueStudents: studentStats.length,
     difficultyCounts,
     languageCounts,
     successTimeline: [],
@@ -297,7 +165,7 @@ export default async function AdminPage() {
 
   return (
     <AdminDashboardClient
-      problems={problems}
+      problems={problemsList}
       analytics={analytics}
       recentSubmissions={recentSubmissions}
     />

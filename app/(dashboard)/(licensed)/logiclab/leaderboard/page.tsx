@@ -1,5 +1,5 @@
 import { getUserProfile } from "@/lib/supabase/profile"
-// Force TS re-evaluate
+import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import LeaderboardClient from "./leaderboard-client"
 import { getLeaderboardAction, getCurrentUserRankAction } from "./actions"
@@ -21,15 +21,25 @@ export default async function LeaderboardPage() {
   // Fetch initial top 50
   const { data: initialData, totalCount } = await getLeaderboardAction(profile.institute_id, 1)
 
+  // Fetch current user stats from logiclab_user_stats
+  const supabase = (await createClient()) as any
+  const { data: userStats } = await supabase
+    .from("logiclab_user_stats")
+    .select("total_points")
+    .eq("user_id", profile.id)
+    .maybeSingle()
+
+  const currentUserScore = userStats?.total_points || 0
+
   // Fetch current user rank (if they have a score)
   let currentUserRank = null
-  if (profile.logiclab_points && profile.logiclab_points > 0) {
+  if (currentUserScore > 0) {
     // If they are in the initial data, we already know their rank
     const found = initialData.find(u => u.id === profile.id)
     if (found) {
       currentUserRank = found.rank
     } else {
-      currentUserRank = await getCurrentUserRankAction(profile.institute_id, profile.id, profile.logiclab_points)
+      currentUserRank = await getCurrentUserRankAction(profile.institute_id, profile.id, currentUserScore)
     }
   }
 
@@ -46,7 +56,7 @@ export default async function LeaderboardPage() {
         instituteId={profile.institute_id}
         currentUserId={profile.id}
         currentUserRank={currentUserRank ?? null}
-        currentUserScore={profile.logiclab_points || 0}
+        currentUserScore={currentUserScore}
       />
     </div>
   )

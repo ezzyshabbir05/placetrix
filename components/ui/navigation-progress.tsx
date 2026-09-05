@@ -65,15 +65,15 @@ function NavigationProgressContent() {
   // Listen to all link clicks for instant (0ms) click feedback
   React.useEffect(() => {
     const handleAnchorClick = (e: MouseEvent) => {
-      const target = (e.target as HTMLElement).closest("a")
+      const target = (e.target as HTMLElement).closest("a, [data-nav-href]")
       if (!target) return
 
-      const href = target.getAttribute("href")
+      const href = target.getAttribute("href") || target.getAttribute("data-nav-href")
       if (!href) return
 
       // Skip external links, target="_blank", or anchor hashes
       if (
-        target.target === "_blank" ||
+        target.getAttribute("target") === "_blank" ||
         e.metaKey ||
         e.ctrlKey ||
         e.shiftKey ||

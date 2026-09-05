@@ -4,6 +4,7 @@ import { seedProblemsAction } from "../actions"
 import React, { useState, useCallback } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { startNavigationProgress } from "@/components/ui/navigation-progress"
 import {
   Code,
   Plus,
@@ -734,7 +735,11 @@ export function AdminDashboardClient({
                       return (
                         <div
                           key={problem.id}
-                          onClick={() => router.push(`/logiclab/admin/edit/${problem.id}`)}
+                          data-nav-href={`/logiclab/admin/edit/${problem.id}`}
+                          onClick={() => {
+                            startNavigationProgress()
+                            router.push(`/logiclab/admin/edit/${problem.id}`)
+                          }}
                           className={cn(
                             "group flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors duration-150",
                             isEven ? "bg-transparent" : "bg-zinc-100 dark:bg-white/[0.04]",

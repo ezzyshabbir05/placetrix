@@ -94,6 +94,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProblemNotes } from "./ProblemNotes";
 import { IdeSettingsModal } from "./IdeSettingsModal";
 import { ProblemDescriptionViewer } from "./ProblemDescriptionViewer";
+import { WorkspaceTimer } from "./WorkspaceTimer";
+import { startNavigationProgress, stopNavigationProgress } from "@/components/ui/navigation-progress";
 import { IdeSettings, Problem, Submission, SampleTestCase } from "../../_types";
 import { DEFAULT_IDE_SETTINGS, LANGUAGES, DIFFICULTY_COLORS } from "../../_constants";
 import {
@@ -157,6 +159,17 @@ const formatMemory = (
     }
     return `${mb.toFixed(1)} MB`;
   }
+};
+
+// Robust runtime display formatter (input in milliseconds)
+const formatRuntime = (runtimeMs: number | string | undefined | null) => {
+  if (runtimeMs === undefined || runtimeMs === null) return "—";
+  const val = typeof runtimeMs === "string" ? parseFloat(runtimeMs) : runtimeMs;
+  if (isNaN(val) || val < 0) return "0 ms";
+  if (val >= 1000) {
+    return `${(val / 1000).toFixed(2)}s`;
+  }
+  return `${Math.round(val)} ms`;
 };
 
 // Truncate huge text outputs to prevent browser freezing
@@ -341,6 +354,7 @@ export function ProblemWorkspaceClient({
 
   const handleNavigate = async (targetId: string) => {
     setIsTransitioning(true);
+    startNavigationProgress();
     try {
       const data = await getProblemDataSPA(targetId, userId);
       if (!data) {
@@ -394,44 +408,26 @@ export function ProblemWorkspaceClient({
       setSubmitResult(null);
       setRunResult(null);
       setIsProblemListOpen(false);
-      setTimerSeconds(0);
-      setTimerRunning(false);
     } catch (e: any) {
       console.error(e);
       toast.error("An error occurred while switching problems");
     } finally {
       setIsTransitioning(false);
+      stopNavigationProgress();
     }
   };
 
-  const [timerSeconds, setTimerSeconds] = useState(0);
-  const [timerRunning, setTimerRunning] = useState(false);
-
+  // Browser Back/Forward navigation synchronization
   React.useEffect(() => {
-    let interval: any = null;
-    if (timerRunning) {
-      interval = setInterval(() => {
-        setTimerSeconds((prev) => prev + 1);
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
+    const handlePopState = () => {
+      const match = window.location.pathname.match(/\/logiclab\/problems\/([a-zA-Z0-9_-]+)/);
+      if (match && match[1] && match[1] !== problem.id) {
+        handleNavigate(match[1]);
+      }
     };
-  }, [timerRunning]);
-
-  const formatTimer = (totalSeconds: number) => {
-    const hrs = Math.floor(totalSeconds / 3600);
-    const mins = Math.floor((totalSeconds % 3600) / 60);
-    const secs = totalSeconds % 60;
-    if (hrs > 0) {
-      return `${hrs.toString().padStart(2, "0")}:${mins
-        .toString()
-        .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-    }
-    return `${mins.toString().padStart(2, "0")}:${secs
-      .toString()
-      .padStart(2, "0")}`;
-  };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [problem.id]);
 
   // Update document title dynamically when navigating between problems
   useEffect(() => {
@@ -1167,6 +1163,19 @@ export function ProblemWorkspaceClient({
   };
 
   const handleLangChange = (langVal: string) => {
+    // Immediately persist current code to avoid debounce race condition loss
+    if (code) {
+      try {
+        const currentKey = isDailyChallenge
+          ? `logiclab_daily_challenge_${dailyChallengeId}_code_${selectedLang.value}`
+          : `logiclab_problem_${problem.id}_code_${selectedLang.value}`;
+        localStorage.setItem(currentKey, JSON.stringify({
+          code,
+          timestamp: Date.now()
+        }));
+      } catch (e) {}
+    }
+
     const lang = LANGUAGES.find((l) => l.value === langVal);
     if (lang) {
       setSelectedLang(lang);
@@ -1383,6 +1392,11 @@ export function ProblemWorkspaceClient({
 
   const topNavbarContent = (
     <div className={cn('relative', 'flex', 'items-center', 'justify-between', 'px-4', 'py-2', 'bg-background', 'border-b', 'border-border/50', 'shrink-0', 'w-full', 'select-none')}>
+      {isTransitioning && (
+        <div className="absolute bottom-0 left-0 right-0 h-[2px] z-50 overflow-hidden bg-primary/20">
+          <div className="h-full bg-primary animate-pulse w-full shadow-[0_0_8px_var(--primary)]" />
+        </div>
+      )}
       {/* Left section: Navigation & Title */}
       <div className={cn('flex', 'items-center', 'gap-1')}>
         <Button
@@ -1470,98 +1484,7 @@ export function ProblemWorkspaceClient({
 
       {/* Right section: Settings, Language, Toggle */}
       <div className={cn('flex', 'items-center', 'gap-1')}>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              title="Coding Time"
-              className={cn('h-7', 'px-2', 'text-zinc-600 dark:text-muted-foreground', 'hover:text-foreground', 'flex', 'items-center', 'gap-1.5', 'font-mono', 'text-[11px]', 'font-semibold', 'transition-colors', 'select-none', 'bg-background')}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={(e) => e.currentTarget.blur()}
-            >
-              <IconClock className={`h-3.5 w-3.5 ${timerRunning ? "animate-pulse text-emerald-500" : "text-zinc-600 dark:text-muted-foreground"}`} />
-              {(timerSeconds > 0 || timerRunning) && (
-                <span className={cn('tabular-nums', 'font-bold', 'tracking-wider')}>{formatTimer(timerSeconds)}</span>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent
-            className={cn('w-56', 'p-4', 'z-[9999]')}
-            align="end"
-            onOpenAutoFocus={(e) => e.preventDefault()}
-            onCloseAutoFocus={(e) => e.preventDefault()}
-          >
-            <div className={cn('flex', 'flex-col', 'gap-3.5', 'items-center', 'text-center')}>
-              <span className={cn('text-[10px]', 'font-extrabold', 'uppercase', 'tracking-widest', 'text-zinc-500 dark:text-muted-foreground')}>Coding Time</span>
-              <span className={cn('text-2xl', 'font-black', 'font-mono', 'tracking-wide', 'text-foreground', 'tabular-nums', 'select-all')}>
-                {formatTimer(timerSeconds)}
-              </span>
-              <div className={cn('flex', 'gap-2', 'w-full', 'justify-center')}>
-                <Button
-                  variant={timerRunning ? "secondary" : "default"}
-                  size="sm"
-                  className={cn('h-8', 'flex-1', 'text-xs', 'font-bold', 'relative', 'overflow-hidden')}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={(e) => {
-                    setTimerRunning(!timerRunning);
-                    e.currentTarget.blur();
-                  }}
-                >
-                  <div className={cn('absolute', 'inset-0', 'flex', 'items-center', 'justify-center')}>
-                    <span
-                      className={cn(
-                        "absolute flex items-center justify-center transition-all duration-300 ease-in-out",
-                        timerRunning
-                          ? "opacity-100 translate-y-0 scale-100"
-                          : "opacity-0 -translate-y-2 scale-95 pointer-events-none"
-                      )}
-                    >
-                      <IconPlayerPause className={cn('h-3.5', 'w-3.5', 'mr-1')} />
-                      Pause
-                    </span>
-                    <span
-                      className={cn(
-                        "absolute flex items-center justify-center transition-all duration-300 ease-in-out",
-                        !timerRunning && timerSeconds === 0
-                          ? "opacity-100 translate-y-0 scale-100"
-                          : "opacity-0 translate-y-2 scale-95 pointer-events-none"
-                      )}
-                    >
-                      <IconPlayerPlay className={cn('h-3.5', 'w-3.5', 'mr-1', 'text-emerald-500', 'fill-emerald-500')} />
-                      Start
-                    </span>
-                    <span
-                      className={cn(
-                        "absolute flex items-center justify-center transition-all duration-300 ease-in-out",
-                        !timerRunning && timerSeconds > 0
-                          ? "opacity-100 translate-y-0 scale-100"
-                          : "opacity-0 translate-y-2 scale-95 pointer-events-none"
-                      )}
-                    >
-                      <IconPlayerPlay className={cn('h-3.5', 'w-3.5', 'mr-1', 'text-emerald-500', 'fill-emerald-500')} />
-                      Resume
-                    </span>
-                  </div>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn('h-8', 'border', 'border-border/60', 'hover:bg-muted', 'text-xs', 'font-bold')}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={(e) => {
-                    setTimerSeconds(0);
-                    setTimerRunning(false);
-                    e.currentTarget.blur();
-                  }}
-                  title="Reset"
-                >
-                  <IconRefresh className={cn('h-3.5', 'w-3.5')} />
-                </Button>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
+        <WorkspaceTimer />
 
         <Popover>
           <PopoverTrigger asChild>
@@ -1948,13 +1871,13 @@ export function ProblemWorkspaceClient({
                                   {sub.runtime !== null && (
                                     <span className={cn('flex', 'items-center', 'gap-0.5')}>
                                       <IconClock className={cn('h-3', 'w-3')} />
-                                      {sub.runtime}s
+                                      {formatRuntime(sub.runtime)}
                                     </span>
                                   )}
                                   {sub.memory !== null && (
                                     <span className={cn('flex', 'items-center', 'gap-0.5')}>
                                       <IconCpu className={cn('h-3', 'w-3')} />
-                                      {formatMemory(sub.memory, true)}
+                                      {formatMemory(sub.memory, false)}
                                     </span>
                                   )}
                                 </div>
@@ -2081,8 +2004,8 @@ export function ProblemWorkspaceClient({
                     } else if (submitResult?.failed_test_case_info?.time_series) {
                       points = [...submitResult.failed_test_case_info.time_series];
                     } else {
-                      const baseTime = submitResult?.runtime ? Math.round(submitResult.runtime * 1000) : 45;
-                      const baseMemory = submitResult?.memory ? Math.round(submitResult.memory * 1024) : 32000;
+                      const baseTime = submitResult?.runtime ? Math.round(submitResult.runtime) : 45;
+                      const baseMemory = submitResult?.memory ? Math.round(submitResult.memory) : 16000;
                       const tcCount = submitResult?.total_count || 10;
                       for (let i = 1; i <= tcCount; i++) {
                         points.push({
@@ -2175,8 +2098,8 @@ export function ProblemWorkspaceClient({
                     const peakTime = timesFinal.length > 0 ? Math.max(...timesFinal) : 0;
                     const memoriesFinal = calibratedPoints.map((p) => p.memory);
                     const peakMemory = memoriesFinal.length > 0 ? Math.max(...memoriesFinal) : 0;
-                    const runtimeMs = submitResult?.runtime ? Math.round(submitResult.runtime * 1000) : peakTime || 45;
-                    const memoryMb = submitResult?.memory ?? (peakMemory ? (peakMemory / 1024) : 36.81);
+                    const runtimeMs = submitResult?.runtime ? Math.round(submitResult.runtime) : peakTime || 45;
+                    const memoryMb = submitResult?.memory ? (submitResult.memory / 1024) : (peakMemory ? (peakMemory / 1024) : 15.5);
 
                     const hashString = (str: string) => {
                       let h = 0;
@@ -3312,11 +3235,9 @@ export function ProblemWorkspaceClient({
                     if (!activeCase) return null;
 
                     const runtimeDisplay = isSubmit
-                      ? `${Math.round(result.runtime * 1000)} ms`
-                      : `${Math.round(parseFloat(result.time) * 1000)} ms`;
-                    const memoryDisplay = isSubmit
-                      ? `${result.memory.toFixed(2)} MB`
-                      : formatMemory(result.memory, false);
+                      ? `${Math.round(result.runtime)} ms`
+                      : `${Math.round(parseFloat(result.time || "0") * 1000)} ms`;
+                    const memoryDisplay = formatMemory(result.memory, false);
 
                     const isAllPassed =
                       result.success || result.status === "Accepted";
@@ -3700,13 +3621,13 @@ export function ProblemWorkspaceClient({
                               {sub.runtime !== null && (
                                 <span className={cn('flex', 'items-center', 'gap-0.5')}>
                                   <IconClock className={cn('h-3', 'w-3')} />
-                                  {sub.runtime}s
+                                  {formatRuntime(sub.runtime)}
                                 </span>
                               )}
                               {sub.memory !== null && (
                                 <span className={cn('flex', 'items-center', 'gap-0.5')}>
                                   <IconCpu className={cn('h-3', 'w-3')} />
-                                  {formatMemory(sub.memory, true)}
+                                  {formatMemory(sub.memory, false)}
                                 </span>
                               )}
                             </div>

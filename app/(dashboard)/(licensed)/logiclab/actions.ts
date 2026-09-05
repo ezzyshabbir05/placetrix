@@ -1064,20 +1064,6 @@ export async function submitCodeAction(body: {
       runtime: maxRuntime,
       memory: maxMemory,
     });
-
-    if (isAccepted) {
-      try {
-        const { data: statsRow } = await supabase.from("logiclab_daily_challenge_stats").select("accepted_submissions").eq("daily_challenge_id", daily_challenge_id).single();
-        await supabase.from("logiclab_daily_challenge_stats").update({ accepted_submissions: (statsRow?.accepted_submissions || 0) + 1 }).eq("daily_challenge_id", daily_challenge_id);
-      } catch {}
-
-      try {
-        const { data: userStatsRow } = await supabase.from("logiclab_daily_challenge_user_stats").select("current_streak, longest_streak").eq("user_id", user_id).single();
-        const curStreak = (userStatsRow?.current_streak || 0) + 1;
-        const longStreak = Math.max(curStreak, userStatsRow?.longest_streak || 0);
-        await supabase.from("logiclab_daily_challenge_user_stats").upsert({ user_id, current_streak: curStreak, longest_streak: longStreak, last_solved_date: new Date().toISOString().split("T")[0] });
-      } catch {}
-    }
   }
 
   const { data: insertedSub } = await supabase.from("logiclab_problem_submissions").insert({

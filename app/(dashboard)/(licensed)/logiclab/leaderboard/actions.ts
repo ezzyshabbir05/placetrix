@@ -47,14 +47,32 @@ async function _leaderboardQuery(instituteId: string, page: number): Promise<{ d
   const from = (page - 1) * PAGE_SIZE
   const to = from + PAGE_SIZE - 1
 
-  let { data, count, error } = await supabase
-    .from("profiles")
-    .select("id, first_name, last_name, username, avatar_path, logiclab_points, logiclab_solved_count, current_streak", { count: "exact" })
-    .eq("institute_id", instituteId)
-    .eq("account_type", "institute_candidate")
-    .gt("logiclab_points", 0) // Only users with a score
-    .order("logiclab_points", { ascending: false })
-    .order("logiclab_solved_count", { ascending: false })
+  let { data: statsData, count, error } = await supabase
+    .from("logiclab_user_stats")
+    .select(`
+      user_id,
+      total_points,
+      solved_count,
+      easy_solved,
+      medium_solved,
+      hard_solved,
+      current_streak,
+      profiles!inner(
+        id,
+        first_name,
+        last_name,
+        username,
+        avatar_path,
+        institute_id,
+        account_type,
+        created_at
+      )
+    `, { count: "exact" })
+    .eq("profiles.institute_id", instituteId)
+    .eq("profiles.account_type", "institute_candidate")
+    .gt("total_points", 0) // Only users with a score
+    .order("total_points", { ascending: false })
+    .order("solved_count", { ascending: false })
     .range(from, to)
 
   if (error) {
@@ -62,66 +80,69 @@ async function _leaderboardQuery(instituteId: string, page: number): Promise<{ d
     return { data: [], totalCount: 0 }
   }
 
+  let rankedData: LeaderboardEntry[] = []
+
   // If no students have > 0 points yet, fallback to fetching all candidates in the institute
-  if (!data || data.length === 0) {
+  if (!statsData || statsData.length === 0) {
     const { data: fallbackData, count: fallbackCount, error: fallErr } = await supabase
       .from("profiles")
-      .select("id, first_name, last_name, username, avatar_path, logiclab_points, logiclab_solved_count, current_streak", { count: "exact" })
+      .select("id, first_name, last_name, username, avatar_path, created_at", { count: "exact" })
       .eq("institute_id", instituteId)
       .eq("account_type", "institute_candidate")
-      .order("logiclab_points", { ascending: false })
       .order("created_at", { ascending: true })
       .range(from, to)
 
     if (!fallErr && fallbackData) {
-      data = fallbackData
       count = fallbackCount
+      rankedData = fallbackData.map((user: any, index: number) => {
+        let finalAvatar = user.avatar_path
+        if (finalAvatar && !finalAvatar.startsWith('http')) {
+          finalAvatar = supabase.storage.from('avatars').getPublicUrl(finalAvatar).data.publicUrl
+        }
+        return {
+          id: user.id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          username: user.username,
+          avatar_path: finalAvatar,
+          logiclab_points: 0,
+          logiclab_solved_count: 0,
+          current_streak: 0,
+          rank: from + index + 1,
+          difficulty_breakdown: { easy: 0, medium: 0, hard: 0 }
+        }
+      })
     }
-  }
-
-  // 1. Calculate basic rank and parse avatars
-  const rankedData = (data || []).map((user: any, index: number) => {
-    let finalAvatar = user.avatar_path
-    if (finalAvatar && !finalAvatar.startsWith('http')) {
-      finalAvatar = supabase.storage.from('avatars').getPublicUrl(finalAvatar).data.publicUrl
-    }
-    
-    return {
-      ...user,
-      avatar_path: finalAvatar,
-      rank: from + index + 1,
-      difficulty_breakdown: { easy: 0, medium: 0, hard: 0 }
-    }
-  })
-
-  // 2. Fetch difficulty breakdown in bulk for these users
-  const userIds = rankedData.map((u: any) => u.id)
-  if (userIds.length > 0) {
-    const { data: solvedData } = await supabase
-      .from('logiclab_user_solved_problems')
-      .select('user_id, logiclab_problems!inner(difficulty)')
-      .in('user_id', userIds)
-      
-    if (solvedData) {
-      // Tally them up
-      const tallies: Record<string, { easy: number, medium: number, hard: number }> = {}
-      for (const row of solvedData) {
-        if (!tallies[row.user_id]) tallies[row.user_id] = { easy: 0, medium: 0, hard: 0 }
-        const diff = row.logiclab_problems?.difficulty
-        if (diff === 'Easy') tallies[row.user_id].easy++
-        if (diff === 'Medium') tallies[row.user_id].medium++
-        if (diff === 'Hard') tallies[row.user_id].hard++
+  } else {
+    rankedData = statsData.map((row: any, index: number) => {
+      const user = row.profiles || {}
+      let finalAvatar = user.avatar_path
+      if (finalAvatar && !finalAvatar.startsWith('http')) {
+        finalAvatar = supabase.storage.from('avatars').getPublicUrl(finalAvatar).data.publicUrl
       }
-      
-      // Attach to ranked data
-      for (const user of rankedData) {
-        if (tallies[user.id]) {
-          user.difficulty_breakdown = tallies[user.id]
+      return {
+        id: row.user_id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        username: user.username,
+        avatar_path: finalAvatar,
+        logiclab_points: row.total_points,
+        logiclab_solved_count: row.solved_count,
+        current_streak: row.current_streak,
+        rank: from + index + 1,
+        difficulty_breakdown: {
+          easy: row.easy_solved || 0,
+          medium: row.medium_solved || 0,
+          hard: row.hard_solved || 0
         }
       }
-    }
-    
-    // 3. Fetch academic details (course and year) in bulk
+    })
+  }
+
+  // 2. Fetch academic details (course and year) and latest badges for ranked users
+  const userIds = rankedData.map((u: any) => u.id)
+  if (userIds.length > 0) {
+    // Academic details
     const { data: academicData } = await supabase
       .from('candidate_academic_details')
       .select('profile_id, passout_year, course:institute_courses(course_name)')
@@ -144,7 +165,7 @@ async function _leaderboardQuery(instituteId: string, page: number): Promise<{ d
       }
     }
 
-    // 4. Fetch latest earned badge for these users
+    // Latest earned badge
     const { data: userBadgesData } = await supabase
       .from('user_badges')
       .select('user_id, earned_at, logiclab_badges(id, name, icon_name)')
@@ -178,14 +199,13 @@ async function _leaderboardQuery(instituteId: string, page: number): Promise<{ d
 export async function getCurrentUserRankAction(instituteId: string, userId: string, userPoints: number): Promise<number | null> {
   const supabase = (await createServerClient()) as any
   
-  // A simple way to find rank is counting how many users in the same institute have a strictly higher score,
-  // or same score but higher solved count.
+  // Count how many candidates in the same institute have a strictly higher score
   const { count, error } = await supabase
-    .from("profiles")
-    .select("*", { count: "exact", head: true })
-    .eq("institute_id", instituteId)
-    .eq("account_type", "institute_candidate")
-    .gt("logiclab_points", userPoints)
+    .from("logiclab_user_stats")
+    .select("user_id, profiles!inner(institute_id, account_type)", { count: "exact", head: true })
+    .eq("profiles.institute_id", instituteId)
+    .eq("profiles.account_type", "institute_candidate")
+    .gt("total_points", userPoints)
 
   if (error) {
     console.error("Error fetching user rank:", error)

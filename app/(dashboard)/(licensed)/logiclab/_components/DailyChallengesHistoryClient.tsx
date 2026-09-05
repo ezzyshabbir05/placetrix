@@ -33,6 +33,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
+import { startNavigationProgress } from "@/components/ui/navigation-progress"
 
 // ── Types ──
 
@@ -312,8 +313,12 @@ export function DailyChallengesHistoryClient({
       {/* ── Today's Challenge (Hero) ── */}
       {activeChallenge ? (
         <Card
+          data-nav-href={`/logiclab/dailychallenges/${activeChallenge.id}`}
           className="group/potd relative overflow-hidden transition-all duration-200 cursor-pointer py-0"
-          onClick={() => router.push(`/logiclab/dailychallenges/${activeChallenge.id}`)}
+          onClick={() => {
+            startNavigationProgress()
+            router.push(`/logiclab/dailychallenges/${activeChallenge.id}`)
+          }}
         >
           <div className="relative flex flex-col sm:flex-row">
             {/* ── Left: main content ── */}
@@ -388,6 +393,7 @@ export function DailyChallengesHistoryClient({
                 className="w-full h-9 px-4 font-semibold gap-2 group/btn shadow-sm text-sm rounded-lg"
                 onClick={(e) => {
                   e.stopPropagation()
+                  startNavigationProgress()
                   router.push(`/logiclab/dailychallenges/${activeChallenge.id}`)
                 }}
               >
@@ -402,6 +408,7 @@ export function DailyChallengesHistoryClient({
               className="w-full h-9 font-semibold gap-2 group/btn shadow-sm text-sm"
               onClick={(e) => {
                 e.stopPropagation()
+                startNavigationProgress()
                 router.push(`/logiclab/dailychallenges/${activeChallenge.id}`)
               }}
             >
@@ -541,7 +548,11 @@ export function DailyChallengesHistoryClient({
                       return (
                         <Card
                           key={challenge.id}
-                          onClick={() => router.push(`/logiclab/dailychallenges/${challenge.id}`)}
+                          data-nav-href={`/logiclab/dailychallenges/${challenge.id}`}
+                          onClick={() => {
+                            startNavigationProgress()
+                            router.push(`/logiclab/dailychallenges/${challenge.id}`)
+                          }}
                           className="rounded-sm group cursor-pointer hover:bg-muted/30 transition-colors duration-150 border-border/50 hover:border-border/80 py-0"
                         >
                           <CardContent className="flex items-center gap-3 px-4 py-2.5">

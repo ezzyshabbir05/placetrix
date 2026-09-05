@@ -67,6 +67,7 @@ import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent, EmptyMedia } from "@/components/ui/empty"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { LogicLabStatsCards, CalendarCell } from "./LogicLabStatsCards"
+import { startNavigationProgress } from "@/components/ui/navigation-progress"
 
 interface Problem {
   id: string
@@ -211,6 +212,7 @@ export function LogicLabDashboardClient({
     const randomIndex = Math.floor(Math.random() * problems.length)
     const randomProb = problems[randomIndex]
     if (randomProb?.id) {
+      startNavigationProgress()
       router.push(`/logiclab/problems/${randomProb.id}`)
     }
   }
@@ -566,7 +568,12 @@ export function LogicLabDashboardClient({
                     ? "border-emerald-500/20 text-emerald-600 dark:border-emerald-500/10 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300"
                     : "border-orange-500/20 text-orange-600 dark:border-orange-500/10 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-500/10 hover:text-orange-700 dark:hover:text-orange-300"
                 )}
-                onClick={() => potd && router.push(`/logiclab/dailychallenges/${potd.id}`)}
+                onClick={() => {
+                  if (potd) {
+                    startNavigationProgress()
+                    router.push(`/logiclab/dailychallenges/${potd.id}`)
+                  }
+                }}
                 disabled={!potd}
               >
                 {activeChallenge?.solved_status === "Accepted" ? (
@@ -713,7 +720,11 @@ export function LogicLabDashboardClient({
                   return (
                     <div
                       key={problem.id}
-                      onClick={() => router.push(`/logiclab/problems/${problem.id}`)}
+                      data-nav-href={`/logiclab/problems/${problem.id}`}
+                      onClick={() => {
+                        startNavigationProgress()
+                        router.push(`/logiclab/problems/${problem.id}`)
+                      }}
                       className={cn(
                         "group flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors duration-200 hover:bg-muted/40",
                         isEven ? "bg-transparent" : "bg-zinc-100 dark:bg-white/[0.04]",
