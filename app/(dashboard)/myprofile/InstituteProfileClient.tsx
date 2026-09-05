@@ -789,7 +789,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
         )}
 
         {/* Account Settings — only shown if username not yet set */}
-        <Card className={cn("transition-all duration-200", editing("account") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
+        <Card className={cn("py-4 transition-all duration-200", editing("account") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
             <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 space-y-0">
               <div>
                 <CardTitle>Account Settings</CardTitle>
@@ -864,7 +864,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
           </Card>
 
         {/* College Logo — always interactive */}
-        <Card>
+        <Card className="py-4">
           <CardHeader>
             <CardTitle>College Logo</CardTitle>
             <CardDescription>JPEG, PNG or WEBP</CardDescription>
@@ -927,7 +927,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
         </Card>
 
         {/* Basic Information */}
-        <Card className={cn("transition-all duration-200", editing("basic") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
+        <Card className={cn("py-4 transition-all duration-200", editing("basic") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
           <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 space-y-0">
             <div>
               <CardTitle>Basic Information</CardTitle>
@@ -1100,7 +1100,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
         </Card>
 
         {/* Contact Information */}
-        <Card className={cn("transition-all duration-200", editing("contact") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
+        <Card className={cn("py-4 transition-all duration-200", editing("contact") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
           <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 space-y-0">
             <div>
               <CardTitle>Contact Information</CardTitle>
@@ -1188,7 +1188,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
         </Card>
 
         {/* Administrative Contacts */}
-        <Card className={cn("transition-all duration-200", editing("admin") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
+        <Card className={cn("py-4 transition-all duration-200", editing("admin") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
           <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 space-y-0">
             <div>
               <CardTitle>Administrative Contacts</CardTitle>
@@ -1268,7 +1268,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
         </Card>
 
         {/* Courses Offered */}
-        <Card className={cn("transition-all duration-200", editing("courses") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
+        <Card className={cn("py-4 transition-all duration-200", editing("courses") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
           <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 space-y-0">
             <div>
               <CardTitle>Courses Offered</CardTitle>
@@ -1363,7 +1363,7 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
         </Card>
 
         {/* Social Media & Links */}
-        <Card className={cn("transition-all duration-200", editing("social") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
+        <Card className={cn("py-4 transition-all duration-200", editing("social") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
           <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 space-y-0">
             <div>
               <CardTitle>Social Media &amp; Links</CardTitle>

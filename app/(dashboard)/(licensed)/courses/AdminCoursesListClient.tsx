@@ -457,7 +457,7 @@ export function AdminCoursesListClient({ courses: initialCourses }: Props) {
       {/* Delete Confirmation Modal */}
       {courseToDelete && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-xs flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200">
-          <Card className="max-w-md w-full border border-border shadow-lg">
+          <Card className="max-w-md w-full border border-border shadow-lg py-4">
             <CardHeader className="pb-3 border-b bg-muted/10">
               <CardTitle className="text-sm font-bold flex items-center gap-2 text-destructive">
                 <AlertCircle className="h-4 w-4" />

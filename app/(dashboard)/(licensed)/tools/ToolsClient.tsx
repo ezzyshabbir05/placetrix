@@ -56,7 +56,7 @@ export function ToolsClient() {
           {toolsList.map((tool, idx) => (
             <Card
               key={idx}
-              className="group flex cursor-pointer flex-col justify-between transition-colors hover:bg-muted/50"
+              className="group flex cursor-pointer flex-col justify-between transition-colors hover:bg-muted/50 py-4"
               onClick={() => router.push(tool.href)}
             >
               <CardHeader>

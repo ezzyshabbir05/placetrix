@@ -753,7 +753,7 @@ const ATTEMPTS_PAGE_SIZE = 20
 // Map of sort column → view_test_results_detailed column name
 const SORT_COL_MAP: Record<SortColumn, string> = {
   student_name: "student_name",
-  education: "student_name",
+  education: "education",
   status: "status",
   score: "percentage",
   time: "active_time_taken",
@@ -983,114 +983,114 @@ function AttemptsTab({
     <div className="space-y-5">
 
       {/* ── Filter bar ─────────────────────────────────────────────────────── */}
-      <div className={cn('flex', 'flex-col', 'gap-2', 'rounded-xl', 'border', 'bg-muted/10', 'px-3', 'pb-3', 'pt-2')}>
-        <div className={cn('flex', 'flex-col', 'sm:flex-row', 'gap-2')}>
-          {/* Search — input updates instantly; query is debounced 300ms */}
-          <div className={cn('relative', 'flex-1', 'min-w-0')}>
-            <Search className={cn('absolute', 'left-3', 'top-1/2', '-translate-y-1/2', 'h-4', 'w-4', 'text-muted-foreground', 'pointer-events-none')} />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search students by name or email…"
-              className={cn('pl-9', 'pr-9', 'h-9', 'text-xs')}
-            />
-            {searchQuery && (
-              <button
-                onClick={() => { setSearchQuery(""); setPage(0); onFetchPage({ search: "", statusFilter, scoreFilter, sortCol, sortDir, page: 0 }) }}
-                className={cn('absolute', 'right-2', 'top-1/2', '-translate-y-1/2', 'text-muted-foreground', 'hover:text-foreground', 'p-1', 'transition-colors')}
-                title="Clear search"
-              >
-                <X className={cn('h-3.5', 'w-3.5')} />
-              </button>
-            )}
-          </div>
 
-          <div className={cn('flex', 'items-center', 'gap-2')}>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className={cn("gap-2 w-full", activeFilterCount > 0 && "border-primary bg-primary/5 text-primary")}>
-                  <Filter className={cn('h-3.5', 'w-3.5')} />
-                  <span className="inline">Filters</span>
-                  {activeFilterCount > 0 && (
-                    <Badge variant="default" className={cn('ml-0.5', 'h-4', 'min-w-4', 'px-1', 'text-[10px]', 'bg-primary', 'text-primary-foreground')}>
-                      {activeFilterCount}
-                    </Badge>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className={cn('w-[280px]', 'p-4')}>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <p className={cn('text-[10px]', 'font-semibold', 'uppercase', 'tracking-wider', 'text-muted-foreground', 'px-1')}>General</p>
-                    <Select value={statusFilter} onValueChange={(v) => handleFilterChange({ statusFilter: v as any })}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="All Statuses" />
-                      </SelectTrigger>
-                      <SelectContent position="popper" className="w-(--radix-select-trigger-width)">
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        <SelectItem value="submitted">Submitted & Auto</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className={cn('text-[10px]', 'font-semibold', 'uppercase', 'tracking-wider', 'text-muted-foreground', 'px-1')}>Performance</p>
-                    <Select value={scoreFilter} onValueChange={(v) => handleFilterChange({ scoreFilter: v as any })}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="All Scores" />
-                      </SelectTrigger>
-                      <SelectContent position="popper" className="w-(--radix-select-trigger-width)">
-                        <SelectItem value="all">All Scores</SelectItem>
-                        <SelectItem value="high">High (≥75%)</SelectItem>
-                        <SelectItem value="mid">Mid (50–74%)</SelectItem>
-                        <SelectItem value="low">Low (&lt;50%)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <Button variant="outline" className="w-full" onClick={clearFilters}>
-                    Reset all filters
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
+      <div className={cn('flex', 'flex-col', 'sm:flex-row', 'gap-2')}>
+        {/* Search — input updates instantly; query is debounced 300ms */}
+        <div className={cn('relative', 'flex-1', 'min-w-0')}>
+          <Search className={cn('absolute', 'left-3', 'top-1/2', '-translate-y-1/2', 'h-4', 'w-4', 'text-muted-foreground', 'pointer-events-none')} />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search students by name or email…"
+            className={cn('pl-9', 'pr-9', 'h-9', 'text-xs')}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => { setSearchQuery(""); setPage(0); onFetchPage({ search: "", statusFilter, scoreFilter, sortCol, sortDir, page: 0 }) }}
+              className={cn('absolute', 'right-2', 'top-1/2', '-translate-y-1/2', 'text-muted-foreground', 'hover:text-foreground', 'p-1', 'transition-colors')}
+              title="Clear search"
+            >
+              <X className={cn('h-3.5', 'w-3.5')} />
+            </button>
+          )}
         </div>
 
-        {/* Active filter chips */}
-        {activeFilterCount > 0 && (
-          <div className={cn('flex', 'flex-wrap', 'items-center', 'gap-1.5', 'pt-1', 'border-t', 'border-border/40', 'mt-1')}>
-            <span className={cn('text-[10px]', 'text-muted-foreground', 'mr-1', 'flex', 'items-center', 'gap-1', 'font-medium')}>
-              Active:
-            </span>
-            {searchQuery.trim() && (
-              <Badge variant="secondary" className={cn('gap-1', 'h-5', 'px-1.5', 'text-[10px]', 'font-normal', 'rounded-full')}>
-                "{searchQuery.trim()}"
-                <X className={cn('h-2.5', 'w-2.5', 'cursor-pointer', 'hover:text-foreground')} onClick={() => { setSearchQuery(""); setPage(0); onFetchPage({ search: "", statusFilter, scoreFilter, sortCol, sortDir, page: 0 }) }} />
-              </Badge>
-            )}
-            {statusFilter !== "all" && (
-              <Badge variant="secondary" className={cn('gap-1', 'h-5', 'px-1.5', 'text-[10px]', 'font-normal', 'rounded-full')}>
-                {statusFilter === "submitted" ? "Submitted" : "In Progress"}
-                <X className={cn('h-2.5', 'w-2.5', 'cursor-pointer', 'hover:text-foreground')} onClick={() => handleFilterChange({ statusFilter: "all" })} />
-              </Badge>
-            )}
-            {scoreFilter !== "all" && (
-              <Badge variant="secondary" className={cn('gap-1', 'h-5', 'px-1.5', 'text-[10px]', 'font-normal', 'rounded-full')}>
-                {scoreFilter === "high" ? "≥75%" : scoreFilter === "mid" ? "50–74%" : "<50%"}
-                <X className={cn('h-2.5', 'w-2.5', 'cursor-pointer', 'hover:text-foreground')} onClick={() => handleFilterChange({ scoreFilter: "all" })} />
-              </Badge>
-            )}
-            <button
-              onClick={clearFilters}
-              className={cn('ml-auto', 'text-[10px]', 'text-muted-foreground', 'hover:text-primary', 'underline-offset-2', 'hover:underline', 'transition-colors', 'px-1')}
-            >
-              Clear all
-            </button>
-          </div>
-        )}
+        <div className={cn('flex', 'items-center', 'gap-2')}>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn("gap-2 w-full", activeFilterCount > 0 && "border-primary bg-primary/5 text-primary")}>
+                <Filter className={cn('h-3.5', 'w-3.5')} />
+                <span className="inline">Filters</span>
+                {activeFilterCount > 0 && (
+                  <Badge variant="default" className={cn('ml-0.5', 'h-4', 'min-w-4', 'px-1', 'text-[10px]', 'bg-primary', 'text-primary-foreground')}>
+                    {activeFilterCount}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className={cn('w-[280px]', 'p-4')}>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <p className={cn('text-[10px]', 'font-semibold', 'uppercase', 'tracking-wider', 'text-muted-foreground', 'px-1')}>General</p>
+                  <Select value={statusFilter} onValueChange={(v) => handleFilterChange({ statusFilter: v as any })}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="All Statuses" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" className="w-(--radix-select-trigger-width)">
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="submitted">Submitted & Auto</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <p className={cn('text-[10px]', 'font-semibold', 'uppercase', 'tracking-wider', 'text-muted-foreground', 'px-1')}>Performance</p>
+                  <Select value={scoreFilter} onValueChange={(v) => handleFilterChange({ scoreFilter: v as any })}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="All Scores" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" className="w-(--radix-select-trigger-width)">
+                      <SelectItem value="all">All Scores</SelectItem>
+                      <SelectItem value="high">High (≥75%)</SelectItem>
+                      <SelectItem value="mid">Mid (50–74%)</SelectItem>
+                      <SelectItem value="low">Low (&lt;50%)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button variant="outline" className="w-full" onClick={clearFilters}>
+                  Reset all filters
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
+
+      {/* Active filter chips */}
+      {activeFilterCount > 0 && (
+        <div className={cn('flex', 'flex-wrap', 'items-center', 'gap-1.5')}>
+          <span className={cn('text-[10px]', 'text-muted-foreground', 'mr-1', 'flex', 'items-center', 'gap-1', 'font-medium')}>
+            Active:
+          </span>
+          {searchQuery.trim() && (
+            <Badge variant="secondary" className={cn('gap-1', 'h-5', 'px-1.5', 'text-[10px]', 'font-normal', 'rounded-full')}>
+              "{searchQuery.trim()}"
+              <X className={cn('h-2.5', 'w-2.5', 'cursor-pointer', 'hover:text-foreground')} onClick={() => { setSearchQuery(""); setPage(0); onFetchPage({ search: "", statusFilter, scoreFilter, sortCol, sortDir, page: 0 }) }} />
+            </Badge>
+          )}
+          {statusFilter !== "all" && (
+            <Badge variant="secondary" className={cn('gap-1', 'h-5', 'px-1.5', 'text-[10px]', 'font-normal', 'rounded-full')}>
+              {statusFilter === "submitted" ? "Submitted" : "In Progress"}
+              <X className={cn('h-2.5', 'w-2.5', 'cursor-pointer', 'hover:text-foreground')} onClick={() => handleFilterChange({ statusFilter: "all" })} />
+            </Badge>
+          )}
+          {scoreFilter !== "all" && (
+            <Badge variant="secondary" className={cn('gap-1', 'h-5', 'px-1.5', 'text-[10px]', 'font-normal', 'rounded-full')}>
+              {scoreFilter === "high" ? "≥75%" : scoreFilter === "mid" ? "50–74%" : "<50%"}
+              <X className={cn('h-2.5', 'w-2.5', 'cursor-pointer', 'hover:text-foreground')} onClick={() => handleFilterChange({ scoreFilter: "all" })} />
+            </Badge>
+          )}
+          <button
+            onClick={clearFilters}
+            className={cn('ml-auto', 'text-[10px]', 'text-muted-foreground', 'hover:text-primary', 'underline-offset-2', 'hover:underline', 'transition-colors', 'px-1')}
+          >
+            Clear all
+          </button>
+        </div>
+      )}
+
 
       {/* Score visibility banner */}
       <div
@@ -1129,6 +1129,8 @@ function AttemptsTab({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
               <DropdownMenuItem onClick={() => handleSort("student_name")}>Name {sortCol === "student_name" && (sortDir === "asc" ? "↑" : "↓")}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleSort("education")}>Education {sortCol === "education" && (sortDir === "asc" ? "↑" : "↓")}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleSort("status")}>Status {sortCol === "status" && (sortDir === "asc" ? "↑" : "↓")}</DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleSort("score")}>Score {sortCol === "score" && (sortDir === "asc" ? "↑" : "↓")}</DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleSort("time")}>Time spent {sortCol === "time" && (sortDir === "asc" ? "↑" : "↓")}</DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleSort("started")}>Started at {sortCol === "started" && (sortDir === "asc" ? "↑" : "↓")}</DropdownMenuItem>
@@ -1352,7 +1354,7 @@ function OverviewTab({
 }) {
   return (
     <div className="space-y-4">
-      <Card className="rounded-xl">
+      <Card className="rounded-xl py-4">
         <CardHeader>
           <CardTitle className="text-sm">Test Details</CardTitle>
           <CardDescription className="text-xs">Setup, content, and availability.</CardDescription>
@@ -1401,7 +1403,7 @@ function OverviewTab({
         </CardContent>
       </Card>
 
-      <Card className="rounded-xl">
+      <Card className="rounded-xl py-4">
         <CardHeader>
           <CardTitle className="text-sm">Test Controls</CardTitle>
           <CardDescription className="text-xs">Manage availability, candidate marks, and answer key releases.</CardDescription>
@@ -1552,95 +1554,47 @@ async function fetchAttemptsClient(
 ): Promise<{ data: InstituteAttemptRow[]; count: number; error?: string }> {
   try {
     const supabase = createClient()
-    const pageSize = params.pageSize || ATTEMPTS_PAGE_SIZE
-    const from = params.page * pageSize
-    const to = from + pageSize - 1
+    const pageSize = params.pageSize !== undefined ? params.pageSize : ATTEMPTS_PAGE_SIZE
 
-    let q = (supabase as any)
-      .from("test_attempts")
-      .select(
-        "id, tab_switch_count, status, score, total_marks, percentage, active_time_taken, total_time_taken, started_at, submitted_at, profile:profiles!candidate_id(full_name, email, candidate_academic_details(passout_year, course:institute_courses(course_name)))",
-        { count: "exact" }
-      )
-      .eq("test_id", testId)
-      .not("started_at", "is", null)
-
-    // Status filter
-    if (params.statusFilter === "submitted") {
-      q = q.in("status", ["submitted", "auto_submitted"])
-    } else if (params.statusFilter === "in_progress") {
-      q = q.eq("status", "in_progress")
-    }
-
-    // Score filter
-    if (params.scoreFilter === "high") q = q.gte("percentage", 75)
-    else if (params.scoreFilter === "mid") q = q.gte("percentage", 50).lt("percentage", 75)
-    else if (params.scoreFilter === "low") q = q.lt("percentage", 50)
-
-    // Sort
-    const sortColMap: Record<string, string> = {
-      status: "status",
-      score: "percentage",
-      time: "active_time_taken",
-      total_time: "total_time_taken",
-      violations: "tab_switch_count",
-      started: "started_at",
-      submitted: "submitted_at",
-    }
-    const dbCol = (params.sortCol && sortColMap[params.sortCol]) || "started_at"
-    const isAsc = params.sortDir === "asc"
-    q = q.order(dbCol, { ascending: isAsc, nullsFirst: isAsc })
-    if (dbCol !== "started_at") {
-      q = q.order("started_at", { ascending: false })
-    }
-    q = q.order("id", { ascending: true })
-
-    q = q.range(from, to)
-
-    const { data, count, error } = await q
+    const { data: res, error } = await (supabase as any).rpc("get_institute_test_attempts", {
+      p_test_id: testId,
+      p_search: params.search?.trim() || null,
+      p_status: params.statusFilter || "all",
+      p_score: params.scoreFilter || "all",
+      p_sort: params.sortCol || "started",
+      p_dir: params.sortDir || "desc",
+      p_page: params.page ?? 0,
+      p_size: pageSize,
+    })
 
     if (error) {
-      console.error("[fetchAttemptsClient] query error:", error)
+      console.error("[fetchAttemptsClient] RPC error:", error)
       return { data: [], count: 0, error: error.message }
     }
 
-    let mapped: InstituteAttemptRow[] = (data || []).map((a: any) => {
-      const cad = Array.isArray(a.profile?.candidate_academic_details)
-        ? a.profile?.candidate_academic_details[0]
-        : a.profile?.candidate_academic_details
-      const courseName = Array.isArray(cad?.course)
-        ? cad?.course[0]?.course_name
-        : cad?.course?.course_name
-
-      return {
-        id: a.id,
-        student_name: a.profile?.full_name ?? "Unknown",
-        student_email: a.profile?.email ?? "Unknown",
-        status: a.status,
-        score: a.score ?? null,
-        total_marks: a.total_marks ?? null,
-        percentage: a.percentage ?? null,
-        active_time_taken: a.active_time_taken ?? null,
-        total_time_taken: a.total_time_taken ?? (a.started_at && a.submitted_at ? Math.max(0, Math.round((new Date(a.submitted_at).getTime() - new Date(a.started_at).getTime()) / 1000)) : null),
-        started_at: a.started_at,
-        submitted_at: a.submitted_at ?? null,
-        tab_switch_count: a.tab_switch_count ?? null,
-        branch: courseName ?? null,
-        passout_year: cad?.passout_year ?? null,
-      }
-    })
-
-    if (params.search && params.search.trim()) {
-      const s = params.search.trim().toLowerCase()
-      mapped = mapped.filter(
-        (r) =>
-          (r.student_name && r.student_name.toLowerCase().includes(s)) ||
-          (r.student_email && r.student_email.toLowerCase().includes(s)) ||
-          (r.branch && r.branch.toLowerCase().includes(s))
-      )
+    if (res?.error) {
+      console.error("[fetchAttemptsClient] RPC application error:", res.error)
+      return { data: [], count: 0, error: res.error }
     }
 
-    return { data: mapped, count: count ?? mapped.length }
+    const rows: InstituteAttemptRow[] = (res?.data || []).map((a: any) => ({
+      id: a.id,
+      student_name: a.student_name ?? "Unknown",
+      student_email: a.student_email ?? "Unknown",
+      status: a.status,
+      score: a.score != null ? Number(a.score) : null,
+      total_marks: a.total_marks != null ? Number(a.total_marks) : null,
+      percentage: a.percentage != null ? Number(a.percentage) : null,
+      active_time_taken: a.active_time_taken != null ? Number(a.active_time_taken) : null,
+      total_time_taken: a.total_time_taken != null ? Number(a.total_time_taken) : null,
+      started_at: a.started_at,
+      submitted_at: a.submitted_at ?? null,
+      tab_switch_count: a.tab_switch_count != null ? Number(a.tab_switch_count) : null,
+      branch: a.branch ?? null,
+      passout_year: a.passout_year != null ? Number(a.passout_year) : null,
+    }))
+
+    return { data: rows, count: res?.total_count ?? rows.length }
   } catch (err: any) {
     console.error("[fetchAttemptsClient] error:", err)
     return { data: [], count: 0, error: err.message }
@@ -2091,7 +2045,7 @@ function AnalyticsTab({ test }: { test: InstituteTestDetail }) {
   return (
     <div className="space-y-6">
       {/* Score distribution bar chart */}
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle className={cn('text-sm', 'font-semibold')}>Score Distribution</CardTitle>
           <CardDescription>Number of candidates grouped by percentage scored.</CardDescription>
@@ -2127,7 +2081,7 @@ function AnalyticsTab({ test }: { test: InstituteTestDetail }) {
       </Card>
 
       {/* Question Performance Table */}
-      <Card>
+      <Card className="py-4">
         <CardHeader>
           <CardTitle className={cn('text-sm', 'font-semibold')}>Question Performance</CardTitle>
           <CardDescription>Success rate and average time spent on each question.</CardDescription>

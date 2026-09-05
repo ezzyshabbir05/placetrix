@@ -1740,7 +1740,7 @@ export function CandidateProfileClient({
         )}
 
         {/* Account Settings */}
-        <Card className={cn("transition-all duration-200", editing("account") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
+        <Card className={cn("py-4 transition-all duration-200", editing("account") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
           <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 space-y-0">
             <div>
               <CardTitle>Account Settings</CardTitle>
@@ -1817,7 +1817,7 @@ export function CandidateProfileClient({
         </Card>
 
         {/* Profile Photo — always interactive */}
-        <Card>
+        <Card className="py-4">
           <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 space-y-0">
             <div>
               <CardTitle>Profile Photo</CardTitle>
@@ -1887,7 +1887,7 @@ export function CandidateProfileClient({
         </Card>
 
         {/* About Summary */}
-        <Card className={cn("transition-all duration-200", editing("bio") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
+        <Card className={cn("py-4 transition-all duration-200", editing("bio") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
           <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 space-y-0">
             <div>
               <CardTitle>About Summary</CardTitle>
@@ -1934,7 +1934,7 @@ export function CandidateProfileClient({
         </Card>
 
         {/* Personal Details */}
-        <Card className={cn("transition-all duration-200", editing("personal") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
+        <Card className={cn("py-4 transition-all duration-200", editing("personal") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
           <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 space-y-0">
             <div>
               <CardTitle>Personal Details</CardTitle>
@@ -2121,7 +2121,7 @@ export function CandidateProfileClient({
         </Card>
 
         {/* Education Details */}
-        <Card className={cn("transition-all duration-200", editing("education") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
+        <Card className={cn("py-4 transition-all duration-200", editing("education") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
           <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 space-y-0">
             <div>
               <CardTitle>Education Details</CardTitle>
@@ -2487,7 +2487,7 @@ export function CandidateProfileClient({
         </Card>
 
         {/* Professional Details */}
-        <Card className={cn("transition-all duration-200", editing("professional") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
+        <Card className={cn("py-4 transition-all duration-200", editing("professional") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
           <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 space-y-0">
             <div>
               <CardTitle>Professional Details</CardTitle>
@@ -2665,7 +2665,7 @@ export function CandidateProfileClient({
 
 
         {/* Work Experience Card */}
-        <Card>
+        <Card className="py-4">
           <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 space-y-0">
             <div>
               <CardTitle>Work Experience</CardTitle>
@@ -2723,7 +2723,7 @@ export function CandidateProfileClient({
         </Card>
 
         {/* Projects Card */}
-        <Card>
+        <Card className="py-4">
           <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 space-y-0">
             <div>
               <CardTitle>Projects</CardTitle>
@@ -2803,7 +2803,7 @@ export function CandidateProfileClient({
         </Card>
 
         {/* Certifications Card */}
-        <Card>
+        <Card className="py-4">
           <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 space-y-0">
             <div>
               <CardTitle>Licenses & Certifications</CardTitle>
@@ -2876,7 +2876,7 @@ export function CandidateProfileClient({
           </CardContent>
         </Card>
         {/* Events Participation Certificates Card */}
-        <Card>
+        <Card className="py-4">
           <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 space-y-0">
             <div>
               <CardTitle>Events Certificates of Participation</CardTitle>

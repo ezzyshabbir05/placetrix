@@ -63,6 +63,7 @@ import {
 import { cn } from "@/lib/utils"
 import { InlineRichText } from "@/components/others/rich-text"
 import { createClient } from "@/lib/supabase/client"
+import { syncAttemptDirect } from "./sync-client"
 import { isDeploymentError, getFriendlyErrorMessage } from "@/lib/errors"
 import type { AttemptTest, AttemptQuestion, AttemptSection, AttemptInfo, SavedAnswer } from "./_types"
 
@@ -974,7 +975,7 @@ interface Props {
     candidateName?: string
     candidateEmail?: string
     onStartAttempt: () => Promise<AttemptInfo>
-    onSync: (
+    onSync?: (
         attemptId: string,
         sessionToken: string,
         batch: Array<{
@@ -1742,7 +1743,7 @@ export function AttemptClient({
 
     const performSync = useCallback(
         async (isFinalSync = false): Promise<boolean> => {
-            if (!onSync || !attemptInfo || (isSubmittingRef.current && !isFinalSync)) return true
+            if (!attemptInfo || (isSubmittingRef.current && !isFinalSync)) return true
 
             // Mutex lock: if another sync is currently in flight, wait for it to complete
             if (syncPromiseRef.current) {
@@ -1780,7 +1781,20 @@ export function AttemptClient({
 
             const syncTask = (async (): Promise<boolean> => {
                 try {
-                    const result = await onSync(attemptInfo.id, sessionTokenRef.current, batch)
+                    // 1. Direct Client Sync (0 Next.js server requests)
+                    let result = await syncAttemptDirect(attemptInfo.id, sessionTokenRef.current, batch)
+
+                    // 2. Fallback to server action if direct sync fails with unexpected error
+                    if (!result.ok && result.error !== "session_superseded" && onSync) {
+                        try {
+                            const fallbackResult = await onSync(attemptInfo.id, sessionTokenRef.current, batch)
+                            if (fallbackResult.ok) {
+                                result = fallbackResult
+                            }
+                        } catch {
+                            // Keep error from direct sync
+                        }
+                    }
 
                     if (!result.ok) {
                         idsToSync.forEach((id) => batchQueueRef.current.add(id))
@@ -1893,7 +1907,7 @@ export function AttemptClient({
 
     // Adaptive session heartbeat: checks every 120s; skips if a sync occurred within the last 120s
     useEffect(() => {
-        if (phase !== "active" || !attemptInfo || !onSync) return
+        if (phase !== "active" || !attemptInfo) return
 
         const id = setInterval(async () => {
             if (isSubmittingRef.current || !sessionTokenRef.current) return
@@ -1904,7 +1918,13 @@ export function AttemptClient({
 
             try {
                 lastSyncTimestampRef.current = Date.now()
-                const res = await onSync(attemptInfo.id, sessionTokenRef.current, [])
+                // Direct Client Sync (0 Next.js server requests)
+                let res = await syncAttemptDirect(attemptInfo.id, sessionTokenRef.current, [])
+                if (!res.ok && res.error !== "session_superseded" && onSync) {
+                    try {
+                        res = await onSync(attemptInfo.id, sessionTokenRef.current, [])
+                    } catch {}
+                }
                 if (!res.ok && res.error === "session_superseded") {
                     setSessionState("superseded")
                 }

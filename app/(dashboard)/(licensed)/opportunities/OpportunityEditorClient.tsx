@@ -192,7 +192,7 @@ export function OpportunityEditorClient({
         <form onSubmit={(e) => handleSubmit(e)} className="space-y-6">
           
           {/* Card 1: Company Profile and Basic Details */}
-          <Card className="border-border/70 shadow-xs bg-card">
+          <Card className="border-border/70 shadow-xs bg-card py-4">
             <CardHeader className="pb-4">
               <CardTitle className="text-base flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-primary" />
@@ -337,7 +337,7 @@ export function OpportunityEditorClient({
           </Card>
 
           {/* Card 2: Compensation & Schedule */}
-          <Card className="border-border/70 shadow-xs bg-card">
+          <Card className="border-border/70 shadow-xs bg-card py-4">
             <CardHeader className="pb-4">
               <CardTitle className="text-base flex items-center gap-2">
                 <IndianRupee className="h-4 w-4 text-primary" />
@@ -415,7 +415,7 @@ export function OpportunityEditorClient({
           </Card>
 
           {/* Card 3: Cutoffs & Detailed Descriptions */}
-          <Card className="border-border/70 shadow-xs bg-card">
+          <Card className="border-border/70 shadow-xs bg-card py-4">
             <CardHeader className="pb-4">
               <CardTitle className="text-base flex items-center gap-2">
                 <Info className="h-4 w-4 text-primary" />

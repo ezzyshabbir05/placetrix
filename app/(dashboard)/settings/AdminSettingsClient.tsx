@@ -310,7 +310,7 @@ export function AdminSettingsClient({ userProfile }: Props) {
           {/* ── SECURITY TAB ── */}
           <TabsContent value="security" className="space-y-6 mt-0">
             {/* Change Password */}
-            <Card>
+            <Card className="py-4">
               <CardHeader>
                 <CardTitle>Change Password</CardTitle>
                 <CardDescription>Keep your administrator credentials secure</CardDescription>
@@ -441,7 +441,7 @@ export function AdminSettingsClient({ userProfile }: Props) {
             </Card>
 
             {/* Two-Factor Authentication */}
-            <Card>
+            <Card className="py-4">
               <CardHeader>
                 <CardTitle>Two-Factor Authentication</CardTitle>
                 <CardDescription>Add an extra layer of security to your administrator account</CardDescription>
@@ -454,7 +454,7 @@ export function AdminSettingsClient({ userProfile }: Props) {
 
           {/* ── NOTIFICATIONS TAB ── */}
           <TabsContent value="notifications" className="mt-0">
-            <Card>
+            <Card className="py-4">
               <CardHeader>
                 <CardTitle>Notification Preferences</CardTitle>
                 <CardDescription>Configure alerts for support tickets and system events</CardDescription>
@@ -478,7 +478,7 @@ export function AdminSettingsClient({ userProfile }: Props) {
 
           {/* ── LOGIN HISTORY TAB ── */}
           <TabsContent value="history" className="mt-0">
-            <Card>
+            <Card className="py-4">
               <CardHeader>
                 <CardTitle>Login History</CardTitle>
                 <CardDescription>Devices currently signed in to your administrator account</CardDescription>
@@ -652,7 +652,7 @@ export function AdminSettingsClient({ userProfile }: Props) {
 
           {/* ── PRIVACY TAB ── */}
           <TabsContent value="privacy" className="space-y-6 mt-0">
-            <Card>
+            <Card className="py-4">
               <CardHeader>
                 <CardTitle>Privacy Controls</CardTitle>
                 <CardDescription>Manage your administrator privacy settings</CardDescription>
@@ -671,7 +671,7 @@ export function AdminSettingsClient({ userProfile }: Props) {
                 ))}
               </CardContent>
             </Card>
-            <Card>
+            <Card className="py-4">
               <CardHeader>
                 <CardTitle>Data Management</CardTitle>
                 <CardDescription>Export or request account removal</CardDescription>

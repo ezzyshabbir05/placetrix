@@ -466,7 +466,7 @@ export function CreateCourseClient({ initialCourse, initialModules = [], adminPr
           <div className="flex flex-col gap-6 lg:col-span-2">
 
             {/* Course Details Card */}
-            <Card>
+            <Card className="py-4">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <BookOpen className="size-4 text-primary" />
@@ -538,7 +538,7 @@ export function CreateCourseClient({ initialCourse, initialModules = [], adminPr
             </Card>
 
             {/* Publication Settings Card */}
-            <Card>
+            <Card className="py-4">
               <CardHeader className="pb-4">
                 <CardTitle className="text-base">Publication</CardTitle>
                 <CardDescription>Control visibility of this course to candidates.</CardDescription>
@@ -561,7 +561,7 @@ export function CreateCourseClient({ initialCourse, initialModules = [], adminPr
             </Card>
 
             {/* Syllabus Modules Card */}
-            <Card>
+            <Card className="py-4">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between gap-4">
                   <div className="space-y-0.5">
@@ -803,7 +803,7 @@ export function CreateCourseClient({ initialCourse, initialModules = [], adminPr
           <div className="flex flex-col gap-6">
 
             {/* Cover Image Card */}
-            <Card>
+            <Card className="py-4">
               <CardHeader className="pb-4">
                 <CardTitle className="text-base">Cover Image</CardTitle>
                 <CardDescription>Landscape (16:9) images work best.</CardDescription>
@@ -869,7 +869,7 @@ export function CreateCourseClient({ initialCourse, initialModules = [], adminPr
             </Card>
 
             {/* Admin Guidelines Card */}
-            <Card>
+            <Card className="py-4">
               <CardHeader className="pb-4">
                 <CardTitle className="text-base">Admin Guidelines</CardTitle>
               </CardHeader>

@@ -457,7 +457,7 @@ export function TpoProfileClient({ userProfile, initialData }: Props) {
         )}
 
         {/* Account Settings */}
-        <Card className={cn("transition-all duration-200", editing("account") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
+        <Card className={cn("py-4 transition-all duration-200", editing("account") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
           <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 space-y-0">
             <div>
               <CardTitle>Account Settings</CardTitle>
@@ -535,7 +535,7 @@ export function TpoProfileClient({ userProfile, initialData }: Props) {
         </Card>
 
         {/* Profile Photo */}
-        <Card>
+        <Card className="py-4">
           <CardHeader>
             <CardTitle>Profile Photo</CardTitle>
             <CardDescription>JPEG, PNG or WEBP</CardDescription>
@@ -593,7 +593,7 @@ export function TpoProfileClient({ userProfile, initialData }: Props) {
         </Card>
 
         {/* Profile Details */}
-        <Card className={cn("transition-all duration-200", editing("profile") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
+        <Card className={cn("py-4 transition-all duration-200", editing("profile") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
           <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 space-y-0">
             <div>
               <CardTitle>Basic Information</CardTitle>
@@ -662,7 +662,7 @@ export function TpoProfileClient({ userProfile, initialData }: Props) {
         </Card>
 
         {/* Professional Details */}
-        <Card className={cn("transition-all duration-200", editing("professional") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
+        <Card className={cn("py-4 transition-all duration-200", editing("professional") && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
           <CardHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 space-y-0">
             <div>
               <CardTitle>Professional Information</CardTitle>

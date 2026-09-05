@@ -366,7 +366,7 @@ function SettingsFormComponent({ values, onChange, cohortOptions }: SettingsForm
 
   return (
     <>
-      <Card>
+      <Card className="py-4">
         <CardHeader className="pb-4">
           <CardTitle className="text-base">Test Settings</CardTitle>
           <CardDescription>Basic information about this test.</CardDescription>
@@ -529,7 +529,7 @@ function SettingsFormComponent({ values, onChange, cohortOptions }: SettingsForm
       </Card>
 
       {/* ── Advanced Settings ── */}
-      <Card>
+      <Card className="py-4">
         <CardHeader className="pb-4">
           <CardTitle className="text-base">Advanced Settings</CardTitle>
           <CardDescription>Anti-cheat and question randomisation options.</CardDescription>
@@ -836,7 +836,7 @@ function TestContentPanel({
 
   return (
     <>
-      <Card>
+      <Card className="py-4">
         <CardHeader className="pb-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-0.5">

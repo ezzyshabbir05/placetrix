@@ -434,7 +434,7 @@ export function ResumeAnalyzerClient() {
         {activeTab === "audit" && (
           <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
             {!result ? (
-              <Card>
+              <Card className="py-4">
                 <CardHeader>
                   <CardTitle className="text-base">Upload Resume</CardTitle>
                   <CardDescription>PDF or DOCX only · Max 5 MB · Your file is never stored on our servers</CardDescription>
@@ -548,7 +548,7 @@ export function ResumeAnalyzerClient() {
 
                 {/* ── Quick Wins ── */}
                 {result.quickWins && result.quickWins.length > 0 && (
-                  <Card className="border-amber-500/20 bg-amber-500/5">
+                  <Card className="border-amber-500/20 bg-amber-500/5 py-4">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm text-amber-700 dark:text-amber-400 font-semibold">
                         Quick Wins — High Impact Fixes (under 10 mins)
@@ -687,7 +687,7 @@ export function ResumeAnalyzerClient() {
 
                     {/* Resume Metadata & Contact Audit */}
                     {result.localAnalysis && (
-                      <Card>
+                      <Card className="py-4">
                         <CardHeader className="pb-3">
                           <CardTitle className="text-sm font-semibold">
                             Resume Metadata & Contact Audit
@@ -741,7 +741,7 @@ export function ResumeAnalyzerClient() {
                     )}
 
                     {/* Strengths Card */}
-                    <Card className="border-emerald-500/20 bg-emerald-500/5">
+                    <Card className="border-emerald-500/20 bg-emerald-500/5 py-4">
                       <CardHeader className="pb-3">
                         <CardTitle className="text-sm text-emerald-700 dark:text-emerald-400">
                           Strengths
@@ -761,7 +761,7 @@ export function ResumeAnalyzerClient() {
 
                     {/* ATS Formatting Audit checklist */}
                     {result.formatChecks && result.formatChecks.length > 0 && (
-                      <Card className="font-sans">
+                      <Card className="font-sans py-4">
                         <CardHeader className="pb-3">
                           <CardTitle className="text-sm text-foreground font-semibold">
                             Layout & Format Audit
@@ -802,7 +802,7 @@ export function ResumeAnalyzerClient() {
 
                     {/* Job Match missing skills (if mode === jd) */}
                     {mode === "jd" && (
-                      <Card>
+                      <Card className="py-4">
                         <CardHeader className="pb-2">
                           <CardTitle className="text-sm">
                             Missing Job Skills
@@ -827,7 +827,7 @@ export function ResumeAnalyzerClient() {
 
                     {/* Detected Skills Cloud (if mode === jd, else shown as scores column) */}
                     {mode === "jd" && (
-                      <Card>
+                      <Card className="py-4">
                         <CardHeader className="pb-2">
                           <CardTitle className="text-sm">
                             Detected Skills
@@ -848,7 +848,7 @@ export function ResumeAnalyzerClient() {
                     )}
 
                     {/* Suggested keywords to add */}
-                    <Card>
+                    <Card className="py-4">
                       <CardHeader className="pb-2">
                         <CardTitle className="text-sm flex items-center gap-2">
                           Suggested Keywords
@@ -893,7 +893,7 @@ export function ResumeAnalyzerClient() {
               </div>
             </div>
 
-            <Card className="border-border bg-card shadow-sm">
+            <Card className="border-border bg-card shadow-sm py-4">
               <CardContent className="flex flex-col gap-8 pt-6">
                 
                 {/* Elevator Pitch */}

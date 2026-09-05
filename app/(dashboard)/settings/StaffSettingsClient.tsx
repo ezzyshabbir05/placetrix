@@ -289,7 +289,7 @@ export function StaffSettingsClient({ userProfile }: Props) {
 
           {/* SECURITY TAB */}
           <TabsContent value="security" className="space-y-6 mt-0">
-            <Card>
+            <Card className="py-4">
               <CardHeader>
                 <CardTitle>Change Password</CardTitle>
                 <CardDescription>Keep your account secure</CardDescription>
@@ -416,7 +416,7 @@ export function StaffSettingsClient({ userProfile }: Props) {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="py-4">
               <CardHeader>
                 <CardTitle>Two-Factor Authentication</CardTitle>
                 <CardDescription>Add an extra layer of security</CardDescription>
@@ -429,7 +429,7 @@ export function StaffSettingsClient({ userProfile }: Props) {
 
           {/* HISTORY TAB */}
           <TabsContent value="history" className="mt-0">
-            <Card>
+            <Card className="py-4">
               <CardHeader>
                 <CardTitle>Login History</CardTitle>
                 <CardDescription>Devices currently signed in</CardDescription>

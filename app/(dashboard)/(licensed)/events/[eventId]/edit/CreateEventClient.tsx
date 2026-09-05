@@ -308,7 +308,7 @@ export function CreateEventClient({ eventId, initialData, cohortOptions }: Props
         {/* Main Details (Left 2 cols) */}
         <div className="lg:col-span-2 space-y-6">
           {/* Card 1: Event Overview */}
-          <Card>
+          <Card className="py-4">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-bold flex items-center gap-2">
                 <FileText className="h-4 w-4 text-primary" /> Event Overview
@@ -378,7 +378,7 @@ export function CreateEventClient({ eventId, initialData, cohortOptions }: Props
           </Card>
 
           {/* Card 2: Schedule & Timing */}
-          <Card>
+          <Card className="py-4">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-bold flex items-center gap-2">
                 <Clock className="h-4 w-4 text-primary" /> Schedule &amp; Timing
@@ -437,7 +437,7 @@ export function CreateEventClient({ eventId, initialData, cohortOptions }: Props
           </Card>
 
           {/* Card 3: Event Banner */}
-          <Card>
+          <Card className="py-4">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-bold flex items-center gap-2">
                 <ImageIcon className="h-4 w-4 text-primary" /> Event Banner
@@ -514,7 +514,7 @@ export function CreateEventClient({ eventId, initialData, cohortOptions }: Props
         {/* Sidebar (Right 1 col) */}
         <div className="space-y-6">
           {/* Card 1: Status & Visibility */}
-          <Card>
+          <Card className="py-4">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-bold flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary" /> Status &amp; Visibility
@@ -550,7 +550,7 @@ export function CreateEventClient({ eventId, initialData, cohortOptions }: Props
           </Card>
 
           {/* Card 2: Audience & Capacity */}
-          <Card>
+          <Card className="py-4">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-bold flex items-center gap-2">
                 <UsersRound className="h-4 w-4 text-primary" /> Audience &amp; Capacity

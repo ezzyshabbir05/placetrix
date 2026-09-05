@@ -740,8 +740,8 @@ export function TestResultClient({ test, attempt, accountType, serverNow }: Prop
 
           {/* ── Trixy AI Conceptual Diagnostic Assistant ─────────────────── */}
           {!isInProgress && (
-            <Card className="overflow-hidden">
-              <CardHeader className="pb-4">
+            <Card className="overflow-hidden py-4">
+              <CardHeader>
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
                   <Sparkles className="size-4 text-purple-500 shrink-0" />
                   <span className="break-words">Trixy AI Conceptual Diagnostic Assistant</span>

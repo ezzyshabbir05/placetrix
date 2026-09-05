@@ -364,7 +364,7 @@ export function CandidateSettingsClient({ userProfile, initialData }: Props) {
           <TabsContent value="security" className="space-y-6 mt-0">
 
             {/* Change Password */}
-            <Card>
+            <Card className="py-4">
               <CardHeader>
                 <CardTitle>Change Password</CardTitle>
                 <CardDescription>Keep your account secure with a strong password</CardDescription>
@@ -496,7 +496,7 @@ export function CandidateSettingsClient({ userProfile, initialData }: Props) {
             </Card>
 
             {/* Two-Factor Authentication */}
-            <Card>
+            <Card className="py-4">
               <CardHeader>
                 <CardTitle>Two-Factor Authentication</CardTitle>
                 <CardDescription>Add an extra layer of security to your account</CardDescription>
@@ -509,7 +509,7 @@ export function CandidateSettingsClient({ userProfile, initialData }: Props) {
 
           {/* ── BILLING TAB ── */}
           <TabsContent value="billing" className="mt-0">
-            <Card>
+            <Card className="py-4">
               <CardHeader>
                 <CardTitle>Billing &amp; License</CardTitle>
                 <CardDescription>Your platform access and subscription details</CardDescription>
@@ -554,7 +554,7 @@ export function CandidateSettingsClient({ userProfile, initialData }: Props) {
 
           {/* ── NOTIFICATIONS TAB ── */}
           <TabsContent value="notifications" className="mt-0 space-y-4">
-            <Card>
+            <Card className="py-4">
               <CardHeader>
                 <CardTitle>Notification Preferences</CardTitle>
                 <CardDescription>Manage how you receive alerts and updates</CardDescription>
@@ -580,7 +580,7 @@ export function CandidateSettingsClient({ userProfile, initialData }: Props) {
 
           {/* ── LOGIN HISTORY TAB ── */}
           <TabsContent value="history" className="mt-0">
-            <Card>
+            <Card className="py-4">
               <CardHeader>
                 <CardTitle>Login History</CardTitle>
                 <CardDescription>Devices currently signed in to your account</CardDescription>
@@ -754,7 +754,7 @@ export function CandidateSettingsClient({ userProfile, initialData }: Props) {
 
           {/* ── PRIVACY TAB ── */}
           <TabsContent value="privacy" className="space-y-6 mt-0">
-            <Card>
+            <Card className="py-4">
               <CardHeader><CardTitle>Privacy Controls</CardTitle><CardDescription>Manage your data privacy</CardDescription></CardHeader>
               <CardContent className="space-y-4">
                 {[
@@ -775,7 +775,7 @@ export function CandidateSettingsClient({ userProfile, initialData }: Props) {
                 ))}
               </CardContent>
             </Card>
-            <Card>
+            <Card className="py-4">
               <CardHeader><CardTitle>Data Management</CardTitle><CardDescription>Export or delete your account data</CardDescription></CardHeader>
               <CardContent className="flex flex-wrap gap-3">
                 <Button

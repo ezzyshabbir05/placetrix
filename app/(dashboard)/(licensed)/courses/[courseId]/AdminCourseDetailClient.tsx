@@ -514,7 +514,7 @@ export function AdminCourseDetailClient({ course, students }: Props) {
         <div className="space-y-4">
 
           {/* Course info card */}
-          <Card className="border border-border/50 bg-card rounded-xl shadow-xs">
+          <Card className="border border-border/50 bg-card rounded-xl shadow-xs py-4">
             <CardHeader className="pb-3">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Course Info
@@ -539,7 +539,7 @@ export function AdminCourseDetailClient({ course, students }: Props) {
           </Card>
 
           {/* Syllabus card */}
-          <Card className="border border-border/50 bg-card rounded-xl shadow-xs">
+          <Card className="border border-border/50 bg-card rounded-xl shadow-xs py-4">
             <CardHeader className="pb-3">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                 <FileText className="h-3.5 w-3.5" />

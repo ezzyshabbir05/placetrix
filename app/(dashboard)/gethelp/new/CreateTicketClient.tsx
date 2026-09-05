@@ -91,7 +91,7 @@ export function CreateTicketClient({ userProfile }: CreateTicketClientProps) {
 
         {/* ── Ticket Fields ── */}
         <div className="space-y-6">
-          <Card>
+          <Card className="py-4">
             <CardHeader className="pb-4">
               <CardTitle className="text-base">Ticket Details</CardTitle>
               <CardDescription>Specify the category and describe your issue.</CardDescription>
@@ -146,7 +146,7 @@ export function CreateTicketClient({ userProfile }: CreateTicketClientProps) {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="py-4">
             <CardHeader className="pb-4">
               <CardTitle className="text-base">Contact Information</CardTitle>
               <CardDescription>The email address associated with your ticket.</CardDescription>
