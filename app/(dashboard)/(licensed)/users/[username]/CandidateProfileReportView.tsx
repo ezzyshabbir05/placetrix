@@ -14,10 +14,11 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
-  Award, Globe, Linkedin, Github, Tag,
-  CheckCircle2, Flame, Target, Zap, Trophy, Brain,
-  Youtube, Instagram, Figma, Codepen, Code2,
-  ArrowLeft, Building2, Calendar, FileText, Share2
+  Award,
+  Tag,
+  ArrowLeft,
+  FileText,
+  Share2,
 } from "lucide-react";
 import type {
   CandidateEducation, CandidateExperience, CandidateProject,
@@ -28,6 +29,7 @@ import {
   AssignedTestsAnalyticsSection,
   type CandidateTestsPerformanceData,
 } from "./AssignedTestsAnalyticsSection";
+import { RestoreStreakDialog } from "./RestoreStreakDialog";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -173,15 +175,35 @@ function SkillIcon({ name, className }: { name: string; className?: string }) {
 
 // ─── LogicLab Analytics Component ─────────────────────────────────────────────
 
-function LogicLabAnalyticsSection({ data }: { data: LogicLabData }) {
+function LogicLabAnalyticsSection({
+  data,
+  candidateId,
+  candidateName,
+  candidateUsername,
+  canRestore,
+}: {
+  data: LogicLabData;
+  candidateId: string;
+  candidateName: string;
+  candidateUsername?: string | null;
+  canRestore: boolean;
+}) {
   const { streakStats, activityCalendar, globalStats } = data;
 
   return (
     <Card className="gap-3 py-5 print:border-none print:shadow-none print:break-inside-avoid">
-      <CardHeader className="pb-0">
+      <CardHeader className="pb-0 flex flex-row items-center justify-between gap-2">
         <CardTitle className="text-base font-semibold">
           LogicLab Performance
         </CardTitle>
+        {canRestore && (
+          <RestoreStreakDialog
+            candidateId={candidateId}
+            candidateName={candidateName}
+            candidateUsername={candidateUsername}
+            currentStreak={streakStats.currentStreak}
+          />
+        )}
       </CardHeader>
 
       <CardContent className="flex flex-col gap-6">
@@ -682,7 +704,15 @@ export function CandidateProfileReportView({
           {assignedTestsData && <AssignedTestsAnalyticsSection data={assignedTestsData} />}
 
           {/* ── LogicLab Performance ─────────────────────────────────── */}
-          {logicLabData && <LogicLabAnalyticsSection data={logicLabData} />}
+          {logicLabData && (
+            <LogicLabAnalyticsSection
+              data={logicLabData}
+              candidateId={publicData.profile_id}
+              candidateName={publicData.full_name}
+              candidateUsername={publicData.username}
+              canRestore={viewerRole !== "student"}
+            />
+          )}
 
           {/* ── Experience ───────────────────────────────────────────── */}
           {hasExperiences && (

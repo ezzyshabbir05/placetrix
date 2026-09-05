@@ -113,6 +113,62 @@ export const getCachedPotd = unstable_cache(
 );
 
 /**
+ * Caches daily challenge POTD metadata along with problem details and submission stats
+ * in server memory for 20 minutes (1200 seconds).
+ */
+export const getCachedFullPotd = unstable_cache(
+  async (todayStr: string) => {
+    const adminSupabase = createAdminClient();
+    const { data: potd, error } = await (adminSupabase as any)
+      .from("logiclab_daily_challenges")
+      .select("id, problem_id, logiclab_problems(id, number, title, difficulty, tags)")
+      .eq("date", todayStr)
+      .maybeSingle();
+
+    if (error || !potd || !potd.problem_id) {
+      return null;
+    }
+
+    const prob = potd.logiclab_problems as any;
+
+    const { data: statsRow } = await (adminSupabase as any)
+      .from("logiclab_problem_stats")
+      .select("accepted_submissions, total_submissions")
+      .eq("problem_id", potd.problem_id)
+      .maybeSingle();
+
+    const totalSubmissions = statsRow?.total_submissions || 0;
+    const acceptedSubmissions = statsRow?.accepted_submissions || 0;
+    const acceptanceRate = totalSubmissions > 0 ? Math.round((acceptedSubmissions / totalSubmissions) * 100) : null;
+
+    return {
+      id: potd.id,
+      problem_id: potd.problem_id,
+      initialPotd: {
+        id: potd.id,
+        problem_id: potd.problem_id,
+        logiclab_problems: {
+          id: prob?.id || potd.problem_id,
+          title: prob?.title,
+          difficulty: prob?.difficulty,
+        },
+      },
+      fullPotdProblem: {
+        id: prob?.id || potd.problem_id,
+        number: prob?.number,
+        title: prob?.title,
+        difficulty: prob?.difficulty,
+        tags: prob?.tags,
+        acceptance_rate: acceptanceRate,
+        total_submissions: totalSubmissions,
+      },
+    };
+  },
+  ["full-potd-cache-20m-v1"],
+  { revalidate: 1200, tags: ["potd"] }
+);
+
+/**
  * Cache execution-critical static data to eliminate DB reads on /run and /submit.
  * Revalidate after 1 hour or when a problem is updated (tag: problem-exec-{id}).
  */

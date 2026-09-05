@@ -61,6 +61,7 @@ import {
 import { cn } from "@/lib/utils"
 import { createAccount } from "./actions"
 import { useRouter, usePathname } from "next/navigation"
+import { startNavigationProgress } from "@/components/ui/navigation-progress"
 
 export interface InstituteUser {
   id: string
@@ -155,16 +156,21 @@ export function UsersListClient({
   initialSortCol,
   initialSortDir,
 }: Props) {
-  const { push } = useRouter()
+  const router = useRouter()
   const pathname = usePathname()
+  const [isNavigating, startNavigationTransition] = useTransition()
 
   const handleUserClick = useCallback((user: InstituteUser) => {
-    if (user.username?.trim()) {
-      push(`/users/${user.username.trim()}`)
+    const trimmed = user.username?.trim()
+    if (trimmed) {
+      startNavigationProgress()
+      startNavigationTransition(() => {
+        router.push(`/users/${trimmed}`)
+      })
     } else {
       toast.error("User has not set up a username yet")
     }
-  }, [push])
+  }, [router])
 
   const [isPending, startTransition] = useTransition()
 
@@ -753,6 +759,12 @@ export function UsersListClient({
                     <ContextMenuTrigger asChild>
                       <TableRow
                         onClick={() => handleUserClick(user)}
+                        onMouseEnter={() => {
+                          if (user.username?.trim()) {
+                            router.prefetch(`/users/${user.username.trim()}`)
+                          }
+                        }}
+                        data-nav-href={user.username ? `/users/${user.username.trim()}` : undefined}
                         className="cursor-pointer hover:bg-muted/50 transition-colors"
                       >
                         <TableCell className="overflow-hidden text-ellipsis">
@@ -827,6 +839,12 @@ export function UsersListClient({
               <div
                 key={user.id}
                 onClick={() => handleUserClick(user)}
+                onMouseEnter={() => {
+                  if (user.username?.trim()) {
+                    router.prefetch(`/users/${user.username.trim()}`)
+                  }
+                }}
+                data-nav-href={user.username ? `/users/${user.username.trim()}` : undefined}
                 className="rounded-lg border bg-card p-4 shadow-xs space-y-3 cursor-pointer hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-center gap-3 min-w-0">

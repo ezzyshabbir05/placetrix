@@ -62,7 +62,7 @@ export default async function LogicLabPage() {
   const cutOffStr20Weeks = cutOffDate20Weeks.toISOString().split("T")[0]
 
   // 1. Fetch recent submissions for the 20-week heatmap
-  const [{ data: regSubs }, { data: dailySubs }] = await Promise.all([
+  const [{ data: regSubs }, { data: dailySubs }, { data: userStatsRes }, { data: streakOverrides }] = await Promise.all([
     (supabase as any).from('logiclab_problem_submissions')
       .select('created_at, status, logiclab_problems!inner(difficulty)')
       .eq('user_id', profile.id)
@@ -70,7 +70,15 @@ export default async function LogicLabPage() {
     (supabase as any).from('logiclab_daily_challenge_submissions')
       .select('created_at, status, logiclab_problems!inner(difficulty)')
       .eq('user_id', profile.id)
-      .gte('created_at', cutOffStr20Weeks)
+      .gte('created_at', cutOffStr20Weeks),
+    (supabase as any).from('logiclab_user_stats')
+      .select('current_streak, longest_streak')
+      .eq('user_id', profile.id)
+      .maybeSingle(),
+    (supabase as any).from('user_streak_overrides')
+      .select('activity_date')
+      .eq('user_id', profile.id)
+      .gte('activity_date', cutOffStr20Weeks),
   ]);
 
   const allSubs = [...(regSubs || []), ...(dailySubs || [])];
@@ -104,6 +112,25 @@ export default async function LogicLabPage() {
     } else if (diff === "Hard") {
       state.hard_attempted += 1;
       if (isSolved) state.hard_solved += 1;
+    }
+  }
+
+  // Incorporate staff-granted streak overrides / restored days
+  if (streakOverrides && Array.isArray(streakOverrides)) {
+    for (const ov of streakOverrides) {
+      if (!ov.activity_date) continue;
+      const dateStr = String(ov.activity_date).split("T")[0];
+      if (!uniqueDatesWithStatus.has(dateStr)) {
+        uniqueDatesWithStatus.set(dateStr, {
+          solved: true, attempted: true, count: 1,
+          easy_solved: 0, medium_solved: 1, hard_solved: 0,
+          easy_attempted: 0, medium_attempted: 1, hard_attempted: 0,
+        });
+      } else {
+        const state = uniqueDatesWithStatus.get(dateStr);
+        state.solved = true;
+        if (state.count === 0) state.count = 1;
+      }
     }
   }
 
@@ -151,6 +178,15 @@ export default async function LogicLabPage() {
         checkDate.setDate(checkDate.getDate() - 1);
         checkStr = checkDate.toISOString().split("T")[0];
       }
+    }
+  }
+
+  if (userStatsRes) {
+    if (typeof userStatsRes.current_streak === "number" && userStatsRes.current_streak > currentStreak) {
+      currentStreak = userStatsRes.current_streak;
+    }
+    if (typeof userStatsRes.longest_streak === "number" && userStatsRes.longest_streak > maxStreak) {
+      maxStreak = userStatsRes.longest_streak;
     }
   }
 

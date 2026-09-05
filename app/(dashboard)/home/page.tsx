@@ -1,27 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { getUserProfile } from "@/lib/supabase/profile";
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { Suspense } from "react";
-import { RecentSupportTickets } from "./RecentSupportTickets";
 import { CandidateDashboardClient } from "./_components/CandidateDashboardClient";
 import { TeacherDashboardClient } from "./_components/TeacherDashboardClient";
-import { LicenseBanner } from "@/components/license/LicenseBanner";
-import { getCachedPotd } from "../(licensed)/logiclab/actions";
-import {
-  ArrowRight,
-  BookOpen,
-  PlayCircle,
-  CalendarClock,
-  CheckCircle2,
-  Users,
-  ListCheck,
-  PenLine,
-} from "lucide-react";
-
+import { getCachedFullPotd } from "@/lib/supabase/cached-queries";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -47,74 +28,6 @@ interface InstituteStatsResponse {
   };
 }
 
-
-// ─── Stat Card ────────────────────────────────────────────────────────────────
-
-function StatCard({
-  icon,
-  label,
-  value,
-  accent,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: number | string;
-  accent?: "green" | "amber" | "blue" | "muted";
-}) {
-  const accentClass =
-    accent === "green"
-      ? "text-emerald-600 dark:text-emerald-400"
-      : accent === "amber"
-        ? "text-amber-600 dark:text-amber-400"
-        : accent === "blue"
-          ? "text-blue-600 dark:text-blue-400"
-          : "text-foreground";
-
-  const accentBg =
-    accent === "green"
-      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-      : accent === "amber"
-        ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-        : accent === "blue"
-          ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-          : "bg-muted/40 text-muted-foreground";
-
-  return (
-    <div className="rounded-2xl border border-border/40 bg-card p-5 flex flex-col gap-4 shadow-md">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
-        <span className={`p-2 rounded-xl ${accentBg}`}>
-          {icon}
-        </span>
-      </div>
-      <p className={`text-3xl font-extrabold tabular-nums tracking-tight leading-none mt-1 ${accentClass}`}>
-        {value}
-      </p>
-    </div>
-  );
-}
-
-
-// ─── Section Header ───────────────────────────────────────────────────────────
-
-function SectionHeader({ title, href }: { title: string; href: string }) {
-  return (
-    <div className="flex items-center justify-between">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {title}
-      </p>
-      <Link
-        href={href}
-        className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-      >
-        View all
-        <ArrowRight className="h-3 w-3" />
-      </Link>
-    </div>
-  );
-}
-
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function HomePage() {
@@ -134,8 +47,17 @@ export default async function HomePage() {
     const cutOffDate20Weeks = new Date(today.getTime() - (140 * 24 * 60 * 60 * 1000));
     const cutOffStr20Weeks = cutOffDate20Weeks.toISOString().split("T")[0];
 
-    // Fetch stats, attempts, global stats, and daily challenge activity in parallel
-    const [homeStatsRes, testAttemptsRes, statsRes, allActivityRes] = await Promise.all([
+    // ── Phase 1: Fire all independent queries concurrently in ONE round-trip ──
+    const [
+      homeStatsRes,
+      testAttemptsRes,
+      statsRes,
+      allActivityRes,
+      cohortMembersRes,
+      eventsRes,
+      cachedPotd,
+      userStatsRes,
+    ] = await Promise.all([
       (supabase as any).rpc("get_candidate_home_stats" as any, {
         p_profile_id: profile.id,
       }),
@@ -150,7 +72,28 @@ export default async function HomePage() {
         .select("activity_date, submission_count, solved, easy_solved, medium_solved, hard_solved, easy_attempted, medium_attempted, hard_attempted")
         .eq("user_id", profile.id)
         .gte("activity_date", cutOffStr20Weeks)
-        .order("activity_date", { ascending: true })
+        .order("activity_date", { ascending: true }),
+      (supabase as any)
+        .from("cohort_students")
+        .select("cohort_id")
+        .eq("student_id", profile.id),
+      profile.institute_id
+        ? (supabase as any)
+            .from("events")
+            .select(`
+              id, title, description, date, venue, capacity, status, duration_minutes, speaker_name,
+              event_cohorts(cohort_id)
+            `)
+            .eq("status", "Published")
+            .eq("institute_id", profile.institute_id)
+            .order("date", { ascending: true })
+        : Promise.resolve({ data: [] }),
+      getCachedFullPotd(todayStr),
+      (supabase as any)
+        .from("logiclab_user_stats")
+        .select("current_streak, longest_streak, last_solve_date")
+        .eq("user_id", profile.id)
+        .maybeSingle(),
     ]);
 
     const candidateData = homeStatsRes.data as unknown as CandidateStatsResponse;
@@ -248,6 +191,17 @@ export default async function HomePage() {
     }
 
     if (currentStreak > maxStreak) maxStreak = currentStreak;
+
+    // Harmonize with canonical database streak stats if available
+    const dbStats = userStatsRes?.data;
+    if (dbStats) {
+      if (typeof dbStats.current_streak === "number" && dbStats.current_streak > currentStreak) {
+        currentStreak = dbStats.current_streak;
+      }
+      if (typeof dbStats.longest_streak === "number" && dbStats.longest_streak > maxStreak) {
+        maxStreak = dbStats.longest_streak;
+      }
+    }
     const streakStats = { currentStreak, maxStreak };
 
     // 4. 20-week (140-day) Activity Calendar
@@ -302,171 +256,143 @@ export default async function HomePage() {
       });
     }
 
-    // 6. Fetch live/upcoming tests for candidate
-    const submittedTestIds = (testAttempts ?? [])
-      .map((a: any) => a.test_id);
+    const cohortIds: string[] = (cohortMembersRes.data ?? []).map((r: any) => r.cohort_id);
+    const submittedTestIds = new Set(
+      (testAttempts ?? []).map((a: any) => String(a.test_id))
+    );
 
-    const nowIso = new Date().toISOString();
-
-    let liveTests: any[] = [];
-    let upcomingTests: any[] = [];
-
-    // Find candidate's cohorts and eligible test IDs
-    const { data: memberRows } = await (supabase as any)
-      .from("cohort_students")
-      .select("cohort_id")
-      .eq("student_id", profile.id);
-
-    const cohortIds = (memberRows ?? []).map((r: any) => r.cohort_id);
-
-    let eligibleTestIds: string[] = [];
-    if (cohortIds.length > 0) {
-      const { data: testCohortRows } = await (supabase as any)
-        .from("test_cohorts")
-        .select("test_id")
-        .in("cohort_id", cohortIds);
-
-      eligibleTestIds = Array.from(new Set((testCohortRows ?? []).map((r: any) => String(r.test_id)))) as string[];
-    }
-
-    if (eligibleTestIds.length > 0) {
-      let liveQuery = (supabase as any)
-        .from("tests")
-        .select("id, title, description, time_limit_seconds, available_from, available_until")
-        .eq("status", "published")
-        .in("id", eligibleTestIds)
-        .lte("available_from", nowIso)
-        .or(`available_until.gt.${nowIso},available_until.is.null`);
-
-      if (submittedTestIds.length > 0) {
-        liveQuery = liveQuery.not("id", "in", `(${submittedTestIds.join(",")})`);
-      }
-
-      const { data: liveData } = await liveQuery
-        .order("available_until", { ascending: true, nullsFirst: false })
-        .limit(2);
-
-      if (liveData) liveTests = liveData;
-
-      let upcomingQuery = (supabase as any)
-        .from("tests")
-        .select("id, title, description, time_limit_seconds, available_from, available_until")
-        .eq("status", "published")
-        .in("id", eligibleTestIds)
-        .gt("available_from", nowIso);
-
-      if (submittedTestIds.length > 0) {
-        upcomingQuery = upcomingQuery.not("id", "in", `(${submittedTestIds.join(",")})`);
-      }
-
-      const { data: upcomingData } = await upcomingQuery
-        .order("available_from", { ascending: true })
-        .limit(2);
-
-      if (upcomingData) upcomingTests = upcomingData;
-    }
-
-    // 7. Fetch Problem of the Day
-    let initialPotd = await getCachedPotd(todayStr);
-    let fullPotdProblem = null;
-
-    if (initialPotd) {
-      const { data: dbProblem } = await (supabase as any)
-        .from("logiclab_problems")
-        .select("id, number, title, difficulty, tags")
-        .eq("id", initialPotd.problem_id)
-        .maybeSingle();
-
-      if (dbProblem) {
-        const { data: statsRow } = await (supabase as any)
-          .from("logiclab_problem_stats")
-          .select("accepted_submissions, total_submissions")
-          .eq("problem_id", initialPotd.problem_id)
-          .maybeSingle();
-
-        const totalSubmissions = statsRow?.total_submissions || 0;
-        const acceptedSubmissions = statsRow?.accepted_submissions || 0;
-        const acceptanceRate = totalSubmissions > 0 ? Math.round((acceptedSubmissions / totalSubmissions) * 100) : null;
-
-        fullPotdProblem = {
-          ...dbProblem,
-          acceptance_rate: acceptanceRate,
-          total_submissions: totalSubmissions,
-        };
-
-        const { data: potdSub } = await (supabase as any)
-          .from("logiclab_daily_challenge_submissions")
-          .select("status")
-          .eq("user_id", profile.id)
-          .eq("problem_id", initialPotd.problem_id)
-          .eq("status", "Accepted")
-          .limit(1);
-
-        fullPotdProblem.solved_status = (potdSub && potdSub.length > 0) ? "Accepted" : null;
-      }
-    }
-
-    // 8. Fetch active & upcoming opportunities for candidate
-    let opportunities: any[] = [];
-    if (cohortIds.length > 0) {
-      const { data: oppCohortRows } = await (supabase as any)
-        .from("opportunity_cohorts")
-        .select("opportunity_id")
-        .in("cohort_id", cohortIds);
-
-      const eligibleOppIds = Array.from(new Set((oppCohortRows ?? []).map((r: any) => String(r.opportunity_id)))) as string[];
-
-      if (eligibleOppIds.length > 0) {
-        const { data: oppsData } = await (supabase as any)
-          .from("opportunities")
-          .select("id, title, job_role, location, ctc_lpa, stipend_monthly, deadline, company:companies(name, logo_url)")
-          .eq("status", "Published")
-          .in("id", eligibleOppIds)
-          .gte("deadline", nowIso)
-          .order("deadline", { ascending: true })
-          .limit(3);
-
-        if (oppsData) opportunities = oppsData;
-      }
-    }
-
-    // 9. Fetch active & upcoming events for candidate
+    // 6. Process candidate events in memory (fetched concurrently in Phase 1)
     let candidateEvent: any = null;
-    if (profile.institute_id) {
-      const { data: rawEvents } = await (supabase as any)
-        .from("events")
-        .select(`
-          id, title, description, date, venue, capacity, status, duration_minutes, speaker_name,
-          event_cohorts(cohort_id)
-        `)
-        .eq("status", "Published")
-        .eq("institute_id", profile.institute_id)
-        .order("date", { ascending: true });
+    const rawEvents = eventsRes.data ?? [];
+    if (rawEvents.length > 0) {
+      const eligibleEvents = rawEvents.filter((event: any) => {
+        const targetedCohorts = (event.event_cohorts ?? []).map((ec: any) => ec.cohort_id);
+        if (targetedCohorts.length === 0) return true;
+        return targetedCohorts.some((cId: string) => cohortIds.includes(cId));
+      });
 
-      if (rawEvents && rawEvents.length > 0) {
-        const eligibleEvents = rawEvents.filter((event: any) => {
-          const targetedCohorts = (event.event_cohorts ?? []).map((ec: any) => ec.cohort_id);
-          if (targetedCohorts.length === 0) return true;
-          return targetedCohorts.some((cId: string) => cohortIds.includes(cId));
-        });
+      const nowTime = Date.now();
+      const activeEvents = eligibleEvents.filter((e: any) => {
+        const startTime = new Date(e.date).getTime();
+        const endTime = startTime + (e.duration_minutes || 120) * 60 * 1000;
+        return nowTime >= startTime && nowTime <= endTime;
+      });
 
-        const activeEvents = eligibleEvents.filter((e: any) => {
-          const startTime = new Date(e.date).getTime();
-          const endTime = startTime + (e.duration_minutes || 120) * 60 * 1000;
-          const nowTime = Date.now();
-          return nowTime >= startTime && nowTime <= endTime;
-        });
-
-        if (activeEvents.length > 0) {
-          candidateEvent = { ...activeEvents[0], derived_status: "live" };
-        } else {
-          const upcomingEvents = eligibleEvents.filter((e: any) => new Date(e.date).getTime() > Date.now());
-          if (upcomingEvents.length > 0) {
-            candidateEvent = { ...upcomingEvents[0], derived_status: "upcoming" };
-          }
+      if (activeEvents.length > 0) {
+        candidateEvent = { ...activeEvents[0], derived_status: "live" };
+      } else {
+        const upcomingEvents = eligibleEvents.filter((e: any) => new Date(e.date).getTime() > nowTime);
+        if (upcomingEvents.length > 0) {
+          candidateEvent = { ...upcomingEvents[0], derived_status: "upcoming" };
         }
       }
     }
+
+    const nowIso = new Date().toISOString();
+    const nowMs = Date.now();
+
+    // ── Phase 2: Parallel cohort-dependent queries & user POTD status in ONE round-trip ──
+    const [testCohortsRes, oppCohortsRes, potdSubRes] = await Promise.all([
+      cohortIds.length > 0
+        ? (supabase as any)
+            .from("test_cohorts")
+            .select("test_id, tests(id, title, description, time_limit_seconds, available_from, available_until, status)")
+            .in("cohort_id", cohortIds)
+        : Promise.resolve({ data: [] }),
+      cohortIds.length > 0
+        ? (supabase as any)
+            .from("opportunity_cohorts")
+            .select("opportunity_id, opportunities(id, title, job_role, location, ctc_lpa, stipend_monthly, deadline, status, company:companies(name, logo_url))")
+            .in("cohort_id", cohortIds)
+        : Promise.resolve({ data: [] }),
+      cachedPotd?.problem_id
+        ? (supabase as any)
+            .from("logiclab_daily_challenge_submissions")
+            .select("status")
+            .eq("user_id", profile.id)
+            .eq("problem_id", cachedPotd.problem_id)
+            .eq("status", "Accepted")
+            .limit(1)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
+
+    // 7. Process Live & Upcoming Tests in memory
+    let liveTests: any[] = [];
+    let upcomingTests: any[] = [];
+
+    if (testCohortsRes.data && testCohortsRes.data.length > 0) {
+      const uniqueTestsMap = new Map<string, any>();
+      for (const row of testCohortsRes.data) {
+        const t = row.tests;
+        if (
+          t &&
+          t.status === "published" &&
+          !submittedTestIds.has(String(t.id)) &&
+          !uniqueTestsMap.has(String(t.id))
+        ) {
+          uniqueTestsMap.set(String(t.id), t);
+        }
+      }
+
+      const allEligibleTests = Array.from(uniqueTestsMap.values());
+
+      // Live tests: available_from <= now && (available_until > now || available_until is null)
+      liveTests = allEligibleTests
+        .filter((t) => {
+          if (!t.available_from) return false;
+          const fromMs = new Date(t.available_from).getTime();
+          const untilMs = t.available_until ? new Date(t.available_until).getTime() : Infinity;
+          return nowMs >= fromMs && nowMs <= untilMs;
+        })
+        .sort((a, b) => {
+          const untilA = a.available_until ? new Date(a.available_until).getTime() : Infinity;
+          const untilB = b.available_until ? new Date(b.available_until).getTime() : Infinity;
+          return untilA - untilB;
+        })
+        .slice(0, 2);
+
+      // Upcoming tests: available_from > now
+      upcomingTests = allEligibleTests
+        .filter((t) => {
+          if (!t.available_from) return false;
+          return new Date(t.available_from).getTime() > nowMs;
+        })
+        .sort((a, b) => new Date(a.available_from).getTime() - new Date(b.available_from).getTime())
+        .slice(0, 2);
+    }
+
+    // 8. Process Opportunities in memory
+    let opportunities: any[] = [];
+
+    if (oppCohortsRes.data && oppCohortsRes.data.length > 0) {
+      const uniqueOppsMap = new Map<string, any>();
+      for (const row of oppCohortsRes.data) {
+        const opp = row.opportunities;
+        if (
+          opp &&
+          opp.status === "Published" &&
+          opp.deadline &&
+          new Date(opp.deadline).getTime() >= nowMs &&
+          !uniqueOppsMap.has(String(opp.id))
+        ) {
+          uniqueOppsMap.set(String(opp.id), opp);
+        }
+      }
+
+      opportunities = Array.from(uniqueOppsMap.values())
+        .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
+        .slice(0, 3);
+    }
+
+    // 9. Process POTD with cached metadata and user solve status
+    const initialPotd = cachedPotd?.initialPotd ?? null;
+    const fullPotdProblem = cachedPotd?.fullPotdProblem
+      ? {
+          ...cachedPotd.fullPotdProblem,
+          solved_status: potdSubRes?.data?.status === "Accepted" ? "Accepted" : null,
+        }
+      : null;
 
     const candidateProfile = {
       id: profile.id,

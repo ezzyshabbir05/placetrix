@@ -97,6 +97,7 @@ export default async function UserReportPage({ params }: PageProps) {
     { data: dailyActivitySubs },
     { data: statsData },
     { data: targetUserStats },
+    { data: userStreakOverrides },
     { data: memberRows },
     { data: attemptsRaw },
     cachedGlobalTags,
@@ -161,9 +162,13 @@ export default async function UserReportPage({ params }: PageProps) {
     (adminSupabase as any).rpc("get_user_global_stats", { p_user_id: targetProfile.id }),
     (adminSupabase as any)
       .from("logiclab_user_stats")
-      .select("total_points")
+      .select("total_points, current_streak, longest_streak")
       .eq("user_id", targetProfile.id)
       .maybeSingle(),
+    (adminSupabase as any)
+      .from("user_streak_overrides")
+      .select("activity_date, override_type")
+      .eq("user_id", targetProfile.id),
     (adminSupabase as any)
       .from("cohort_students")
       .select("cohort_id")
@@ -271,6 +276,33 @@ export default async function UserReportPage({ params }: PageProps) {
     }
   }
 
+  // Incorporate staff-granted streak overrides / restored days
+  if (userStreakOverrides && Array.isArray(userStreakOverrides)) {
+    for (const ov of userStreakOverrides) {
+      if (!ov.activity_date) continue;
+      const dateStr = String(ov.activity_date).split("T")[0];
+      allActiveDates.set(dateStr, true);
+
+      if (!uniqueDatesWithStatus.has(dateStr)) {
+        uniqueDatesWithStatus.set(dateStr, {
+          activity_date: dateStr,
+          solved: true,
+          submission_count: 1,
+          easy_solved: 0,
+          medium_solved: 1,
+          hard_solved: 0,
+          easy_attempted: 0,
+          medium_attempted: 1,
+          hard_attempted: 0,
+        });
+      } else {
+        const state = uniqueDatesWithStatus.get(dateStr);
+        state.solved = true;
+        if (state.submission_count === 0) state.submission_count = 1;
+      }
+    }
+  }
+
   const sortedDates = Array.from(allActiveDates.keys()).sort((a, b) => b.localeCompare(a));
   let currentStreak = 0;
   let maxStreak = 0;
@@ -310,6 +342,16 @@ export default async function UserReportPage({ params }: PageProps) {
     }
   }
   if (currentStreak > maxStreak) maxStreak = currentStreak;
+
+  // Harmonize with authoritative database stats in logiclab_user_stats
+  if (targetUserStats) {
+    if (typeof targetUserStats.current_streak === "number" && targetUserStats.current_streak > currentStreak) {
+      currentStreak = targetUserStats.current_streak;
+    }
+    if (typeof targetUserStats.longest_streak === "number" && targetUserStats.longest_streak > maxStreak) {
+      maxStreak = targetUserStats.longest_streak;
+    }
+  }
 
   const activityCalendar: any[] = [];
   for (let i = 139; i >= 0; i--) {
