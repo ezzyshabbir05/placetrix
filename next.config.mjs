@@ -3,7 +3,6 @@ import { execSync } from "child_process";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   devIndicators: false,
-  serverExternalPackages: ["pdf-parse", "mammoth", "jspdf", "xlsx"],
   // ── Stable Build ID for Firebase App Hosting ─────────────────────────────
   // Next.js generates random server-action IDs per build. If a user is mid-test
   // when a new deploy goes out, their old IDs are invalid → "Server Action not

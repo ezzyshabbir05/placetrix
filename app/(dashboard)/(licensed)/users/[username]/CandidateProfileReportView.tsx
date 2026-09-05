@@ -28,7 +28,6 @@ import {
   AssignedTestsAnalyticsSection,
   type CandidateTestsPerformanceData,
 } from "./AssignedTestsAnalyticsSection";
-import { generateCandidatePdfReport } from "./generateCandidatePdf";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -309,9 +308,10 @@ export function CandidateProfileReportView({
 
   const [isExporting, setIsExporting] = useState(false);
 
-  const handleExportPdf = () => {
+  const handleExportPdf = async () => {
     try {
       setIsExporting(true);
+      const { generateCandidatePdfReport } = await import("./generateCandidatePdf");
       generateCandidatePdfReport({
         publicData,
         educationData,
@@ -360,7 +360,7 @@ export function CandidateProfileReportView({
                 variant="outline"
                 className="gap-2"
                 onClick={() => {
-                  const shareUrl = `${window.location.origin}/users/${publicData.username}`;
+                  const shareUrl = `${window.location.origin}/users/${publicData.username || publicData.profile_id}`;
                   navigator.clipboard.writeText(shareUrl);
                   toast.success("Profile link copied to clipboard!", {
                     description: shareUrl,

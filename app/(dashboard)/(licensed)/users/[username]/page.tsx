@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserProfile } from "@/lib/supabase/profile";
-import { getCurrentUserRankAction } from "@/app/(dashboard)/(licensed)/logiclab/leaderboard/actions";
 import { notFound } from "next/navigation";
 import { CandidateProfileReportView } from "./CandidateProfileReportView";
 import { getCachedGlobalSkills, getCachedGlobalBadges, getCachedGlobalTagCounts } from "@/lib/supabase/cached-queries";
@@ -37,15 +37,22 @@ export default async function UserReportPage({ params }: PageProps) {
     return notFound();
   }
 
-  const supabase = await createClient();
+  const adminSupabase = createAdminClient();
 
-  // 2. Look up target candidate profile
-  const { data: targetProfile } = await (supabase as any)
+  // 2. Look up target candidate profile by either username OR user ID (UUID)
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(username);
+  let profileQuery = (adminSupabase as any)
     .from("profiles")
     .select("id, full_name, first_name, last_name, email, username, avatar_path, bio, gender, linkedin_url, github_url, portfolio_links, institute_id, account_type, privacy_settings")
-    .eq("username", username)
-    .eq("account_type", "institute_candidate")
-    .maybeSingle();
+    .eq("account_type", "institute_candidate");
+
+  if (isUuid) {
+    profileQuery = profileQuery.or(`id.eq.${username},username.eq.${username}`);
+  } else {
+    profileQuery = profileQuery.eq("username", username);
+  }
+
+  const { data: targetProfile } = await profileQuery.maybeSingle();
 
   if (!targetProfile) return notFound();
 
@@ -72,10 +79,7 @@ export default async function UserReportPage({ params }: PageProps) {
     );
   }
 
-  // 4. Batch query target candidate data in parallel
-  const cutOffDate20Weeks = new Date(Date.now() - 140 * 24 * 60 * 60 * 1000);
-  const cutOffStr20Weeks = cutOffDate20Weeks.toISOString().split("T")[0];
-
+  // 4. Batch query target candidate data in parallel using admin client to prevent RLS starvation
   const [
     { data: academicDetails },
     { data: candidateEducation },
@@ -100,96 +104,95 @@ export default async function UserReportPage({ params }: PageProps) {
     { data: attemptsRaw },
     cachedGlobalTags,
   ] = await Promise.all([
-    (supabase as any)
+    (adminSupabase as any)
       .from("candidate_academic_details")
       .select("course_id, passout_year, university_prn, course:institute_courses(course_name, semesters_count)")
       .eq("profile_id", targetProfile.id)
       .maybeSingle(),
-    (supabase as any)
+    (adminSupabase as any)
       .from("candidate_education")
-      .select("id, type, institution_name, passout_year, grade_or_percentage")
+      .select("id, profile_id, type, institution_name, course_or_stream, passout_year, grade_or_percentage")
       .eq("profile_id", targetProfile.id)
       .order("passout_year", { ascending: false }),
-    (supabase as any)
+    (adminSupabase as any)
       .from("candidate_experiences")
-      .select("id, title, company_name, location, start_date, end_date, is_current, description")
+      .select("id, profile_id, title, company_name, location, start_date, end_date, is_current, description")
       .eq("profile_id", targetProfile.id)
       .order("start_date", { ascending: false }),
-    (supabase as any)
+    (adminSupabase as any)
       .from("candidate_projects")
-      .select("id, title, description, project_url, associated_with, start_date, end_date, is_ongoing, skills")
+      .select("id, profile_id, title, description, project_url, associated_with, start_date, end_date, is_ongoing, skills")
       .eq("profile_id", targetProfile.id)
       .order("start_date", { ascending: false }),
-    (supabase as any)
+    (adminSupabase as any)
       .from("candidate_certifications")
-      .select("id, name, issuing_org, credential_id, credential_url, issue_date, expiration_date, does_not_expire")
+      .select("id, profile_id, name, issuing_org, credential_id, credential_url, certificate_path, issue_date, expiration_date, does_not_expire")
       .eq("profile_id", targetProfile.id)
       .order("issue_date", { ascending: false }),
-    (supabase as any)
+    (adminSupabase as any)
       .from("event_tickets")
-      .select("id, event:events!inner(id, title, date, status)")
+      .select("id, attendance_status, status, event:events!inner(id, title, date, status)")
       .eq("candidate_id", targetProfile.id)
-      .eq("attendance_status", "Present")
-      .eq("events.status", "Concluded"),
+      .eq("attendance_status", "Present"),
     getCachedGlobalSkills(),
-    (supabase as any)
+    (adminSupabase as any)
       .from("candidate_skills")
       .select("skill_id")
       .eq("profile_id", targetProfile.id),
-    (supabase as any)
+    (adminSupabase as any)
       .from("candidate_semester_grades")
       .select("semester_number, sgpa")
       .eq("profile_id", targetProfile.id)
       .order("semester_number", { ascending: true }),
-    (supabase as any)
+    (adminSupabase as any)
       .from("user_badges")
-      .select("earned_at, logiclab_badges(id, name, description, icon_name)")
+      .select("earned_at, logiclab_badges(id, name, description, icon_name, badge_category)")
       .eq("user_id", targetProfile.id)
       .order("earned_at", { ascending: false }),
     getCachedGlobalBadges(),
     targetProfile.institute_id
-      ? (supabase as any).from("institutes").select("institute_name").eq("id", targetProfile.institute_id).maybeSingle()
+      ? (adminSupabase as any).from("institutes").select("institute_name").eq("id", targetProfile.institute_id).maybeSingle()
       : Promise.resolve({ data: null }),
-    (supabase as any)
+    (adminSupabase as any)
       .from("logiclab_problem_submissions")
       .select("created_at, status, problem_id, logiclab_problems(difficulty)")
       .eq("user_id", targetProfile.id),
-    (supabase as any)
+    (adminSupabase as any)
       .from("logiclab_daily_challenge_submissions")
       .select("created_at, status, problem_id, logiclab_problems(difficulty)")
       .eq("user_id", targetProfile.id),
-    (supabase as any).rpc("get_user_global_stats", { p_user_id: targetProfile.id }),
-    (supabase as any)
+    (adminSupabase as any).rpc("get_user_global_stats", { p_user_id: targetProfile.id }),
+    (adminSupabase as any)
       .from("logiclab_problem_submissions")
       .select("problem_id")
       .eq("user_id", targetProfile.id)
       .eq("status", "Accepted"),
-    (supabase as any)
+    (adminSupabase as any)
       .from("logiclab_daily_challenge_submissions")
       .select("problem_id")
       .eq("user_id", targetProfile.id)
       .eq("status", "Accepted"),
-    (supabase as any)
+    (adminSupabase as any)
       .from("logiclab_problem_submissions")
       .select("created_at, problem_id, logiclab_problems(id, title, difficulty)")
       .eq("user_id", targetProfile.id)
       .eq("status", "Accepted")
       .order("created_at", { ascending: false })
       .limit(50),
-    (supabase as any)
+    (adminSupabase as any)
       .from("logiclab_daily_challenge_submissions")
       .select("created_at, problem_id, logiclab_problems(id, title, difficulty)")
       .eq("user_id", targetProfile.id)
       .eq("status", "Accepted")
       .order("created_at", { ascending: false })
       .limit(50),
-    (supabase as any)
+    (adminSupabase as any)
       .from("cohort_students")
       .select("cohort_id")
       .eq("student_id", targetProfile.id),
-    (supabase as any)
+    (adminSupabase as any)
       .from("test_attempts")
-      .select("id, test_id, attempt_number, status, score, total_marks, percentage, passed, started_at, submitted_at, active_time_taken, total_time_taken, tab_switch_count")
+      .select("id, test_id, attempt_number, status, score, total_marks, percentage, passed, started_at, submitted_at, active_time_taken, total_time_taken, tab_switch_count, created_at")
       .eq("candidate_id", targetProfile.id)
       .order("created_at", { ascending: false }),
     getCachedGlobalTagCounts(),
@@ -345,7 +348,7 @@ export default async function UserReportPage({ params }: PageProps) {
 
   let topicCounts: Record<string, number> = {};
   if (solvedProblemIds.length > 0) {
-    const { data: solvedProblems } = await (supabase as any)
+    const { data: solvedProblems } = await (adminSupabase as any)
       .from("logiclab_problems")
       .select("id, tags")
       .in("id", solvedProblemIds);
@@ -400,7 +403,7 @@ export default async function UserReportPage({ params }: PageProps) {
   if (globalStats.hard) globalStats.hard.solved = uniqueHard;
 
   let userRank: number | null = null;
-  const { data: targetUserStats } = await (supabase as any)
+  const { data: targetUserStats } = await (adminSupabase as any)
     .from("logiclab_user_stats")
     .select("total_points")
     .eq("user_id", targetProfile.id)
@@ -408,7 +411,14 @@ export default async function UserReportPage({ params }: PageProps) {
 
   const targetPoints = targetUserStats?.total_points || 0;
   if (targetPoints > 0 && targetProfile.institute_id) {
-    userRank = await getCurrentUserRankAction(targetProfile.institute_id, targetProfile.id, targetPoints);
+    const { count: higherCount } = await (adminSupabase as any)
+      .from("logiclab_user_stats")
+      .select("user_id, profiles!inner(institute_id, account_type)", { count: "exact", head: true })
+      .eq("profiles.institute_id", targetProfile.institute_id)
+      .eq("profiles.account_type", "institute_candidate")
+      .gt("total_points", targetPoints);
+
+    userRank = (higherCount ?? 0) + 1;
   }
 
   const seenProblems = new Set();
@@ -445,31 +455,33 @@ export default async function UserReportPage({ params }: PageProps) {
     allBadges: allBadges || [],
   };
 
-  // 5. Assigned Tests Querying via Cohorts
+  // 5. Assigned & Attempted Tests Querying via Cohorts and Attempts
   const cohortIds = (memberRows ?? []).map((r: any) => r.cohort_id);
+  const attemptedTestIds = (attemptsRaw ?? []).map((a: any) => String(a.test_id)).filter(Boolean);
 
   let eligibleTestIds: string[] = [];
-  let assignedTestsRaw: any[] = [];
-
-  if (cohortIds.length > 0 && targetProfile.institute_id) {
-    const { data: testCohortRows } = await (supabase as any)
+  if (cohortIds.length > 0) {
+    const { data: testCohortRows } = await (adminSupabase as any)
       .from("test_cohorts")
       .select("test_id")
       .in("cohort_id", cohortIds);
 
-    eligibleTestIds = Array.from(new Set((testCohortRows ?? []).map((r: any) => String(r.test_id))));
+    eligibleTestIds = (testCohortRows ?? []).map((r: any) => String(r.test_id));
+  }
 
-    if (eligibleTestIds.length > 0) {
-      const { data: testsData } = await (supabase as any)
-        .from("tests")
-        .select("id, title, description, pass_percentage, time_limit_seconds, available_from, available_until, marks_available, results_available, status, created_at")
-        .in("id", eligibleTestIds)
-        .eq("institute_id", targetProfile.institute_id)
-        .eq("status", "published")
-        .order("created_at", { ascending: false });
+  // Include both eligible cohort tests AND tests the candidate attempted
+  const allRelevantTestIds = Array.from(new Set([...eligibleTestIds, ...attemptedTestIds]));
 
-      assignedTestsRaw = testsData ?? [];
-    }
+  let assignedTestsRaw: any[] = [];
+  if (allRelevantTestIds.length > 0 && targetProfile.institute_id) {
+    const { data: testsData } = await (adminSupabase as any)
+      .from("tests")
+      .select("id, title, description, pass_percentage, time_limit_seconds, available_from, available_until, marks_available, results_available, status, created_at")
+      .in("id", allRelevantTestIds)
+      .eq("institute_id", targetProfile.institute_id)
+      .order("created_at", { ascending: false });
+
+    assignedTestsRaw = testsData ?? [];
   }
 
   const attemptsByTestId = new Map<string, any>();
@@ -485,7 +497,7 @@ export default async function UserReportPage({ params }: PageProps) {
 
   let questionStats = { totalAnswered: 0, totalCorrect: 0, accuracyPercentage: 0 };
   if (submittedAttemptIds.length > 0) {
-    const { data: answers } = await (supabase as any)
+    const { data: answers } = await (adminSupabase as any)
       .from("test_attempt_answers")
       .select("is_correct")
       .in("attempt_id", submittedAttemptIds);
@@ -672,3 +684,4 @@ export default async function UserReportPage({ params }: PageProps) {
     />
   );
 }
+

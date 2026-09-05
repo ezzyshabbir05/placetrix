@@ -151,13 +151,6 @@ export async function POST(req: Request) {
         runtime: maxRuntime,
         memory: maxMemory,
       });
-
-      if (isAccepted) {
-        try {
-          const { data: statsRow } = await supabase.from("logiclab_daily_challenge_stats").select("accepted_submissions").eq("daily_challenge_id", daily_challenge_id).single();
-          await supabase.from("logiclab_daily_challenge_stats").update({ accepted_submissions: (statsRow?.accepted_submissions || 0) + 1 }).eq("daily_challenge_id", daily_challenge_id);
-        } catch {}
-      }
     }
 
     // Insert regular submission (PostgreSQL trigger trg_logiclab_problem_solve fires automatically)

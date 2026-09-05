@@ -42,7 +42,6 @@ export async function createEventAction(data: EventFormData) {
     title: data.title,
     description: data.description || null,
     date: data.date,
-    end_date: data.end_date || null,
     venue: data.venue,
     capacity: data.capacity,
     status: data.status,
@@ -52,22 +51,11 @@ export async function createEventAction(data: EventFormData) {
     speaker_name: data.speaker_name || null,
   }
 
-  let { data: event, error } = await (supabase as any)
+  const { data: event, error } = await (supabase as any)
     .from("events")
     .insert(eventPayload)
     .select("id")
     .maybeSingle()
-
-  if (error && error.message && error.message.includes("end_date")) {
-    delete eventPayload.end_date
-    const retry = await (supabase as any)
-      .from("events")
-      .insert(eventPayload)
-      .select("id")
-      .maybeSingle()
-    event = retry.data
-    error = retry.error
-  }
 
   if (error || !event) {
     console.error("Error creating event:", error)
@@ -129,7 +117,6 @@ export async function updateEventAction(eventId: string, data: EventFormData) {
     title: data.title,
     description: data.description || null,
     date: data.date,
-    end_date: data.end_date || null,
     venue: data.venue,
     capacity: data.capacity,
     status: data.status,
@@ -139,19 +126,10 @@ export async function updateEventAction(eventId: string, data: EventFormData) {
     speaker_name: data.speaker_name || null,
   }
 
-  let { error } = await (supabase as any)
+  const { error } = await (supabase as any)
     .from("events")
     .update(updatePayload)
     .eq("id", eventId)
-
-  if (error && error.message && error.message.includes("end_date")) {
-    delete updatePayload.end_date
-    const retry = await (supabase as any)
-      .from("events")
-      .update(updatePayload)
-      .eq("id", eventId)
-    error = retry.error
-  }
 
   if (error) {
     console.error("Error updating event:", error)

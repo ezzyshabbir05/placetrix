@@ -3,7 +3,6 @@
 import { useState, useEffect, useTransition, useCallback, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { jsPDF } from "jspdf";
 import { UserProfile } from "@/lib/supabase/profile";
 import {
   updateCandidatePersonalDetails,
@@ -1556,8 +1555,9 @@ export function CandidateProfileClient({
     });
   };
 
-  const downloadEventCertificate = (cert: EventCertificate) => {
+  const downloadEventCertificate = async (cert: EventCertificate) => {
     try {
+      const { jsPDF } = await import("jspdf");
       const doc = new jsPDF({
         orientation: "landscape",
         unit: "mm",

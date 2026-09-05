@@ -54,8 +54,7 @@ export default async function MyProfilePage() {
           )
         `)
         .eq("candidate_id", profile.id)
-        .eq("attendance_status", "Present")
-        .eq("events.status", "Concluded"),
+        .eq("attendance_status", "Present"),
       getCachedGlobalSkills(),
       (supabase as any).from("candidate_skills").select("skill_id").eq("profile_id", profile.id),
       (supabase as any).from("candidate_semester_grades").select("semester_number, sgpa").eq("profile_id", profile.id).order("semester_number"),

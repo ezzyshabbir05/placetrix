@@ -688,7 +688,7 @@ export default async function HomePage() {
       instituteId
         ? (supabase as any)
           .from("institutes")
-          .select("name")
+          .select("institute_name")
           .eq("id", instituteId)
           .maybeSingle()
         : Promise.resolve({ data: null }),
@@ -744,7 +744,7 @@ export default async function HomePage() {
       account_type: profile.account_type,
       profile_updated: profile.profile_updated === true,
       institute_id: profile.institute_id || null,
-      institute_name: instituteProfileRes.data?.name || null,
+      institute_name: instituteProfileRes.data?.institute_name || null,
     };
 
     const teacherStats = {
@@ -775,6 +775,7 @@ export default async function HomePage() {
       recentTicketsRes,
       allTestsCountRes,
       allAttemptsCountRes,
+      cohortsCountRes,
       featuredTestRes,
       featuredOppRes,
       featuredEventRes,
@@ -785,6 +786,7 @@ export default async function HomePage() {
       (supabase as any).from("tickets").select("*").order("created_at", { ascending: false }).limit(5),
       (supabase as any).from("tests").select("*", { count: "exact", head: true }),
       (supabase as any).from("test_attempts").select("*", { count: "exact", head: true }),
+      (supabase as any).from("cohorts").select("*", { count: "exact", head: true }),
       (supabase as any).from("tests").select("id, title, description, time_limit_seconds, available_from, available_until, status").order("created_at", { ascending: false }).limit(1).maybeSingle(),
       (supabase as any).from("opportunities").select("id, title, job_role, location, ctc_lpa, stipend_monthly, deadline, company:companies(name, logo_url)").order("created_at", { ascending: false }).limit(1).maybeSingle(),
       (supabase as any).from("events").select("id, title, description, date, venue, speaker_name, duration_minutes, status").order("created_at", { ascending: false }).limit(1).maybeSingle(),
@@ -804,7 +806,7 @@ export default async function HomePage() {
       draft_tests: 0,
       total_attempts: allAttemptsCountRes.count ?? 0,
       total_students: candidatesCount.count ?? 0,
-      total_cohorts: institutesCount.count ?? 0,
+      total_cohorts: cohortsCountRes.count ?? 0,
     };
 
     const nowTime = Date.now();
