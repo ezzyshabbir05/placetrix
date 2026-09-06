@@ -236,7 +236,7 @@ export function LogicLabStatsCards({ globalStats, activityCalendar, streakStats 
 
   return (
     <>
-      <Card className={cn('min-w-0', 'flex', 'flex-col', 'relative', 'transition-all', 'hover:border-border/80', 'py-0')}>
+      <Card className={cn('min-w-0', 'flex', 'flex-col', 'relative', 'py-0')}>
         <CardHeader className={cn('flex', 'flex-row', 'items-center', 'justify-between', 'pt-4', 'pb-1')}>
           <CardTitle className={cn('text-xs', 'font-semibold', 'text-muted-foreground', 'uppercase', 'tracking-wider')}>
             Overall Progress
@@ -372,7 +372,7 @@ export function LogicLabStatsCards({ globalStats, activityCalendar, streakStats 
         </CardContent>
       </Card>
 
-      <Card className={cn('min-w-0', 'flex', 'flex-col', 'relative', 'transition-all', 'hover:border-border/80', 'py-0')}>
+      <Card className={cn('min-w-0', 'flex', 'flex-col', 'relative', 'py-0')}>
         <CardHeader className={cn('pt-4', 'pb-1')}>
           <CardTitle className={cn('text-xs', 'font-semibold', 'text-muted-foreground', 'uppercase', 'tracking-wider')}>
             Activity Graph

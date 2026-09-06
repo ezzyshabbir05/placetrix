@@ -18,6 +18,9 @@ const nextConfig = {
     }
   },
   experimental: {
+    staleTimes: {
+      dynamic: 0,
+    },
     optimizePackageImports: [
       "lucide-react",
       "@tabler/icons-react",

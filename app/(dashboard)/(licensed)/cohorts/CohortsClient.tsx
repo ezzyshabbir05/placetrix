@@ -136,7 +136,7 @@ function CohortCard({ cohort, isCandidate }: { cohort: Cohort; isCandidate?: boo
   )
 
   return (
-    <Card className="overflow-hidden border-border/70 bg-card p-0 shadow-xs">
+    <Card className="overflow-hidden p-0 shadow-xs">
       {isCandidate ? (
         <div className="block">{cardContent}</div>
       ) : (

@@ -893,7 +893,7 @@ export function ResumeAnalyzerClient() {
               </div>
             </div>
 
-            <Card className="border-border bg-card shadow-sm py-4">
+            <Card className="py-4">
               <CardContent className="flex flex-col gap-8 pt-6">
                 
                 {/* Elevator Pitch */}

@@ -23,6 +23,7 @@ import {
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardAction } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { SolveChallengeButton } from "@/components/ui/solve-challenge-button"
 import { cn } from "@/lib/utils"
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/components/ui/input-group"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
@@ -389,31 +390,31 @@ export function DailyChallengesHistoryClient({
                 <span className="font-mono text-lg font-bold text-foreground tabular-nums leading-none">{timeLeft}</span>
               </div>
 
-              <Button
-                className="w-full h-9 px-4 font-semibold gap-2 group/btn shadow-sm text-sm rounded-lg"
+              <SolveChallengeButton
+                size="sm"
+                isSolved={activeChallenge.solved_status === "Accepted"}
+                label={activeChallenge.solved_status === "Accepted" ? "Review" : "Solve"}
                 onClick={(e) => {
                   e.stopPropagation()
                   startNavigationProgress()
                   router.push(`/logiclab/dailychallenges/${activeChallenge.id}`)
                 }}
-              >
-                {activeChallenge.solved_status === "Accepted" ? "Review" : "Solve"}
-              </Button>
+              />
             </div>
           </div>
 
           {/* ── Mobile CTA ── */}
           <div className="sm:hidden px-5 pb-4">
-            <Button
-              className="w-full h-9 font-semibold gap-2 group/btn shadow-sm text-sm"
+            <SolveChallengeButton
+              size="sm"
+              isSolved={activeChallenge.solved_status === "Accepted"}
+              label={activeChallenge.solved_status === "Accepted" ? "Review Challenge" : "Solve Now"}
               onClick={(e) => {
                 e.stopPropagation()
                 startNavigationProgress()
                 router.push(`/logiclab/dailychallenges/${activeChallenge.id}`)
               }}
-            >
-              {activeChallenge.solved_status === "Accepted" ? "Review Challenge" : "Solve Now"}
-            </Button>
+            />
           </div>
         </Card>
       ) : (
@@ -553,7 +554,7 @@ export function DailyChallengesHistoryClient({
                             startNavigationProgress()
                             router.push(`/logiclab/dailychallenges/${challenge.id}`)
                           }}
-                          className="rounded-sm group cursor-pointer hover:bg-muted/30 transition-colors duration-150 border-border/50 hover:border-border/80 py-0"
+                          className="rounded-sm group cursor-pointer hover:bg-muted/30 transition-colors duration-150 py-0"
                         >
                           <CardContent className="flex items-center gap-3 px-4 py-2.5">
                             {/* Status icon */}
@@ -593,13 +594,9 @@ export function DailyChallengesHistoryClient({
                               ))}
                             </div>
 
-                            {/* Chevron / Solved */}
+                            {/* Navigation chevron */}
                             <div className="shrink-0 ml-1">
-                              {isSolved ? (
-                                <CircleCheck className="size-4 text-emerald-500/70" />
-                              ) : (
-                                <ChevronRight className="size-4 text-muted-foreground/50 group-hover:text-muted-foreground/80 group-hover:translate-x-0.5 transition-all" />
-                              )}
+                              <ChevronRight className="size-4 text-muted-foreground/50 group-hover:text-muted-foreground/80 group-hover:translate-x-0.5 transition-all" />
                             </div>
                           </CardContent>
                         </Card>

@@ -274,7 +274,7 @@ export function AssignedTestsAnalyticsSection({ data }: Props) {
   const availableAssignedCount = Math.max(0, totalAssigned - upcomingCount);
 
   return (
-    <Card className="flex flex-col gap-4 py-5 shadow-xs border border-border/60 print:border-none print:shadow-none print:break-inside-avoid">
+    <Card className="flex flex-col gap-4 py-5 shadow-xs print:border-none print:shadow-none print:break-inside-avoid">
       <CardHeader className="pb-0">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex flex-col gap-1">

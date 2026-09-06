@@ -30,13 +30,20 @@ import {
   ChevronsDown,
   CircleDashed,
   ListTodo,
+  Briefcase,
+  ArrowRight,
 } from "lucide-react"
+import { COMPANY_CATALOG, getProblemCompanyBadges, isCompanyTag } from "../_constants/companies"
+import { CompanyBadge, CompanyFilterChips } from "./CompanyBadge"
+import { getTrackById } from "../_constants/tracks"
+import { PrepTracksSection } from "./PrepTracksSection"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardAction, CardDescription, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { SolveChallengeButton } from "@/components/ui/solve-challenge-button"
 import {
   Select,
   SelectContent,
@@ -81,7 +88,11 @@ interface Problem {
   total_submissions: number
 }
 
-
+const DIFFICULTY_COLORS: Record<string, { text: string; bg: string }> = {
+  Easy: { text: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-100/80 dark:bg-emerald-500/15" },
+  Medium: { text: "text-amber-600 dark:text-amber-400", bg: "bg-amber-100/80 dark:bg-amber-500/15" },
+  Hard: { text: "text-rose-600 dark:text-rose-400", bg: "bg-rose-100/80 dark:bg-rose-500/15" },
+}
 
 interface LogicLabDashboardProps {
   initialProblems: Problem[]
@@ -104,15 +115,8 @@ interface LogicLabDashboardProps {
   initialPotd?: any
   fullPotdProblem?: any
   userId: string
+  userSolvedNumbers?: number[]
 }
-
-const DIFFICULTY_COLORS: Record<string, string> = {
-  Easy: "bg-emerald-100/80 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-400 border-transparent",
-  Medium: "bg-amber-100/80 text-amber-700 hover:bg-amber-100 dark:bg-amber-500/15 dark:text-amber-400 border-transparent",
-  Hard: "bg-rose-100/80 text-rose-700 hover:bg-rose-100 dark:bg-rose-500/15 dark:text-rose-400 border-transparent",
-}
-
-
 
 export function LogicLabDashboardClient({
   initialProblems,
@@ -126,6 +130,7 @@ export function LogicLabDashboardClient({
   initialPotd,
   fullPotdProblem,
   userId,
+  userSolvedNumbers = [],
 }: LogicLabDashboardProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -149,6 +154,9 @@ export function LogicLabDashboardClient({
   const [activeTab, setActiveTab] = useState("all")
   const [activeDifficulty, setActiveDifficulty] = useState("All")
   const [activeTag, setActiveTag] = useState("All")
+  const [activeCompany, setActiveCompany] = useState("All")
+  const [activeTrackId, setActiveTrackId] = useState<string | null>(null)
+  const [activeView, setActiveView] = useState<"problems" | "tracks">("problems")
   const [activeSort, setActiveSort] = useState("number-asc")
   const [tagSearchInput, setTagSearchInput] = useState("")
 
@@ -157,10 +165,12 @@ export function LogicLabDashboardClient({
   const loadMoreAbortRef = useRef<AbortController | null>(null)
 
   const visibleTags = useMemo(() => {
-    let list = allTags
+    // Separate topic tags from company tags for clean UI display
+    const topicOnly = allTags.filter((t) => !isCompanyTag(t))
+    let list = topicOnly
     if (tagSearchInput.trim() !== "") {
       const q = tagSearchInput.toLowerCase()
-      list = allTags.filter((t) => t.toLowerCase().includes(q))
+      list = topicOnly.filter((t) => t.toLowerCase().includes(q))
     }
     if (showAllTags || tagSearchInput.trim() !== "") return list
     const sortedTags = [...list].sort((a, b) => (tagCounts[b] || 0) - (tagCounts[a] || 0))
@@ -262,6 +272,8 @@ export function LogicLabDashboardClient({
       tab: string
       difficulty: string
       tag: string
+      company?: string
+      trackNumbers?: number[]
       sortBy: string
     }) => {
       try {
@@ -273,6 +285,8 @@ export function LogicLabDashboardClient({
           tab: params.tab,
           difficulty: params.difficulty,
           tag: params.tag,
+          company: params.company || "All",
+          trackNumbers: params.trackNumbers,
           sortBy: params.sortBy,
         })
         return result
@@ -285,7 +299,15 @@ export function LogicLabDashboardClient({
   )
 
   const resetAndFetch = useCallback(
-    async (search: string, tab: string, difficulty: string, tag: string, sortBy: string) => {
+    async (
+      search: string,
+      tab: string,
+      difficulty: string,
+      tag: string,
+      sortBy: string,
+      company: string = "All",
+      trackNumbers?: number[]
+    ) => {
       isFiltering.current = true
       setIsPending(true)
       setProblems([])
@@ -300,6 +322,8 @@ export function LogicLabDashboardClient({
           tab,
           difficulty,
           tag,
+          company,
+          trackNumbers,
           sortBy,
         })
         setProblems(fresh)
@@ -325,6 +349,7 @@ export function LogicLabDashboardClient({
 
     setIsLoadingMore(true)
     try {
+      const currentTrackNumbers = activeTrackId ? getTrackById(activeTrackId)?.problemNumbers : undefined
       const { problems: next, hasMore: more } = await fetchProblemsClient({
         offset,
         limit: 20,
@@ -332,6 +357,8 @@ export function LogicLabDashboardClient({
         tab: activeTab,
         difficulty: activeDifficulty,
         tag: activeTag,
+        company: activeCompany,
+        trackNumbers: currentTrackNumbers,
         sortBy: activeSort,
       })
       // Only apply result if this request wasn't cancelled
@@ -345,7 +372,7 @@ export function LogicLabDashboardClient({
         setIsLoadingMore(false)
       }
     }
-  }, [isLoadingMore, hasMore, offset, searchInput, activeTab, activeDifficulty, activeTag, activeSort, fetchProblemsClient])
+  }, [isLoadingMore, hasMore, offset, searchInput, activeTab, activeDifficulty, activeTag, activeCompany, activeTrackId, activeSort, fetchProblemsClient])
 
   useEffect(() => {
     const el = sentinelRef.current
@@ -365,22 +392,41 @@ export function LogicLabDashboardClient({
     setSearchInput(val)
     if (searchDebounce.current) clearTimeout(searchDebounce.current)
     searchDebounce.current = setTimeout(() => {
-      resetAndFetch(val, activeTab, activeDifficulty, activeTag, activeSort)
+      const currentTrackNumbers = activeTrackId ? getTrackById(activeTrackId)?.problemNumbers : undefined
+      resetAndFetch(val, activeTab, activeDifficulty, activeTag, activeSort, activeCompany, currentTrackNumbers)
     }, 400)
   }
 
-  const applyFilter = (key: "tab" | "difficulty" | "tag" | "sortBy", val: string) => {
+  const handleCompanySelect = (companyName: string) => {
+    setActiveCompany(companyName)
+    const currentTrackNumbers = activeTrackId ? getTrackById(activeTrackId)?.problemNumbers : undefined
+    resetAndFetch(searchInput, activeTab, activeDifficulty, activeTag, activeSort, companyName, currentTrackNumbers)
+  }
+
+  const handleSelectTrack = (trackId: string | null) => {
+    setActiveTrackId(trackId)
+    const trackNumbers = trackId ? getTrackById(trackId)?.problemNumbers : undefined
+    resetAndFetch(searchInput, activeTab, activeDifficulty, activeTag, activeSort, activeCompany, trackNumbers)
+    if (trackId) {
+      setActiveView("problems")
+    }
+  }
+
+  const applyFilter = (key: "tab" | "difficulty" | "tag" | "sortBy" | "company", val: string) => {
     const next = {
       tab: key === "tab" ? val : activeTab,
       difficulty: key === "difficulty" ? val : activeDifficulty,
       tag: key === "tag" ? val : activeTag,
+      company: key === "company" ? val : activeCompany,
       sortBy: key === "sortBy" ? val : activeSort,
     }
     if (key === "tab") setActiveTab(val)
     if (key === "difficulty") setActiveDifficulty(val)
     if (key === "tag") setActiveTag(val)
+    if (key === "company") setActiveCompany(val)
     if (key === "sortBy") setActiveSort(val)
-    resetAndFetch(searchInput, next.tab, next.difficulty, next.tag, next.sortBy)
+    const currentTrackNumbers = activeTrackId ? getTrackById(activeTrackId)?.problemNumbers : undefined
+    resetAndFetch(searchInput, next.tab, next.difficulty, next.tag, next.sortBy, next.company, currentTrackNumbers)
   }
 
   const clearAllFilters = () => {
@@ -388,9 +434,12 @@ export function LogicLabDashboardClient({
     setActiveTab("all")
     setActiveDifficulty("All")
     setActiveTag("All")
+    setActiveCompany("All")
+    setActiveTrackId(null)
+    setActiveView("problems")
     setActiveSort("number-asc")
     setTagSearchInput("")
-    resetAndFetch("", "all", "All", "All", "number-asc")
+    resetAndFetch("", "all", "All", "All", "number-asc", "All", undefined)
   }
 
   const activeFilterCount = useMemo(() => {
@@ -398,9 +447,11 @@ export function LogicLabDashboardClient({
     if (activeTab && activeTab !== "all") count++
     if (activeDifficulty && activeDifficulty !== "All") count++
     if (activeTag && activeTag !== "All") count++
+    if (activeCompany && activeCompany !== "All") count++
+    if (activeTrackId) count++
     if (activeSort && activeSort !== "number-asc") count++
     return count
-  }, [activeTab, activeDifficulty, activeTag, activeSort])
+  }, [activeTab, activeDifficulty, activeTag, activeCompany, activeTrackId, activeSort])
 
   const hasActiveFilters = activeFilterCount > 0 || searchInput.trim() !== ""
 
@@ -484,7 +535,7 @@ export function LogicLabDashboardClient({
           <LogicLabStatsCards globalStats={globalStats} activityCalendar={activityCalendar} streakStats={streakStats} />
 
           {/* Card 3: POTD Card */}
-          <Card className={cn('group/potd', 'transition-all', 'hover:border-border/80', 'min-w-0', 'flex', 'flex-col', 'relative', 'py-0')}>
+          <Card className={cn('group/potd', 'min-w-0', 'flex', 'flex-col', 'relative', 'py-0')}>
             <CardHeader className={cn('flex', 'flex-row', 'items-center', 'justify-between', 'pt-4', 'pb-1')}>
               <Link href="/logiclab/dailychallenges" className={cn('hover:opacity-80', 'transition-opacity', 'cursor-pointer')}>
                 <CardTitle className={cn('text-xs', 'font-semibold', 'text-muted-foreground', 'uppercase', 'tracking-wider', 'flex', 'items-center', 'gap-1', 'hover:text-orange-500', 'transition-colors')}>
@@ -558,66 +609,128 @@ export function LogicLabDashboardClient({
                 )}
               </div>
 
-              {/* Action Button: Minimal Outline Button */}
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full gap-2 py-5 font-semibold text-sm sm:text-base border transition-colors mt-auto",
-                  !activeChallenge && "opacity-50 pointer-events-none",
-                  activeChallenge?.solved_status === "Accepted"
-                    ? "border-emerald-500/20 text-emerald-600 dark:border-emerald-500/10 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300"
-                    : "border-orange-500/20 text-orange-600 dark:border-orange-500/10 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-500/10 hover:text-orange-700 dark:hover:text-orange-300"
-                )}
-                onClick={() => {
-                  if (potd) {
-                    startNavigationProgress()
-                    router.push(`/logiclab/dailychallenges/${potd.id}`)
-                  }
-                }}
-                disabled={!potd}
-              >
-                {activeChallenge?.solved_status === "Accepted" ? (
-                  <>
-                    Review Challenge
-                    <CircleCheck className={cn('size-[18px]', 'transition-transform', 'duration-300', 'group-hover/potd:scale-110')} />
-                  </>
-                ) : (
-                  <>
-                    Solve Challenge
-                    <ChevronRight className={cn('size-[18px]', 'transition-transform', 'duration-300', 'group-hover/potd:translate-x-1')} />
-                  </>
-                )}
-              </Button>
+              {/* Action Button: Cool Animated Solve Challenge Button */}
+              <div className="mt-auto pt-2">
+                <SolveChallengeButton
+                  isSolved={activeChallenge?.solved_status === "Accepted"}
+                  disabled={!potd || !activeChallenge}
+                  onClick={() => {
+                    if (potd) {
+                      startNavigationProgress()
+                      router.push(`/logiclab/dailychallenges/${potd.id}`)
+                    }
+                  }}
+                />
+              </div>
             </CardContent>
           </Card>
         </div>
       )}
 
+      {/* Placement Tracks & Company Interview Sets CTA Cards (Mesh Gradient card-07 Style) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+        {/* Card 1: Placement Preparation Tracks (Purple Iridescent Mesh) */}
+        <Link
+          href="/logiclab/tracks"
+          onClick={() => startNavigationProgress()}
+          className="group relative flex flex-col justify-between overflow-hidden rounded-2xl p-4.5 sm:p-5 border border-white/60 dark:border-white/15 shadow-[inset_0_1px_1px_rgba(255,255,255,0.7),0_6px_16px_-4px_rgba(168,85,247,0.12)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.9),0_10px_22px_-4px_rgba(168,85,247,0.2)] transition-all duration-300 hover:scale-[1.008] active:scale-[0.99] cursor-pointer select-none space-y-2.5 bg-[#f3e8ff]"
+          style={{
+            backgroundImage: `
+              radial-gradient(at 0% 0%, #c4b5fd 0px, transparent 65%),
+              radial-gradient(at 100% 0%, #a5b4fc 0px, transparent 65%),
+              radial-gradient(at 65% 45%, #fed7aa 0px, transparent 55%),
+              radial-gradient(at 100% 100%, #fbcfe8 0px, transparent 70%),
+              radial-gradient(at 0% 100%, #e9d5ff 0px, transparent 65%),
+              radial-gradient(at 35% 85%, #f472b6 0px, transparent 60%)
+            `,
+          }}
+        >
+          {/* Middle: Title & Description */}
+          <div className="space-y-1 relative z-10">
+            <h3 className="text-base sm:text-lg font-semibold tracking-tight text-neutral-900 leading-snug">
+              Placement Preparation Tracks
+            </h3>
+            <p className="text-xs sm:text-[13px] text-neutral-700/90 leading-relaxed font-normal">
+              Targeted roadmaps engineered for campus recruitment exams, IT services tests, and Tier-1 product SDE interviews.
+            </p>
+          </div>
+
+          {/* Bottom Row / CTA Footer */}
+          <div className="pt-1 flex items-center justify-between text-xs relative z-10">
+            <span className="font-semibold text-neutral-900 flex items-center gap-1.5 group-hover:gap-2 transition-all">
+              Explore Tracks
+              <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+            </span>
+          </div>
+        </Link>
+
+        {/* Card 2: Company Interview Sets (Green/Mint Iridescent Mesh) */}
+        <Link
+          href="/logiclab/companies"
+          onClick={() => startNavigationProgress()}
+          className="group relative flex flex-col justify-between overflow-hidden rounded-2xl p-4.5 sm:p-5 border border-white/60 dark:border-white/15 shadow-[inset_0_1px_1px_rgba(255,255,255,0.7),0_6px_16px_-4px_rgba(16,185,129,0.12)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.9),0_10px_22px_-4px_rgba(16,185,129,0.2)] transition-all duration-300 hover:scale-[1.008] active:scale-[0.99] cursor-pointer select-none space-y-2.5 bg-[#ecfdf5]"
+          style={{
+            backgroundImage: `
+              radial-gradient(at 0% 0%, #6ee7b7 0px, transparent 65%),
+              radial-gradient(at 100% 0%, #67e8f9 0px, transparent 65%),
+              radial-gradient(at 65% 45%, #fef08a 0px, transparent 55%),
+              radial-gradient(at 100% 100%, #a7f3d0 0px, transparent 70%),
+              radial-gradient(at 0% 100%, #99f6e4 0px, transparent 65%),
+              radial-gradient(at 35% 85%, #bef264 0px, transparent 60%)
+            `,
+          }}
+        >
+          {/* Middle: Title & Description */}
+          <div className="space-y-1 relative z-10">
+            <h3 className="text-base sm:text-lg font-semibold tracking-tight text-neutral-900 leading-snug">
+              Company Interview Sets
+            </h3>
+            <p className="text-xs sm:text-[13px] text-neutral-700/90 leading-relaxed font-normal">
+              Real coding assessment and on-site interview questions curated from Amazon, Google, Microsoft, Meta, and IT recruiters.
+            </p>
+          </div>
+
+          {/* Bottom Row / CTA Footer */}
+          <div className="pt-1 flex items-center justify-between text-xs relative z-10">
+            <span className="font-semibold text-neutral-900 flex items-center gap-1.5 group-hover:gap-2 transition-all">
+              Practice by Company
+              <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+            </span>
+          </div>
+        </Link>
+      </div>
+
       {/* Main Directory Layout */}
       <div className={cn('flex', 'flex-col', 'gap-6', 'min-w-0')}>
         {/* Toolbar */}
         <div className={cn('flex', 'items-center', 'gap-3', 'w-full')}>
-          <div className="relative flex-1">
-            {isPending ? (
-              <Loader2 className="absolute left-2.5 top-2.5 h-4 w-4 text-primary animate-spin" />
-            ) : (
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            )}
-            <Input
+          <InputGroup className="flex-1 h-10 bg-background rounded-lg">
+            <InputGroupAddon align="inline-start">
+              {isPending ? (
+                <Loader2 className="animate-spin text-primary" />
+              ) : (
+                <Search className="text-muted-foreground" />
+              )}
+            </InputGroupAddon>
+            <InputGroupInput
               placeholder="Search problems..."
               value={searchInput}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="pl-9 pr-9"
+              className="h-full"
             />
             {searchInput && (
-              <button
-                onClick={() => handleSearchChange("")}
-                className="absolute right-2.5 top-2.5 h-4 w-4 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
+              <InputGroupAddon align="inline-end">
+                <InputGroupButton
+                  onClick={() => handleSearchChange("")}
+                  variant="ghost"
+                  size="icon-xs"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X />
+                </InputGroupButton>
+              </InputGroupAddon>
             )}
-          </div>
+          </InputGroup>
 
           <div className={cn('flex', 'items-center', 'gap-2', 'shrink-0')}>
             <Button
@@ -629,7 +742,7 @@ export function LogicLabDashboardClient({
               )}
             >
               <SlidersHorizontal className="size-4" />
-              <span className={cn('hidden', 'sm:inline')}>Filters</span>
+              <span className={cn('hidden', 'sm:inline')}>Sort & Filter</span>
               {activeFilterCount > 0 && (
                 <span className={cn('inline-flex', 'h-4', 'min-w-4', 'items-center', 'justify-center', 'rounded-full', 'bg-primary', 'text-primary-foreground', 'text-[9px]', 'font-bold', 'px-1', 'leading-none')}>
                   {activeFilterCount}
@@ -653,9 +766,19 @@ export function LogicLabDashboardClient({
 
         {/* Active filter summary strip */}
         {hasActiveFilters && (
-          <div className={cn('flex', 'items-center', 'gap-2', '-mt-2')}>
+          <div className={cn('flex', 'items-center', 'gap-2', '-mt-3')}>
             <span className={cn('text-[11px]', 'text-muted-foreground')}>
               {totalCount} of {globalStats.total} problems
+              {activeCompany !== "All" && (
+                <span className="ml-1 font-semibold text-foreground">
+                  • Asked at {activeCompany}
+                </span>
+              )}
+              {activeTrackId && (
+                <span className="ml-1 font-semibold text-primary">
+                  • Track: {getTrackById(activeTrackId)?.title}
+                </span>
+              )}
             </span>
             <button
               onClick={clearAllFilters}
@@ -699,120 +822,117 @@ export function LogicLabDashboardClient({
                 )}
               </Empty>
             ) : (
-              <div className={cn('flex', 'flex-col', 'border', 'border-border', 'rounded-xl', 'overflow-hidden', 'shadow-sm', 'bg-background/40')}>
-                {/* Table Header */}
-                <div className={cn('hidden', 'md:flex', 'items-center', 'gap-3', 'px-4', 'py-3.5', 'bg-muted/40', 'border-b', 'border-border', 'text-xs', 'font-bold', 'text-muted-foreground', 'uppercase', 'tracking-wider', 'select-none')}>
-                  <div className={cn('w-14', 'shrink-0', 'text-center')}>Status</div>
-
-                  <div className={cn('flex-1', 'min-w-0', 'pl-4')}>Title</div>
-                  <div className={cn('w-[130px]', 'shrink-0', 'pl-4')}>Acceptance</div>
-                  <div className={cn('w-[120px]', 'shrink-0', 'pl-4')}>Difficulty</div>
-                  <div className={cn('w-[240px]', 'shrink-0', 'pl-4')}>Topic Tags</div>
-                  {isAdmin && <div className={cn('w-[70px]', 'shrink-0')}></div>}
-                  <div className={cn('w-8', 'shrink-0')}></div>
-                </div>
-
+              <div className="flex flex-col gap-1">
                 {problems.map((problem, idx) => {
                   const isSolved = problem.solved_status === "Accepted"
                   const isAttempted = !!(problem.solved_status && problem.solved_status !== "Accepted")
-                  const isEven = idx % 2 === 0;
 
                   return (
-                    <div
+                    <Card
                       key={problem.id}
                       data-nav-href={`/logiclab/problems/${problem.id}`}
                       onClick={() => {
                         startNavigationProgress()
                         router.push(`/logiclab/problems/${problem.id}`)
                       }}
-                      className={cn(
-                        "group flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors duration-200 hover:bg-muted/40",
-                        isEven ? "bg-transparent" : "bg-zinc-100 dark:bg-white/[0.04]",
-                        idx !== problems.length - 1 && "border-b border-border"
-                      )}
+                      className="rounded-sm group cursor-pointer hover:bg-muted/30 transition-colors duration-150 py-0"
                     >
-                      {/* Status icon */}
-                      <div className={cn('shrink-0', 'flex', 'items-center', 'justify-center', 'w-14')}>
-                        {isSolved ? (
-                          <CircleCheck className={cn('size-4', 'text-emerald-500')} />
-                        ) : isAttempted ? (
-                          <CircleDot className={cn('size-4', 'text-amber-500')} />
-                        ) : (
-                          <div className={cn('size-3.5', 'rounded-full', 'border-2', 'border-muted-foreground/45')} />
-                        )}
-                      </div>
-
-                      {/* Number & Title */}
-                      <div className={cn('flex-1', 'min-w-0', 'flex', 'items-center', 'gap-3', 'pl-2')}>
-                        <span className={cn('text-xs', 'font-mono', 'font-semibold', 'text-muted-foreground/80', 'shrink-0')}>
-                          #{problem.number || idx + 1}
-                        </span>
-                        <span className={cn('text-sm', 'font-medium', 'text-foreground', 'group-hover:text-foreground', 'transition-colors', 'truncate', 'block', 'leading-snug')}>
-                          {problem.title}
-                        </span>
-                      </div>
-
-                      {/* Acceptance Rate (visible on desktop) */}
-                      <div className={cn('hidden', 'md:flex', 'flex-col', 'justify-center', 'w-[130px]', 'shrink-0', 'pl-4')}>
-                        <span className={cn('text-xs', 'font-medium', 'text-muted-foreground/90')}>{problem.acceptance_rate !== null ? `${problem.acceptance_rate}%` : "—"}</span>
-                        {problem.total_submissions > 0 && (
-                          <span className={cn('text-[10px]', 'text-muted-foreground/50')}>
-                            {problem.total_submissions} submissions
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Difficulty */}
-                      <div className={cn('hidden', 'md:flex', 'items-center', 'w-[120px]', 'shrink-0', 'pl-4')}>
-                        <span className={cn(
-                          "text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded",
-                          problem.difficulty === "Easy" ? "text-emerald-600 bg-emerald-100/80 dark:text-emerald-400 dark:bg-emerald-500/15" :
-                            problem.difficulty === "Medium" ? "text-amber-600 bg-amber-100/80 dark:text-amber-400 dark:bg-amber-500/15" :
-                              "text-rose-600 bg-rose-100/80 dark:text-rose-400 dark:bg-rose-500/15",
-                        )}>
-                          {problem.difficulty}
-                        </span>
-                      </div>
-
-                      {/* Tags */}
-                      <div className={cn('hidden', 'sm:flex', 'flex-wrap', 'items-center', 'gap-1.5', 'w-[240px]', 'shrink-0', 'pl-4')}>
-                        {problem.tags?.slice(0, 2).map((tag) => (
-                          <span key={tag} className={cn('text-[10px]', 'font-medium', 'px-1.5', 'py-0.5', 'rounded', 'bg-muted', 'text-muted-foreground/85', 'truncate', 'max-w-[80px]')}>
-                            {tag}
-                          </span>
-                        ))}
-                        {problem.tags?.length > 2 && (
-                          <span className={cn('text-[10px]', 'font-medium', 'px-1.5', 'py-0.5', 'rounded', 'bg-muted/60', 'text-muted-foreground/60', 'shrink-0')}>
-                            +{problem.tags.length - 2}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Admin actions (Edit / Delete) */}
-                      {isAdmin && (
-                        <div className={cn('flex', 'items-center', 'justify-end', 'gap-1', 'opacity-0', 'group-hover:opacity-100', 'transition-opacity', 'w-[70px]', 'shrink-0')} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-                          <Link
-                            href={`/logiclab/admin/edit/${problem.id}`}
-                            className={cn('p-1.5', 'hover:bg-background', 'rounded-md', 'text-muted-foreground', 'hover:text-emerald-500', 'transition-all', 'cursor-pointer', 'shadow-sm', 'border', 'border-transparent', 'hover:border-border/60')}
-                            title="Edit Problem"
-                          >
-                            <Pencil className={cn('h-3.5', 'w-3.5')} />
-                          </Link>
-                          <button
-                            onClick={() => setDeletingProblemId(problem.id)}
-                            className={cn('p-1.5', 'hover:bg-background', 'rounded-md', 'text-muted-foreground/70', 'hover:text-rose-500', 'transition-all', 'cursor-pointer', 'shadow-sm', 'border', 'border-transparent', 'hover:border-border/60')}
-                            title="Delete Problem"
-                          >
-                            <Trash2 className={cn('h-3.5', 'w-3.5')} />
-                          </button>
+                      <CardContent className="flex items-center gap-3 px-4 py-2.5">
+                        {/* Status icon */}
+                        <div className="shrink-0 flex items-center justify-center w-5">
+                          {isSolved ? (
+                            <CircleCheck className="size-4 text-emerald-500" />
+                          ) : isAttempted ? (
+                            <CircleDot className="size-4 text-amber-500" />
+                          ) : (
+                            <div className="size-3.5 rounded-full border-2 border-muted-foreground/45" />
+                          )}
                         </div>
-                      )}
 
-                      {/* Chevron indicator */}
-                      <div className={cn('shrink-0', 'flex', 'justify-end', 'w-8')}>
-                        <ChevronRight className={cn('size-4', 'text-muted-foreground/50', 'group-hover:text-muted-foreground/80', 'group-hover:translate-x-0.5', 'transition-all')} />
-                      </div>
-                    </div>
+                        {/* Number & Title */}
+                        <div className="flex-1 min-w-0 flex items-center gap-4 sm:gap-6">
+                          <span className="text-sm font-bold text-muted-foreground leading-tight shrink-0 font-mono">
+                            #{problem.number || idx + 1}
+                          </span>
+                          <span className="text-sm font-medium text-foreground group-hover:text-foreground transition-colors truncate block leading-snug">
+                            {problem.title}
+                          </span>
+                        </div>
+
+                        {/* Acceptance Rate (visible on desktop) */}
+                        {problem.acceptance_rate !== null && (
+                          <div className="hidden md:flex items-center gap-1 shrink-0 text-xs text-muted-foreground/70">
+                            <span>{problem.acceptance_rate}%</span>
+                            {problem.total_submissions > 0 && (
+                              <span className="text-[10px] text-muted-foreground/40">
+                                ({problem.total_submissions})
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Difficulty & Single Clean Tag */}
+                        <div className="hidden sm:flex items-center gap-2.5 shrink-0">
+                          <span className={cn(
+                            "text-xs font-semibold w-14 text-right",
+                            problem.difficulty === "Easy" ? "text-emerald-500" :
+                            problem.difficulty === "Medium" ? "text-amber-500" :
+                            "text-rose-500"
+                          )}>
+                            {problem.difficulty}
+                          </span>
+
+                          {/* At most 1 clean neutral tag */}
+                          {(() => {
+                            const companyBadges = getProblemCompanyBadges(problem)
+                            if (companyBadges.length > 0) {
+                              return (
+                                <span className="text-[10px] text-muted-foreground bg-muted/40 px-2 py-0.5 rounded border border-border/50 font-mono">
+                                  {companyBadges[0].company.name}
+                                </span>
+                              )
+                            }
+                            const topic = (problem.tags || []).find((t) => !isCompanyTag(t))
+                            if (topic) {
+                              return (
+                                <span className="text-[10px] text-muted-foreground/75 px-1.5 py-0.5 font-mono">
+                                  {topic}
+                                </span>
+                              )
+                            }
+                            return null
+                          })()}
+                        </div>
+
+                        {/* Admin actions (Edit / Delete) */}
+                        {isAdmin && (
+                          <div
+                            className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                          >
+                            <Link
+                              href={`/logiclab/admin/edit/${problem.id}`}
+                              className="p-1.5 hover:bg-background rounded-md text-muted-foreground hover:text-emerald-500 transition-all cursor-pointer shadow-sm border border-transparent hover:border-border/60"
+                              title="Edit Problem"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Link>
+                            <button
+                              onClick={() => setDeletingProblemId(problem.id)}
+                              className="p-1.5 hover:bg-background rounded-md text-muted-foreground/70 hover:text-rose-500 transition-all cursor-pointer shadow-sm border border-transparent hover:border-border/60"
+                              title="Delete Problem"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Navigation chevron */}
+                        <div className="shrink-0 ml-1">
+                          <ChevronRight className="size-4 text-muted-foreground/50 group-hover:text-muted-foreground/80 group-hover:translate-x-0.5 transition-all" />
+                        </div>
+                      </CardContent>
+                    </Card>
                   )
                 })}
               </div>
@@ -951,6 +1071,53 @@ export function LogicLabDashboardClient({
                           <span className={cn('text-[10px]', 'text-foreground/65', 'font-normal')}>{opt.desc}</span>
                         </button>
                       ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Accordion 2.5: Target Company */}
+                <AccordionItem value="companies" className={cn('px-6', 'border-b', 'border-border/30')}>
+                  <AccordionTrigger className={cn('py-3.5', 'hover:no-underline', 'text-xs', 'font-bold', 'uppercase', 'tracking-wider', 'text-foreground')}>
+                    <span className={cn('flex', 'items-center', 'gap-2')}>
+                      <Briefcase className="size-3.5" />
+                      Target Company
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className={cn('pb-4', 'pt-1', 'flex', 'flex-col', 'gap-2.5')}>
+                    <div className="flex flex-wrap gap-1.5">
+                      <button
+                        onClick={() => applyFilter("company", "All")}
+                        className={cn(
+                          "px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer",
+                          activeCompany === "All"
+                            ? "bg-foreground text-background border-foreground shadow-sm"
+                            : "bg-muted/30 border-border/40 text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        All Companies
+                      </button>
+                      {COMPANY_CATALOG.map((comp) => {
+                        const isSelected = activeCompany.toLowerCase() === comp.name.toLowerCase()
+                        const count = tagCounts[comp.name] || 0
+                        return (
+                          <button
+                            key={comp.id}
+                            onClick={() => applyFilter("company", isSelected ? "All" : comp.name)}
+                            className={cn(
+                              "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all cursor-pointer",
+                              isSelected
+                                ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                                : cn(comp.badgeStyles.bg, comp.badgeStyles.text, comp.badgeStyles.border, "hover:opacity-85")
+                            )}
+                          >
+                            <span className={cn("size-1.5 rounded-full", isSelected ? "bg-primary-foreground" : comp.badgeStyles.dot)} />
+                            <span>{comp.name}</span>
+                            {count > 0 && (
+                              <span className="text-[10px] opacity-70">({count})</span>
+                            )}
+                          </button>
+                        )
+                      })}
                     </div>
                   </AccordionContent>
                 </AccordionItem>

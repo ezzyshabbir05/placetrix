@@ -303,7 +303,7 @@ function FormSection({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <Card className={cn("transition-all duration-200 border border-border/50", open && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
+    <Card className={cn("transition-all duration-200", open && "border-primary/50 shadow-md ring-1 ring-primary/10")}>
       <CardHeader
         className="flex flex-row items-center justify-between gap-3 p-4 space-y-0 cursor-pointer select-none"
         onClick={() => setOpen(o => !o)}

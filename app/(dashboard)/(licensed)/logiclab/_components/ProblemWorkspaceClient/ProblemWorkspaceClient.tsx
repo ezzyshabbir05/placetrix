@@ -62,6 +62,8 @@ import { getFriendlyErrorMessage } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/client";
 import { getProblemDataSPA, fetchProblemsInfinite, runCodeAction, submitCodeAction, formatCodeAction } from "../../actions";
 import { getSubmissionCode } from "../../problems/[id]/notes-actions";
+import { getProblemCompanyBadges, isCompanyTag } from "../../_constants/companies";
+import { CompanyBadge } from "../CompanyBadge";
 // Prism is loaded lazily the first time syntax highlighting is needed to
 // avoid adding ~80KB of parse cost to the initial JS bundle.
 let prismReady: Promise<typeof import("prismjs")> | null = null
@@ -259,6 +261,8 @@ export function ProblemWorkspaceClient({
   userProfile,
   prevProblemId: initialPrevProblemId,
   nextProblemId: initialNextProblemId,
+  trackContext: initialTrackContext = null,
+  companyContext: initialCompanyContext = null,
   isDailyChallenge = false,
   dailyChallengeId,
 }: {
@@ -270,6 +274,8 @@ export function ProblemWorkspaceClient({
   userProfile?: any;
   prevProblemId: string | null;
   nextProblemId: string | null;
+  trackContext?: { id: string; title: string; currentStep: number; totalSteps: number } | null;
+  companyContext?: { id: string; name: string; currentStep: number; totalSteps: number } | null;
   isDailyChallenge?: boolean;
   dailyChallengeId?: string;
 }) {
@@ -281,6 +287,8 @@ export function ProblemWorkspaceClient({
   const [submissions, setSubmissions] = useState(initialSubmissions);
   const [prevProblemId, setPrevProblemId] = useState(initialPrevProblemId);
   const [nextProblemId, setNextProblemId] = useState(initialNextProblemId);
+  const [trackContext, setTrackContext] = useState(initialTrackContext);
+  const [companyContext, setCompanyContext] = useState(initialCompanyContext);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [mobileActiveTab, setMobileActiveTab] = useState<"description" | "submissions" | "notes">("description");
@@ -356,7 +364,12 @@ export function ProblemWorkspaceClient({
     setIsTransitioning(true);
     startNavigationProgress();
     try {
-      const data = await getProblemDataSPA(targetId, userId);
+      const data = await getProblemDataSPA(
+        targetId,
+        userId,
+        trackContext?.id,
+        companyContext?.id
+      );
       if (!data) {
         toast.error("Failed to load problem");
         return;
@@ -367,9 +380,16 @@ export function ProblemWorkspaceClient({
       setSubmissions(data.submissions);
       setPrevProblemId(data.prevProblemId);
       setNextProblemId(data.nextProblemId);
+      if (data.trackContext) setTrackContext(data.trackContext);
+      if (data.companyContext) setCompanyContext(data.companyContext);
 
-      // Update URL without full reload
-      window.history.pushState(null, "", `/logiclab/problems/${targetId}`);
+      // Update URL without full reload, preserving track or company query param
+      const queryParam = trackContext?.id
+        ? `?track=${trackContext.id}`
+        : companyContext?.id
+        ? `?company=${companyContext.id}`
+        : "";
+      window.history.pushState(null, "", `/logiclab/problems/${targetId}${queryParam}`);
 
       // Reset editor and tabs
       let parsedBoilerplates: any = data.problem.boilerplates || {};
@@ -1398,15 +1418,33 @@ export function ProblemWorkspaceClient({
         </div>
       )}
       {/* Left section: Navigation & Title */}
-      <div className={cn('flex', 'items-center', 'gap-1')}>
+      <div className={cn('flex', 'items-center', 'gap-1.5')}>
         <Button
           variant="outline"
           size="icon"
           asChild
           className={cn('h-8', 'w-8')}
-          title={isDailyChallenge ? "Back to Daily Challenges" : "Back to Problems"}
+          title={
+            isDailyChallenge
+              ? "Back to Daily Challenges"
+              : trackContext
+              ? `Back to ${trackContext.title}`
+              : companyContext
+              ? `Back to ${companyContext.name} Problems`
+              : "Back to Problems"
+          }
         >
-          <Link href={isDailyChallenge ? "/logiclab/dailychallenges" : "/logiclab"}>
+          <Link
+            href={
+              isDailyChallenge
+                ? "/logiclab/dailychallenges"
+                : trackContext
+                ? `/logiclab/tracks/${trackContext.id}`
+                : companyContext
+                ? `/logiclab/companies/${companyContext.id}`
+                : "/logiclab"
+            }
+          >
             <IconArrowLeft className={cn('h-4', 'w-4')} />
           </Link>
         </Button>
@@ -1428,7 +1466,7 @@ export function ProblemWorkspaceClient({
               onClick={() => prevProblemId && handleNavigate(prevProblemId)}
               disabled={!prevProblemId}
               className={cn('h-8', 'w-8')}
-              title="Previous"
+              title={trackContext ? `Previous in ${trackContext.title}` : companyContext ? `Previous in ${companyContext.name}` : "Previous Problem"}
             >
               <IconChevronLeft className={cn('h-4', 'w-4')} />
             </Button>
@@ -1438,10 +1476,39 @@ export function ProblemWorkspaceClient({
               onClick={() => nextProblemId && handleNavigate(nextProblemId)}
               disabled={!nextProblemId}
               className={cn('h-8', 'w-8')}
-              title="Next"
+              title={trackContext ? `Next in ${trackContext.title}` : companyContext ? `Next in ${companyContext.name}` : "Next Problem"}
             >
               <IconChevronRight className={cn('h-4', 'w-4')} />
             </Button>
+
+            {/* Context Badge (Track or Company) */}
+            {trackContext && (
+              <Link
+                href={`/logiclab/tracks/${trackContext.id}`}
+                className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/40 border border-border/60 text-xs font-medium text-foreground/85 hover:text-foreground hover:bg-muted/80 transition-colors ml-1 select-none"
+                title={`Track: ${trackContext.title}`}
+              >
+                <span className="text-muted-foreground font-mono text-[11px]">Track:</span>
+                <span className="font-semibold truncate max-w-[140px]">{trackContext.title}</span>
+                <span className="text-[10px] font-mono text-muted-foreground">
+                  ({trackContext.currentStep}/{trackContext.totalSteps})
+                </span>
+              </Link>
+            )}
+
+            {companyContext && !trackContext && (
+              <Link
+                href={`/logiclab/companies/${companyContext.id}`}
+                className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/40 border border-border/60 text-xs font-medium text-foreground/85 hover:text-foreground hover:bg-muted/80 transition-colors ml-1 select-none"
+                title={`Company: ${companyContext.name}`}
+              >
+                <span className="text-muted-foreground font-mono text-[11px]">Company:</span>
+                <span className="font-semibold truncate max-w-[140px]">{companyContext.name}</span>
+                <span className="text-[10px] font-mono text-muted-foreground">
+                  ({companyContext.currentStep}/{companyContext.totalSteps})
+                </span>
+              </Link>
+            )}
           </>
         )}
       </div>
@@ -1716,7 +1783,18 @@ export function ProblemWorkspaceClient({
                         >
                           {problem.difficulty || "Hard"}
                         </span>
-                        {problem.tags && problem.tags.length > 0 && problem.tags.map((tag: string, i: number) => (
+                        {/* Company Badges with Interview Frequency */}
+                        {getProblemCompanyBadges(problem).map((b) => (
+                          <CompanyBadge
+                            key={b.company.id}
+                            company={b.company}
+                            frequency={b.frequency}
+                            size="sm"
+                            showFrequency={true}
+                          />
+                        ))}
+                        {/* Topic Tags */}
+                        {problem.tags && problem.tags.length > 0 && problem.tags.filter((t: string) => !isCompanyTag(t)).map((tag: string, i: number) => (
                           <span key={i} className={cn('px-2.5', 'py-0.5', 'bg-muted/50', 'border', 'border-border/50', 'text-zinc-600 dark:text-muted-foreground', 'rounded-full', 'text-[11px]', 'font-semibold', 'tracking-wide')}>
                             {tag}
                           </span>
@@ -3485,7 +3563,18 @@ export function ProblemWorkspaceClient({
                     {problem.number ? `${problem.number}. ` : ""}{problem.title}
                   </h1>
                   <div className={cn('flex', 'flex-wrap', 'items-center', 'gap-1.5', 'select-none')}>
-                    {problem.tags && problem.tags.length > 0 && problem.tags.map((tag: string, i: number) => (
+                    {/* Company Badges with Interview Frequency */}
+                    {getProblemCompanyBadges(problem).map((b) => (
+                      <CompanyBadge
+                        key={b.company.id}
+                        company={b.company}
+                        frequency={b.frequency}
+                        size="xs"
+                        showFrequency={true}
+                      />
+                    ))}
+                    {/* Topic Tags */}
+                    {problem.tags && problem.tags.length > 0 && problem.tags.filter((t: string) => !isCompanyTag(t)).map((tag: string, i: number) => (
                       <span key={i} className={cn('px-2', 'py-0.5', 'bg-muted/60', 'border', 'border-border/50', 'text-zinc-650', 'dark:text-muted-foreground', 'rounded-full', 'text-[10px]', 'font-semibold')}>
                         {tag}
                       </span>

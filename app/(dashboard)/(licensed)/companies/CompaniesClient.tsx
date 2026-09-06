@@ -195,7 +195,7 @@ export function CompaniesClient({ initialCompanies }: CompaniesClientProps) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredCompanies.map((company) => (
-            <Card key={company.id} className="overflow-hidden border-border/70 bg-card p-0 shadow-xs flex flex-col justify-between">
+            <Card key={company.id} className="overflow-hidden p-0 shadow-xs flex flex-col justify-between">
               <div className="p-5 space-y-3.5">
                 {/* Company Name and Actions */}
                 <div className="flex items-start justify-between gap-3">

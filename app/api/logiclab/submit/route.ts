@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getUserProfile } from "@/lib/supabase/profile";
 import { getCachedProblemExecutionData } from "@/lib/supabase/cached-queries";
 import { rateLimit } from "@/lib/rate-limit";
+import { validateSubmissionSecurity, getJudge0SandboxConfig } from "@/lib/sandbox/securityCheck";
 
 const ALLOWED_LANGUAGE_IDS = new Set([54, 62, 63, 71]);
 
@@ -44,10 +45,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const blocklistRegex = /(sys\.exit|os\.system|subprocess\.|exec\(|eval\(|__import__|java\.lang\.Runtime|java\.lang\.ProcessBuilder)/i;
-    if (blocklistRegex.test(code)) {
+    const secCheck = validateSubmissionSecurity(code, Number(language_id));
+    if (!secCheck.valid) {
       return NextResponse.json(
-        { success: false, error: "Security Exception: Blocked keyword or potentially destructive function detected." },
+        { success: false, error: `Security Exception: ${secCheck.reason}` },
         { status: 400 }
       );
     }
@@ -113,13 +114,13 @@ export async function POST(req: Request) {
     }
 
     const encodedSource = Buffer.from(finalSource).toString("base64");
+    const sandboxConfig = getJudge0SandboxConfig(timeLimit, memoryLimit);
     const batchPayload = {
       submissions: testCases.map((tc: any) => ({
         source_code: encodedSource,
         language_id,
         stdin: Buffer.from(tc.input || "").toString("base64"),
-        cpu_time_limit: timeLimit,
-        memory_limit: memoryLimit,
+        ...sandboxConfig,
       })),
     };
 

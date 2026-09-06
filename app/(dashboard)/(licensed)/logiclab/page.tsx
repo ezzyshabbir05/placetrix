@@ -283,6 +283,16 @@ export default async function LogicLabPage() {
     }
   }
 
+  // Fetch solved problem numbers for preparation track progression calculation
+  const { data: userSolvedData } = await supabase
+    .from("logiclab_user_solved_problems")
+    .select("logiclab_problems!inner(number)")
+    .eq("user_id", profile.id)
+
+  const userSolvedNumbers = (userSolvedData || [])
+    .map((row: any) => row.logiclab_problems?.number)
+    .filter((n: any): n is number => typeof n === "number")
+
   return (
     <LogicLabDashboardClient
       initialProblems={initialProblemsList}
@@ -296,6 +306,7 @@ export default async function LogicLabPage() {
       initialPotd={initialPotd}
       fullPotdProblem={fullPotdProblem}
       userId={profile.id}
+      userSolvedNumbers={userSolvedNumbers}
     />
   )
 }

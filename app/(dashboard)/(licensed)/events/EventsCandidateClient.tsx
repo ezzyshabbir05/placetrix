@@ -127,7 +127,7 @@ function CandidateEventCard({
   const spotsLeft = Math.max(0, event.capacity - event.tickets_confirmed)
 
   return (
-    <Card className="overflow-hidden border-border/70 bg-card p-0 shadow-xs">
+    <Card className="overflow-hidden p-0 shadow-xs">
       <Link 
         href={`/events/${event.id}`}
         prefetch={false}

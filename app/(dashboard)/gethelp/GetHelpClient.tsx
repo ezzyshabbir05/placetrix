@@ -138,7 +138,7 @@ function EmptyState({ isFiltered }: { isFiltered: boolean }) {
 
 function TicketCard({ ticket }: { ticket: any }) {
   return (
-    <Card className="overflow-hidden border-border/70 bg-card p-0">
+    <Card className="overflow-hidden p-0">
       <div className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:gap-4 md:p-5">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">

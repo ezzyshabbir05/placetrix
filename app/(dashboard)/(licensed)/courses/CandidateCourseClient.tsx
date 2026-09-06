@@ -117,7 +117,7 @@ function CourseCard({ course, stats, onSelect }: CourseCardProps) {
     <Card
       onClick={onSelect}
       className={cn(
-        "flex flex-col justify-between overflow-hidden border border-border/70 bg-card p-0 gap-0",
+        "flex flex-col justify-between overflow-hidden p-0 gap-0",
         "cursor-pointer h-full select-none"
       )}
     >

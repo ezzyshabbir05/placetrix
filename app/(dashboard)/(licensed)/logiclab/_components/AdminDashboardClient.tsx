@@ -417,7 +417,7 @@ export function AdminDashboardClient({
 
                 {/* Left Column (2/3 width): Concept Tag Analytics */}
                 <div className="lg:col-span-8">
-                  <Card className={cn('min-w-0', 'flex', 'flex-col', 'relative', 'transition-all', 'hover:border-border/80', 'py-0', 'bg-background/40', 'backdrop-blur-sm', 'rounded-lg')}>
+                  <Card className={cn('min-w-0', 'flex', 'flex-col', 'relative', 'py-0', 'bg-background/40', 'backdrop-blur-sm', 'rounded-lg')}>
                     <CardHeader className="p-6 pb-4 flex flex-row items-center justify-between border-b select-none">
                       <div className="space-y-1">
                         <CardTitle className="text-base font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
@@ -528,7 +528,7 @@ export function AdminDashboardClient({
                 <div className="lg:col-span-4 space-y-6">
 
                   {/* Live Activity Feed */}
-                  <Card className={cn('min-w-0', 'flex', 'flex-col', 'relative', 'transition-all', 'hover:border-border/80', 'py-0', 'bg-background/40', 'backdrop-blur-sm', 'rounded-lg')}>
+                  <Card className={cn('min-w-0', 'flex', 'flex-col', 'relative', 'py-0', 'bg-background/40', 'backdrop-blur-sm', 'rounded-lg')}>
                     <CardHeader className="p-6 pb-4 flex flex-row items-center justify-between border-b select-none">
                       <div className="space-y-1">
                         <CardTitle className="text-base font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
@@ -612,7 +612,7 @@ export function AdminDashboardClient({
                   </Card>
 
                   {/* Language Distribution */}
-                  <Card className={cn('min-w-0', 'flex', 'flex-col', 'relative', 'transition-all', 'hover:border-border/80', 'py-0', 'bg-background/40', 'backdrop-blur-sm', 'rounded-lg')}>
+                  <Card className={cn('min-w-0', 'flex', 'flex-col', 'relative', 'py-0', 'bg-background/40', 'backdrop-blur-sm', 'rounded-lg')}>
                     <CardHeader className="p-6 pb-4 select-none border-b">
                       <CardTitle className="text-base font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                         <Cpu className="h-4.5 w-4.5 text-cyan-500" />

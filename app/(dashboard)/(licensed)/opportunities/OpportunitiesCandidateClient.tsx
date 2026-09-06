@@ -101,7 +101,7 @@ function OpportunityCard({
   const compString = formatCompensation(opp)
 
   return (
-    <Card className="overflow-hidden border-border/70 bg-card p-0 shadow-xs">
+    <Card className="overflow-hidden p-0 shadow-xs">
       <Link 
         href={`/opportunities/${opp.id}`}
         prefetch={false}

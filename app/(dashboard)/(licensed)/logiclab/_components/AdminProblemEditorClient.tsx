@@ -833,6 +833,7 @@ export function AdminProblemEditorClient({
                     <option value="List<String>">List&lt;String&gt;</option>
                     <option value="ListNode">ListNode</option>
                     <option value="TreeNode">TreeNode</option>
+                    <option value="Node">Node (Graph)</option>
                   </select>
                 </div>
               </div>
@@ -870,6 +871,7 @@ export function AdminProblemEditorClient({
                         <option value="List<String>">List&lt;String&gt;</option>
                         <option value="ListNode">ListNode</option>
                         <option value="TreeNode">TreeNode</option>
+                        <option value="Node">Node (Graph)</option>
                       </select>
                       <button onClick={() => removeArg(idx)} className="text-rose-500 hover:text-rose-400 p-1 cursor-pointer">
                         <IconX className="h-3 w-3" />

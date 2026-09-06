@@ -1,17 +1,43 @@
-import React from "react"
+"use client"
+
+import React, { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 
 interface LogoLoadingProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: "screen-centered" | "full-screen" | "inline"
   size?: "sm" | "md" | "lg"
+  enableWatchdog?: boolean
 }
 
 export function LogoLoading({
   variant = "screen-centered",
   size = "md",
   className,
+  enableWatchdog = true,
   ...props
 }: LogoLoadingProps) {
+  const [isSlow, setIsSlow] = useState(false)
+
+  // Watchdog timer: If loading is visible for > 6s, show reload button; if > 14s, reload page
+  useEffect(() => {
+    if (!enableWatchdog || variant === "inline") return
+
+    const slowTimer = setTimeout(() => {
+      setIsSlow(true)
+    }, 6000)
+
+    const autoReloadTimer = setTimeout(() => {
+      if (typeof window !== "undefined") {
+        window.location.reload()
+      }
+    }, 14000)
+
+    return () => {
+      clearTimeout(slowTimer)
+      clearTimeout(autoReloadTimer)
+    }
+  }, [enableWatchdog, variant])
+
   // Determine dimensions based on size prop
   const logoDimensions = {
     sm: "w-16 h-10",
@@ -79,12 +105,23 @@ export function LogoLoading({
       className={cn(
         variant === "full-screen"
           ? "fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md"
-          : "flex flex-col items-center justify-center flex-1 w-full min-h-[400px] md:min-h-[500px] animate-in fade-in duration-500",
+          : "relative flex items-center justify-center flex-1 w-full min-h-[400px] md:min-h-[500px] animate-in fade-in duration-500",
         className
       )}
       {...props}
     >
-      <PlacetrixShimmerLogo className={cn(logoDimensions, "animate-pulse")} />
+      <div className="relative flex flex-col items-center">
+        <PlacetrixShimmerLogo className={cn(logoDimensions, "animate-pulse")} />
+        
+        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-max pointer-events-none">
+          {isSlow && (
+            <p className="text-xs font-normal text-muted-foreground/60 tracking-wide text-center animate-in fade-in duration-500 select-none">
+              Taking longer than expected...
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
+

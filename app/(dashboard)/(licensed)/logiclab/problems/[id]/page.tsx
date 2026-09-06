@@ -3,6 +3,8 @@ import { getUserProfile } from "@/lib/supabase/profile"
 import { redirect, notFound } from "next/navigation"
 import { ProblemWorkspaceWrapper } from "./ProblemWorkspaceWrapper"
 import { getCachedGlobalProblemsList } from "../../actions"
+import { getTrackById } from "../../_constants/tracks"
+import { COMPANY_CATALOG, isProblemAskedAtCompany } from "../../_constants/companies"
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -19,8 +21,16 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   }
 }
 
-export default async function ProblemPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ProblemPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ track?: string; company?: string }>
+}) {
   const { id } = await params
+  const { track: trackParam, company: companyParam } = (await searchParams) || {}
+
   const profile = await getUserProfile()
   if (!profile) redirect("/auth/login")
 
@@ -73,16 +83,67 @@ export default async function ProblemPage({ params }: { params: Promise<{ id: st
 
   // Use cached global problem list to find exact previous and next problems
   const allProblems = await getCachedGlobalProblemsList()
-  const currentIndex = allProblems.findIndex((p: any) => p.id === id)
   
-  let prevProblemId = null
-  let nextProblemId = null
-  
-  if (currentIndex > 0) {
-    prevProblemId = (allProblems[currentIndex - 1] as any).id
+  let prevProblemId: string | null = null
+  let nextProblemId: string | null = null
+  let trackContext: { id: string; title: string; currentStep: number; totalSteps: number } | null = null
+  let companyContext: { id: string; name: string; currentStep: number; totalSteps: number } | null = null
+
+  if (trackParam) {
+    const track = getTrackById(trackParam)
+    if (track) {
+      const trackProblemList = track.problemNumbers
+        .map((num) => allProblems.find((p: any) => p.number === num))
+        .filter(Boolean) as any[]
+      const trackIndex = trackProblemList.findIndex((p: any) => p.id === id)
+      if (trackIndex > 0) {
+        prevProblemId = trackProblemList[trackIndex - 1].id
+      }
+      if (trackIndex >= 0 && trackIndex < trackProblemList.length - 1) {
+        nextProblemId = trackProblemList[trackIndex + 1].id
+      }
+      if (trackIndex >= 0) {
+        trackContext = {
+          id: track.id,
+          title: track.title,
+          currentStep: trackIndex + 1,
+          totalSteps: trackProblemList.length,
+        }
+      }
+    }
+  } else if (companyParam) {
+    const company = COMPANY_CATALOG.find((c) => c.id === companyParam || c.slug === companyParam)
+    if (company) {
+      const companyProblemList = allProblems.filter((p: any) =>
+        isProblemAskedAtCompany(p, company.id)
+      )
+      const companyIndex = companyProblemList.findIndex((p: any) => p.id === id)
+      if (companyIndex > 0) {
+        prevProblemId = companyProblemList[companyIndex - 1].id
+      }
+      if (companyIndex >= 0 && companyIndex < companyProblemList.length - 1) {
+        nextProblemId = companyProblemList[companyIndex + 1].id
+      }
+      if (companyIndex >= 0) {
+        companyContext = {
+          id: company.id,
+          name: company.name,
+          currentStep: companyIndex + 1,
+          totalSteps: companyProblemList.length,
+        }
+      }
+    }
   }
-  if (currentIndex >= 0 && currentIndex < allProblems.length - 1) {
-    nextProblemId = (allProblems[currentIndex + 1] as any).id
+
+  // Fallback to global list if not in a track or company sequence
+  if (!prevProblemId && !nextProblemId && !trackParam && !companyParam) {
+    const currentIndex = allProblems.findIndex((p: any) => p.id === id)
+    if (currentIndex > 0) {
+      prevProblemId = (allProblems[currentIndex - 1] as any).id
+    }
+    if (currentIndex >= 0 && currentIndex < allProblems.length - 1) {
+      nextProblemId = (allProblems[currentIndex + 1] as any).id
+    }
   }
 
   return (
@@ -95,6 +156,8 @@ export default async function ProblemPage({ params }: { params: Promise<{ id: st
       userProfile={profile}
       prevProblemId={prevProblemId}
       nextProblemId={nextProblemId}
+      trackContext={trackContext}
+      companyContext={companyContext}
     />
   )
 }

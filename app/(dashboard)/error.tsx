@@ -1,16 +1,9 @@
 "use client"
 
-import { useEffect } from "react"
+import * as React from "react"
+import Link from "next/link"
+import { AlertCircle, RotateCcw, Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import {
-  Empty,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-  EmptyDescription,
-  EmptyContent,
-} from "@/components/ui/empty"
-import { AlertCircle, RotateCcw, RefreshCw } from "lucide-react"
 
 export default function DashboardError({
   error,
@@ -19,34 +12,63 @@ export default function DashboardError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
-  useEffect(() => {
-    console.error("[Dashboard Error Boundary Captured]:", error)
+  React.useEffect(() => {
+    // Log the error to console for debugging
+    console.error("[DashboardError] Route render error caught by boundary:", error)
   }, [error])
 
   return (
-    <div className="flex min-h-[50vh] w-full items-center justify-center p-4">
-      <Empty className="max-w-sm border-none p-0">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <AlertCircle />
-          </EmptyMedia>
-          <EmptyTitle>Something went wrong</EmptyTitle>
-          <EmptyDescription>
-            An error occurred while rendering this section. Try resetting or reloading the page.
-          </EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent className="flex-row flex-wrap items-center justify-center gap-2 w-auto mx-auto">
-          <Button onClick={() => reset()} variant="default" size="sm">
-            <RotateCcw data-icon="inline-start" />
-            Try again
-          </Button>
-          <Button onClick={() => window.location.reload()} variant="outline" size="sm">
-            <RefreshCw data-icon="inline-start" />
-            Reload
-          </Button>
-        </EmptyContent>
-      </Empty>
+    <div className="flex flex-col items-center justify-center flex-1 w-full min-h-[400px] md:min-h-[500px] p-6 text-center animate-in fade-in duration-300">
+      <div className="flex size-14 items-center justify-center rounded-full bg-destructive/10 text-destructive mb-4 shadow-xs">
+        <AlertCircle className="size-7" />
+      </div>
+
+      <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl mb-2">
+        Unable to load this page
+      </h2>
+
+      <p className="text-sm text-muted-foreground max-w-md mb-6 leading-relaxed">
+        Something went wrong while displaying this section. This might be due to a temporary network blip or an interrupted navigation.
+      </p>
+
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <Button
+          onClick={() => reset()}
+          variant="default"
+          className="gap-2"
+        >
+          <RotateCcw className="size-4" />
+          <span>Try Again</span>
+        </Button>
+
+        <Button
+          onClick={() => {
+            if (typeof window !== "undefined") {
+              window.location.reload()
+            }
+          }}
+          variant="outline"
+          className="gap-2"
+        >
+          <span>Reload Page</span>
+        </Button>
+
+        <Button
+          asChild
+          variant="ghost"
+        >
+          <Link href="/home" className="gap-2">
+            <Home className="size-4" />
+            <span>Go Home</span>
+          </Link>
+        </Button>
+      </div>
+
+      {error?.digest && (
+        <p className="mt-8 text-[11px] font-mono text-muted-foreground/60">
+          Error ID: {error.digest}
+        </p>
+      )}
     </div>
   )
 }
-

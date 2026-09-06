@@ -20,6 +20,7 @@ import {
   CalendarDays,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { SolveChallengeButton } from "@/components/ui/solve-challenge-button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -87,6 +88,10 @@ export interface Opportunity {
   } | null
 }
 
+import { fetchCandidateDashboardData, type CandidateHomeData } from "@/lib/supabase/home-data"
+import { Skeleton } from "@/components/ui/skeleton"
+import { LogoLoading } from "@/components/others/logo-loading"
+
 interface CandidateDashboardClientProps {
   profile: {
     id: string
@@ -97,18 +102,18 @@ interface CandidateDashboardClientProps {
     profile_updated: boolean
     institute_id: string | null
   }
-  stats: TestStats
-  globalStats: ProblemStats
-  streakStats: {
+  stats?: TestStats
+  globalStats?: ProblemStats
+  streakStats?: {
     currentStreak: number
     maxStreak: number
   }
-  activityCalendar: CalendarCell[]
-  liveTests: MockTest[]
-  upcomingTests: MockTest[]
+  activityCalendar?: CalendarCell[]
+  liveTests?: MockTest[]
+  upcomingTests?: MockTest[]
   opportunities?: Opportunity[]
   candidateEvent?: any
-  todayStr: string
+  todayStr?: string
   initialPotd?: any
   fullPotdProblem?: any
 }
@@ -184,20 +189,85 @@ const itemVariants = {
 
 export function CandidateDashboardClient({
   profile,
-  stats,
-  globalStats,
-  streakStats,
-  activityCalendar,
-  liveTests,
-  upcomingTests,
-  opportunities = [],
-  candidateEvent = null,
-  todayStr,
-  initialPotd,
-  fullPotdProblem,
+  stats: initialStats,
+  globalStats: initialGlobalStats,
+  streakStats: initialStreakStats,
+  activityCalendar: initialActivityCalendar,
+  liveTests: initialLiveTests,
+  upcomingTests: initialUpcomingTests,
+  opportunities: initialOpportunities = [],
+  candidateEvent: initialCandidateEvent = null,
+  todayStr: initialTodayStr,
+  initialPotd: initialPotdProp,
+  fullPotdProblem: initialFullPotdProblem,
 }: CandidateDashboardClientProps) {
   const router = useRouter()
   const [greeting, setGreeting] = useState("Hello")
+
+  const [data, setData] = useState<CandidateHomeData | null>(() => {
+    if (initialStats && initialGlobalStats && initialStreakStats && initialActivityCalendar) {
+      return {
+        stats: initialStats,
+        globalStats: initialGlobalStats,
+        streakStats: initialStreakStats,
+        activityCalendar: initialActivityCalendar,
+        liveTests: initialLiveTests || [],
+        upcomingTests: initialUpcomingTests || [],
+        opportunities: initialOpportunities || [],
+        candidateEvent: initialCandidateEvent || null,
+        todayStr: initialTodayStr || new Date().toISOString().split("T")[0],
+        initialPotd: initialPotdProp || null,
+        fullPotdProblem: initialFullPotdProblem || null,
+      }
+    }
+    return null
+  })
+  const [isLoading, setIsLoading] = useState<boolean>(!data)
+
+  useEffect(() => {
+    if (data) return
+    let isMounted = true
+
+    fetchCandidateDashboardData(profile.id, profile.institute_id)
+      .then((res) => {
+        if (isMounted) {
+          setData(res)
+          setIsLoading(false)
+        }
+      })
+      .catch((err) => {
+        console.error("[CandidateDashboardClient] Client fetch error:", err)
+        if (isMounted) setIsLoading(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [profile.id, profile.institute_id, data])
+
+  const stats = data?.stats || {
+    total_tests: 0,
+    live_tests: 0,
+    upcoming_tests: 0,
+    completed_tests: 0,
+    average_score: 0,
+  }
+  const globalStats = data?.globalStats || {
+    total: 0,
+    solved: 0,
+    easy: { total: 0, solved: 0 },
+    medium: { total: 0, solved: 0 },
+    hard: { total: 0, solved: 0 },
+  }
+  const streakStats = data?.streakStats || { currentStreak: 0, maxStreak: 0 }
+  const activityCalendar = data?.activityCalendar || []
+  const liveTests = data?.liveTests || []
+  const upcomingTests = data?.upcomingTests || []
+  const opportunities = data?.opportunities || []
+  const candidateEvent = data?.candidateEvent || null
+  const todayStr = data?.todayStr || new Date().toISOString().split("T")[0]
+  const initialPotd = data?.initialPotd || null
+  const fullPotdProblem = data?.fullPotdProblem || null
 
   const calculateTimeLeft = () => {
     const now = new Date();
@@ -358,6 +428,10 @@ export function CandidateDashboardClient({
   const profileName = computedFirstName || profile.username || "Candidate"
   const isProfileComplete = profile.profile_updated === true
 
+  if (isLoading || !data) {
+    return <LogoLoading variant="screen-centered" className="min-h-[70vh]" />
+  }
+
   return (
     <div className="flex flex-col gap-6 px-4 py-8 md:px-8 w-full animate-in fade-in duration-500">
       <Suspense><LicenseBanner /></Suspense>
@@ -389,7 +463,7 @@ export function CandidateDashboardClient({
 
         {/* Cell 1: Welcome & Streak (col-span-3 - natural height header) */}
         <motion.div variants={itemVariants} className="lg:col-span-3 md:col-span-2 col-span-1">
-          <Card className="relative overflow-hidden bg-card border border-border/40 shadow-md rounded-2xl flex flex-col p-0 gap-0">
+          <Card className="relative overflow-hidden shadow-md rounded-2xl flex flex-col p-0 gap-0">
             {/* Glowing gradients */}
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/[0.08] via-purple-500/[0.03] to-sky-500/[0.06] pointer-events-none" />
 
@@ -427,7 +501,7 @@ export function CandidateDashboardClient({
 
         {/* Card 1: Daily Challenge (col-span-1) */}
         <motion.div variants={itemVariants} className="col-span-1">
-          <Card className="bg-card border border-border/40 shadow-md rounded-2xl flex flex-col p-0 gap-0 h-full relative py-0">
+          <Card className="shadow-md rounded-2xl flex flex-col p-0 gap-0 h-full relative py-0">
             <CardContent className="p-5 flex flex-col flex-1 justify-between gap-5 h-full">
               <div className="flex flex-col gap-4 min-w-0">
                 <div className="flex flex-row items-center justify-between pb-1">
@@ -494,37 +568,20 @@ export function CandidateDashboardClient({
                 )}
               </div>
 
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full gap-2 py-5 font-semibold text-sm sm:text-base border transition-colors mt-auto shrink-0",
-                  !fullPotdProblem && "opacity-50 pointer-events-none",
-                  fullPotdProblem?.solved_status === "Accepted"
-                    ? "border-emerald-500/20 text-emerald-600 dark:border-emerald-500/10 dark:text-emerald-400 hover:bg-emerald-500/10"
-                    : "border-orange-500/20 text-orange-600 dark:border-orange-500/10 dark:text-orange-400 hover:bg-orange-500/10"
-                )}
-                onClick={() => initialPotd && router.push(`/logiclab/dailychallenges/${initialPotd.id}`)}
-                disabled={!initialPotd}
-              >
-                {fullPotdProblem?.solved_status === "Accepted" ? (
-                  <>
-                    Review Challenge
-                    <CircleCheck className="size-[18px] transition-transform duration-300 group-hover/potd:scale-110" />
-                  </>
-                ) : (
-                  <>
-                    Solve Challenge
-                    <ChevronRight className="size-[18px] transition-transform duration-300 group-hover/potd:translate-x-1" />
-                  </>
-                )}
-              </Button>
+              <div className="mt-auto pt-2 shrink-0">
+                <SolveChallengeButton
+                  isSolved={fullPotdProblem?.solved_status === "Accepted"}
+                  disabled={!initialPotd || !fullPotdProblem}
+                  onClick={() => initialPotd && router.push(`/logiclab/dailychallenges/${initialPotd.id}`)}
+                />
+              </div>
             </CardContent>
           </Card>
         </motion.div>
 
         {/* Cell 3: Mock Test Performance (col-span-1) */}
         <motion.div variants={itemVariants} className="col-span-1">
-          <Card className="bg-card border border-border/40 shadow-md rounded-2xl flex flex-col p-0 gap-0 h-full">
+          <Card className="shadow-md rounded-2xl flex flex-col p-0 gap-0 h-full">
             <CardContent className="p-5 flex flex-col justify-between flex-1 gap-4">
               <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Test Performance
@@ -571,12 +628,12 @@ export function CandidateDashboardClient({
               </div>
 
               {/* Micro grid stats */}
-              <div className="grid grid-cols-3 gap-1 bg-background/50 dark:bg-muted/10 rounded-xl p-2 border border-border/20 select-none text-center">
+              <div className="grid grid-cols-3 gap-1 bg-background/50 dark:bg-muted/60 rounded-xl p-2 border border-border select-none text-center">
                 <div>
                   <span className="text-[8px] text-muted-foreground font-semibold uppercase tracking-wider block">Assigned</span>
                   <span className="text-xs font-bold text-foreground block">{stats.total_tests}</span>
                 </div>
-                <div className="border-x border-border/20">
+                <div className="border-x border-border">
                   <span className="text-[8px] text-muted-foreground font-semibold uppercase tracking-wider block">Live</span>
                   <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 block">{stats.live_tests}</span>
                 </div>
@@ -591,7 +648,7 @@ export function CandidateDashboardClient({
 
         {/* Practice Activity Calendar -> Heatmap Graph (md:col-span-2 lg:col-span-1) */}
         <motion.div variants={itemVariants} className="md:col-span-2 lg:col-span-1">
-          <Card className={cn('min-w-0', 'flex', 'flex-col', 'relative', 'py-0', 'bg-card border border-border/40 shadow-md rounded-2xl h-full')}>
+          <Card className={cn('min-w-0', 'flex', 'flex-col', 'relative', 'py-0', 'shadow-md rounded-2xl h-full')}>
             <CardHeader className={cn('pt-4', 'pb-1')}>
               <CardTitle className={cn('text-xs', 'font-semibold', 'text-muted-foreground', 'uppercase', 'tracking-wider')}>
                 Logic Lab Activity Graph
@@ -721,7 +778,7 @@ export function CandidateDashboardClient({
 
         {/* Card 1: Active & Upcoming Tests */}
         <motion.div variants={itemVariants} className="lg:col-span-1 md:col-span-2 col-span-1">
-          <Card className="bg-card border border-border/40 shadow-md rounded-2xl flex flex-col p-0 gap-0 h-full relative py-0">
+          <Card className="shadow-md rounded-2xl flex flex-col p-0 gap-0 h-full relative py-0">
             <CardContent className="p-5 flex flex-col flex-1 justify-between gap-5 h-full">
               {(() => {
                 const displayTest = liveTests.length > 0
@@ -785,15 +842,8 @@ export function CandidateDashboardClient({
                     </div>
 
                     <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full gap-2 py-5 font-semibold text-sm sm:text-base border transition-colors mt-auto shrink-0 cursor-pointer",
-                        displayTest?.isLive
-                          ? "border-emerald-500/20 text-emerald-600 dark:border-emerald-500/10 dark:text-emerald-400 hover:bg-emerald-500/10"
-                          : displayTest
-                          ? "border-blue-500/20 text-blue-600 dark:border-blue-500/10 dark:text-blue-400 hover:bg-blue-500/10"
-                          : "border-border/60 text-foreground hover:bg-muted/50"
-                      )}
+                      variant="default"
+                      className="w-full py-5 font-semibold text-sm sm:text-base transition-colors mt-auto shrink-0 cursor-pointer shadow-xs"
                       onClick={() => {
                         if (displayTest) {
                           router.push(`/tests/${displayTest.id}`)
@@ -803,7 +853,6 @@ export function CandidateDashboardClient({
                       }}
                     >
                       {displayTest ? (displayTest.isLive ? "Start Test" : "View Test Details") : "Go to Tests Hub"}
-                      <ChevronRight className="size-[18px] transition-transform duration-300 group-hover/test:translate-x-1" />
                     </Button>
                   </>
                 )
@@ -814,7 +863,7 @@ export function CandidateDashboardClient({
 
         {/* Card 2: Active & Upcoming Events */}
         <motion.div variants={itemVariants} className="lg:col-span-1 md:col-span-2 col-span-1">
-          <Card className="bg-card border border-border/40 shadow-md rounded-2xl flex flex-col p-0 gap-0 h-full relative py-0">
+          <Card className="shadow-md rounded-2xl flex flex-col p-0 gap-0 h-full relative py-0">
             <CardContent className="p-5 flex flex-col flex-1 justify-between gap-5 h-full">
               <div className="flex flex-col gap-4 min-w-0">
                 <div className="flex flex-row items-center justify-between pb-1">
@@ -872,15 +921,8 @@ export function CandidateDashboardClient({
               </div>
 
               <Button
-                variant="outline"
-                className={cn(
-                  "w-full gap-2 py-5 font-semibold text-sm sm:text-base border transition-colors mt-auto shrink-0 cursor-pointer",
-                  candidateEvent?.derived_status === "live"
-                    ? "border-sky-500/20 text-sky-600 dark:border-sky-500/10 dark:text-sky-400 hover:bg-sky-500/10"
-                    : candidateEvent
-                    ? "border-blue-500/20 text-blue-600 dark:border-blue-500/10 dark:text-blue-400 hover:bg-blue-500/10"
-                    : "border-border/60 text-foreground hover:bg-muted/50"
-                )}
+                variant="default"
+                className="w-full py-5 font-semibold text-sm sm:text-base transition-colors mt-auto shrink-0 cursor-pointer shadow-xs"
                 onClick={() => {
                   if (candidateEvent) {
                     router.push(`/events/${candidateEvent.id}`)
@@ -890,7 +932,6 @@ export function CandidateDashboardClient({
                 }}
               >
                 {candidateEvent ? (candidateEvent.derived_status === "live" ? "Join Live Event" : "View Event Details") : "Explore Events"}
-                <ChevronRight className="size-[18px] transition-transform duration-300 group-hover/event:translate-x-1" />
               </Button>
             </CardContent>
           </Card>
@@ -898,7 +939,7 @@ export function CandidateDashboardClient({
 
         {/* Card 3: Active & Upcoming Opportunities */}
         <motion.div variants={itemVariants} className="lg:col-span-1 md:col-span-2 col-span-1">
-          <Card className="bg-card border border-border/40 shadow-md rounded-2xl flex flex-col p-0 gap-0 h-full relative py-0">
+          <Card className="shadow-md rounded-2xl flex flex-col p-0 gap-0 h-full relative py-0">
             <CardContent className="p-5 flex flex-col flex-1 justify-between gap-5 h-full">
               {(() => {
                 const opp = opportunities.length > 0 ? opportunities[0] : null
@@ -962,13 +1003,8 @@ export function CandidateDashboardClient({
                     </div>
 
                     <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full gap-2 py-5 font-semibold text-sm sm:text-base border transition-colors mt-auto shrink-0 cursor-pointer",
-                        opp
-                          ? "border-purple-500/20 text-purple-600 dark:border-purple-500/10 dark:text-purple-400 hover:bg-purple-500/10"
-                          : "border-border/60 text-foreground hover:bg-muted/50"
-                      )}
+                      variant="default"
+                      className="w-full py-5 font-semibold text-sm sm:text-base transition-colors mt-auto shrink-0 cursor-pointer shadow-xs"
                       onClick={() => {
                         if (opp) {
                           router.push(`/opportunities/${opp.id}`)
@@ -978,7 +1014,6 @@ export function CandidateDashboardClient({
                       }}
                     >
                       {opp ? "View Opportunity" : "Explore Opportunities"}
-                      <ChevronRight className="size-[18px] transition-transform duration-300 group-hover/opp:translate-x-1" />
                     </Button>
                   </>
                 )

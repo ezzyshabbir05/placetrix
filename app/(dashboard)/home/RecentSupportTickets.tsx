@@ -140,7 +140,7 @@ export function RecentSupportTickets({ initialTickets }: RecentSupportTicketsPro
   return (
     <div className="space-y-4">
       {tickets.map((ticket) => (
-        <Card key={ticket.id} className="overflow-hidden border-border/70 bg-card p-0">
+        <Card key={ticket.id} className="overflow-hidden p-0">
           <div className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:gap-4 md:p-5">
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">

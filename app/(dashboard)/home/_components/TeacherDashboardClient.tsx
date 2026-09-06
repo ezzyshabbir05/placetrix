@@ -20,6 +20,13 @@ import { cn } from "@/lib/utils"
 import { LicenseBanner } from "@/components/license/LicenseBanner"
 import { Suspense } from "react"
 import { RecentSupportTickets } from "../RecentSupportTickets"
+import {
+  fetchTeacherDashboardData,
+  fetchAdminDashboardData,
+  type TeacherHomeData,
+} from "@/lib/supabase/home-data"
+import { Skeleton } from "@/components/ui/skeleton"
+import { LogoLoading } from "@/components/others/logo-loading"
 
 export interface TeacherDashboardStats {
   total_tests: number
@@ -85,7 +92,7 @@ export interface TeacherDashboardClientProps {
     institute_id: string | null
     institute_name?: string | null
   }
-  stats: TeacherDashboardStats
+  stats?: TeacherDashboardStats
   activityCalendar?: any[]
   streakStats?: {
     currentStreak: number
@@ -131,13 +138,34 @@ const itemVariants = {
 
 export function TeacherDashboardClient({
   profile,
-  featuredTest = null,
-  featuredOpportunity = null,
-  featuredEvent = null,
-  recentSupportTickets = [],
+  stats: initialStats,
+  featuredTest: initialFeaturedTest,
+  featuredOpportunity: initialFeaturedOpp,
+  featuredEvent: initialFeaturedEvent,
+  recentSupportTickets: initialRecentTickets = [],
+  adminStats: initialAdminStats,
+  activityCalendar: initialActivityCalendar,
+  streakStats: initialStreakStats,
 }: TeacherDashboardClientProps) {
   const router = useRouter()
   const [greeting, setGreeting] = useState("Hello")
+
+  const [data, setData] = useState<TeacherHomeData | null>(() => {
+    if (initialStats) {
+      return {
+        stats: initialStats,
+        featuredTest: initialFeaturedTest || null,
+        featuredOpportunity: initialFeaturedOpp || null,
+        featuredEvent: initialFeaturedEvent || null,
+        recentSupportTickets: initialRecentTickets || [],
+        adminStats: initialAdminStats,
+        activityCalendar: initialActivityCalendar,
+        streakStats: initialStreakStats,
+      }
+    }
+    return null
+  })
+  const [isLoading, setIsLoading] = useState<boolean>(!data)
 
   useEffect(() => {
     const hours = new Date().getHours()
@@ -146,6 +174,48 @@ export function TeacherDashboardClient({
     else if (hours < 17) setGreeting("Good afternoon")
     else setGreeting("Good evening")
   }, [])
+
+  useEffect(() => {
+    if (data) return
+    let isMounted = true
+
+    const fetcher =
+      profile.account_type === "admin"
+        ? fetchAdminDashboardData()
+        : fetchTeacherDashboardData(profile.id, profile.institute_id, profile.account_type)
+
+    fetcher
+      .then((res) => {
+        if (isMounted) {
+          setData(res)
+          setIsLoading(false)
+        }
+      })
+      .catch((err) => {
+        console.error("[TeacherDashboardClient] Client fetch error:", err)
+        if (isMounted) setIsLoading(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [profile.id, profile.institute_id, profile.account_type, data])
+
+  const stats = data?.stats || {
+    total_tests: 0,
+    live_tests: 0,
+    upcoming_tests: 0,
+    past_tests: 0,
+    draft_tests: 0,
+    total_attempts: 0,
+    total_students: 0,
+    total_cohorts: 0,
+  }
+  const featuredTest = data ? data.featuredTest : (initialFeaturedTest ?? null)
+  const featuredOpportunity = data ? data.featuredOpportunity : (initialFeaturedOpp ?? null)
+  const featuredEvent = data ? data.featuredEvent : (initialFeaturedEvent ?? null)
+  const recentSupportTickets = data?.recentSupportTickets || initialRecentTickets || []
+  const adminStats = data?.adminStats || initialAdminStats
 
   const defaultRoleTitle =
     profile.account_type === "institute_primary"
@@ -160,6 +230,10 @@ export function TeacherDashboardClient({
 
   const profileName = defaultRoleTitle
   const isProfileComplete = profile.profile_updated === true
+
+  if (isLoading || !data) {
+    return <LogoLoading variant="screen-centered" className="min-h-[70vh]" />
+  }
 
   return (
     <div className="flex flex-col gap-6 px-4 py-8 md:px-8 w-full animate-in fade-in duration-500">
@@ -193,7 +267,7 @@ export function TeacherDashboardClient({
       >
         {/* Welcome Header Card (col-span-3) */}
         <motion.div variants={itemVariants} className="lg:col-span-3 md:col-span-2 col-span-1">
-          <Card className="relative overflow-hidden bg-card border border-border/40 shadow-md rounded-2xl flex flex-col p-0 gap-0">
+          <Card className="relative overflow-hidden shadow-md rounded-2xl flex flex-col p-0 gap-0">
             {/* Glowing gradients */}
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/[0.08] via-purple-500/[0.03] to-sky-500/[0.06] pointer-events-none" />
 
@@ -231,7 +305,7 @@ export function TeacherDashboardClient({
 
         {/* Card 1: Active & Upcoming Tests (lg:col-span-1 md:col-span-2 col-span-1) */}
         <motion.div variants={itemVariants} className="lg:col-span-1 md:col-span-2 col-span-1">
-          <Card className="bg-card border border-border/40 shadow-md rounded-2xl flex flex-col p-0 gap-0 h-full relative py-0">
+          <Card className="shadow-md rounded-2xl flex flex-col p-0 gap-0 h-full relative py-0">
             <CardContent className="p-5 flex flex-col flex-1 justify-between gap-5 h-full">
               <div className="flex flex-col gap-4 min-w-0">
                 <div className="flex flex-row items-center justify-between pb-1">
@@ -261,7 +335,13 @@ export function TeacherDashboardClient({
                   )}
                 </div>
 
-                {featuredTest ? (
+                {isLoading ? (
+                  <div className="flex flex-col gap-2.5 py-4 flex-1">
+                    <Skeleton className="h-5 w-3/4 rounded-md" />
+                    <Skeleton className="h-4 w-full rounded-md" />
+                    <Skeleton className="h-4 w-1/2 rounded-md" />
+                  </div>
+                ) : featuredTest ? (
                   <div className="flex flex-col gap-1.5 flex-1">
                     <h3 className="font-bold text-lg sm:text-xl text-foreground leading-snug">
                       {featuredTest.title}
@@ -300,15 +380,8 @@ export function TeacherDashboardClient({
               </div>
 
               <Button
-                variant="outline"
-                className={cn(
-                  "w-full gap-2 py-5 font-semibold text-sm sm:text-base border transition-colors mt-auto shrink-0 cursor-pointer",
-                  featuredTest?.derived_status === "live" || featuredTest?.isLive
-                    ? "border-emerald-500/20 text-emerald-600 dark:border-emerald-500/10 dark:text-emerald-400 hover:bg-emerald-500/10"
-                    : featuredTest?.derived_status === "upcoming"
-                    ? "border-blue-500/20 text-blue-600 dark:border-blue-500/10 dark:text-blue-400 hover:bg-blue-500/10"
-                    : "border-border/60 text-foreground hover:bg-muted/50"
-                )}
+                variant="default"
+                className="w-full py-5 font-semibold text-sm sm:text-base transition-colors mt-auto shrink-0 cursor-pointer shadow-xs"
                 onClick={() => {
                   if (featuredTest) {
                     router.push(`/tests/${featuredTest.id}`)
@@ -326,7 +399,6 @@ export function TeacherDashboardClient({
                     ? "Edit Draft Test"
                     : "View Test Results"
                   : "Create New Test"}
-                <ChevronRight className="size-[18px] transition-transform duration-300 group-hover/test:translate-x-1" />
               </Button>
             </CardContent>
           </Card>
@@ -334,7 +406,7 @@ export function TeacherDashboardClient({
 
         {/* Card 2: Active & Upcoming Events (lg:col-span-1 md:col-span-2 col-span-1) */}
         <motion.div variants={itemVariants} className="lg:col-span-1 md:col-span-2 col-span-1">
-          <Card className="bg-card border border-border/40 shadow-md rounded-2xl flex flex-col p-0 gap-0 h-full relative py-0">
+          <Card className="shadow-md rounded-2xl flex flex-col p-0 gap-0 h-full relative py-0">
             <CardContent className="p-5 flex flex-col flex-1 justify-between gap-5 h-full">
               <div className="flex flex-col gap-4 min-w-0">
                 <div className="flex flex-row items-center justify-between pb-1">
@@ -360,7 +432,13 @@ export function TeacherDashboardClient({
                   )}
                 </div>
 
-                {featuredEvent ? (
+                {isLoading ? (
+                  <div className="flex flex-col gap-2.5 py-4 flex-1">
+                    <Skeleton className="h-5 w-3/4 rounded-md" />
+                    <Skeleton className="h-4 w-full rounded-md" />
+                    <Skeleton className="h-4 w-1/2 rounded-md" />
+                  </div>
+                ) : featuredEvent ? (
                   <div className="flex flex-col gap-1.5 flex-1">
                     <h3 className="font-bold text-lg sm:text-xl text-foreground leading-snug">
                       {featuredEvent.title}
@@ -396,15 +474,8 @@ export function TeacherDashboardClient({
               </div>
 
               <Button
-                variant="outline"
-                className={cn(
-                  "w-full gap-2 py-5 font-semibold text-sm sm:text-base border transition-colors mt-auto shrink-0 cursor-pointer",
-                  featuredEvent?.derived_status === "live"
-                    ? "border-sky-500/20 text-sky-600 dark:border-sky-500/10 dark:text-sky-400 hover:bg-sky-500/10"
-                    : featuredEvent?.derived_status === "upcoming"
-                    ? "border-blue-500/20 text-blue-600 dark:border-blue-500/10 dark:text-blue-400 hover:bg-blue-500/10"
-                    : "border-border/60 text-foreground hover:bg-muted/50"
-                )}
+                variant="default"
+                className="w-full py-5 font-semibold text-sm sm:text-base transition-colors mt-auto shrink-0 cursor-pointer shadow-xs"
                 onClick={() => {
                   if (featuredEvent) {
                     router.push(`/events/${featuredEvent.id}`)
@@ -420,7 +491,6 @@ export function TeacherDashboardClient({
                     ? "View Event Details"
                     : "View Past Event"
                   : "Schedule New Event"}
-                <ChevronRight className="size-[18px] transition-transform duration-300 group-hover/event:translate-x-1" />
               </Button>
             </CardContent>
           </Card>
@@ -428,7 +498,7 @@ export function TeacherDashboardClient({
 
         {/* Card 3: Active & Upcoming Opportunities (lg:col-span-1 md:col-span-2 col-span-1) */}
         <motion.div variants={itemVariants} className="lg:col-span-1 md:col-span-2 col-span-1">
-          <Card className="bg-card border border-border/40 shadow-md rounded-2xl flex flex-col p-0 gap-0 h-full relative py-0">
+          <Card className="shadow-md rounded-2xl flex flex-col p-0 gap-0 h-full relative py-0">
             <CardContent className="p-5 flex flex-col flex-1 justify-between gap-5 h-full">
               {(() => {
                 const opp = featuredOpportunity
@@ -467,7 +537,13 @@ export function TeacherDashboardClient({
                         </div>
                       </div>
 
-                      {opp ? (
+                      {isLoading ? (
+                        <div className="flex flex-col gap-2.5 py-4 flex-1">
+                          <Skeleton className="h-5 w-3/4 rounded-md" />
+                          <Skeleton className="h-4 w-full rounded-md" />
+                          <Skeleton className="h-4 w-1/2 rounded-md" />
+                        </div>
+                      ) : opp ? (
                         <div className="flex flex-col gap-1.5 flex-1">
                           <span className="text-xs font-semibold text-purple-700 dark:text-purple-400">
                             {opp.company?.name || "Campus Drive"}
@@ -501,13 +577,8 @@ export function TeacherDashboardClient({
                     </div>
 
                     <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full gap-2 py-5 font-semibold text-sm sm:text-base border transition-colors mt-auto shrink-0 cursor-pointer",
-                        opp?.derived_status === "active"
-                          ? "border-purple-500/20 text-purple-600 dark:border-purple-500/10 dark:text-purple-400 hover:bg-purple-500/10"
-                          : "border-border/60 text-foreground hover:bg-muted/50"
-                      )}
+                      variant="default"
+                      className="w-full py-5 font-semibold text-sm sm:text-base transition-colors mt-auto shrink-0 cursor-pointer shadow-xs"
                       onClick={() => {
                         if (opp) {
                           router.push(`/opportunities/${opp.id}`)
@@ -521,7 +592,6 @@ export function TeacherDashboardClient({
                           ? "Manage Applications"
                           : "View Past Drive"
                         : "Post New Opportunity"}
-                      <ChevronRight className="size-[18px] transition-transform duration-300 group-hover/opp:translate-x-1" />
                     </Button>
                   </>
                 )
@@ -533,7 +603,7 @@ export function TeacherDashboardClient({
         {/* ── Additional Bento Section for Admin Role ── */}
         {profile.account_type === "admin" && (
           <motion.div variants={itemVariants} className="lg:col-span-3 md:col-span-2 col-span-1">
-            <Card className="bg-card border border-border/40 shadow-lg rounded-2xl p-5 flex flex-col gap-4">
+            <Card className="shadow-lg rounded-2xl p-5 flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Ticket className="size-4 text-indigo-600 dark:text-indigo-400" />
@@ -550,7 +620,14 @@ export function TeacherDashboardClient({
                 </Link>
               </div>
 
-              <RecentSupportTickets initialTickets={recentSupportTickets} />
+              {isLoading ? (
+                <div className="flex flex-col gap-2 py-2">
+                  <Skeleton className="h-10 w-full rounded-lg" />
+                  <Skeleton className="h-10 w-full rounded-lg" />
+                </div>
+              ) : (
+                <RecentSupportTickets initialTickets={recentSupportTickets} />
+              )}
             </Card>
           </motion.div>
         )}

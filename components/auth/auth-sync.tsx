@@ -49,7 +49,13 @@ function AuthSyncContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  const pathnameRef = useRef(pathname);
+  const searchParamsRef = useRef(searchParams);
   const lastUserIdRef = useRef<string | null | undefined>(undefined);
+
+  pathnameRef.current = pathname;
+  searchParamsRef.current = searchParams;
 
   useEffect(() => {
     const supabase = createClient();
@@ -61,15 +67,18 @@ function AuthSyncContent() {
       const prevUserId = lastUserIdRef.current;
       lastUserIdRef.current = newUserId;
 
-      // If initial ref setup, record and return
-      if (prevUserId === undefined) {
+      // Ignore initial session or initial ref setup
+      if (prevUserId === undefined || event === "INITIAL_SESSION") {
         return;
       }
 
+      const currentPath = pathnameRef.current;
+      const currentParams = searchParamsRef.current;
+
       // Signed out: user ID went from non-null to null
       if (prevUserId !== null && newUserId === null) {
-        if (isProtectedPath(pathname)) {
-          const loginUrl = `/auth/login?next=${encodeURIComponent(pathname)}`;
+        if (isProtectedPath(currentPath)) {
+          const loginUrl = `/auth/login?next=${encodeURIComponent(currentPath)}`;
           window.location.replace(loginUrl);
         }
         return;
@@ -77,8 +86,8 @@ function AuthSyncContent() {
 
       // Signed in: user ID went from null to non-null
       if (prevUserId === null && newUserId !== null) {
-        if (isAuthPath(pathname)) {
-          const next = searchParams.get("next") ?? "/home";
+        if (isAuthPath(currentPath)) {
+          const next = currentParams.get("next") ?? "/home";
           supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data }) => {
             if (data?.currentLevel === "aal1" && data?.nextLevel === "aal2") {
               window.location.replace(`/auth/mfa?next=${encodeURIComponent(next)}`);
@@ -167,12 +176,13 @@ function AuthSyncContent() {
         data: { session },
       } = await supabase.auth.getSession();
       const activeUserId = session?.user?.id ?? null;
+      const currentPath = pathnameRef.current;
 
-      if (isProtectedPath(pathname) && !activeUserId) {
+      if (isProtectedPath(currentPath) && !activeUserId) {
         window.location.replace(
-          `/auth/login?next=${encodeURIComponent(pathname)}`
+          `/auth/login?next=${encodeURIComponent(currentPath)}`
         );
-      } else if (isAuthPath(pathname) && activeUserId) {
+      } else if (isAuthPath(currentPath) && activeUserId) {
         window.location.replace("/home");
       } else if (
         persisted ||
@@ -196,7 +206,7 @@ function AuthSyncContent() {
       window.removeEventListener("pageshow", handlePageShowOrPopState);
       window.removeEventListener("popstate", handlePageShowOrPopState);
     };
-  }, [pathname, router, searchParams]);
+  }, [router]);
 
   return null;
 }

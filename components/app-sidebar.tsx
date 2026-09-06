@@ -152,7 +152,7 @@ function NavItemButton({ item, isActive, isLocked, lockReason }: NavItemButtonPr
   }
 
   return (
-    <Link href={item.url} className={cn("w-full block", focusClasses)}>
+    <Link href={item.url} prefetch={false} className={cn("w-full block", focusClasses)}>
       {inner}
     </Link>
   )
@@ -221,6 +221,7 @@ export function AppSidebarNav({ user, mobileOpen, onMobileClose }: AppSidebarNav
         <div className="flex h-12 shrink-0 items-center p-1.5 border-b border-sidebar-border overflow-hidden">
           <Link
             href="/home"
+            prefetch={false}
             className="flex h-9 w-full items-center rounded-sm transition-colors duration-150 group/logo focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-sidebar-ring focus-visible:ring-inset"
             onClick={onMobileClose}
           >

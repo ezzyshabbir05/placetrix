@@ -5,6 +5,10 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { getUserProfile } from "@/lib/supabase/profile"
 import { getCachedGlobalProblemsList, getCachedPotd, getCachedProblemExecutionData } from "@/lib/supabase/cached-queries"
 import { Problem } from "./_types"
+import { validateSubmissionSecurity, getJudge0SandboxConfig } from "@/lib/sandbox/securityCheck"
+import { getLanguagePrelude } from "@/lib/generator/templateGenerator"
+import { getTrackById } from "./_constants/tracks"
+import { COMPANY_CATALOG, isProblemAskedAtCompany } from "./_constants/companies"
 
 export { getCachedGlobalProblemsList, getCachedPotd, getCachedProblemExecutionData }
 
@@ -20,7 +24,12 @@ export async function getIdeProblemList(userId: string) {
 }
 
 // Fetch single problem details, testcases and past submissions for SPA transition
-export async function getProblemDataSPA(problemId: string, userId: string) {
+export async function getProblemDataSPA(
+  problemId: string,
+  userId: string,
+  trackId?: string,
+  companyId?: string
+) {
   const supabase = (await createServerClient()) as any
 
   const { data: problem, error } = await supabase
@@ -60,16 +69,67 @@ export async function getProblemDataSPA(problemId: string, userId: string) {
     .limit(20)
 
   const allProblems = await getCachedGlobalProblemsList()
-  const currentIndex = allProblems.findIndex((p: any) => p.id === problemId)
   
-  let prevProblemId = null
-  let nextProblemId = null
-  
-  if (currentIndex > 0) {
-    prevProblemId = (allProblems[currentIndex - 1] as any).id
+  let prevProblemId: string | null = null
+  let nextProblemId: string | null = null
+  let trackContext: { id: string; title: string; currentStep: number; totalSteps: number } | null = null
+  let companyContext: { id: string; name: string; currentStep: number; totalSteps: number } | null = null
+
+  if (trackId) {
+    const track = getTrackById(trackId)
+    if (track) {
+      const trackProblemList = track.problemNumbers
+        .map((num) => allProblems.find((p: any) => p.number === num))
+        .filter(Boolean) as any[]
+      const trackIndex = trackProblemList.findIndex((p: any) => p.id === problemId)
+      if (trackIndex > 0) {
+        prevProblemId = trackProblemList[trackIndex - 1].id
+      }
+      if (trackIndex >= 0 && trackIndex < trackProblemList.length - 1) {
+        nextProblemId = trackProblemList[trackIndex + 1].id
+      }
+      if (trackIndex >= 0) {
+        trackContext = {
+          id: track.id,
+          title: track.title,
+          currentStep: trackIndex + 1,
+          totalSteps: trackProblemList.length,
+        }
+      }
+    }
+  } else if (companyId) {
+    const company = COMPANY_CATALOG.find((c) => c.id === companyId || c.slug === companyId)
+    if (company) {
+      const companyProblemList = allProblems.filter((p: any) =>
+        isProblemAskedAtCompany(p, company.id)
+      )
+      const companyIndex = companyProblemList.findIndex((p: any) => p.id === problemId)
+      if (companyIndex > 0) {
+        prevProblemId = companyProblemList[companyIndex - 1].id
+      }
+      if (companyIndex >= 0 && companyIndex < companyProblemList.length - 1) {
+        nextProblemId = companyProblemList[companyIndex + 1].id
+      }
+      if (companyIndex >= 0) {
+        companyContext = {
+          id: company.id,
+          name: company.name,
+          currentStep: companyIndex + 1,
+          totalSteps: companyProblemList.length,
+        }
+      }
+    }
   }
-  if (currentIndex >= 0 && currentIndex < allProblems.length - 1) {
-    nextProblemId = (allProblems[currentIndex + 1] as any).id
+
+  // Fallback to global allProblems if no track or company sequence was resolved
+  if (!prevProblemId && !nextProblemId && !trackId && !companyId) {
+    const currentIndex = allProblems.findIndex((p: any) => p.id === problemId)
+    if (currentIndex > 0) {
+      prevProblemId = (allProblems[currentIndex - 1] as any).id
+    }
+    if (currentIndex >= 0 && currentIndex < allProblems.length - 1) {
+      nextProblemId = (allProblems[currentIndex + 1] as any).id
+    }
   }
 
   return {
@@ -78,7 +138,9 @@ export async function getProblemDataSPA(problemId: string, userId: string) {
     totalTestCases,
     submissions: submissions || [],
     prevProblemId,
-    nextProblemId
+    nextProblemId,
+    trackContext,
+    companyContext,
   }
 }
 
@@ -238,6 +300,8 @@ export async function fetchProblemsInfinite({
   tab = "all",
   difficulty = "All",
   tag = "All",
+  company = "All",
+  trackNumbers,
   sortBy = "number-asc",
 }: {
   userId: string
@@ -247,33 +311,41 @@ export async function fetchProblemsInfinite({
   tab?: string
   difficulty?: string
   tag?: string
+  company?: string
+  trackNumbers?: number[]
   sortBy?: string
 }): Promise<{ problems: any[]; hasMore: boolean; totalCount: number }> {
   const supabase = (await createServerClient()) as any
-  const { data, error } = await supabase.rpc('get_paginated_problems', {
-    p_user_id: userId || null,
-    p_limit: limit,
-    p_offset: offset,
-    p_search: search,
-    p_tab: tab,
-    p_difficulty: difficulty,
-    p_tag: tag,
-    p_sort_by: sortBy
-  })
+  const effectiveTag = tag !== "All" ? tag : (company !== "All" ? company : "All")
 
-  if (!error && data) {
-    const totalCount = data.length > 0 ? Number(data[0].total_count) : 0
-    const hasMore = offset + limit < totalCount
-    return { problems: data, hasMore, totalCount }
+  // If no trackNumbers and at most one of tag or company is specified, use high-speed RPC directly
+  if ((!trackNumbers || trackNumbers.length === 0) && (tag === "All" || company === "All")) {
+    const { data, error } = await supabase.rpc('get_paginated_problems', {
+      p_user_id: userId || null,
+      p_limit: limit,
+      p_offset: offset,
+      p_search: search,
+      p_tab: tab,
+      p_difficulty: difficulty,
+      p_tag: effectiveTag,
+      p_sort_by: sortBy
+    })
+
+    if (!error && data) {
+      const totalCount = data.length > 0 ? Number(data[0].total_count) : 0
+      const hasMore = offset + limit < totalCount
+      return { problems: data, hasMore, totalCount }
+    }
   }
 
-  // Fallback if get_paginated_problems RPC fails or missing DB views
-  console.warn("[fetchProblemsInfinite] RPC failed or missing, using fallback query:", error?.message)
-
+  // Fallback query (or when filtering by track / multi-filtering)
   let query = supabase
     .from("logiclab_problems")
     .select("id, number, title, difficulty, tags, created_at")
 
+  if (trackNumbers && trackNumbers.length > 0) {
+    query = query.in("number", trackNumbers)
+  }
   if (search) {
     query = query.ilike("title", `%${search}%`)
   }
@@ -282,6 +354,9 @@ export async function fetchProblemsInfinite({
   }
   if (tag && tag !== "All") {
     query = query.contains("tags", [tag])
+  }
+  if (company && company !== "All") {
+    query = query.contains("tags", [company])
   }
 
   query = query.order("number", { ascending: sortBy !== "number-desc" })
@@ -397,32 +472,7 @@ export async function fetchProblemsInfinite({
 
 // ─── Format Code Action ────────────────────────────────────────────────────────
 
-function formatCppCode(code: string): string {
-  let indentLevel = 0;
-  const indentSize = 4;
-  let preProcessed = code
-    .replace(/{/g, '{\n')
-    .replace(/}/g, '\n}\n')
-    .replace(/;/g, ';\n')
-    .replace(/public:/g, 'public:\n')
-    .replace(/private:/g, 'private:\n')
-    .replace(/protected:/g, 'protected:\n');
-  preProcessed = preProcessed.replace(/\(([^)]+)\)/g, (match) => match.replace(/;\n/g, '; '));
-  const lines = preProcessed.split('\n');
-  const formattedLines = [];
-  for (let i = 0; i < lines.length; i++) {
-    let line = lines[i].trim();
-    if (!line) continue;
-    if (line.startsWith('}')) indentLevel = Math.max(0, indentLevel - 1);
-    let currentIndent = indentLevel;
-    if (line === 'public:' || line === 'private:' || line === 'protected:') {
-      currentIndent = Math.max(0, indentLevel - 1);
-    }
-    formattedLines.push(' '.repeat(currentIndent * indentSize) + line);
-    if (line.endsWith('{')) indentLevel++;
-  }
-  return formattedLines.join('\n');
-}
+import { formatCppCode } from "@/lib/formatters/cppFormatter";
 
 export async function formatCodeAction(code: string, language: string): Promise<{ code: string; warning?: string; error?: string }> {
   if (!code || !language) return { code, error: 'Missing code or language' };
@@ -446,7 +496,7 @@ export async function formatCodeAction(code: string, language: string): Promise<
         plugins: [javaPlugin],
         tabWidth: 4,
       });
-    } else if (language === 'cpp') {
+    } else if (language === 'cpp' || language === 'c') {
       formattedCode = formatCppCode(code);
     }
     return { code: formattedCode };
@@ -545,9 +595,9 @@ export async function runCodeAction(body: {
     return { success: false, error: "Code payload exceeds maximum size limit of 50KB." };
   }
 
-  const blocklistRegex = /(sys\.exit|os\.system|subprocess\.|exec\(|eval\(|__import__|java\.lang\.Runtime|java\.lang\.ProcessBuilder)/i;
-  if (blocklistRegex.test(source_code)) {
-    return { success: false, error: "Security Exception: Blocked keyword or potentially destructive function detected in code." };
+  const secCheck = validateSubmissionSecurity(source_code, language_id);
+  if (!secCheck.valid) {
+    return { success: false, error: `Security Exception: ${secCheck.reason}` };
   }
 
   let finalSource = source_code;
@@ -574,14 +624,15 @@ export async function runCodeAction(body: {
       return { success: false, error: `Execution engine error: Driver code missing for language ${langKey}.` };
     }
 
+    const prelude = getLanguagePrelude(langKey, source_code, driverCode);
     if (langKey === "62") {
       const lines = driverCode.split("\n");
       const imports = lines.filter((line: string) => line.trim().startsWith("import "));
       const nonImports = lines.filter((line: string) => !line.trim().startsWith("import "));
       lineOffset = 2 + imports.length + 2;
-      finalSource = "import java.util.*;\nimport java.io.*;\n" + imports.join("\n") + "\n\n" + source_code + "\n\n" + nonImports.join("\n");
+      finalSource = "import java.util.*;\nimport java.io.*;\n" + imports.join("\n") + "\n\n" + prelude + "\n" + source_code + "\n\n" + nonImports.join("\n");
     } else if (langKey === "71") {
-      const merged = source_code + "\n\n" + driverCode;
+      const merged = prelude + "\n" + source_code + "\n\n" + driverCode;
       lineOffset = 6;
       finalSource = "from __future__ import annotations\nimport sys\nimport json\nimport math\nimport collections\nfrom typing import *\n" + merged;
     } else if (langKey === "54") {
@@ -589,9 +640,9 @@ export async function runCodeAction(body: {
       const includes = lines.filter((line: string) => line.trim().startsWith("#include") || line.trim().startsWith("using "));
       const nonIncludes = lines.filter((line: string) => !line.trim().startsWith("#include") && !line.trim().startsWith("using "));
       lineOffset = 16 + includes.length + 2;
-      finalSource = "#include <iostream>\n#include <vector>\n#include <string>\n#include <algorithm>\n#include <map>\n#include <set>\n#include <unordered_map>\n#include <unordered_set>\n#include <queue>\n#include <stack>\n#include <cmath>\n#include <climits>\n#include <limits>\n#include <numeric>\n#include <utility>\nusing namespace std;\n" + includes.join("\n") + "\n\n" + source_code + "\n\n" + nonIncludes.join("\n");
+      finalSource = "#include <iostream>\n#include <vector>\n#include <string>\n#include <algorithm>\n#include <map>\n#include <set>\n#include <unordered_map>\n#include <unordered_set>\n#include <queue>\n#include <stack>\n#include <cmath>\n#include <climits>\n#include <limits>\n#include <numeric>\n#include <utility>\nusing namespace std;\n" + includes.join("\n") + "\n\n" + prelude + "\n" + source_code + "\n\n" + nonIncludes.join("\n");
     } else {
-      finalSource = source_code + "\n\n" + driverCode;
+      finalSource = prelude + "\n" + source_code + "\n\n" + driverCode;
     }
 
     let testCases: any[] = problemData.test_cases || [];
@@ -631,13 +682,13 @@ export async function runCodeAction(body: {
     let maxMemory = 0;
     const results: any[] = [];
 
+    const sandboxConfig = getJudge0SandboxConfig(timeLimit, memoryLimit);
     const batchPayload = {
       submissions: sampleTestCases.map((tc: any) => ({
         source_code: encodedSource,
         language_id,
         stdin: Buffer.from(tc.input || "").toString("base64"),
-        cpu_time_limit: timeLimit,
-        memory_limit: memoryLimit
+        ...sandboxConfig,
       }))
     };
 
@@ -782,7 +833,12 @@ export async function runCodeAction(body: {
         const response = await fetch(submissionsUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify({ source_code: encodedSource, language_id, stdin: encodedStdin }),
+          body: JSON.stringify({
+            source_code: encodedSource,
+            language_id,
+            stdin: encodedStdin,
+            ...getJudge0SandboxConfig(timeLimit, memoryLimit),
+          }),
         });
         const textResponse = await response.text();
         let data;
@@ -854,9 +910,9 @@ export async function submitCodeAction(body: {
     return { success: false, error: "Code payload exceeds maximum size limit of 50KB." };
   }
 
-  const blocklistRegex = /(sys\.exit|os\.system|subprocess\.|exec\(|eval\(|__import__|java\.lang\.Runtime|java\.lang\.ProcessBuilder)/i;
-  if (blocklistRegex.test(code)) {
-    return { success: false, error: "Security Exception: Blocked keyword or potentially destructive function detected in code." };
+  const secCheck = validateSubmissionSecurity(code, language_id);
+  if (!secCheck.valid) {
+    return { success: false, error: `Security Exception: ${secCheck.reason}` };
   }
 
   const supabase = (await createServerClient()) as any;
@@ -876,22 +932,23 @@ export async function submitCodeAction(body: {
     return { success: false, error: `Submission failed: Driver code missing for language ${langKey}.` };
   }
 
+  const prelude = getLanguagePrelude(langKey, code, driverCode);
   let finalSource = code;
   if (langKey === "62") {
     const lines = driverCode.split("\n");
     const imports = lines.filter((line: string) => line.trim().startsWith("import "));
     const nonImports = lines.filter((line: string) => !line.trim().startsWith("import "));
-    finalSource = "import java.util.*;\nimport java.io.*;\n" + imports.join("\n") + "\n\n" + code + "\n\n" + nonImports.join("\n");
+    finalSource = "import java.util.*;\nimport java.io.*;\n" + imports.join("\n") + "\n\n" + prelude + "\n" + code + "\n\n" + nonImports.join("\n");
   } else if (langKey === "71") {
-    const merged = code + "\n\n" + driverCode;
+    const merged = prelude + "\n" + code + "\n\n" + driverCode;
     finalSource = "from __future__ import annotations\nimport sys\nimport json\nimport math\nimport collections\nfrom typing import *\n" + merged;
   } else if (langKey === "54") {
     const lines = driverCode.split("\n");
     const includes = lines.filter((line: string) => line.trim().startsWith("#include") || line.trim().startsWith("using "));
     const nonIncludes = lines.filter((line: string) => !line.trim().startsWith("#include") && !line.trim().startsWith("using "));
-    finalSource = "#include <iostream>\n#include <vector>\n#include <string>\n#include <algorithm>\n#include <map>\n#include <set>\n#include <unordered_map>\n#include <unordered_set>\n#include <queue>\n#include <stack>\n#include <cmath>\n#include <climits>\n#include <limits>\n#include <numeric>\n#include <utility>\nusing namespace std;\n" + includes.join("\n") + "\n\n" + code + "\n\n" + nonIncludes.join("\n");
+    finalSource = "#include <iostream>\n#include <vector>\n#include <string>\n#include <algorithm>\n#include <map>\n#include <set>\n#include <unordered_map>\n#include <unordered_set>\n#include <queue>\n#include <stack>\n#include <cmath>\n#include <climits>\n#include <limits>\n#include <numeric>\n#include <utility>\nusing namespace std;\n" + includes.join("\n") + "\n\n" + prelude + "\n" + code + "\n\n" + nonIncludes.join("\n");
   } else {
-    finalSource = code + "\n\n" + driverCode;
+    finalSource = prelude + "\n" + code + "\n\n" + driverCode;
   }
 
   let testCases: any[] = problemData.test_cases || [];
@@ -911,13 +968,13 @@ export async function submitCodeAction(body: {
     try { return Buffer.from(str, "base64").toString("utf-8"); } catch { return str; }
   };
 
+  const sandboxConfig = getJudge0SandboxConfig(timeLimit, memoryLimit);
   const batchPayload = {
     submissions: testCases.map((tc: any) => ({
       source_code: encodedSource,
       language_id,
       stdin: Buffer.from(tc.input || "").toString("base64"),
-      cpu_time_limit: timeLimit,
-      memory_limit: memoryLimit
+      ...sandboxConfig,
     }))
   };
 
