@@ -20,7 +20,7 @@ export function UnderDevelopment({
   description = "This page is a work in progress. Content will appear here once ready.",
 }: UnderDevelopmentProps) {
   return (
-    <div className="flex min-h-[400px] items-center justify-center">
+    <div className="flex min-h-100 items-center justify-center">
       <Empty>
         <EmptyHeader>
           <EmptyMedia variant="icon">{icon}</EmptyMedia>

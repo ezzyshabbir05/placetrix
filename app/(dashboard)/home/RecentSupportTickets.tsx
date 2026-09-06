@@ -171,7 +171,7 @@ export function RecentSupportTickets({ initialTickets }: RecentSupportTicketsPro
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 border-t border-border/60 pt-3 md:min-w-[220px] md:items-end md:pt-0 md:border-t-0 md:text-right">
+            <div className="flex flex-col gap-3 border-t border-border/60 pt-3 md:min-w-55 md:items-end md:pt-0 md:border-t-0 md:text-right">
               <div className="w-full md:w-32 self-end">
                 <Select
                   value={ticket.status}

@@ -149,7 +149,7 @@ export default async function TrackDetailPage({
           </div>
 
           {/* Progress Card & Quick Action */}
-          <Card className="flex flex-col justify-between gap-4 p-4 bg-muted/30 border-border/60 min-w-[240px] shrink-0 shadow-none">
+          <Card className="flex flex-col justify-between gap-4 p-4 bg-muted/30 border-border/60 min-w-60 shrink-0 shadow-none">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs font-mono">
                 <span className="text-muted-foreground">Completion</span>

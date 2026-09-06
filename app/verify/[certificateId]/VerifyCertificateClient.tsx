@@ -39,7 +39,7 @@ export default function VerifyCertificateClient({
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col justify-between py-12 px-4 relative overflow-hidden font-sans">
       {/* Subtle background glow */}
-      <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[600px] h-[350px] rounded-full bg-primary/5 blur-[100px] pointer-events-none -z-10" />
+      <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-150 h-87.5 rounded-full bg-primary/5 blur-[100px] pointer-events-none -z-10" />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col justify-center items-center max-w-lg mx-auto w-full z-10 space-y-6">

@@ -202,7 +202,7 @@ export function QRCheckInScanner({ eventId, onCheckIn, tickets }: QRCheckInScann
         
         <div className="flex flex-col w-full bg-muted/10">
           <div className={cn(
-            "relative bg-black w-full aspect-square flex-shrink-0 overflow-hidden shadow-inner transition-all duration-300",
+            "relative bg-black w-full aspect-square shrink-0 overflow-hidden shadow-inner transition-all duration-300",
             showSuccessOverlay && "ring-4 ring-emerald-500/80 ring-inset"
           )}>
             {isPending && (
@@ -227,7 +227,7 @@ export function QRCheckInScanner({ eventId, onCheckIn, tickets }: QRCheckInScann
             {showSuccessOverlay && (
               <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-emerald-600/90 text-white backdrop-blur-md px-4 py-2 rounded-full shadow-lg border border-emerald-400/40 flex items-center gap-2 animate-in fade-in slide-in-from-top-3 duration-200">
                 <CheckCircle2 className="h-4 w-4 text-emerald-200 shrink-0" />
-                <div className="text-xs font-semibold truncate max-w-[200px]">
+                <div className="text-xs font-semibold truncate max-w-50">
                   Present: <span className="font-bold">{lastCheckedInName}</span>
                 </div>
               </div>
@@ -236,7 +236,7 @@ export function QRCheckInScanner({ eventId, onCheckIn, tickets }: QRCheckInScann
             {showAlreadyPresentOverlay && (
               <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-amber-600/90 text-white backdrop-blur-md px-4 py-2 rounded-full shadow-lg border border-amber-400/40 flex items-center gap-2 animate-in fade-in slide-in-from-top-3 duration-200">
                 <UserCheck className="h-4 w-4 text-amber-200 shrink-0" />
-                <div className="text-xs font-semibold truncate max-w-[200px]">
+                <div className="text-xs font-semibold truncate max-w-50">
                   Already Present: <span className="font-bold">{lastCheckedInName}</span>
                 </div>
               </div>
@@ -265,7 +265,7 @@ export function QRCheckInScanner({ eventId, onCheckIn, tickets }: QRCheckInScann
           </div>
 
           {/* Results Bar */}
-          <div className="w-full p-4 sm:p-5 min-h-[90px] flex items-center justify-start border-t bg-background shrink-0">
+          <div className="w-full p-4 sm:p-5 min-h-22.5 flex items-center justify-start border-t bg-background shrink-0">
             {lastCheckedInName ? (
               <div className="w-full bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3.5 flex items-start gap-3 animate-in fade-in slide-in-from-bottom-2 shadow-sm text-left">
                 <CheckCircle2 className="h-5 w-5 text-emerald-500 mt-0.5 shrink-0" />

@@ -358,7 +358,7 @@ export function InstituteSettingsClient({ userProfile, initialData }: Props) {
                       <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-sm font-medium font-semibold">Password updated successfully</p>
+                      <p className="text-sm font-semibold">Password updated successfully</p>
                       <p className="text-xs text-muted-foreground">Your new password is active on all devices.</p>
                     </div>
                     <Button variant="outline" size="sm" onClick={() => setPwSuccess(false)}>

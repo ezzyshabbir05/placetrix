@@ -203,7 +203,7 @@ export function NotificationsPopover() {
           sideOffset={8}
           collisionPadding={12}
           onOpenAutoFocus={(e) => e.preventDefault()}
-          className="w-[calc(100vw-24px)] sm:w-[380px] max-w-[380px] p-0 rounded-2xl overflow-hidden shadow-xl border bg-popover text-popover-foreground box-border"
+          className="w-[calc(100vw-24px)] sm:w-95 max-w-95 p-0 rounded-2xl overflow-hidden shadow-xl border bg-popover text-popover-foreground box-border"
         >
           {/* ── Popover Header ──────────────────────────────────────── */}
           <div className="flex h-11 items-center justify-between px-3.5 border-b border-border/70 bg-card/60 backdrop-blur-xs">
@@ -263,16 +263,16 @@ export function NotificationsPopover() {
 
           {/* ── Scrollable Feed ─────────────────────────────────────── */}
           <ScrollArea
-            className="h-[340px] w-full [&>div]:!block overflow-x-hidden"
+            className="h-85 w-full [&>div]:block! overflow-x-hidden"
             viewportRef={viewportRef}
             onScroll={handleScroll}
           >
             {isLoading ? (
-              <div className="flex h-[340px] items-center justify-center text-xs text-muted-foreground">
+              <div className="flex h-85 items-center justify-center text-xs text-muted-foreground">
                 Loading notifications...
               </div>
             ) : notifications.length === 0 ? (
-              <div className="flex h-[340px] items-center justify-center p-4">
+              <div className="flex h-85 items-center justify-center p-4">
                 <Empty className="border-none p-0">
                   <EmptyHeader>
                     <EmptyMedia variant="icon" className="size-9 rounded-full mb-1.5 bg-muted">
@@ -322,7 +322,7 @@ export function NotificationsPopover() {
                         </span>
                       </div>
 
-                      <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed whitespace-normal break-words break-all min-w-0 w-full overflow-hidden block">
+                      <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed whitespace-normal wrap-break-word break-all min-w-0 w-full overflow-hidden block">
                         {notif.message}
                       </p>
 

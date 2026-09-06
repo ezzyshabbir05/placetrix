@@ -355,7 +355,7 @@ export default function PlaygroundWorkspaceClient({ userId }: PlaygroundWorkspac
             </Button>
           </PopoverTrigger>
           <PopoverContent
-            className={cn('w-56', 'p-4', 'z-[9999]')}
+            className={cn('w-56', 'p-4', 'z-9999')}
             align="end"
             onOpenAutoFocus={(e) => e.preventDefault()}
             onCloseAutoFocus={(e) => e.preventDefault()}
@@ -420,7 +420,7 @@ export default function PlaygroundWorkspaceClient({ userId }: PlaygroundWorkspac
             </Button>
           </PopoverTrigger>
           <PopoverContent
-            className={cn('w-[320px]', 'p-4', 'z-[9999]')}
+            className={cn('w-[320px]', 'p-4', 'z-9999')}
             align="end"
             onOpenAutoFocus={(e) => e.preventDefault()}
             onCloseAutoFocus={(e) => e.preventDefault()}
@@ -438,7 +438,7 @@ export default function PlaygroundWorkspaceClient({ userId }: PlaygroundWorkspac
                   className={`flex flex-col gap-2.5 transition-all group`}
                 >
                   <div
-                    className={`flex w-full gap-2 h-[80px] p-2.5 rounded-xl border-[1.5px] shadow-sm transition-all ${ideLayout === "standard" ? "border-emerald-500 bg-emerald-500/5 shadow-emerald-500/10" : "border-border/60 bg-muted/30 hover:border-border hover:bg-muted/50"}`}
+                    className={`flex w-full gap-2 h-20 p-2.5 rounded-xl border-[1.5px] shadow-sm transition-all ${ideLayout === "standard" ? "border-emerald-500 bg-emerald-500/5 shadow-emerald-500/10" : "border-border/60 bg-muted/30 hover:border-border hover:bg-muted/50"}`}
                   >
                     {/* Left Description Panel */}
                     <div
@@ -467,7 +467,7 @@ export default function PlaygroundWorkspaceClient({ userId }: PlaygroundWorkspac
                   className={`flex flex-col gap-2.5 transition-all group`}
                 >
                   <div
-                    className={`flex flex-col w-full gap-1.5 h-[80px] p-2.5 rounded-xl border-[1.5px] shadow-sm transition-all ${ideLayout === "vertical" ? "border-emerald-500 bg-emerald-500/5 shadow-emerald-500/10" : "border-border/60 bg-muted/30 hover:border-border hover:bg-muted/50"}`}
+                    className={`flex flex-col w-full gap-1.5 h-20 p-2.5 rounded-xl border-[1.5px] shadow-sm transition-all ${ideLayout === "vertical" ? "border-emerald-500 bg-emerald-500/5 shadow-emerald-500/10" : "border-border/60 bg-muted/30 hover:border-border hover:bg-muted/50"}`}
                   >
                     {/* Top Description Panel */}
                     <div
@@ -496,7 +496,7 @@ export default function PlaygroundWorkspaceClient({ userId }: PlaygroundWorkspac
                   className={`flex flex-col gap-2.5 transition-all group col-span-2`}
                 >
                   <div
-                    className={`flex w-full gap-2 h-[80px] p-2.5 rounded-xl border-[1.5px] shadow-sm transition-all ${ideLayout === "split" ? "border-emerald-500 bg-emerald-500/5 shadow-emerald-500/10" : "border-border/60 bg-muted/30 hover:border-border hover:bg-muted/50"}`}
+                    className={`flex w-full gap-2 h-20 p-2.5 rounded-xl border-[1.5px] shadow-sm transition-all ${ideLayout === "split" ? "border-emerald-500 bg-emerald-500/5 shadow-emerald-500/10" : "border-border/60 bg-muted/30 hover:border-border hover:bg-muted/50"}`}
                   >
                     {/* Left Description Panel */}
                     <div
@@ -545,7 +545,7 @@ export default function PlaygroundWorkspaceClient({ userId }: PlaygroundWorkspac
   const editorPanel = (
     <div className={cn("flex", "flex-col", "h-full", "bg-card", "overflow-hidden", "relative")}>
       {/* Toolbar */}
-      <div className={cn("flex", "items-center", "justify-between", "bg-muted/40", "shrink-0", "select-none", "h-[40px]", "border-b", "border-border/50", "px-1")}>
+      <div className={cn("flex", "items-center", "justify-between", "bg-muted/40", "shrink-0", "select-none", "h-10", "border-b", "border-border/50", "px-1")}>
         <div className={cn("flex", "items-center", "h-full", "gap-1.5", "px-2", "text-[11px]", "font-bold", "text-foreground")}>
           <IconCode className={cn("h-3.5", "w-3.5", "text-zinc-500 dark:text-muted-foreground/80")} />
           <span>Code</span>
@@ -554,7 +554,7 @@ export default function PlaygroundWorkspaceClient({ userId }: PlaygroundWorkspac
             <SelectTrigger className={cn("h-auto", "p-0", "m-0", "border-none", "shadow-none", "bg-transparent", "hover:bg-transparent", "dark:bg-transparent", "dark:hover:bg-transparent", "focus:ring-0", "focus-visible:ring-0", "focus-visible:outline-none", "text-foreground", "hover:text-foreground/70", "flex", "items-center", "gap-1", "w-auto", "text-[11px]", "font-semibold")}>
               <SelectValue placeholder="Language" />
             </SelectTrigger>
-            <SelectContent position="popper" sideOffset={4} align="start" className={cn("z-[9999]", "min-w-[140px]")}>
+            <SelectContent position="popper" sideOffset={4} align="start" className={cn("z-9999", "min-w-35")}>
               {LANGUAGES.map((l) => (
                 <SelectItem key={l.id} value={l.value} className="font-medium">
                   {l.name}
@@ -580,7 +580,7 @@ export default function PlaygroundWorkspaceClient({ userId }: PlaygroundWorkspac
             </Button>
           </PopoverTrigger>
           <PopoverContent
-            className={cn("w-64", "p-3", "z-[9999]")}
+            className={cn("w-64", "p-3", "z-9999")}
             side="bottom"
             align="end"
             onOpenAutoFocus={(e) => e.preventDefault()}
@@ -667,7 +667,7 @@ export default function PlaygroundWorkspaceClient({ userId }: PlaygroundWorkspac
   const stdinPanel = (
     <div className={cn("flex", "flex-col", "h-full", "bg-card", "overflow-hidden")}>
       {/* Header */}
-      <div className={cn("flex", "items-center", "justify-between", "bg-muted/40", "shrink-0", "select-none", "h-[40px]", "border-b", "border-border/50", "px-3")}>
+      <div className={cn("flex", "items-center", "justify-between", "bg-muted/40", "shrink-0", "select-none", "h-10", "border-b", "border-border/50", "px-3")}>
         <div className={cn("flex", "items-center", "gap-1.5", "text-[11px]", "font-bold", "text-foreground")}>
           <IconTerminal2 className={cn("h-3.5", "w-3.5", "text-zinc-500 dark:text-muted-foreground/80")} />
           <span>Standard Input (stdin)</span>
@@ -677,7 +677,7 @@ export default function PlaygroundWorkspaceClient({ userId }: PlaygroundWorkspac
                 <IconInfoCircle className={cn("h-3.5", "w-3.5")} />
               </button>
             </PopoverTrigger>
-            <PopoverContent side="top" align="start" className={cn("w-80", "p-4", "z-[9999]", "text-sm", "space-y-3", "border-border/60")}>
+            <PopoverContent side="top" align="start" className={cn("w-80", "p-4", "z-9999", "text-sm", "space-y-3", "border-border/60")}>
               <div className="space-y-1.5">
                 <h4 className={cn('font-bold', 'text-foreground', 'flex', 'items-center', 'gap-1.5', 'tracking-tight')}>
                   <IconInfoCircle className={cn('h-4', 'w-4', 'text-sky-500')} />
@@ -747,7 +747,7 @@ export default function PlaygroundWorkspaceClient({ userId }: PlaygroundWorkspac
   const outputPanel = (
     <div className={cn("flex", "flex-col", "h-full", "bg-card", "overflow-hidden")}>
       {/* Header */}
-      <div className={cn("flex", "items-center", "justify-between", "bg-muted/40", "shrink-0", "select-none", "h-[40px]", "border-b", "border-border/50", "pl-0", "pr-3")}>
+      <div className={cn("flex", "items-center", "justify-between", "bg-muted/40", "shrink-0", "select-none", "h-10", "border-b", "border-border/50", "pl-0", "pr-3")}>
         <div className={cn("flex", "items-center", "h-full", "px-4", "gap-1.5", "text-[11px]", "font-bold", "text-foreground")}>
           <IconTerminal2 className={cn("h-3.5", "w-3.5", "text-zinc-500 dark:text-muted-foreground/80")} />
           <span>Standard Output (stdout)</span>
@@ -866,7 +866,7 @@ export default function PlaygroundWorkspaceClient({ userId }: PlaygroundWorkspac
                   <IconInfoCircle className={cn("h-3", "w-3", "text-zinc-500 dark:text-muted-foreground/70")} />
                   <span className={cn("text-[10px]", "font-extrabold", "uppercase", "tracking-widest", "text-zinc-500 dark:text-muted-foreground/70")}>Program Output (stdout)</span>
                 </div>
-                <pre className={cn("p-3", "bg-muted/20 dark:bg-zinc-900/30", "text-foreground/90", "whitespace-pre-wrap", "overflow-x-auto", "leading-relaxed", "min-h-[60px]")}>
+                <pre className={cn("p-3", "bg-muted/20 dark:bg-zinc-900/30", "text-foreground/90", "whitespace-pre-wrap", "overflow-x-auto", "leading-relaxed", "min-h-15")}>
                   {results.stdout || (
                     <span className={cn("text-muted-foreground/40", "italic")}>No output produced.</span>
                   )}
@@ -879,7 +879,7 @@ export default function PlaygroundWorkspaceClient({ userId }: PlaygroundWorkspac
               <p className={cn("text-[10px]", "text-zinc-550 dark:text-muted-foreground/40", "uppercase", "font-bold", "tracking-widest")}>
                 Terminal Idle
               </p>
-              <p className={cn("text-[10px]", "text-muted-foreground/30", "font-sans", "text-center", "max-w-[180px]")}>
+              <p className={cn("text-[10px]", "text-muted-foreground/30", "font-sans", "text-center", "max-w-45")}>
                 Press Run to compile and execute your program.
               </p>
             </div>
@@ -897,7 +897,7 @@ export default function PlaygroundWorkspaceClient({ userId }: PlaygroundWorkspac
       className={cn(
         "flex flex-col w-full flex-1 min-h-0 bg-background text-foreground overflow-hidden",
         isFullScreen
-          ? "fixed inset-0 z-[9990] h-screen w-screen"
+          ? "fixed inset-0 z-9990 h-screen w-screen"
           : "flex-1 h-full min-h-0 relative",
       )}
     >

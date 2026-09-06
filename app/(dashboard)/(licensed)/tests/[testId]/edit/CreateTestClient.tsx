@@ -388,7 +388,7 @@ function SettingsFormComponent({ values, onChange, cohortOptions }: SettingsForm
             <Textarea
               id="description"
               placeholder="Optional short description shown to candidates"
-              className="min-h-[4rem] resize-none"
+              className="min-h-16 resize-none"
               value={values.description}
               onChange={set("description")}
             />
@@ -399,7 +399,7 @@ function SettingsFormComponent({ values, onChange, cohortOptions }: SettingsForm
             <Textarea
               id="instructions"
               placeholder="Rules or instructions candidates will read before starting"
-              className="min-h-[5rem] resize-none"
+              className="min-h-20 resize-none"
               value={values.instructions}
               onChange={set("instructions")}
             />
@@ -1487,7 +1487,7 @@ function MarkdownEditor({
                 <div key={i} className="flex items-center gap-1 rounded border border-border/70 bg-background px-1.5 py-0.5 text-[11px] shadow-2xs">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={img.url} alt={img.alt || "preview"} className="size-4 rounded object-contain" />
-                  <span className="max-w-[90px] truncate text-[10px] font-medium">{img.alt || "Image"}</span>
+                  <span className="max-w-22.5 truncate text-[10px] font-medium">{img.alt || "Image"}</span>
                   <button
                     type="button"
                     onClick={() => removeImage(img.fullMatch)}
@@ -1625,7 +1625,7 @@ function MarkdownEditor({
                     alt={img.alt || "preview"}
                     className="size-6 rounded object-contain border bg-muted/20"
                   />
-                  <span className="text-[11px] font-medium max-w-[120px] truncate text-foreground">
+                  <span className="text-[11px] font-medium max-w-30 truncate text-foreground">
                     {img.alt || `Image ${i + 1}`}
                   </span>
                   <button
@@ -1646,7 +1646,7 @@ function MarkdownEditor({
       {/* Preview pane */}
       {activeTab === "preview" && (
         <div
-          className="min-h-[6rem] p-3 overflow-y-auto bg-background/50"
+          className="min-h-24 p-3 overflow-y-auto bg-background/50"
           style={{ minHeight: `${rows * 1.5 + 1.25}rem` }}
         >
           {hasContent ? (

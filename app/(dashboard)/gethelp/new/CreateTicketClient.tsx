@@ -135,7 +135,7 @@ export function CreateTicketClient({ userProfile }: CreateTicketClientProps) {
                 <Textarea
                   id="description"
                   placeholder="Provide details about the issue. Please include steps to reproduce if applicable..."
-                  className="min-h-[160px] resize-y"
+                  className="min-h-40 resize-y"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   disabled={isSubmitting}

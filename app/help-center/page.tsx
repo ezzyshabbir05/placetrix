@@ -132,7 +132,7 @@ function MobileNav({
                 </div>
 
                 {isLoading ? (
-                  <div className="mb-3 flex items-center gap-3 rounded-xl border border-black/10 bg-black/[0.03] p-3 dark:border-white/10 dark:bg-white/[0.04]">
+                  <div className="mb-3 flex items-center gap-3 rounded-xl border border-black/10 bg-black/3 p-3 dark:border-white/10 dark:bg-white/4">
                     <div className="size-10 animate-pulse rounded-full bg-black/10 dark:bg-white/10" />
                     <div className="min-w-0 flex-1 space-y-2">
                       <div className="h-4 w-24 animate-pulse rounded bg-black/10 dark:bg-white/10" />
@@ -160,7 +160,7 @@ function MobileNav({
                   <a
                     href="/#features"
                     onClick={closeMenu}
-                    className="flex h-11 items-center justify-between rounded-xl px-3 text-sm font-medium text-zinc-800 hover:bg-black/[0.04] dark:text-zinc-100 dark:hover:bg-white/[0.06]"
+                    className="flex h-11 items-center justify-between rounded-xl px-3 text-sm font-medium text-zinc-800 hover:bg-black/4 dark:text-zinc-100 dark:hover:bg-white/6"
                   >
                     <span>Features</span>
                     <ArrowRightIcon className="size-4 opacity-60" />
@@ -169,7 +169,7 @@ function MobileNav({
                   <a
                     href="/our-team#team"
                     onClick={closeMenu}
-                    className="flex h-11 items-center justify-between rounded-xl px-3 text-sm font-medium text-zinc-800 hover:bg-black/[0.04] dark:text-zinc-100 dark:hover:bg-white/[0.06]"
+                    className="flex h-11 items-center justify-between rounded-xl px-3 text-sm font-medium text-zinc-800 hover:bg-black/4 dark:text-zinc-100 dark:hover:bg-white/6"
                   >
                     <span>Our Team</span>
                     <ArrowRightIcon className="size-4 opacity-60" />
@@ -178,7 +178,7 @@ function MobileNav({
                   <Link
                     href="/help-center"
                     onClick={closeMenu}
-                    className="flex h-11 items-center justify-between rounded-xl px-3 text-sm font-medium text-zinc-800 hover:bg-black/[0.04] dark:text-zinc-100 dark:hover:bg-white/[0.06]"
+                    className="flex h-11 items-center justify-between rounded-xl px-3 text-sm font-medium text-zinc-800 hover:bg-black/4 dark:text-zinc-100 dark:hover:bg-white/6"
                   >
                     <span>Help Center</span>
                     <ArrowRightIcon className="size-4 opacity-60" />
@@ -223,7 +223,7 @@ function HeaderVisual({ user, isLoading }: HeaderVisualProps) {
               scrolled ? "h-14 md:h-12" : "h-14 md:h-14"
             )}
           >
-            <Link href="/" className="flex items-center gap-2 font-bold tracking-[0.05em]">
+            <Link href="/" className="flex items-center gap-2 font-bold tracking-wider">
               <Logo />
               <span className="pl-1 text-lg font-bold tracking-wider text-zinc-950 dark:text-white">
                 PlaceTrix
@@ -340,7 +340,7 @@ function HelpBodySection() {
             fillOpacity={glowEnabled ? 0.08 : 0}
             coneSpread={glowEnabled ? 14 : 0}
           >
-            <article className="h-full rounded-3xl bg-white/95 p-6 backdrop-blur-sm transition-all duration-300 dark:bg-white/[0.03] md:p-8 flex flex-col justify-between">
+            <article className="h-full rounded-3xl bg-white/95 p-6 backdrop-blur-sm transition-all duration-300 dark:bg-white/3 md:p-8 flex flex-col justify-between">
               <div>
                 <h3 className="text-xl font-semibold tracking-[-0.02em] text-zinc-900 dark:text-white">
                   Create a Support Ticket
@@ -371,7 +371,7 @@ function HelpBodySection() {
             fillOpacity={glowEnabled ? 0.08 : 0}
             coneSpread={glowEnabled ? 14 : 0}
           >
-            <article className="h-full rounded-3xl bg-white/95 p-6 backdrop-blur-sm transition-all duration-300 dark:bg-white/[0.03] md:p-8 flex flex-col justify-between">
+            <article className="h-full rounded-3xl bg-white/95 p-6 backdrop-blur-sm transition-all duration-300 dark:bg-white/3 md:p-8 flex flex-col justify-between">
               <div>
                 <h3 className="text-xl font-semibold tracking-[-0.02em] text-zinc-900 dark:text-white">
                   Lost Access or General Issues?
@@ -412,7 +412,7 @@ function CTASection() {
   return (
     <section className="w-full bg-white pb-14 text-zinc-950 dark:bg-black dark:text-white md:pb-20">
       <div className={CONTENT}>
-        <div className="relative overflow-hidden rounded-2xl border border-zinc-300/80 px-6 py-12 text-center dark:border-white/10 dark:bg-white/[0.02] md:px-10 md:py-14">
+        <div className="relative overflow-hidden rounded-2xl border border-zinc-300/80 px-6 py-12 text-center dark:border-white/10 dark:bg-white/2 md:px-10 md:py-14">
           {showGalaxy && (
             <div className="absolute inset-0 z-0 hidden opacity-40 dark:opacity-70 lg:block">
               <Galaxy

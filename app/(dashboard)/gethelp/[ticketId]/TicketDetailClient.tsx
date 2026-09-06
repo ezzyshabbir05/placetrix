@@ -332,7 +332,7 @@ export default function TicketDetailClient({
           icon={<Mail className="h-3.5 w-3.5" />}
           label="Contact Email"
           value={
-            <span className="truncate block max-w-[200px]" title={initialTicket.email}>
+            <span className="truncate block max-w-50" title={initialTicket.email}>
               {initialTicket.email}
             </span>
           }
@@ -346,14 +346,14 @@ export default function TicketDetailClient({
             <BookOpen className="h-3.5 w-3.5" />
             Description
           </p>
-          <p className="overflow-hidden break-words whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+          <p className="overflow-hidden wrap-break-word whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
             {initialTicket.description}
           </p>
         </div>
       )}
 
       {/* ── Chat Container ─────────────────────────────────────────────── */}
-      <Card className="h-[calc(100vh-20rem)] min-h-[500px] max-h-[750px] flex flex-col gap-0 overflow-hidden bg-zinc-50/50 dark:bg-zinc-950/20 backdrop-blur-sm shadow-none">
+      <Card className="h-[calc(100vh-20rem)] min-h-125 max-h-187.5 flex flex-col gap-0 overflow-hidden bg-zinc-50/50 dark:bg-zinc-950/20 backdrop-blur-sm shadow-none">
         <CardHeader className="flex flex-row items-center justify-between px-6 py-4 space-y-0 border-b">
           <div className="flex flex-col gap-1">
             <CardTitle className="text-base font-semibold text-foreground">Ticket Conversation</CardTitle>
@@ -449,7 +449,7 @@ export default function TicketDetailClient({
                       )}
                       <div
                         className={cn(
-                          "px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words rounded-2xl transition-all duration-200",
+                          "px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap wrap-break-word rounded-2xl transition-all duration-200",
                           isMyMessage
                             ? "bg-zinc-900 text-zinc-50 dark:bg-zinc-100 dark:text-zinc-950 rounded-tr-sm"
                             : "bg-zinc-200/50 text-zinc-900 dark:bg-zinc-800/50 dark:text-zinc-100 rounded-tl-sm"
@@ -478,7 +478,7 @@ export default function TicketDetailClient({
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Type your reply here..."
-              className="min-h-[44px] max-h-[120px] w-full resize-none rounded-xl pr-12 py-3 px-4 border border-border/50 bg-background dark:bg-zinc-900/60 focus-visible:ring-1 focus-visible:ring-ring text-sm transition-all shadow-none"
+              className="min-h-11 max-h-30 w-full resize-none rounded-xl pr-12 py-3 px-4 border border-border/50 bg-background dark:bg-zinc-900/60 focus-visible:ring-1 focus-visible:ring-ring text-sm transition-all shadow-none"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();

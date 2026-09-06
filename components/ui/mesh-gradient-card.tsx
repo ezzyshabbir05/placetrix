@@ -100,7 +100,7 @@ export function MeshGradientCard({
   return (
     <div
       className={cn(
-        "group relative flex flex-col justify-between overflow-hidden rounded-[24px] sm:rounded-[28px] p-6 sm:p-7 md:p-8",
+        "group relative flex flex-col justify-between overflow-hidden rounded-3xl sm:rounded-[28px] p-6 sm:p-7 md:p-8",
         "border shadow-md hover:shadow-xl transition-all duration-300",
         "select-none cursor-pointer",
         currentVariant.bg,

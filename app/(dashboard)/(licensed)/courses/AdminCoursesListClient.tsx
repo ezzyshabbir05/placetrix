@@ -127,7 +127,7 @@ function SortDropdown({ value, onChange }: { value: SortOption; onChange: (v: So
           {/* Backdrop */}
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           {/* Dropdown */}
-          <div className="absolute right-0 top-full mt-1.5 z-50 min-w-[160px] rounded-xl border border-border/60 bg-popover shadow-lg p-1 animate-in fade-in zoom-in-95 duration-150">
+          <div className="absolute right-0 top-full mt-1.5 z-50 min-w-40 rounded-xl border border-border/60 bg-popover shadow-lg p-1 animate-in fade-in zoom-in-95 duration-150">
             {SORT_OPTIONS.map(opt => (
               <button
                 key={opt.value}
@@ -416,12 +416,12 @@ export function AdminCoursesListClient({ courses: initialCourses }: Props) {
                           </div>
 
                           {/* Title */}
-                          <CardTitle className="font-semibold text-[13px] text-foreground leading-snug line-clamp-2 min-h-[40px] group-hover:text-primary transition-colors duration-200">
+                          <CardTitle className="font-semibold text-[13px] text-foreground leading-snug line-clamp-2 min-h-10 group-hover:text-primary transition-colors duration-200">
                             {course.title}
                           </CardTitle>
 
                           {/* Description */}
-                          <p className="text-[11px] text-muted-foreground/80 line-clamp-2 leading-relaxed min-h-[32px]">
+                          <p className="text-[11px] text-muted-foreground/80 line-clamp-2 leading-relaxed min-h-8">
                             {course.description}
                           </p>
 
@@ -456,7 +456,7 @@ export function AdminCoursesListClient({ courses: initialCourses }: Props) {
 
       {/* Delete Confirmation Modal */}
       {courseToDelete && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-xs flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-xs flex items-center justify-center z-9999 p-4 animate-in fade-in duration-200">
           <Card className="max-w-md w-full shadow-lg py-4">
             <CardHeader className="pb-3 border-b bg-muted/10">
               <CardTitle className="text-sm font-bold flex items-center gap-2 text-destructive">

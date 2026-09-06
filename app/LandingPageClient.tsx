@@ -180,7 +180,7 @@ function MobileNav({
                 </div>
 
                 {isLoading ? (
-                  <div className="mb-3 flex items-center gap-3 rounded-xl border border-black/10 bg-black/[0.03] p-3 dark:border-white/10 dark:bg-white/[0.04]">
+                  <div className="mb-3 flex items-center gap-3 rounded-xl border border-black/10 bg-black/3 p-3 dark:border-white/10 dark:bg-white/4">
                     <div className="size-10 animate-pulse rounded-full bg-black/10 dark:bg-white/10" />
                     <div className="min-w-0 flex-1 space-y-2">
                       <div className="h-4 w-24 animate-pulse rounded bg-black/10 dark:bg-white/10" />
@@ -203,7 +203,7 @@ function MobileNav({
                   <a
                     href="/#features"
                     onClick={closeMenu}
-                    className="flex h-11 items-center justify-between rounded-xl px-3 text-sm font-medium text-zinc-800 hover:bg-black/[0.04] dark:text-zinc-100 dark:hover:bg-white/[0.06]"
+                    className="flex h-11 items-center justify-between rounded-xl px-3 text-sm font-medium text-zinc-800 hover:bg-black/4 dark:text-zinc-100 dark:hover:bg-white/6"
                   >
                     <span>Features</span>
                     <ArrowRightIcon className="size-4 opacity-60" />
@@ -212,7 +212,7 @@ function MobileNav({
                   <a
                     href="/#testimonials"
                     onClick={closeMenu}
-                    className="flex h-11 items-center justify-between rounded-xl px-3 text-sm font-medium text-zinc-800 hover:bg-black/[0.04] dark:text-zinc-100 dark:hover:bg-white/[0.06]"
+                    className="flex h-11 items-center justify-between rounded-xl px-3 text-sm font-medium text-zinc-800 hover:bg-black/4 dark:text-zinc-100 dark:hover:bg-white/6"
                   >
                     <span>Testimonials</span>
                     <ArrowRightIcon className="size-4 opacity-60" />
@@ -221,7 +221,7 @@ function MobileNav({
                   <Link
                     href="/help-center"
                     onClick={closeMenu}
-                    className="flex h-11 items-center justify-between rounded-xl px-3 text-sm font-medium text-zinc-800 hover:bg-black/[0.04] dark:text-zinc-100 dark:hover:bg-white/[0.06]"
+                    className="flex h-11 items-center justify-between rounded-xl px-3 text-sm font-medium text-zinc-800 hover:bg-black/4 dark:text-zinc-100 dark:hover:bg-white/6"
                   >
                     <span>Help Center</span>
                     <ArrowRightIcon className="size-4 opacity-60" />
@@ -268,7 +268,7 @@ function HeaderVisual({ user, isLoading }: HeaderVisualProps) {
           >
             <Link
               href={user ? "/landing" : "/"}
-              className="flex items-center gap-2 font-bold tracking-[0.05em]"
+              className="flex items-center gap-2 font-bold tracking-wider"
             >
               <Logo />
               <span className="pl-1 text-lg font-bold tracking-wider text-zinc-950 dark:text-white">
@@ -349,12 +349,12 @@ interface HeroSectionProps {
 
 function HeroSection({ user, isLoading }: HeroSectionProps) {
   return (
-    <section className="relative isolate min-h-[100svh] w-full overflow-hidden bg-white pb-0 pt-16 text-zinc-950 dark:bg-black dark:text-white md:-mt-14 md:min-h-[calc(100dvh+3.5rem)] md:pt-28 lg:pt-32">
+    <section className="relative isolate min-h-svh w-full overflow-hidden bg-white pb-0 pt-16 text-zinc-950 dark:bg-black dark:text-white md:-mt-14 md:min-h-[calc(100dvh+3.5rem)] md:pt-28 lg:pt-32">
       <div
         aria-hidden="true"
         className={cn(
           "absolute inset-0 -z-10 overflow-hidden",
-          "[mask-image:linear-gradient(to_bottom,black_0%,black_72%,black_84%,transparent_100%)]",
+          "mask-[linear-gradient(to_bottom,black_0%,black_72%,black_84%,transparent_100%)]",
           "[-webkit-mask-image:linear-gradient(to_bottom,black_0%,black_72%,black_84%,transparent_100%)]"
         )}
       >
@@ -385,10 +385,10 @@ function HeroSection({ user, isLoading }: HeroSectionProps) {
         <div
           className={cn(
             "absolute inset-0 opacity-[0.55] dark:opacity-[0.3]",
-            "[background-image:linear-gradient(to_right,rgba(24,24,27,0.10)_1px,transparent_1px),linear-gradient(to_bottom,rgba(24,24,27,0.10)_1px,transparent_1px)]",
-            "dark:[background-image:linear-gradient(to_right,rgba(255,255,255,0.12)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.12)_1px,transparent_1px)]",
-            "[background-size:34px_34px]",
-            "[mask-image:radial-gradient(ellipse_at_center,black_58%,rgba(0,0,0,0.82)_74%,transparent_100%)]",
+            "bg-[linear-gradient(to_right,rgba(24,24,27,0.10)_1px,transparent_1px),linear-gradient(to_bottom,rgba(24,24,27,0.10)_1px,transparent_1px)]",
+            "dark:bg-[linear-gradient(to_right,rgba(255,255,255,0.12)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.12)_1px,transparent_1px)]",
+            "bg-size-[34px_34px]",
+            "mask-[radial-gradient(ellipse_at_center,black_58%,rgba(0,0,0,0.82)_74%,transparent_100%)]",
             "[-webkit-mask-image:radial-gradient(ellipse_at_center,black_58%,rgba(0,0,0,0.82)_74%,transparent_100%)]"
           )}
         />
@@ -404,7 +404,7 @@ function HeroSection({ user, isLoading }: HeroSectionProps) {
         <div
           className={cn(
             "absolute inset-x-0 bottom-0 h-32 md:h-40",
-            "bg-gradient-to-b from-transparent via-white/75 to-white",
+            "bg-linear-to-b from-transparent via-white/75 to-white",
             "dark:from-transparent dark:via-black/75 dark:to-black"
           )}
         />
@@ -561,7 +561,7 @@ function FeatureCard({
       fillOpacity={glowEnabled ? 0.08 : 0}
       coneSpread={glowEnabled ? 14 : 0}
     >
-      <article className="h-full rounded-3xl bg-white/95 p-6 transition duration-300 dark:bg-white/[0.03]">
+      <article className="h-full rounded-3xl bg-white/95 p-6 transition duration-300 dark:bg-white/3">
         <div className="flex h-full flex-col">
           <div className="flex-1">
             <h3 className="text-[15px] font-semibold tracking-[-0.01em] text-zinc-900 dark:text-white md:text-base">
@@ -682,7 +682,7 @@ function TestimonialCard({
       fillOpacity={glowEnabled ? 0.08 : 0}
       coneSpread={glowEnabled ? 14 : 0}
     >
-      <figure className="h-full rounded-3xl bg-white/95 p-6 transition duration-300 dark:bg-white/[0.03] md:p-7">
+      <figure className="h-full rounded-3xl bg-white/95 p-6 transition duration-300 dark:bg-white/3 md:p-7">
         <div className="flex h-full flex-col">
           <blockquote className="flex-1">
             <p className="max-w-[48ch] text-[15px] leading-7 font-medium tracking-[-0.01em] text-stone-700 dark:text-stone-300 md:text-base">
@@ -769,7 +769,7 @@ function CTASection() {
   return (
     <section className="w-full bg-white pb-16 text-zinc-950 dark:bg-black dark:text-white md:pb-24">
       <div className={CONTENT}>
-        <div className="relative overflow-hidden rounded-2xl border border-zinc-300/80 px-8 py-16 text-center dark:border-white/10 dark:bg-white/[0.02] md:px-16 md:py-20">
+        <div className="relative overflow-hidden rounded-2xl border border-zinc-300/80 px-8 py-16 text-center dark:border-white/10 dark:bg-white/2 md:px-16 md:py-20">
           {showGalaxy && (
             <div className="absolute inset-0 z-0 hidden opacity-40 dark:opacity-70 lg:block">
               <Galaxy

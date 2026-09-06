@@ -131,7 +131,7 @@ function MobileNav({
                 </div>
 
                 {isLoading ? (
-                  <div className="mb-3 flex items-center gap-3 rounded-xl border border-black/10 bg-black/[0.03] p-3 dark:border-white/10 dark:bg-white/[0.04]">
+                  <div className="mb-3 flex items-center gap-3 rounded-xl border border-black/10 bg-black/3 p-3 dark:border-white/10 dark:bg-white/4">
                     <div className="size-10 animate-pulse rounded-full bg-black/10 dark:bg-white/10" />
                     <div className="min-w-0 flex-1 space-y-2">
                       <div className="h-4 w-24 animate-pulse rounded bg-black/10 dark:bg-white/10" />
@@ -159,7 +159,7 @@ function MobileNav({
                   <a
                     href="/#features"
                     onClick={closeMenu}
-                    className="flex h-11 items-center justify-between rounded-xl px-3 text-sm font-medium text-zinc-800 hover:bg-black/[0.04] dark:text-zinc-100 dark:hover:bg-white/[0.06]"
+                    className="flex h-11 items-center justify-between rounded-xl px-3 text-sm font-medium text-zinc-800 hover:bg-black/4 dark:text-zinc-100 dark:hover:bg-white/6"
                   >
                     <span>Features</span>
                     <ArrowRightIcon className="size-4 opacity-60" />
@@ -168,7 +168,7 @@ function MobileNav({
                   <a
                     href="/our-team#team"
                     onClick={closeMenu}
-                    className="flex h-11 items-center justify-between rounded-xl px-3 text-sm font-medium text-zinc-800 hover:bg-black/[0.04] dark:text-zinc-100 dark:hover:bg-white/[0.06]"
+                    className="flex h-11 items-center justify-between rounded-xl px-3 text-sm font-medium text-zinc-800 hover:bg-black/4 dark:text-zinc-100 dark:hover:bg-white/6"
                   >
                     <span>Our Team</span>
                     <ArrowRightIcon className="size-4 opacity-60" />
@@ -177,7 +177,7 @@ function MobileNav({
                   <Link
                     href="/help-center"
                     onClick={closeMenu}
-                    className="flex h-11 items-center justify-between rounded-xl px-3 text-sm font-medium text-zinc-800 hover:bg-black/[0.04] dark:text-zinc-100 dark:hover:bg-white/[0.06]"
+                    className="flex h-11 items-center justify-between rounded-xl px-3 text-sm font-medium text-zinc-800 hover:bg-black/4 dark:text-zinc-100 dark:hover:bg-white/6"
                   >
                     <span>Help Center</span>
                     <ArrowRightIcon className="size-4 opacity-60" />
@@ -222,7 +222,7 @@ function HeaderVisual({ user, isLoading }: HeaderVisualProps) {
               scrolled ? "h-14 md:h-12" : "h-14 md:h-14"
             )}
           >
-            <Link href="/" className="flex items-center gap-2 font-bold tracking-[0.05em]">
+            <Link href="/" className="flex items-center gap-2 font-bold tracking-wider">
               <Logo />
               <span className="pl-1 text-lg font-bold tracking-wider text-zinc-950 dark:text-white">
                 PlaceTrix
@@ -449,10 +449,10 @@ function TermsHeroSection() {
             clear as possible because nobody enjoys decoding legal wallpaper.
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-            <span className="rounded-full border border-black/10 bg-black/[0.03] px-3 py-1.5 text-xs text-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-400">
+            <span className="rounded-full border border-black/10 bg-black/3 px-3 py-1.5 text-xs text-zinc-500 dark:border-white/10 dark:bg-white/4 dark:text-zinc-400">
               Effective: May 24, 2026
             </span>
-            <span className="rounded-full border border-black/10 bg-black/[0.03] px-3 py-1.5 text-xs text-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-400">
+            <span className="rounded-full border border-black/10 bg-black/3 px-3 py-1.5 text-xs text-zinc-500 dark:border-white/10 dark:bg-white/4 dark:text-zinc-400">
               PlaceTrix
             </span>
           </div>
@@ -471,13 +471,13 @@ function TermsBodySection() {
       )}
     >
       <div className={CONTENT}>
-        <article className="rounded-3xl border border-black/10 bg-white/95 p-6 backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.03] md:p-8 lg:p-10">
+        <article className="rounded-3xl border border-black/10 bg-white/95 p-6 backdrop-blur-sm dark:border-white/10 dark:bg-white/3 md:p-8 lg:p-10">
           <div className="mb-8 flex flex-wrap gap-2">
             {TERMS_SECTIONS.map((section) => (
               <a
                 key={section.id}
                 href={`#${section.id}`}
-                className="rounded-full border border-black/10 bg-black/[0.03] px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:bg-black/[0.06] dark:border-white/10 dark:bg-white/[0.05] dark:text-zinc-300 dark:hover:bg-white/[0.09]"
+                className="rounded-full border border-black/10 bg-black/3 px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:bg-black/6 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/9"
               >
                 {section.title}
               </a>
@@ -488,7 +488,7 @@ function TermsBodySection() {
             {TERMS_SECTIONS.map((section, index) => (
               <React.Fragment key={section.id}>
                 {index !== 0 && (
-                  <div className="h-px w-full bg-black/[0.06] dark:bg-white/[0.07]" />
+                  <div className="h-px w-full bg-black/6 dark:bg-white/[0.07]" />
                 )}
                 <div id={section.id} className="scroll-mt-28">
                   <h2
@@ -519,7 +519,7 @@ function CTASection() {
   return (
     <section className="w-full bg-white pb-14 text-zinc-950 dark:bg-black dark:text-white md:pb-20">
       <div className={CONTENT}>
-        <div className="relative overflow-hidden rounded-2xl border border-zinc-300/80 px-6 py-12 text-center dark:border-white/10 dark:bg-white/[0.02] md:px-10 md:py-14">
+        <div className="relative overflow-hidden rounded-2xl border border-zinc-300/80 px-6 py-12 text-center dark:border-white/10 dark:bg-white/2 md:px-10 md:py-14">
           {showGalaxy && (
             <div className="absolute inset-0 z-0 hidden opacity-40 dark:opacity-70 lg:block">
               <Galaxy

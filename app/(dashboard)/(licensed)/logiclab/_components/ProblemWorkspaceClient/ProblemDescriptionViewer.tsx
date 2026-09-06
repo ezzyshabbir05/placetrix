@@ -84,12 +84,12 @@ export function ProblemDescriptionViewer({ content, isSpoilerMode = false }: { c
                         LOCKED
                       </span>
                     </div>
-                    <div className="absolute inset-0 top-[37px] bg-background/80 backdrop-blur-md z-10 flex flex-col items-center justify-center p-4 text-center">
+                    <div className="absolute inset-0 top-9.25 bg-background/80 backdrop-blur-md z-10 flex flex-col items-center justify-center p-4 text-center">
                       <Lock className="w-6 h-6 text-muted-foreground mb-2" />
                       <p className="text-sm font-semibold text-foreground">Spoiler Locked Code</p>
                       <p className="text-xs text-muted-foreground mt-1">Solve the problem to view attached code.</p>
                     </div>
-                    <div className={cn('p-4', 'h-[140px]', 'overflow-hidden', 'opacity-30', 'pointer-events-none')}>
+                    <div className={cn('p-4', 'h-35', 'overflow-hidden', 'opacity-30', 'pointer-events-none')}>
                       <pre className={cn('text-[13px]', 'font-mono', 'whitespace-pre', 'leading-[1.7]', 'font-medium', 'm-0')}>
                         <code className={className} {...props}>{children}</code>
                       </pre>

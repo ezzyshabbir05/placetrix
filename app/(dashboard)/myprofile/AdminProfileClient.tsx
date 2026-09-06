@@ -612,7 +612,7 @@ export function AdminProfileClient({ userProfile }: Props) {
           <CardContent>
             <div className="flex flex-col sm:flex-row items-center gap-6">
               {signatureSrc ? (
-                <div className="relative shrink-0 border border-muted rounded-lg p-2 bg-zinc-50 dark:bg-zinc-900/50 flex items-center justify-center min-w-[200px] h-20 max-w-[240px]">
+                <div className="relative shrink-0 border border-muted rounded-lg p-2 bg-zinc-50 dark:bg-zinc-900/50 flex items-center justify-center min-w-50 h-20 max-w-60">
                   <img
                     src={signatureSrc}
                     alt="Signature preview"
@@ -633,7 +633,7 @@ export function AdminProfileClient({ userProfile }: Props) {
                 </div>
               ) : (
                 <div 
-                  className="relative group cursor-pointer shrink-0 border-2 border-dashed border-muted hover:border-primary/50 transition-colors duration-200 rounded-lg flex flex-col items-center justify-center bg-zinc-50/50 dark:bg-zinc-900/10 min-w-[200px] h-20 max-w-[240px]"
+                  className="relative group cursor-pointer shrink-0 border-2 border-dashed border-muted hover:border-primary/50 transition-colors duration-200 rounded-lg flex flex-col items-center justify-center bg-zinc-50/50 dark:bg-zinc-900/10 min-w-50 h-20 max-w-60"
                   onClick={() => !isUploadingSignature && signatureInputRef.current?.click()}
                 >
                   <div className="flex flex-col items-center justify-center gap-1.5 text-muted-foreground group-hover:text-primary transition-colors">

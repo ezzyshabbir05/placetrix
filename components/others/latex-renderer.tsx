@@ -487,7 +487,7 @@ export function parseLatexInline(text: string): React.ReactNode[] {
           pushKey(
             <span key={`fn-${i}`} className="relative group/fn cursor-help">
               <sup className="text-primary text-[10px] font-semibold ml-0.5 select-none group-hover/fn:text-primary/70 transition-colors">[*]</sup>
-              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 hidden group-hover/fn:block w-max max-w-[260px] bg-popover border border-border shadow-lg rounded-lg px-3 py-2 text-[12px] text-popover-foreground leading-relaxed pointer-events-none whitespace-normal">
+              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 hidden group-hover/fn:block w-max max-w-65 bg-popover border border-border shadow-lg rounded-lg px-3 py-2 text-[12px] text-popover-foreground leading-relaxed pointer-events-none whitespace-normal">
                 {parseLatexInline(inner)}
               </span>
             </span>
@@ -597,10 +597,10 @@ function CodeBlock({ code, language, caption, showLineNumbers = true }: CodeBloc
       <div className="flex items-center justify-between border-b border-border/40 bg-muted/50 dark:bg-muted/30 px-4 py-2.5 font-sans select-none">
         {/* Left: dots + label */}
         <div className="flex items-center gap-3">
-          <div className="flex gap-[5px] items-center">
-            <span className="size-[11px] rounded-full bg-[#ff5f57] block ring-1 ring-inset ring-black/10" />
-            <span className="size-[11px] rounded-full bg-[#febc2e] block ring-1 ring-inset ring-black/10" />
-            <span className="size-[11px] rounded-full bg-[#28c840] block ring-1 ring-inset ring-black/10" />
+          <div className="flex gap-1.25 items-center">
+            <span className="size-2.75 rounded-full bg-[#ff5f57] block ring-1 ring-inset ring-black/10" />
+            <span className="size-2.75 rounded-full bg-[#febc2e] block ring-1 ring-inset ring-black/10" />
+            <span className="size-2.75 rounded-full bg-[#28c840] block ring-1 ring-inset ring-black/10" />
           </div>
           <div className="flex items-center gap-2">
             {caption && (
@@ -628,7 +628,7 @@ function CodeBlock({ code, language, caption, showLineNumbers = true }: CodeBloc
               }}
             >
               <span
-                className="size-1.5 rounded-full flex-shrink-0"
+                className="size-1.5 rounded-full shrink-0"
                 style={{ background: accent }}
               />
               {langLabel}
@@ -666,13 +666,13 @@ function CodeBlock({ code, language, caption, showLineNumbers = true }: CodeBloc
 
       {/* ── Code body ── */}
       <div
-        className="flex overflow-x-auto max-h-[540px] prism-scroll"
+        className="flex overflow-x-auto max-h-135 prism-scroll"
         data-lang={normalizedLang}
       >
         {/* Line numbers */}
         {showLineNumbers && lineCount > 1 && (
           <div
-            className="select-none flex-shrink-0 flex flex-col py-4 pr-3 pl-3 text-right text-[12px] bg-muted/50 dark:bg-muted/30"
+            className="select-none shrink-0 flex flex-col py-4 pr-3 pl-3 text-right text-[12px] bg-muted/50 dark:bg-muted/30"
             style={{
               minWidth: `${lineNumberWidth + 2}ch`,
               color: "var(--prism-gutter-fg)",
@@ -1379,7 +1379,7 @@ function renderBlock(block: Block, index: number, figureNumber?: number): React.
       return (
         <hr
           key={`hr-${index}`}
-          className="my-8 border-0 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent"
+          className="my-8 border-0 h-px bg-linear-to-r from-transparent via-border/60 to-transparent"
         />
       )
 
@@ -1408,7 +1408,7 @@ function renderBlock(block: Block, index: number, figureNumber?: number): React.
             )}
           >
             {headingContent}
-            <div className="mt-2.5 h-px bg-gradient-to-r from-border/70 via-border/30 to-transparent" />
+            <div className="mt-2.5 h-px bg-linear-to-r from-border/70 via-border/30 to-transparent" />
           </h1>
         )
       } else if (block.level === 2) {
@@ -1495,7 +1495,7 @@ function renderBlock(block: Block, index: number, figureNumber?: number): React.
           key={`li-${index}`}
           className="flex items-start gap-2.5 leading-relaxed text-foreground/85 pl-0"
         >
-          <span className="mt-[0.35em] size-1.5 rounded-full bg-primary/50 flex-shrink-0 block" />
+          <span className="mt-[0.35em] size-1.5 rounded-full bg-primary/50 shrink-0 block" />
           <span className="flex-1">{itemContent}</span>
         </li>
       )
@@ -1537,7 +1537,7 @@ function renderBlock(block: Block, index: number, figureNumber?: number): React.
           <img
             src={url}
             alt={block.caption || "Image"}
-            className="max-h-[400px] w-auto max-w-full object-contain rounded-xl shadow-sm border border-border/50 select-none bg-background/50 p-2 hover:shadow-md transition-all duration-300"
+            className="max-h-100 w-auto max-w-full object-contain rounded-xl shadow-sm border border-border/50 select-none bg-background/50 p-2 hover:shadow-md transition-all duration-300"
           />
           {block.caption && (
             <p className="mt-2 text-center text-xs text-muted-foreground select-none italic">
@@ -1563,7 +1563,7 @@ function renderBlock(block: Block, index: number, figureNumber?: number): React.
             <span className="text-[11px] font-sans" style={{ color: "var(--prism-comment)" }}>Output</span>
           </div>
           <pre
-            className="p-4 overflow-x-auto whitespace-pre max-h-[400px] leading-[1.7] m-0"
+            className="p-4 overflow-x-auto whitespace-pre max-h-100 leading-[1.7] m-0"
             style={{ color: "var(--prism-fg)", background: "var(--prism-bg)" }}
           >
             <code>{block.content?.trim()}</code>

@@ -436,7 +436,7 @@ export function InstituteOpportunityDetailClient({
                   <p className="pb-2.5 border-b mb-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Job Description & Details
                   </p>
-                  <p className="overflow-hidden break-words whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+                  <p className="overflow-hidden wrap-break-word whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
                     {opportunity.job_description}
                   </p>
                 </CardContent>
@@ -500,7 +500,7 @@ export function InstituteOpportunityDetailClient({
                       </a>
                     )}
                   </div>
-                  <p className="overflow-hidden break-words whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+                  <p className="overflow-hidden wrap-break-word whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
                     {opportunity.company.description || "No company description provided."}
                   </p>
                 </CardContent>
@@ -532,7 +532,7 @@ export function InstituteOpportunityDetailClient({
               </div>
 
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[180px] h-10 rounded-xl border-border/80 shadow-2xs focus:ring-primary/20">
+                <SelectTrigger className="w-full sm:w-45 h-10 rounded-xl border-border/80 shadow-2xs focus:ring-primary/20">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
@@ -644,7 +644,7 @@ export function InstituteOpportunityDetailClient({
                             onValueChange={(val) => handleStageChange(app.id, val as any)}
                             disabled={isPending}
                           >
-                            <SelectTrigger className="w-[125px] h-8 text-[11px] rounded-lg ml-auto border-border/80 shadow-2xs hover:bg-muted/50 focus:ring-primary/20">
+                            <SelectTrigger className="w-31.25 h-8 text-[11px] rounded-lg ml-auto border-border/80 shadow-2xs hover:bg-muted/50 focus:ring-primary/20">
                               <SelectValue placeholder="Status" />
                             </SelectTrigger>
                             <SelectContent className="rounded-lg">
@@ -718,7 +718,7 @@ export function InstituteOpportunityDetailClient({
                         onValueChange={(val) => handleStageChange(app.id, val as any)}
                         disabled={isPending}
                       >
-                        <SelectTrigger className="w-[125px] h-9 text-[11px] rounded-xl border-border/80 shadow-2xs hover:bg-muted/50 focus:ring-primary/20">
+                        <SelectTrigger className="w-31.25 h-9 text-[11px] rounded-xl border-border/80 shadow-2xs hover:bg-muted/50 focus:ring-primary/20">
                           <SelectValue placeholder="Status" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl">

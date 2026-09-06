@@ -465,10 +465,10 @@ export function CandidateDashboardClient({
         <motion.div variants={itemVariants} className="lg:col-span-3 md:col-span-2 col-span-1">
           <Card className="relative overflow-hidden shadow-md rounded-2xl flex flex-col p-0 gap-0">
             {/* Glowing gradients */}
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/[0.08] via-purple-500/[0.03] to-sky-500/[0.06] pointer-events-none" />
+            <div className="absolute inset-0 bg-linear-to-br from-indigo-500/8 via-purple-500/3 to-sky-500/6 pointer-events-none" />
 
             {/* Tech Dot Pattern */}
-            <div className="absolute inset-0 bg-[radial-gradient(#cbd5e1_1.5px,transparent_1.5px)] dark:bg-[radial-gradient(#334155_1.5px,transparent_1.5px)] [background-size:16px_14px] opacity-60 pointer-events-none" />
+            <div className="absolute inset-0 bg-[radial-gradient(#cbd5e1_1.5px,transparent_1.5px)] dark:bg-[radial-gradient(#334155_1.5px,transparent_1.5px)] bg-size-[16px_14px] opacity-60 pointer-events-none" />
 
             {/* Dynamic background blur blobs (Indigo, Purple, and Sky Blue) */}
             <div className="absolute top-0 right-0 -mt-6 -mr-6 w-44 h-44 bg-indigo-500/20 rounded-full blur-3xl group-hover:bg-indigo-500/25 transition-all duration-300 pointer-events-none" />
@@ -658,7 +658,7 @@ export function CandidateDashboardClient({
             <CardContent className={cn('flex', 'flex-col', 'flex-1', 'justify-between', 'gap-5', 'pb-4')}>
               <div className="w-full">
                 <div
-                  className={cn('grid', 'gap-x-[2px]', 'gap-y-[2px]', 'sm:gap-x-[3px]', 'sm:gap-y-[3px]', 'w-full')}
+                  className={cn('grid', 'gap-x-0.5', 'gap-y-0.5', 'sm:gap-x-0.75', 'sm:gap-y-0.75', 'w-full')}
                   style={{
                     gridTemplateColumns: `auto ${displayColumns.map(c => c === "GAP" ? "minmax(4px, 8px)" : "minmax(0, 1fr)").join(" ")}`
                   }}
@@ -750,13 +750,13 @@ export function CandidateDashboardClient({
               <div className={cn('mt-auto', 'flex', 'items-end', 'justify-between', 'gap-4', 'flex-wrap', 'min-w-0', 'w-full')}>
                 <div className={cn('flex', 'items-center', 'gap-2', 'text-[10px]', 'font-medium', 'text-muted-foreground/70', 'pb-0.5')}>
                   <span>Less</span>
-                  <div className={cn('flex', 'gap-[3px]', 'items-center')}>
-                    <div className={cn("size-[10px] bg-muted", cellRadiusClass)} title="0 submissions" />
-                    <div className={cn("size-[10px] bg-rose-400/80 dark:bg-rose-500/60", cellRadiusClass)} title="Attempted" />
-                    <div className={cn("size-[10px] bg-sky-300 dark:bg-sky-800", cellRadiusClass)} title="1 submission" />
-                    <div className={cn("size-[10px] bg-sky-400 dark:bg-sky-600", cellRadiusClass)} title="2-3 submissions" />
-                    <div className={cn("size-[10px] bg-sky-500 dark:bg-sky-500", cellRadiusClass)} title="4-6 submissions" />
-                    <div className={cn("size-[10px] bg-sky-600 dark:bg-sky-400", cellRadiusClass)} title="7+ submissions" />
+                  <div className={cn('flex', 'gap-0.75', 'items-center')}>
+                    <div className={cn("size-2.5 bg-muted", cellRadiusClass)} title="0 submissions" />
+                    <div className={cn("size-2.5 bg-rose-400/80 dark:bg-rose-500/60", cellRadiusClass)} title="Attempted" />
+                    <div className={cn("size-2.5 bg-sky-300 dark:bg-sky-800", cellRadiusClass)} title="1 submission" />
+                    <div className={cn("size-2.5 bg-sky-400 dark:bg-sky-600", cellRadiusClass)} title="2-3 submissions" />
+                    <div className={cn("size-2.5 bg-sky-500 dark:bg-sky-500", cellRadiusClass)} title="4-6 submissions" />
+                    <div className={cn("size-2.5 bg-sky-600 dark:bg-sky-400", cellRadiusClass)} title="7+ submissions" />
                   </div>
                   <span>More</span>
                 </div>

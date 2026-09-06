@@ -130,7 +130,7 @@ function OptionItem({
         <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50/50 dark:border-blue-900/50 dark:bg-blue-950/20 px-3 py-3">
           <Check className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
           <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-            <span className="text-sm leading-snug break-words text-foreground font-medium">
+            <span className="text-sm leading-snug wrap-break-word text-foreground font-medium">
               <InlineRichText>{opt.option_text}</InlineRichText>
             </span>
             <span className="text-[10px] font-medium uppercase tracking-wide text-blue-600 dark:text-blue-400">
@@ -144,7 +144,7 @@ function OptionItem({
       <div className="flex items-start gap-3 rounded-xl border border-border bg-card px-3 py-3">
         <div className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded-full border border-muted-foreground/30" />
         <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-          <span className="text-sm leading-snug break-words text-muted-foreground">
+          <span className="text-sm leading-snug wrap-break-word text-muted-foreground">
             <InlineRichText>{opt.option_text}</InlineRichText>
           </span>
         </div>
@@ -194,7 +194,7 @@ function OptionItem({
     <div className={cn("flex items-start gap-3 rounded-xl border px-3 py-3", containerClass)}>
       {Icon}
       <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-        <span className={cn("text-sm leading-snug break-words", textClass)}><InlineRichText>{opt.option_text}</InlineRichText></span>
+        <span className={cn("text-sm leading-snug wrap-break-word", textClass)}><InlineRichText>{opt.option_text}</InlineRichText></span>
         {label}
       </div>
     </div>
@@ -419,7 +419,7 @@ export function CandidateTestDetailClient({ test, attempt, serverNow }: Props) {
               <BookOpen className="h-3.5 w-3.5" />
               Instructions
             </p>
-            <p className="overflow-hidden break-words whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+            <p className="overflow-hidden wrap-break-word whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
               {test.instructions}
             </p>
           </div>

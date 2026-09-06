@@ -171,14 +171,14 @@ function CourseCard({ course, stats, onSelect }: CourseCardProps) {
         </div>
 
         {/* Title */}
-        <CardTitle className="font-semibold text-sm text-foreground leading-snug line-clamp-2 min-h-[40px] transition-colors duration-200">
+        <CardTitle className="font-semibold text-sm text-foreground leading-snug line-clamp-2 min-h-10 transition-colors duration-200">
           {course.title}
         </CardTitle>
       </CardHeader>
 
       {/* Description & Metadata Content */}
       <CardContent className="px-4 py-0 flex-1 flex flex-col justify-between gap-3">
-        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 min-h-[32px]">
+        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 min-h-8">
           {course.description}
         </p>
 
@@ -290,8 +290,8 @@ function CourseRow({ course, stats, onSelect }: CourseCardProps) {
               className={cn(
                 "h-1 w-full bg-muted",
                 isCompleted 
-                  ? "[&>[data-slot=progress-indicator]]:bg-emerald-500" 
-                  : "[&>[data-slot=progress-indicator]]:bg-primary"
+                  ? "*:data-[slot=progress-indicator]:bg-emerald-500" 
+                  : "*:data-[slot=progress-indicator]:bg-primary"
               )}
             />
           </>
@@ -508,7 +508,7 @@ export function CandidateCourseClient({ initialCourses }: { initialCourses: Cour
 
       {/* ─── Filter Sheet ─────────────────────────────────────────────────── */}
       <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
-        <SheetContent side="right" className="w-[300px] sm:w-[360px] flex flex-col gap-0 p-0">
+        <SheetContent side="right" className="w-75 sm:w-90 flex flex-col gap-0 p-0">
           {/* Sheet Header — pr-10 clears the built-in absolute close button */}
           <SheetHeader className="px-6 pt-5 pb-4 pr-10 border-b border-border/50">
             <SheetTitle className="text-base font-semibold">Filters</SheetTitle>

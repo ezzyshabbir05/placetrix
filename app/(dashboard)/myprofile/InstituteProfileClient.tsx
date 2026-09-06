@@ -875,13 +875,13 @@ export function InstituteProfileClient({ userProfile, initialData }: Props) {
                 className="relative group cursor-pointer shrink-0"
                 onClick={() => !isUploadingLogo && logoInputRef.current?.click()}
               >
-                <Avatar className="h-24 w-24 !rounded-xl border-2 border-muted transition-transform duration-200 group-hover:scale-105">
-                  <AvatarImage src={logoSrc ?? undefined} alt="Institution logo" className="object-cover !rounded-xl" />
-                  <AvatarFallback className="!rounded-xl text-2xl font-semibold">
+                <Avatar className="h-24 w-24 rounded-xl! border-2 border-muted transition-transform duration-200 group-hover:scale-105">
+                  <AvatarImage src={logoSrc ?? undefined} alt="Institution logo" className="object-cover rounded-xl!" />
+                  <AvatarFallback className="rounded-xl! text-2xl font-semibold">
                     {instituteName ? instituteName[0].toUpperCase() : "?"}
                   </AvatarFallback>
                 </Avatar>
-                <div className="absolute inset-0 !rounded-xl bg-black/40 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <div className="absolute inset-0 rounded-xl! bg-black/40 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <Camera className="h-5 w-5 mb-1" />
                   <span className="text-[10px] font-medium">Change</span>
                 </div>

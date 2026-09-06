@@ -116,7 +116,7 @@ export function TimePicker({
           emitChange(parseInt(h12Str, 10) || 12, parseInt(minStr, 10) || 0, val)
         }}
       >
-        <SelectTrigger className="w-[68px] h-8 text-xs bg-background font-semibold px-2">
+        <SelectTrigger className="w-17 h-8 text-xs bg-background font-semibold px-2">
           <SelectValue />
         </SelectTrigger>
         <SelectContent align="end">

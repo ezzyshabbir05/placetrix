@@ -452,7 +452,7 @@ export function CreateEventClient({ eventId, initialData, cohortOptions }: Props
                   <div className="space-y-2 w-full">
                     <div className={cn(
                       "relative rounded-xl overflow-hidden border bg-muted flex items-center justify-center shadow-xs",
-                      imageOrientation === "landscape" ? "aspect-video w-full" : "aspect-[3/4] max-w-sm mx-auto"
+                      imageOrientation === "landscape" ? "aspect-video w-full" : "aspect-3/4 max-w-sm mx-auto"
                     )}>
                       <img
                         src={bannerPreviewUrl}

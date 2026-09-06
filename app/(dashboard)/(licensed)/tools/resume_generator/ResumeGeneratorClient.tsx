@@ -637,7 +637,7 @@ export function ResumeGeneratorClient({ prefillData }: Props) {
       <div className="flex flex-col lg:flex-row flex-1 min-h-0 gap-6 overflow-hidden">
 
         {/* ── LEFT: Editable Form (Independent Scroll) ── */}
-        <div className="w-full lg:w-[440px] flex-shrink-0 overflow-y-auto h-full pr-1 space-y-4">
+        <div className="w-full lg:w-110 shrink-0 overflow-y-auto h-full pr-1 space-y-4">
 
           {/* ─ Personal Info ─ */}
           <FormSection title="Personal Information" icon={<UserRound className="h-4 w-4" />}>
@@ -913,8 +913,8 @@ export function ResumeGeneratorClient({ prefillData }: Props) {
         </div>
 
         {/* ── RIGHT: Live Preview (Independent Scroll) ── */}
-        <div className="flex-1 overflow-y-auto h-full bg-muted/10 border border-border/40 rounded-[var(--radius)] p-4 md:p-6 shadow-sm">
-          <div className="mx-auto max-w-[680px]">
+        <div className="flex-1 overflow-y-auto h-full bg-muted/10 border border-border/40 rounded-(--radius) p-4 md:p-6 shadow-sm">
+          <div className="mx-auto max-w-170">
             <div className="flex items-center justify-between mb-4">
               <p className="text-xs text-muted-foreground font-sans">Live preview — updates as you type</p>
               <Badge variant="outline" className="text-[10px] gap-1 bg-background">

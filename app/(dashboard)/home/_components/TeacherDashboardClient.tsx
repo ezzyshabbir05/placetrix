@@ -269,10 +269,10 @@ export function TeacherDashboardClient({
         <motion.div variants={itemVariants} className="lg:col-span-3 md:col-span-2 col-span-1">
           <Card className="relative overflow-hidden shadow-md rounded-2xl flex flex-col p-0 gap-0">
             {/* Glowing gradients */}
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/[0.08] via-purple-500/[0.03] to-sky-500/[0.06] pointer-events-none" />
+            <div className="absolute inset-0 bg-linear-to-br from-indigo-500/8 via-purple-500/3 to-sky-500/6 pointer-events-none" />
 
             {/* Tech Dot Pattern */}
-            <div className="absolute inset-0 bg-[radial-gradient(#cbd5e1_1.5px,transparent_1.5px)] dark:bg-[radial-gradient(#334155_1.5px,transparent_1.5px)] [background-size:16px_14px] opacity-60 pointer-events-none" />
+            <div className="absolute inset-0 bg-[radial-gradient(#cbd5e1_1.5px,transparent_1.5px)] dark:bg-[radial-gradient(#334155_1.5px,transparent_1.5px)] bg-size-[16px_14px] opacity-60 pointer-events-none" />
 
             {/* Dynamic background blur blobs */}
             <div className="absolute top-0 right-0 -mt-6 -mr-6 w-44 h-44 bg-indigo-500/20 rounded-full blur-3xl group-hover:bg-indigo-500/25 transition-all duration-300 pointer-events-none" />

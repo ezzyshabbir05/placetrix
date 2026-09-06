@@ -415,7 +415,7 @@ export function AdminCourseDetailClient({ course, students }: Props) {
                       const isStarted = student.completion_pct > 0
                       return (
                         <TableRow key={student.enrollment_id} className="hover:bg-muted/20">
-                          <TableCell className="min-w-[180px]">
+                          <TableCell className="min-w-45">
                             <div className="flex items-center gap-3">
                               <div className="h-7 w-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
                                 {(student.full_name ?? student.email).charAt(0).toUpperCase()}
@@ -430,10 +430,10 @@ export function AdminCourseDetailClient({ course, students }: Props) {
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap min-w-[100px]">
+                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap min-w-25">
                             {formatDate(student.enrolled_at)}
                           </TableCell>
-                          <TableCell className="text-center min-w-[130px]">
+                          <TableCell className="text-center min-w-32.5">
                             <div className="flex flex-col items-center gap-1.5 w-28 mx-auto">
                               <div className="flex items-center justify-between w-full text-[10px]">
                                 <span className={cn(
@@ -450,7 +450,7 @@ export function AdminCourseDetailClient({ course, students }: Props) {
                                 value={student.completion_pct}
                                 className={cn(
                                   "h-1.5 w-full bg-muted",
-                                  isCompleted && "[&>[data-slot=progress-indicator]]:bg-emerald-500"
+                                  isCompleted && "*:data-[slot=progress-indicator]:bg-emerald-500"
                                 )}
                               />
                               <span className={cn(
@@ -461,7 +461,7 @@ export function AdminCourseDetailClient({ course, students }: Props) {
                               </span>
                             </div>
                           </TableCell>
-                          <TableCell className="text-center min-w-[100px]">
+                          <TableCell className="text-center min-w-25">
                             {student.has_certificate ? (
                               <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
                                 <Award className="h-3 w-3" />

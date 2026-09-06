@@ -739,7 +739,7 @@ export function UsersListClient({
         
         {/* Desktop Table View */}
         <div className="hidden md:block rounded-md border bg-card overflow-hidden">
-          <Table className="table-fixed w-full min-w-[800px]">
+          <Table className="table-fixed w-full min-w-200">
             <colgroup>
               <col className="w-[35%]" />
               <col className="w-[20%]" />
@@ -895,7 +895,7 @@ export function UsersListClient({
                   value={currentPageSize.toString()}
                   onValueChange={(val) => handlePageSizeChange(val)}
                 >
-                  <SelectTrigger className="h-8 w-[70px] text-xs">
+                  <SelectTrigger className="h-8 w-17.5 text-xs">
                     <SelectValue placeholder={currentPageSize.toString()} />
                   </SelectTrigger>
                   <SelectContent>

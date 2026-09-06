@@ -222,7 +222,7 @@ function FileDropZone({ file, onFileChange }: { file: File | null; onFileChange:
               </p>
             </div>
           </div>
-          <div className="flex gap-1.5 hidden sm:flex shrink-0">
+          <div className="hidden sm:flex gap-1.5 shrink-0">
             <Badge variant="secondary" className="bg-background/50 hover:bg-background/50 text-[10px] py-0 px-2 h-5 text-muted-foreground border border-border/40">PDF</Badge>
             <Badge variant="secondary" className="bg-background/50 hover:bg-background/50 text-[10px] py-0 px-2 h-5 text-muted-foreground border border-border/40">DOCX</Badge>
           </div>
@@ -1010,7 +1010,7 @@ export function ResumeAnalyzerClient() {
                       <div key={h.analyzedAt} className="relative">
                         {/* Timeline node */}
                         <span className={cn(
-                          "absolute -left-[31px] top-1.5 flex size-4 items-center justify-center rounded-full border bg-background",
+                          "absolute -left-7.75 top-1.5 flex size-4 items-center justify-center rounded-full border bg-background",
                           isCurrent ? "border-primary ring-2 ring-primary/20" : "border-muted-foreground"
                         )}>
                           <span className={cn("size-2 rounded-full", h.overallScore >= 75 ? "bg-emerald-500" : h.overallScore >= 50 ? "bg-amber-500" : "bg-rose-500")} />

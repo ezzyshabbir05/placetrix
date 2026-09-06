@@ -26,7 +26,7 @@ export function BrandLogo({
       : "text-lg pl-1 font-bold tracking-wider";
 
   const content = (
-    <div className={cn("flex items-center gap-2 font-bold tracking-[0.05em]", className)}>
+    <div className={cn("flex items-center gap-2 font-bold tracking-wider", className)}>
       <Image
         src={PlaceTrixLogo}
         alt="PlaceTrix"

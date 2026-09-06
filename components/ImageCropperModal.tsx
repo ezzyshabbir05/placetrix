@@ -306,7 +306,7 @@ export function ImageCropperModal({
           <Button
             onClick={handleCropSave}
             disabled={loading}
-            className="flex items-center gap-1.5 min-w-[100px]"
+            className="flex items-center gap-1.5 min-w-25"
           >
             {loading ? (
               "Saving..."

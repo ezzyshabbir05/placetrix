@@ -63,7 +63,7 @@ export const WorkspaceTimer = React.memo(function WorkspaceTimer() {
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className={cn("w-56 p-4 z-[9999]")}
+        className={cn("w-56 p-4 z-9999")}
         align="end"
         onOpenAutoFocus={(e) => e.preventDefault()}
         onCloseAutoFocus={(e) => e.preventDefault()}

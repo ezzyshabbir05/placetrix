@@ -272,7 +272,7 @@ export function MobileUserCard({
   }
 
   return (
-    <div className="mb-3 flex flex-col gap-2 rounded-xl border border-black/10 bg-black/[0.03] p-3 dark:border-white/10 dark:bg-white/[0.04]">
+    <div className="mb-3 flex flex-col gap-2 rounded-xl border border-black/10 bg-black/3 p-3 dark:border-white/10 dark:bg-white/4">
       <Link
         href="/home"
         onClick={onClose}

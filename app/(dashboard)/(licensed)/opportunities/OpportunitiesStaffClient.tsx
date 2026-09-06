@@ -325,7 +325,7 @@ export function OpportunitiesStaffClient({
                   )}
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+              <SheetContent side="right" className="w-75 sm:w-100">
                 <SheetHeader className="px-6 pt-6 pb-2">
                   <SheetTitle>Filter Opportunities</SheetTitle>
                   <SheetDescription>

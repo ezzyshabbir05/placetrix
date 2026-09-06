@@ -245,7 +245,7 @@ export function LicensesClient({ initialInstitutes }: LicensesClientProps) {
 
       {/* Manage License Modal */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[450px]">
+        <DialogContent className="sm:max-w-112.5">
           <form onSubmit={handleSave}>
             <DialogHeader>
               <DialogTitle className="line-clamp-1">

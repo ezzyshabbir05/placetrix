@@ -316,7 +316,7 @@ function QuestionCard({
                   {letter}
                 </span>
 
-                <div className="min-w-0 flex-1 break-words leading-relaxed">
+                <div className="min-w-0 flex-1 wrap-break-word leading-relaxed">
                   <InlineRichText>{opt.option_text}</InlineRichText>
                 </div>
 
@@ -1018,7 +1018,7 @@ function AttemptsTab({
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="end" className={cn('w-[280px]', 'p-4')}>
+            <PopoverContent align="end" className={cn('w-70', 'p-4')}>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <p className={cn('text-[10px]', 'font-semibold', 'uppercase', 'tracking-wider', 'text-muted-foreground', 'px-1')}>General</p>

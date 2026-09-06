@@ -63,7 +63,7 @@ export function IdeSettingsModal({
         {trigger}
       </PopoverTrigger>
       <PopoverContent 
-        className="w-[400px] p-0 gap-0 overflow-hidden bg-zinc-950 border-zinc-800 text-zinc-100 flex flex-col z-[99999]" 
+        className="w-100 p-0 gap-0 overflow-hidden bg-zinc-950 border-zinc-800 text-zinc-100 flex flex-col z-99999" 
         align="end"
         sideOffset={8}
       >
@@ -88,7 +88,7 @@ export function IdeSettingsModal({
           </div>
 
           {/* Content Area */}
-          <div className="p-4 max-h-[320px] overflow-y-auto">
+          <div className="p-4 max-h-80 overflow-y-auto">
             
             {/* Dynamic Layout Tab */}
             <TabsContent value="dynamic-layout" className="m-0 space-y-4 animate-in fade-in-50">
@@ -200,7 +200,7 @@ export function IdeSettingsModal({
                   <SelectTrigger className="w-24 h-8 bg-zinc-950 border-zinc-800 text-sm">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent position="popper" className="bg-zinc-950 border-zinc-800 text-zinc-200 z-[100000]">
+                  <SelectContent position="popper" className="bg-zinc-950 border-zinc-800 text-zinc-200 z-100000">
                     {[12, 13, 14, 15, 16, 17, 18, 19, 20].map((size) => (
                       <SelectItem 
                         key={size} 

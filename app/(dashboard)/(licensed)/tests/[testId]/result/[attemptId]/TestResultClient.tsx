@@ -108,7 +108,7 @@ function OptionItem({
         <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50/50 dark:border-blue-900/50 dark:bg-blue-950/20 px-3 py-3">
           <Check className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
           <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-            <span className="text-sm leading-snug break-words text-foreground font-medium">
+            <span className="text-sm leading-snug wrap-break-word text-foreground font-medium">
               <InlineRichText>{opt.option_text}</InlineRichText>
             </span>
             <span className="text-[10px] font-medium uppercase tracking-wide text-blue-600 dark:text-blue-400">
@@ -122,7 +122,7 @@ function OptionItem({
       <div className="flex items-start gap-3 rounded-xl border border-border bg-card px-3 py-3">
         <div className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded-full border border-muted-foreground/30" />
         <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-          <span className="text-sm leading-snug break-words text-muted-foreground">
+          <span className="text-sm leading-snug wrap-break-word text-muted-foreground">
             <InlineRichText>{opt.option_text}</InlineRichText>
           </span>
         </div>
@@ -172,7 +172,7 @@ function OptionItem({
     <div className={cn("flex items-start gap-3 rounded-xl border px-3 py-3", containerClass)}>
       {Icon}
       <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-        <span className={cn("text-sm leading-snug break-words", textClass)}><InlineRichText>{opt.option_text}</InlineRichText></span>
+        <span className={cn("text-sm leading-snug wrap-break-word", textClass)}><InlineRichText>{opt.option_text}</InlineRichText></span>
         {label}
       </div>
     </div>
@@ -537,12 +537,12 @@ export function TestResultClient({ test, attempt, accountType, serverNow }: Prop
       {/* ── Page Header ────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-1.5 min-w-0">
         {test.institute_name && (
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground break-words leading-snug">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground wrap-break-word leading-snug">
             {test.institute_name}
           </p>
         )}
         <div className="flex flex-wrap items-center gap-2 min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-bold font-cirka tracking-tight text-foreground break-words leading-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold font-cirka tracking-tight text-foreground wrap-break-word leading-tight">
             {test.title}
           </h1>
           {isInProgress ? (
@@ -640,7 +640,7 @@ export function TestResultClient({ test, attempt, accountType, serverNow }: Prop
                 </p>
                 {isInProgress ? (
                   <>
-                    <p className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-blue-600 dark:text-blue-400 break-words">
+                    <p className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-blue-600 dark:text-blue-400 wrap-break-word">
                       In Progress
                     </p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
@@ -649,7 +649,7 @@ export function TestResultClient({ test, attempt, accountType, serverNow }: Prop
                   </>
                 ) : (
                   <>
-                    <p className={cn("mt-1 text-3xl sm:text-4xl font-bold tabular-nums tracking-tight break-words", pctColorClass)}>
+                    <p className={cn("mt-1 text-3xl sm:text-4xl font-bold tabular-nums tracking-tight wrap-break-word", pctColorClass)}>
                       {pct.toFixed(2)}%
                     </p>
                     {attempt.score != null && attempt.total_marks != null && (
@@ -744,7 +744,7 @@ export function TestResultClient({ test, attempt, accountType, serverNow }: Prop
               <CardHeader>
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
                   <Sparkles className="size-4 text-purple-500 shrink-0" />
-                  <span className="break-words">Trixy AI Conceptual Diagnostic Assistant</span>
+                  <span className="wrap-break-word">Trixy AI Conceptual Diagnostic Assistant</span>
                   <Badge variant="secondary" className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">Maintenance</Badge>
                 </CardTitle>
                 <CardDescription className="text-xs">

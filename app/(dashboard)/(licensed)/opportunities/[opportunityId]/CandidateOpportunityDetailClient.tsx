@@ -444,7 +444,7 @@ export function CandidateOpportunityDetailClient({
                 <p className="pb-2.5 border-b mb-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Job Description & Details
                 </p>
-                <p className="overflow-hidden break-words whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+                <p className="overflow-hidden wrap-break-word whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
                   {opp.job_description}
                 </p>
               </CardContent>
@@ -508,7 +508,7 @@ export function CandidateOpportunityDetailClient({
                     </a>
                   )}
                 </div>
-                <p className="overflow-hidden break-words whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+                <p className="overflow-hidden wrap-break-word whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
                   {opp.company.description || "No company description provided."}
                 </p>
               </CardContent>
@@ -587,7 +587,7 @@ export function CandidateOpportunityDetailClient({
                         <FileText className="h-6 w-6" />
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-foreground max-w-[240px] truncate mx-auto">
+                        <p className="text-xs font-bold text-foreground max-w-60 truncate mx-auto">
                           {selectedFile.name}
                         </p>
                         <p className="text-[10px] text-muted-foreground/80 mt-0.5">

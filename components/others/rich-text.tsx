@@ -199,10 +199,10 @@ export function CodeBlock({ code, language, caption, allowCopy = true }: CodeBlo
       {/* ── Header ── */}
       <div className="flex items-center justify-between border-b border-border/40 bg-muted/50 dark:bg-muted/30 px-4 py-2.5 font-sans select-none">
         <div className="flex items-center gap-3">
-          <div className="flex gap-[5px] items-center">
-            <span className="size-[11px] rounded-full bg-[#ff5f57] block ring-1 ring-inset ring-black/10" />
-            <span className="size-[11px] rounded-full bg-[#febc2e] block ring-1 ring-inset ring-black/10" />
-            <span className="size-[11px] rounded-full bg-[#28c840] block ring-1 ring-inset ring-black/10" />
+          <div className="flex gap-1.25 items-center">
+            <span className="size-2.75 rounded-full bg-[#ff5f57] block ring-1 ring-inset ring-black/10" />
+            <span className="size-2.75 rounded-full bg-[#febc2e] block ring-1 ring-inset ring-black/10" />
+            <span className="size-2.75 rounded-full bg-[#28c840] block ring-1 ring-inset ring-black/10" />
           </div>
           <span
             className="text-[12px] font-medium"
@@ -259,12 +259,12 @@ export function CodeBlock({ code, language, caption, allowCopy = true }: CodeBlo
 
       {/* ── Code body ── */}
       <div
-        className={cn("flex overflow-x-auto max-h-[540px] prism-scroll", !allowCopy && "select-none")}
+        className={cn("flex overflow-x-auto max-h-135 prism-scroll", !allowCopy && "select-none")}
         data-lang={normalizedLang}
       >
         {lineCount > 1 && (
           <div
-            className="select-none flex-shrink-0 flex flex-col py-4 pr-3 pl-3 text-right text-[12px] bg-muted/50 dark:bg-muted/30"
+            className="select-none shrink-0 flex flex-col py-4 pr-3 pl-3 text-right text-[12px] bg-muted/50 dark:bg-muted/30"
             style={{
               minWidth: `${lineNumberWidth + 2}ch`,
               color: "var(--prism-gutter-fg)",
@@ -343,8 +343,8 @@ function ZoomableImage({
         <span className={cn(
           "relative flex items-center justify-center overflow-hidden rounded-lg border border-border/70 bg-muted/20 p-1 shadow-xs transition-all duration-300 group-hover:border-primary/60 group-hover:shadow-md",
           inline
-            ? "max-w-[160px] max-h-[110px] w-auto h-auto"
-            : "max-w-[280px] sm:max-w-[340px] max-h-[190px] w-auto h-auto"
+            ? "max-w-40 max-h-27.5 w-auto h-auto"
+            : "max-w-70 sm:max-w-85 max-h-47.5 w-auto h-auto"
         )}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -353,7 +353,7 @@ function ZoomableImage({
             onError={() => setHasError(true)}
             className={cn(
               "object-contain select-none rounded-md transition-transform duration-300 group-hover:scale-[1.02]",
-              inline ? "max-w-[152px] max-h-[102px] w-auto h-auto" : "max-w-full max-h-[180px] w-auto h-auto"
+              inline ? "max-w-38 max-h-25.5 w-auto h-auto" : "max-w-full max-h-45 w-auto h-auto"
             )}
           />
 
@@ -373,7 +373,7 @@ function ZoomableImage({
       {/* Lightbox Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
-          className="z-[100] max-w-[94vw] lg:max-w-6xl w-full p-2 sm:p-4 bg-background/95 backdrop-blur-xl border border-border/80 shadow-2xl rounded-2xl overflow-hidden flex flex-col max-h-[92vh]"
+          className="z-100 max-w-[94vw] lg:max-w-6xl w-full p-2 sm:p-4 bg-background/95 backdrop-blur-xl border border-border/80 shadow-2xl rounded-2xl overflow-hidden flex flex-col max-h-[92vh]"
           showCloseButton={true}
           onClick={(e) => e.stopPropagation()}
         >
@@ -382,7 +382,7 @@ function ZoomableImage({
             <DialogDescription>Full view of the image</DialogDescription>
           </div>
 
-          <div className="relative flex-1 overflow-auto flex items-center justify-center min-h-[300px] max-h-[78vh] p-2 bg-muted/10 rounded-xl">
+          <div className="relative flex-1 overflow-auto flex items-center justify-center min-h-75 max-h-[78vh] p-2 bg-muted/10 rounded-xl">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={getOptimizedImageUrl(src)}
@@ -426,7 +426,7 @@ function buildComponents(inline = false, allowCopy = true): Components {
     h1: ({ node, ...props }) => (
       <h1 className="font-bold text-2xl md:text-3xl tracking-tight text-foreground mt-10 mb-4 first:mt-0" {...props}>
         {props.children}
-        <div className="mt-2.5 h-px bg-gradient-to-r from-border/70 via-border/30 to-transparent" />
+        <div className="mt-2.5 h-px bg-linear-to-r from-border/70 via-border/30 to-transparent" />
       </h1>
     ),
     h2: ({ node, ...props }) => (
@@ -457,7 +457,7 @@ function buildComponents(inline = false, allowCopy = true): Components {
         "leading-relaxed text-foreground/85",
         ordered ? "list-item" : "flex items-start gap-2.5 pl-0 list-none"
       )}>
-        {!ordered && <span className="mt-[0.42em] size-1.5 rounded-full bg-primary/50 flex-shrink-0 block" />}
+        {!ordered && <span className="mt-[0.42em] size-1.5 rounded-full bg-primary/50 shrink-0 block" />}
         <span className="flex-1" {...props} />
       </li>
     ),
@@ -470,7 +470,7 @@ function buildComponents(inline = false, allowCopy = true): Components {
     ),
 
     hr: ({ node, ...props }) => (
-      <hr className="my-8 border-0 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" {...props} />
+      <hr className="my-8 border-0 h-px bg-linear-to-r from-transparent via-border/60 to-transparent" {...props} />
     ),
 
     a: ({ node, href, ...props }) => (

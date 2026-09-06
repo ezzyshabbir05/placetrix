@@ -67,7 +67,7 @@ export default function LeaderboardClient({
       <div className={cn('flex', 'flex-col', 'relative', 'pb-24')}>
         {/* List Section */}
         <div className={cn('flex', 'flex-col', 'border', 'border-border', 'rounded-xl', 'overflow-hidden', 'shadow-sm', 'bg-background/40', 'mt-4')}>
-          <div className={cn('flex', 'flex-col', 'relative', 'min-h-[400px]')}>
+          <div className={cn('flex', 'flex-col', 'relative', 'min-h-100')}>
             {isPending && (
               <div className={cn('absolute', 'inset-0', 'z-10', 'bg-background/50', 'backdrop-blur-[1px]', 'flex', 'items-center', 'justify-center')}>
                 <Loader2 className={cn('h-8', 'w-8', 'text-primary', 'animate-spin')} />
@@ -109,7 +109,7 @@ export default function LeaderboardClient({
                       key={user.id}
                       className={cn(
                         "group flex md:grid md:grid-cols-[56px_56px_minmax(150px,1.5fr)_140px_120px] items-center gap-3 md:gap-4 px-4 py-3 transition-colors duration-200 hover:bg-muted/40",
-                        isEven ? "bg-transparent" : "bg-zinc-100 dark:bg-white/[0.04]",
+                        isEven ? "bg-transparent" : "bg-zinc-100 dark:bg-white/4",
                         isCurrentUser && "bg-primary/5 dark:bg-primary/10",
                         idx !== data.length - 1 && "border-b border-border"
                       )}
@@ -173,7 +173,7 @@ export default function LeaderboardClient({
                       </span>
                     </div>
 
-                    <div className={cn('flex', 'items-center', 'justify-end', 'md:justify-start', 'w-[120px]', 'md:w-full', 'shrink-0', 'gap-1.5', 'font-mono')}>
+                    <div className={cn('flex', 'items-center', 'justify-end', 'md:justify-start', 'w-30', 'md:w-full', 'shrink-0', 'gap-1.5', 'font-mono')}>
                       <span className={cn('text-sm', 'font-semibold', 'text-foreground')}>
                         {user.logiclab_points?.toLocaleString() || '0'}
                       </span>
@@ -201,7 +201,7 @@ export default function LeaderboardClient({
           >
             <ChevronLeft className={cn('h-4', 'w-4')} />
           </Button>
-          <div className={cn('text-sm', 'font-medium', 'text-muted-foreground', 'min-w-[100px]', 'text-center')}>
+          <div className={cn('text-sm', 'font-medium', 'text-muted-foreground', 'min-w-25', 'text-center')}>
             Page {page} of {totalPages}
           </div>
           <Button

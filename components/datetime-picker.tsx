@@ -238,7 +238,7 @@ export function DateTimePicker({
                   disabled={disabled}
                   onValueChange={(val: 'AM' | 'PM') => handleAmPmChange(val)}
                 >
-                  <SelectTrigger className="w-[68px] h-8 text-xs bg-background font-semibold px-2">
+                  <SelectTrigger className="w-17 h-8 text-xs bg-background font-semibold px-2">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent align="end">

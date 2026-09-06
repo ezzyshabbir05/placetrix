@@ -118,7 +118,7 @@ function TestimonialCarousel() {
     }) ?? `https://db.placetrix.app/storage/v1/render/image/public/landing-page-material/${current.imagePath}?width=80&height=80&quality=80&format=webp`;
 
   return (
-    <div className="relative min-h-[160px]">
+    <div className="relative min-h-40">
       <AnimatePresence mode="wait">
         <motion.div
           key={index}

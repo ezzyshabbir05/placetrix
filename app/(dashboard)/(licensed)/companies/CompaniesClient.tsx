@@ -219,7 +219,7 @@ export function CompaniesClient({ initialCompanies }: CompaniesClientProps) {
                           className="text-[10px] text-primary hover:underline flex items-center gap-0.5 mt-0.5"
                         >
                           <Globe className="h-3 w-3" />
-                          <span className="truncate max-w-[120px]">{company.website.replace(/^https?:\/\/(www\.)?/, "")}</span>
+                          <span className="truncate max-w-30">{company.website.replace(/^https?:\/\/(www\.)?/, "")}</span>
                           <ExternalLink className="h-2 w-2" />
                         </a>
                       )}
@@ -251,7 +251,7 @@ export function CompaniesClient({ initialCompanies }: CompaniesClientProps) {
                 </div>
 
                 {/* Description */}
-                <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed min-h-[48px]">
+                <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed min-h-12">
                   {company.description || "No description provided for this company."}
                 </p>
               </div>

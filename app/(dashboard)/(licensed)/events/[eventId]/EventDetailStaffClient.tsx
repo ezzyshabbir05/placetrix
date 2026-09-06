@@ -401,7 +401,7 @@ export function EventDetailStaffClient({ event, agenda, tickets: initialTickets 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-col gap-1.5 min-w-0">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <h1 className="text-3xl font-bold font-cirka tracking-tight text-foreground break-words leading-tight">
+              <h1 className="text-3xl font-bold font-cirka tracking-tight text-foreground wrap-break-word leading-tight">
                 {event.title}
               </h1>
               <Badge variant={event.status === "Published" ? "default" : "secondary"} className="text-xs">
@@ -618,7 +618,7 @@ export function EventDetailStaffClient({ event, agenda, tickets: initialTickets 
                 <p className="pb-2.5 border-b mb-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Description
                 </p>
-                <p className="overflow-hidden break-words whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+                <p className="overflow-hidden wrap-break-word whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
                   {event.description}
                 </p>
               </CardContent>
@@ -635,7 +635,7 @@ export function EventDetailStaffClient({ event, agenda, tickets: initialTickets 
                 <div className="relative pl-6 md:pl-8 border-l border-primary/20 space-y-6">
                   {agenda.map((item, idx) => (
                     <div key={item.id || idx} className="relative group">
-                      <div className="absolute -left-[31px] md:-left-[39px] top-1.5 h-3.5 w-3.5 rounded-full border-2 border-primary bg-background" />
+                      <div className="absolute -left-7.75 md:-left-9.75 top-1.5 h-3.5 w-3.5 rounded-full border-2 border-primary bg-background" />
 
                       <div className="flex flex-col md:flex-row md:items-start gap-2 md:gap-4">
                         <div className="shrink-0 flex items-center">

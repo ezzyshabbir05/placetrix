@@ -1909,7 +1909,7 @@ export function CandidateProfileClient({
                   placeholder="Tell us about yourself, your accomplishments, career goals, or passion projects..."
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
-                  className="min-h-[120px] resize-none"
+                  className="min-h-30 resize-none"
                   maxLength={1000}
                 />
                 <p className="text-xs text-muted-foreground text-right">{bio.length}/1000 characters</p>
@@ -2989,7 +2989,7 @@ export function CandidateProfileClient({
                   placeholder="Describe your responsibilities, key achievements, and technologies used..."
                   value={activeExperience.description || ""}
                   onChange={(e) => setActiveExperience(prev => prev ? { ...prev, description: e.target.value } : null)}
-                  className="min-h-[100px] resize-none"
+                  className="min-h-25 resize-none"
                 />
               </div>
             </div>
@@ -3120,7 +3120,7 @@ export function CandidateProfileClient({
                   placeholder="Detail your role in the project, problems solved, and outcomes..."
                   value={activeProject.description}
                   onChange={(e) => setActiveProject(prev => prev ? { ...prev, description: e.target.value } : null)}
-                  className="min-h-[100px] resize-none"
+                  className="min-h-25 resize-none"
                 />
               </div>
             </div>

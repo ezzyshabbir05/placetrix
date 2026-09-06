@@ -384,7 +384,7 @@ export function DailyChallengesHistoryClient({
             </div>
 
             {/* ── Right panel: timer + CTA (desktop) ── */}
-            <div className="hidden sm:flex flex-col items-center justify-center gap-3 px-6 py-4 border-l border-border/50 shrink-0 min-w-[148px]">
+            <div className="hidden sm:flex flex-col items-center justify-center gap-3 px-6 py-4 border-l border-border/50 shrink-0 min-w-37">
               <div className="flex flex-col items-center gap-1 text-center">
                 <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50">Resets in</span>
                 <span className="font-mono text-lg font-bold text-foreground tabular-nums leading-none">{timeLeft}</span>
@@ -630,7 +630,7 @@ export function DailyChallengesHistoryClient({
 
       {/* ── Filter Sheet ── */}
       <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
-        <SheetContent side="right" className="w-[320px] sm:w-[420px] flex flex-col gap-0 p-0">
+        <SheetContent side="right" className="w-[320px] sm:w-105 flex flex-col gap-0 p-0">
           <SheetHeader className="px-6 pt-5 pb-4 pr-10 border-b border-border/50 shrink-0">
             <div className="flex items-center justify-between">
               <SheetTitle className="text-base font-bold">Sort & Filter</SheetTitle>

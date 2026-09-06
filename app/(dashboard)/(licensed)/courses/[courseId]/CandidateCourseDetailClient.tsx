@@ -481,9 +481,9 @@ export function CandidateCourseDetailClient({ course, isEnrolled, certificateId,
                   "group flex items-center justify-between gap-4 p-4 rounded-xl border select-none transition-all duration-200",
                   isEnrolled
                     ? isModCompleted
-                      ? "border-emerald-500/15 dark:border-emerald-500/10 bg-emerald-500/[0.02] dark:bg-emerald-500/[0.01] hover:bg-emerald-500/[0.04] cursor-pointer border-l-4 border-l-emerald-500"
+                      ? "border-emerald-500/15 dark:border-emerald-500/10 bg-emerald-500/2 dark:bg-emerald-500/1 hover:bg-emerald-500/4 cursor-pointer border-l-4 border-l-emerald-500"
                       : isUnlocked
-                        ? "border-primary/25 bg-primary/[0.02] dark:bg-primary/[0.01] hover:bg-primary/[0.04] cursor-pointer border-l-4 border-l-primary"
+                        ? "border-primary/25 bg-primary/2 dark:bg-primary/1 hover:bg-primary/4 cursor-pointer border-l-4 border-l-primary"
                         : "border-border/40 bg-muted/10 opacity-60 cursor-not-allowed border-l-4 border-l-transparent"
                     : "border-border/40 bg-muted/10 opacity-70 cursor-not-allowed border-l-4 border-l-transparent"
                 )}

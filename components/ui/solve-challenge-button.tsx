@@ -39,12 +39,12 @@ export const SolveChallengeButton = React.forwardRef<HTMLButtonElement, SolveCha
             sizeClasses[size],
             isSolved
               ? [
-                  "bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500",
+                  "bg-linear-to-r from-emerald-600 via-teal-600 to-emerald-500",
                   "text-white border border-emerald-400/35 hover:border-emerald-300/60",
                   "shadow-[inset_0_1px_1px_rgba(255,255,255,0.35)]",
                 ]
               : [
-                  "bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 dark:from-orange-600 dark:via-amber-500 dark:to-orange-500",
+                  "bg-linear-to-r from-orange-500 via-amber-500 to-orange-600 dark:from-orange-600 dark:via-amber-500 dark:to-orange-500",
                   "text-white border border-orange-400/40 hover:border-amber-300/70",
                   "shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]",
                 ],
@@ -56,7 +56,7 @@ export const SolveChallengeButton = React.forwardRef<HTMLButtonElement, SolveCha
           {!disabled && (
             <motion.div
               aria-hidden="true"
-              className="absolute top-0 left-0 h-full w-1/2 -skew-x-20 bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none"
+              className="absolute top-0 left-0 h-full w-1/2 -skew-x-20 bg-linear-to-r from-transparent via-white/30 to-transparent pointer-events-none"
               animate={{
                 x: ["-150%", "300%"],
               }}
@@ -72,7 +72,7 @@ export const SolveChallengeButton = React.forwardRef<HTMLButtonElement, SolveCha
           {/* ── Upper Glass Highlight Rim ── */}
           <div
             aria-hidden="true"
-            className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent pointer-events-none"
+            className="absolute inset-x-0 top-0 h-1/2 bg-linear-to-b from-white/20 to-transparent pointer-events-none"
           />
 
           {/* ── Centered Content: Clean Text Label ── */}

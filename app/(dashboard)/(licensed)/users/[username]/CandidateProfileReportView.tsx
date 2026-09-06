@@ -406,7 +406,7 @@ export function CandidateProfileReportView({
         <div className="hidden print:flex flex-col gap-2 pb-4 mb-4 border-b-2 border-black">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-bold text-black uppercase tracking-tight break-words max-w-xl leading-snug">
+              <h1 className="text-xl font-bold text-black uppercase tracking-tight wrap-break-word max-w-xl leading-snug">
                 {publicData.institute_name || "Educational Institution"}
               </h1>
               <p className="text-sm font-semibold text-gray-800">
@@ -462,15 +462,15 @@ export function CandidateProfileReportView({
                             <TooltipProvider key={idx}>
                               <Tooltip delayDuration={200}>
                                 <TooltipTrigger asChild>
-                                  <div className="flex items-center justify-center size-[30px] rounded-full bg-muted border border-border/50 hover:bg-muted-foreground/10 transition-colors cursor-pointer group shadow-sm overflow-hidden">
+                                  <div className="flex items-center justify-center size-7.5 rounded-full bg-muted border border-border/50 hover:bg-muted-foreground/10 transition-colors cursor-pointer group shadow-sm overflow-hidden">
                                     {isUrl ? (
-                                      <img src={badge.icon_name} alt={badge.name} className="size-[22px] object-contain drop-shadow-sm group-hover:scale-110 transition-transform" />
+                                      <img src={badge.icon_name} alt={badge.name} className="size-5.5 object-contain drop-shadow-sm group-hover:scale-110 transition-transform" />
                                     ) : (
                                       <Award className="size-4 text-primary drop-shadow-sm group-hover:scale-110 transition-transform" />
                                     )}
                                   </div>
                                 </TooltipTrigger>
-                                <TooltipContent className="flex flex-col gap-0.5 max-w-[200px] text-center p-2">
+                                <TooltipContent className="flex flex-col gap-0.5 max-w-50 text-center p-2">
                                   <p className="font-semibold text-xs">{badge.name}</p>
                                   <p className="text-[10px] text-muted-foreground">{badge.description}</p>
                                 </TooltipContent>
@@ -480,7 +480,7 @@ export function CandidateProfileReportView({
                         })}
                         <Dialog>
                           <DialogTrigger asChild>
-                            <button className="flex items-center justify-center size-[30px] rounded-full bg-muted border border-border/50 hover:bg-muted-foreground/10 transition-colors cursor-pointer shadow-sm text-[10px] font-semibold text-muted-foreground ml-0.5">
+                            <button className="flex items-center justify-center size-7.5 rounded-full bg-muted border border-border/50 hover:bg-muted-foreground/10 transition-colors cursor-pointer shadow-sm text-[10px] font-semibold text-muted-foreground ml-0.5">
                               {logicLabData!.badges.length > 3 ? `+${logicLabData!.badges.length - 3}` : '...'}
                             </button>
                           </DialogTrigger>
@@ -545,7 +545,7 @@ export function CandidateProfileReportView({
                                               </p>
                                             </div>
                                           </TooltipTrigger>
-                                          <TooltipContent className="flex flex-col gap-1 max-w-[220px] text-center p-3 bg-popover text-popover-foreground">
+                                          <TooltipContent className="flex flex-col gap-1 max-w-55 text-center p-3 bg-popover text-popover-foreground">
                                             <p className="font-semibold text-sm">{badge.name}</p>
                                             <p className="text-xs text-muted-foreground">{badge.description}</p>
                                             {isEarned ? (

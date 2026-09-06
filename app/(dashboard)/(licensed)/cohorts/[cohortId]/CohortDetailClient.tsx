@@ -158,7 +158,7 @@ function BulkAddStudentsDialog({
           {!results ? (
             <Textarea
               placeholder="e.g. student1@example.com, student2@example.com,student3@example.com"
-              className="min-h-[250px] font-mono text-sm resize-none"
+              className="min-h-62.5 font-mono text-sm resize-none"
               value={emailsText}
               onChange={(e) => setEmailsText(e.target.value)}
               disabled={isPending}
@@ -175,7 +175,7 @@ function BulkAddStudentsDialog({
                     <p className="text-sm text-destructive font-medium mb-1">
                       ⚠️ {results.notFoundEmails.length} emails not found or not candidates:
                     </p>
-                    <div className="max-h-[150px] overflow-y-auto rounded border bg-background p-2">
+                    <div className="max-h-37.5 overflow-y-auto rounded border bg-background p-2">
                       <ul className="list-disc list-inside text-xs text-muted-foreground">
                         {results.notFoundEmails.map(e => <li key={e}>{e}</li>)}
                       </ul>
@@ -326,7 +326,7 @@ function AddStudentsSheet({
                 value={selectedYear ? selectedYear.toString() : "all"} 
                 onValueChange={(v) => setSelectedYear(v === "all" ? null : parseInt(v))}
               >
-                <SelectTrigger className="w-[120px] text-xs h-9 shrink-0 bg-background">
+                <SelectTrigger className="w-30 text-xs h-9 shrink-0 bg-background">
                   <SelectValue placeholder="All Years" />
                 </SelectTrigger>
                 <SelectContent>
@@ -682,7 +682,7 @@ export function CohortDetailClient({
       {/* Page Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-col gap-1.5 min-w-0">
-          <h1 className="text-3xl font-bold font-cirka tracking-tight text-foreground break-words leading-tight">
+          <h1 className="text-3xl font-bold font-cirka tracking-tight text-foreground wrap-break-word leading-tight">
             {cohort.name}
           </h1>
           {cohort.description && (
@@ -834,7 +834,7 @@ export function CohortDetailClient({
       ) : (
         <div className="space-y-4">
           <div className="rounded-md border bg-card overflow-hidden">
-            <Table className="table-fixed w-full min-w-[700px]">
+            <Table className="table-fixed w-full min-w-175">
               <colgroup>
                 <col className="w-[5%]" />
                 <col className="w-[45%]" />

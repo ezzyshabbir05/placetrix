@@ -204,7 +204,7 @@ function TicketCard({
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-border/60 pt-3 md:min-w-[220px] md:items-end md:pt-0 md:border-t-0 md:text-right">
+        <div className="flex flex-col gap-3 border-t border-border/60 pt-3 md:min-w-55 md:items-end md:pt-0 md:border-t-0 md:text-right">
           <div className="w-full md:w-32 self-end">
             <Select
               value={ticket.status}
@@ -532,7 +532,7 @@ export function SupportQueueClient({
                                 value={initialPageSize.toString()}
                                 onValueChange={(val) => updateParams({ size: val, page: 1 })}
                               >
-                                <SelectTrigger className="h-8 w-[70px] text-xs">
+                                <SelectTrigger className="h-8 w-17.5 text-xs">
                                   <SelectValue placeholder={initialPageSize.toString()} />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -554,7 +554,7 @@ export function SupportQueueClient({
                                 <ChevronLeft className="h-4 w-4" />
                                 <span className="sr-only">Previous page</span>
                               </Button>
-                              <div className="flex items-center justify-center text-xs font-medium min-w-[80px]">
+                              <div className="flex items-center justify-center text-xs font-medium min-w-20">
                                 Page {activePage} of {totalPages}
                               </div>
                               <Button variant="outline" size="icon" className="h-8 w-8"

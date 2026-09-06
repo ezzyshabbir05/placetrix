@@ -18,7 +18,7 @@ export default function DashboardError({
   }, [error])
 
   return (
-    <div className="flex flex-col items-center justify-center flex-1 w-full min-h-[400px] md:min-h-[500px] p-6 text-center animate-in fade-in duration-300">
+    <div className="flex flex-col items-center justify-center flex-1 w-full min-h-100 md:min-h-125 p-6 text-center animate-in fade-in duration-300">
       <div className="flex size-14 items-center justify-center rounded-full bg-destructive/10 text-destructive mb-4 shadow-xs">
         <AlertCircle className="size-7" />
       </div>

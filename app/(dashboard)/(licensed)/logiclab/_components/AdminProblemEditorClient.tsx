@@ -737,7 +737,7 @@ export function AdminProblemEditorClient({
                 </button>
               </div>
 
-              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+              <div className="space-y-3 max-h-100 overflow-y-auto pr-1">
                 {testCases.map((tc, idx) => (
                   <div key={idx} className="bg-card border border-border rounded-lg p-3 space-y-2">
                     <div className="flex items-center justify-between">
@@ -898,7 +898,7 @@ export function AdminProblemEditorClient({
             </div>
 
             {/* Boilerplate Editor */}
-            <div className="flex-1 flex flex-col bg-card border border-border rounded-xl overflow-hidden min-h-[250px]">
+            <div className="flex-1 flex flex-col bg-card border border-border rounded-xl overflow-hidden min-h-62.5">
               <div className="flex items-center gap-2 bg-background px-4 py-2 border-b border-border shrink-0">
                 <IconCode className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
@@ -926,7 +926,7 @@ export function AdminProblemEditorClient({
             </div>
 
             {/* Driver Code Editor */}
-            <div className="flex-1 flex flex-col bg-card border border-border rounded-xl overflow-hidden min-h-[250px]">
+            <div className="flex-1 flex flex-col bg-card border border-border rounded-xl overflow-hidden min-h-62.5">
               <div className="flex items-center gap-2 bg-background px-4 py-2 border-b border-border shrink-0">
                 <IconAlertTriangle className="h-3.5 w-3.5 text-amber-400" />
                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
@@ -966,7 +966,7 @@ export function AdminProblemEditorClient({
               onDragLeave={handleDrag}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center gap-3 transition-all cursor-pointer min-h-[180px] bg-card/40 backdrop-blur-md ${
+              className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center gap-3 transition-all cursor-pointer min-h-45 bg-card/40 backdrop-blur-md ${
                 dragActive
                   ? "border-emerald-400 bg-emerald-500/5 shadow-[0_0_20px_rgba(16,185,129,0.1)]"
                   : "border-border hover:border-border hover:bg-card/60"
@@ -1007,7 +1007,7 @@ export function AdminProblemEditorClient({
                   </span>
                 </div>
 
-                <div className="divide-y divide-zinc-800/50 max-h-[480px] overflow-y-auto">
+                <div className="divide-y divide-zinc-800/50 max-h-120 overflow-y-auto">
                   {parsedProblems.map((prob, idx) => (
                     <div key={idx} className="p-4 hover:bg-card/20 transition-colors space-y-3">
                       <div className="flex items-start justify-between gap-4">
@@ -1119,7 +1119,7 @@ export function AdminProblemEditorClient({
             </div>
 
             {/* Template preview */}
-            <div className="relative bg-background border border-border rounded-xl p-3.5 font-mono text-[10px] overflow-x-auto text-muted-foreground max-h-[300px] whitespace-pre select-all">
+            <div className="relative bg-background border border-border rounded-xl p-3.5 font-mono text-[10px] overflow-x-auto text-muted-foreground max-h-75 whitespace-pre select-all">
               <button
                 onClick={() =>
                   handleCopyTemplate(

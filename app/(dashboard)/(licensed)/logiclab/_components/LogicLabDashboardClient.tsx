@@ -874,9 +874,9 @@ export function LogicLabDashboardClient({
         )}
 
         {/* Card List & Infinite Scroll */}
-        <div className={cn('relative', 'min-h-[300px]')}>
+        <div className={cn('relative', 'min-h-75')}>
           {isPending && problems.length === 0 && (
-            <div className={cn('absolute', 'inset-0', 'z-50', 'bg-background/50', 'backdrop-blur-[1px]', 'flex', 'items-center', 'justify-center', 'min-h-[200px]')}>
+            <div className={cn('absolute', 'inset-0', 'z-50', 'bg-background/50', 'backdrop-blur-[1px]', 'flex', 'items-center', 'justify-center', 'min-h-50')}>
               <div className={cn('flex', 'flex-col', 'items-center', 'gap-3', 'rounded-xl', 'border', 'bg-card', 'px-6', 'py-5', 'shadow-lg')}>
                 <Loader2 className={cn('h-8', 'w-8', 'text-primary', 'animate-spin')} />
                 <span className={cn('text-sm', 'font-medium', 'text-muted-foreground')}>Loading problems...</span>
@@ -1059,7 +1059,7 @@ export function LogicLabDashboardClient({
 
       {/* ── Filter Sheet ── */}
       <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
-        <SheetContent side="right" className={cn('w-[320px]', 'sm:w-[420px]', 'flex', 'flex-col', 'gap-0', 'p-0')}>
+        <SheetContent side="right" className={cn('w-[320px]', 'sm:w-105', 'flex', 'flex-col', 'gap-0', 'p-0')}>
           <SheetHeader className={cn('px-6', 'pt-5', 'pb-4', 'pr-10', 'border-b', 'border-border/50', 'shrink-0')}>
             <div className={cn('flex', 'items-center', 'justify-between')}>
               <SheetTitle className={cn('text-base', 'font-bold')}>Sort & Filter</SheetTitle>

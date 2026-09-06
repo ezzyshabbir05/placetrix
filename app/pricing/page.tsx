@@ -175,7 +175,7 @@ function MobileNav({
                                 </div>
 
                                 {isLoading ? (
-                                    <div className="mb-3 flex items-center gap-3 rounded-xl border border-black/10 bg-black/[0.03] p-3 dark:border-white/10 dark:bg-white/[0.04]">
+                                    <div className="mb-3 flex items-center gap-3 rounded-xl border border-black/10 bg-black/3 p-3 dark:border-white/10 dark:bg-white/4">
                                         <div className="size-10 animate-pulse rounded-full bg-black/10 dark:bg-white/10" />
                                         <div className="min-w-0 flex-1 space-y-2">
                                             <div className="h-4 w-24 animate-pulse rounded bg-black/10 dark:bg-white/10" />
@@ -239,7 +239,7 @@ function HeaderVisual({ user, isLoading }: HeaderVisualProps) {
                     >
                         <Link
                             href="/"
-                            className="flex items-center gap-2 font-bold tracking-[0.05em]"
+                            className="flex items-center gap-2 font-bold tracking-wider"
                         >
                             <Logo />
                             <span className="pl-1 text-lg font-bold tracking-wider text-zinc-950 dark:text-white">
@@ -358,7 +358,7 @@ const faqs: { question: string; answer: string }[] = [
 
 /**
  * Hero — matches the landing page pattern exactly:
- *  • min-h-[100svh] on mobile
+ *  • min-h-svh on mobile
  *  • md:-mt-14  +  md:min-h-[calc(100dvh+3.5rem)]  so content sits flush
  *    behind the fixed header on desktop (same as landing page)
  *  • inner flex-center div uses min-h-[calc(100svh-3.5rem)] to centre the
@@ -405,7 +405,7 @@ function CurrentPlanSection() {
         >
             <div className={CONTENT}>
                 <div className="mx-auto max-w-6xl">
-                    <div className="rounded-3xl border border-black/10 bg-white/95 p-6 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.03] md:p-8 lg:p-10">
+                    <div className="rounded-3xl border border-black/10 bg-white/95 p-6 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-white/3 md:p-8 lg:p-10">
                         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
                             {/* Left column */}
                             <div>
@@ -439,7 +439,7 @@ function CurrentPlanSection() {
                             </div>
 
                             {/* Right column — plan card */}
-                            <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/[0.06] p-6 dark:bg-emerald-500/[0.08] md:p-7">
+                            <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/6 p-6 dark:bg-emerald-500/8 md:p-7">
                                 <p className="text-xs font-medium uppercase tracking-widest text-emerald-700 dark:text-emerald-300">
                                     Active plan
                                 </p>
@@ -513,7 +513,7 @@ function FuturePlansSection() {
                         return (
                             <article
                                 key={item.title}
-                                className="rounded-3xl border border-black/10 bg-white/95 p-6 backdrop-blur-sm dark:border-white/10 dark:bg-white/[0.03] md:p-7"
+                                className="rounded-3xl border border-black/10 bg-white/95 p-6 backdrop-blur-sm dark:border-white/10 dark:bg-white/3 md:p-7"
                             >
                                 <h3 className="text-[15px] font-semibold tracking-[-0.01em] text-zinc-900 dark:text-white md:text-base">
                                     {item.title}
@@ -539,7 +539,7 @@ function CTASection() {
     return (
         <section className="w-full bg-white pb-16 text-zinc-950 dark:bg-black dark:text-white md:pb-24">
             <div className={CONTENT}>
-                <div className="relative overflow-hidden rounded-2xl border border-zinc-300/80 px-8 py-16 text-center dark:border-white/10 dark:bg-white/[0.02] md:px-16 md:py-20">
+                <div className="relative overflow-hidden rounded-2xl border border-zinc-300/80 px-8 py-16 text-center dark:border-white/10 dark:bg-white/2 md:px-16 md:py-20">
                     {showGalaxy && (
                         <div className="absolute inset-0 z-0 hidden opacity-40 dark:opacity-70 lg:block">
                             <Galaxy

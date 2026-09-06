@@ -436,7 +436,7 @@ export function AdminDashboardClient({
                     <CardContent className="p-6">
                       {analytics.tagStats && analytics.tagStats.length > 0 ? (
                         <div className={cn('flex', 'flex-col', 'border', 'border-border/40', 'rounded-lg', 'overflow-hidden', 'shadow-sm', 'bg-background/40')}>
-                          <Table className="min-w-[600px] text-xs">
+                          <Table className="min-w-150 text-xs">
                             <TableHeader>
                               <TableRow className={cn('bg-muted/40', 'border-b', 'border-border/50', 'text-xs', 'font-bold', 'text-muted-foreground', 'uppercase', 'tracking-wider', 'select-none')}>
                                 <TableHead className="px-5 py-3.5 font-bold text-muted-foreground">Concept Tag Name</TableHead>
@@ -465,7 +465,7 @@ export function AdminDashboardClient({
                                     key={tag.name}
                                     className={cn(
                                       "transition-colors duration-150",
-                                      isEven ? "bg-transparent" : "bg-zinc-100 dark:bg-white/[0.04]",
+                                      isEven ? "bg-transparent" : "bg-zinc-100 dark:bg-white/4",
                                       idx !== analytics.tagStats!.length - 1 && "border-b border-border/30"
                                     )}
                                   >
@@ -484,7 +484,7 @@ export function AdminDashboardClient({
                                           <Progress
                                             value={stuPct}
                                             className={cn(
-                                              "h-2 bg-muted/60 flex-1 min-w-[120px]",
+                                              "h-2 bg-muted/60 flex-1 min-w-30",
                                               stuPct >= 70 ? "[&>div]:bg-emerald-500 dark:[&>div]:bg-emerald-400" :
                                                 stuPct >= 40 ? "[&>div]:bg-amber-500 dark:[&>div]:bg-amber-400" :
                                                   "[&>div]:bg-rose-500 dark:[&>div]:bg-rose-400"
@@ -545,7 +545,7 @@ export function AdminDashboardClient({
                     </CardHeader>
 
                     <CardContent className="p-6">
-                      <div className="overflow-y-auto border border-border/40 rounded-lg p-2 bg-background/20 space-y-2 max-h-[350px] scrollbar-thin">
+                      <div className="overflow-y-auto border border-border/40 rounded-lg p-2 bg-background/20 space-y-2 max-h-87.5 scrollbar-thin">
                         {recentSubmissions.length > 0 ? (
                           recentSubmissions.map((log) => (
                             <div
@@ -555,7 +555,7 @@ export function AdminDashboardClient({
                               <div className="flex items-start justify-between gap-2">
                                 <div className="space-y-0.5 min-w-0">
                                   <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="font-semibold text-foreground/90 truncate max-w-[120px]">{log.student_name}</span>
+                                    <span className="font-semibold text-foreground/90 truncate max-w-30">{log.student_name}</span>
                                     <span suppressHydrationWarning className="text-[9px] text-muted-foreground/50 shrink-0">
                                       {new Date(log.created_at).toLocaleTimeString([], {
                                         hour: "2-digit",
@@ -563,7 +563,7 @@ export function AdminDashboardClient({
                                       })}
                                     </span>
                                   </div>
-                                  <p className="text-[10px] text-muted-foreground/75 truncate max-w-[200px]">
+                                  <p className="text-[10px] text-muted-foreground/75 truncate max-w-50">
                                     <span className="font-bold text-foreground/85">"{log.problem_title}"</span>
                                     {" · "}
                                     <span className="font-mono text-muted-foreground/50">{LANG_NAMES[log.language_id] || "Unknown"}</span>
@@ -571,7 +571,7 @@ export function AdminDashboardClient({
                                 </div>
                                 <Badge
                                   variant="outline"
-                                  className={`shrink-0 text-[8px] font-extrabold uppercase border px-2 py-0.5 rounded-full border-0 select-none ${log.status === "Accepted"
+                                  className={`shrink-0 text-[8px] font-extrabold uppercase px-2 py-0.5 rounded-full border-0 select-none ${log.status === "Accepted"
                                     ? "bg-emerald-100/80 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-400 border-transparent"
                                     : "bg-rose-100/80 text-rose-700 hover:bg-rose-100 dark:bg-rose-500/15 dark:text-rose-400 border-transparent"
                                     }`}
@@ -693,7 +693,7 @@ export function AdminDashboardClient({
 
                 <div className="flex items-center gap-2">
                   <Select value={difficultyFilter} onValueChange={(val) => setDifficultyFilter(val)}>
-                    <SelectTrigger className="h-9 w-[130px] text-xs font-semibold rounded-md border-muted-foreground/20 bg-background">
+                    <SelectTrigger className="h-9 w-32.5 text-xs font-semibold rounded-md border-muted-foreground/20 bg-background">
                       <SelectValue placeholder="All Difficulty" />
                     </SelectTrigger>
                     <SelectContent className="rounded-md">
@@ -721,10 +721,10 @@ export function AdminDashboardClient({
                 <div className={cn('hidden', 'md:flex', 'items-center', 'gap-3', 'px-4', 'py-3.5', 'bg-muted/40', 'border-b', 'border-border/50', 'text-xs', 'font-bold', 'text-muted-foreground', 'uppercase', 'tracking-wider', 'select-none')}>
                   <div className={cn('w-14', 'shrink-0', 'text-center')}>#</div>
                   <div className={cn('flex-1', 'min-w-0', 'pl-4')}>Title</div>
-                  <div className={cn('w-[130px]', 'shrink-0', 'pl-4')}>Acceptance</div>
-                  <div className={cn('w-[120px]', 'shrink-0', 'pl-4')}>Difficulty</div>
-                  <div className={cn('w-[240px]', 'shrink-0', 'pl-4')}>Topic Tags</div>
-                  <div className={cn('w-[70px]', 'shrink-0')}></div>
+                  <div className={cn('w-32.5', 'shrink-0', 'pl-4')}>Acceptance</div>
+                  <div className={cn('w-30', 'shrink-0', 'pl-4')}>Difficulty</div>
+                  <div className={cn('w-60', 'shrink-0', 'pl-4')}>Topic Tags</div>
+                  <div className={cn('w-17.5', 'shrink-0')}></div>
                   <div className={cn('w-8', 'shrink-0')}></div>
                 </div>
 
@@ -742,7 +742,7 @@ export function AdminDashboardClient({
                           }}
                           className={cn(
                             "group flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors duration-150",
-                            isEven ? "bg-transparent" : "bg-zinc-100 dark:bg-white/[0.04]",
+                            isEven ? "bg-transparent" : "bg-zinc-100 dark:bg-white/4",
                             idx !== filteredProblems.length - 1 && "border-b border-border/30"
                           )}
                         >
@@ -759,7 +759,7 @@ export function AdminDashboardClient({
                           </div>
 
                           {/* Acceptance Rate */}
-                          <div className={cn('hidden', 'md:flex', 'flex-col', 'justify-center', 'w-[130px]', 'shrink-0', 'pl-4')}>
+                          <div className={cn('hidden', 'md:flex', 'flex-col', 'justify-center', 'w-32.5', 'shrink-0', 'pl-4')}>
                             <span className={cn('text-xs', 'font-medium', 'text-muted-foreground/90')}>
                               {problem.acceptance_rate !== null ? `${problem.acceptance_rate}%` : "—"}
                             </span>
@@ -771,7 +771,7 @@ export function AdminDashboardClient({
                           </div>
 
                           {/* Difficulty */}
-                          <div className={cn('hidden', 'md:flex', 'items-center', 'w-[120px]', 'shrink-0', 'pl-4')}>
+                          <div className={cn('hidden', 'md:flex', 'items-center', 'w-30', 'shrink-0', 'pl-4')}>
                             <span className={cn(
                               "text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border-transparent",
                               DIFFICULTY_COLORS[problem.difficulty]
@@ -782,9 +782,9 @@ export function AdminDashboardClient({
 
                           {/* Topic Tags */}
                           {problem.tags && problem.tags.length > 0 ? (
-                            <div className={cn('hidden', 'sm:flex', 'flex-wrap', 'items-center', 'gap-1.5', 'w-[240px]', 'shrink-0', 'pl-4')}>
+                            <div className={cn('hidden', 'sm:flex', 'flex-wrap', 'items-center', 'gap-1.5', 'w-60', 'shrink-0', 'pl-4')}>
                               {problem.tags.slice(0, 2).map((tag) => (
-                                <span key={tag} className={cn('text-[10px]', 'font-medium', 'px-1.5', 'py-0.5', 'rounded', 'bg-muted', 'text-muted-foreground/85', 'truncate', 'max-w-[80px]')}>
+                                <span key={tag} className={cn('text-[10px]', 'font-medium', 'px-1.5', 'py-0.5', 'rounded', 'bg-muted', 'text-muted-foreground/85', 'truncate', 'max-w-20')}>
                                   {tag}
                                 </span>
                               ))}
@@ -795,12 +795,12 @@ export function AdminDashboardClient({
                               )}
                             </div>
                           ) : (
-                            <div className={cn('hidden', 'sm:flex', 'w-[240px]', 'shrink-0', 'pl-4')} />
+                            <div className={cn('hidden', 'sm:flex', 'w-60', 'shrink-0', 'pl-4')} />
                           )}
 
                           {/* Actions (Pencil & Trash icons) */}
                           <div
-                            className={cn('flex', 'items-center', 'justify-end', 'gap-1', 'opacity-40', 'group-hover:opacity-100', 'transition-opacity', 'w-[70px]', 'shrink-0')}
+                            className={cn('flex', 'items-center', 'justify-end', 'gap-1', 'opacity-40', 'group-hover:opacity-100', 'transition-opacity', 'w-17.5', 'shrink-0')}
                             onClick={(e) => e.stopPropagation()}
                           >
                             <Link

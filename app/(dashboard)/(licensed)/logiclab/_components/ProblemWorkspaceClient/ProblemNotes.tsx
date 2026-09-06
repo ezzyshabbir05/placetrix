@@ -105,7 +105,7 @@ function EmptyNoteState({ onStart }: { onStart: () => void }) {
       </div>
       <div className="space-y-1">
         <p className="text-sm font-semibold text-foreground/70">No notes yet</p>
-        <p className="text-xs text-muted-foreground/60 leading-relaxed max-w-[200px]">
+        <p className="text-xs text-muted-foreground/60 leading-relaxed max-w-50">
           Write your approach, key insights, or paste your solution to save for later.
         </p>
       </div>
@@ -555,7 +555,7 @@ export function ProblemNotes({ problemId, currentCode, currentLanguage, submissi
 
             {/* Desktop floating footer */}
             {!isLoadingPersonal && (
-              <div className="hidden md:flex absolute bottom-0 left-0 right-0 items-center justify-end px-5 py-3 pointer-events-none bg-gradient-to-t from-white dark:from-[#1e1e1e] to-transparent pt-8">
+              <div className="hidden md:flex absolute bottom-0 left-0 right-0 items-center justify-end px-5 py-3 pointer-events-none bg-linear-to-t from-white dark:from-[#1e1e1e] to-transparent pt-8">
                 <div className="pointer-events-auto flex items-center gap-2">
                   <Button
                     variant={saveVariant}

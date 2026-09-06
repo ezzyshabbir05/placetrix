@@ -105,7 +105,7 @@ export function LogoLoading({
       className={cn(
         variant === "full-screen"
           ? "fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md"
-          : "relative flex items-center justify-center flex-1 w-full min-h-[400px] md:min-h-[500px] animate-in fade-in duration-500",
+          : "relative flex items-center justify-center flex-1 w-full min-h-100 md:min-h-125 animate-in fade-in duration-500",
         className
       )}
       {...props}

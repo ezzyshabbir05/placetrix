@@ -154,7 +154,7 @@ function CustomScoreTooltip({ active, payload }: any) {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="rounded-lg border bg-popover/95 backdrop-blur-md p-3 shadow-xl text-xs flex flex-col gap-1.5 max-w-[240px]">
+      <div className="rounded-lg border bg-popover/95 backdrop-blur-md p-3 shadow-xl text-xs flex flex-col gap-1.5 max-w-60">
         <p className="font-semibold text-popover-foreground truncate">{data.title}</p>
         <div className="flex items-center justify-between gap-3 text-muted-foreground">
           <span>Submitted:</span>
@@ -419,7 +419,7 @@ export function AssignedTestsAnalyticsSection({ data }: Props) {
                 </div>
               </div>
 
-              <div className="h-[210px] w-full pt-2">
+              <div className="h-52.5 w-full pt-2">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={scoreTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>

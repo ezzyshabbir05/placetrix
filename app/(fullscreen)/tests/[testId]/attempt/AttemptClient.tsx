@@ -502,7 +502,7 @@ function OptionButton({
             onClick={onClick}
             disabled={disabled}
             className={cn(
-                "group relative flex w-full min-h-[3rem] items-start gap-3.5 rounded-xl border p-4 text-left text-sm transition-all duration-150 cursor-pointer",
+                "group relative flex w-full min-h-12 items-start gap-3.5 rounded-xl border p-4 text-left text-sm transition-all duration-150 cursor-pointer",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 isSelected
                     ? "border-primary bg-primary/5 text-foreground font-medium shadow-2xs"
@@ -526,7 +526,7 @@ function OptionButton({
                     <Square className="h-5 w-5 text-muted-foreground/50" />
                 )}
             </span>
-            <span className={cn("min-w-0 flex-1 break-words leading-snug text-left space-y-1.5", isSelected && "font-medium")}>
+            <span className={cn("min-w-0 flex-1 wrap-break-word leading-snug text-left space-y-1.5", isSelected && "font-medium")}>
                 <InlineRichText>{option.option_text}</InlineRichText>
             </span>
             {isSaving && isSelected && (
@@ -637,7 +637,7 @@ function QuestionView({
                     </button>
                 </div>
 
-                <div className="break-words text-base font-medium leading-relaxed">
+                <div className="wrap-break-word text-base font-medium leading-relaxed">
                     <InlineRichText>{question.question_text}</InlineRichText>
                 </div>
 
@@ -742,11 +742,11 @@ function IntroScreen({
             <div className="space-y-7">
 
                 <div className="space-y-3">
-                    <h1 className="break-words text-2xl font-bold leading-tight sm:text-3xl">
+                    <h1 className="wrap-break-word text-2xl font-bold leading-tight sm:text-3xl">
                         {test.title}
                     </h1>
                     {test.description && (
-                        <p className="break-words text-sm text-muted-foreground sm:text-base">
+                        <p className="wrap-break-word text-sm text-muted-foreground sm:text-base">
                             {test.description}
                         </p>
                     )}
@@ -790,7 +790,7 @@ function IntroScreen({
                         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                             Instructions
                         </p>
-                        <p className="overflow-hidden break-words whitespace-pre-line text-sm leading-relaxed">
+                        <p className="overflow-hidden wrap-break-word whitespace-pre-line text-sm leading-relaxed">
                             {test.instructions}
                         </p>
                     </div>
@@ -2344,7 +2344,7 @@ export function AttemptClient({
     return (
         <div
             className={cn(
-                "relative flex h-screen h-[100dvh] w-full overflow-hidden bg-background select-none transition-all duration-300",
+                "relative flex h-dvh w-full overflow-hidden bg-background select-none transition-all duration-300",
                 isAnyModalOpen && "blur-2xl contrast-75 brightness-75 scale-[0.99] pointer-events-none select-none"
             )}
             style={{
@@ -2383,7 +2383,7 @@ export function AttemptClient({
                     <AlertDialogFooter>
                         <AlertDialogAction
                             onClick={() => setShowMultiMonitorWarning(false)}
-                            className="!bg-amber-500 !text-slate-950 hover:!bg-amber-400 font-semibold shadow-xs border-none"
+                            className="bg-amber-500! text-slate-950! hover:bg-amber-400! font-semibold shadow-xs border-none"
                         >
                             I Have Disconnected External Display
                         </AlertDialogAction>
@@ -2403,7 +2403,7 @@ export function AttemptClient({
                     <AlertDialogFooter>
                         <AlertDialogAction
                             onClick={() => setShowDevToolsWarning(false)}
-                            className="!bg-red-600 !text-white hover:!bg-red-700 font-semibold shadow-xs border-none"
+                            className="bg-red-600! text-white! hover:bg-red-700! font-semibold shadow-xs border-none"
                         >
                             Close Inspection & Resume
                         </AlertDialogAction>
@@ -2438,7 +2438,7 @@ export function AttemptClient({
                                 focusGuardRef.current = false
                                 setShowFocusWarning(false)
                             }}
-                            className="!bg-red-600 !text-white hover:!bg-red-700 font-semibold shadow-xs border-none"
+                            className="bg-red-600! text-white! hover:bg-red-700! font-semibold shadow-xs border-none"
                         >
                             Return to Test
                         </AlertDialogAction>
@@ -2458,7 +2458,7 @@ export function AttemptClient({
                     <AlertDialogFooter>
                         <AlertDialogAction
                             onClick={enterFullscreen}
-                            className="!bg-amber-500 !text-slate-950 hover:!bg-amber-400 font-semibold shadow-xs border-none"
+                            className="bg-amber-500! text-slate-950! hover:bg-amber-400! font-semibold shadow-xs border-none"
                         >
                             Return to Fullscreen
                         </AlertDialogAction>
@@ -2471,7 +2471,7 @@ export function AttemptClient({
             <main className="flex min-w-0 flex-1 flex-col h-full overflow-hidden">
 
                 {/* Top Glassmorphic Header */}
-                <header className="shrink-0 z-30 flex h-14 items-center justify-between border-b bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+                <header className="shrink-0 z-30 flex h-14 items-center justify-between border-b bg-background/95 px-6 backdrop-blur supports-backdrop-filter:bg-background/80">
                     <div className="flex items-center gap-3 min-w-0">
                         <h1 className="truncate text-sm font-bold text-foreground">
                             {test.title}
@@ -2542,7 +2542,7 @@ export function AttemptClient({
                     <div className="shrink-0 border-b border-destructive/20 bg-destructive/5 px-6 py-3">
                         <div className="mx-auto flex items-center gap-2 text-sm text-destructive">
                             <AlertTriangle className="h-4 w-4 shrink-0" />
-                            <span className="min-w-0 flex-1 break-words">{submitError}</span>
+                            <span className="min-w-0 flex-1 wrap-break-word">{submitError}</span>
                             <Button
                                 size="sm"
                                 variant="ghost"
@@ -2663,7 +2663,7 @@ export function AttemptClient({
 
 
             {/* ── Mobile fixed bottom bar ───────────────────────────────────────── */}
-            <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden">
+            <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-backdrop-filter:bg-background/80 md:hidden">
                 <div className="flex h-16 items-center gap-2 px-5">
 
                     <Button

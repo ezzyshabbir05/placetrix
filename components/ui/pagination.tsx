@@ -148,7 +148,7 @@ function PaginationPageSize({
         onValueChange={(val) => onPageSizeChange(Number(val))}
         disabled={disabled}
       >
-        <SelectTrigger className="h-7 w-[68px] text-xs">
+        <SelectTrigger className="h-7 w-17 text-xs">
           <SelectValue />
         </SelectTrigger>
         <SelectContent side="top">
