@@ -5,7 +5,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -15,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { IdeSettings } from "../../_types";
@@ -63,24 +63,24 @@ export function IdeSettingsModal({
         {trigger}
       </PopoverTrigger>
       <PopoverContent 
-        className="w-100 p-0 gap-0 overflow-hidden bg-zinc-950 border-zinc-800 text-zinc-100 flex flex-col z-99999" 
+        className="w-96 p-0 gap-0 overflow-hidden flex flex-col z-9999" 
         align="end"
         sideOffset={8}
       >
         <Tabs defaultValue="dynamic-layout" className="flex flex-col w-full">
           {/* Header & TabsList */}
-          <div className="p-4 border-b border-zinc-800 bg-zinc-900/30">
-            <h2 className="text-lg font-bold tracking-tight mb-3">Settings</h2>
-            <TabsList className="grid w-full grid-cols-2 bg-zinc-950 border border-zinc-800 text-zinc-400 p-1">
+          <div className="p-4 border-b border-border bg-muted/20">
+            <h2 className="text-sm font-bold tracking-tight text-foreground mb-3">Settings</h2>
+            <TabsList className="grid w-full grid-cols-2 p-1">
               <TabsTrigger 
                 value="dynamic-layout" 
-                className="data-[state=active]:bg-zinc-800 data-[state=active]:text-white rounded-sm text-xs py-1.5"
+                className="text-xs py-1.5 font-semibold"
               >
                 Layout
               </TabsTrigger>
               <TabsTrigger 
                 value="code-editor" 
-                className="data-[state=active]:bg-zinc-800 data-[state=active]:text-white rounded-sm text-xs py-1.5"
+                className="text-xs py-1.5 font-semibold"
               >
                 Editor
               </TabsTrigger>
@@ -93,91 +93,67 @@ export function IdeSettingsModal({
             {/* Dynamic Layout Tab */}
             <TabsContent value="dynamic-layout" className="m-0 space-y-4 animate-in fade-in-50">
               <div className="space-y-3">
-                <Label className="text-sm text-zinc-300 font-medium">Action Buttons Position</Label>
-                <div className="grid grid-cols-2 gap-4">
-                  
+                <Label className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                  Action Buttons Position
+                </Label>
+                <RadioGroup
+                  value={safeSettings.buttonPosition}
+                  onValueChange={(val) => updateSetting("buttonPosition", val as "toolbar" | "bottom")}
+                  className="grid grid-cols-2 gap-3"
+                >
                   {/* ToolBar Option */}
-                  <button
-                    onClick={() => updateSetting("buttonPosition", "toolbar")}
+                  <label
+                    htmlFor="btn-pos-toolbar"
                     className={cn(
-                      "group flex flex-col items-center gap-2 outline-none",
+                      "flex flex-col items-start gap-2.5 p-3 rounded-xl border text-left cursor-pointer transition-all",
+                      safeSettings.buttonPosition === "toolbar"
+                        ? "border-primary bg-primary/5 shadow-xs"
+                        : "border-border/70 bg-card hover:bg-muted/40 hover:border-border"
                     )}
                   >
-                    <div className={cn(
-                      "w-full h-20 rounded-md border p-1.5 flex flex-col gap-1 transition-all",
-                      safeSettings.buttonPosition === "toolbar" 
-                        ? "border-emerald-500 bg-emerald-500/5" 
-                        : "border-zinc-800 bg-zinc-900/50 group-hover:border-zinc-600"
-                    )}>
-                      {/* Fake Toolbar with buttons */}
-                      <div className="w-full h-3 flex justify-between items-center px-1">
-                        <div className="flex gap-1">
-                          <div className="w-1.5 h-1.5 rounded-full bg-zinc-700" />
-                          <div className="w-1.5 h-1.5 rounded-full bg-zinc-700" />
-                        </div>
-                        <div className={cn(
-                          "w-6 h-1.5 rounded bg-zinc-700",
-                          safeSettings.buttonPosition === "toolbar" && "bg-emerald-500/80"
-                        )} />
-                      </div>
-                      {/* Fake Editor & Output */}
-                      <div className="flex gap-1 flex-1">
-                        <div className="flex-1 bg-zinc-800/50 rounded-sm" />
-                        <div className="flex-1 bg-zinc-800/50 rounded-sm" />
-                      </div>
+                    <div className="flex items-center justify-between w-full">
+                      <RadioGroupItem value="toolbar" id="btn-pos-toolbar" />
+                      <span className="text-[10px] font-mono text-muted-foreground uppercase">Top</span>
                     </div>
-                    <span className={cn(
-                      "text-xs font-medium",
-                      safeSettings.buttonPosition === "toolbar" ? "text-emerald-500" : "text-zinc-400 group-hover:text-zinc-300"
-                    )}>ToolBar</span>
-                  </button>
+                    <div>
+                      <span className="text-xs font-semibold text-foreground block">Navbar Toolbar</span>
+                      <span className="text-[11px] text-muted-foreground leading-tight block mt-0.5">
+                        Centered in top header
+                      </span>
+                    </div>
+                  </label>
 
-                  {/* Code Editor Option */}
-                  <button
-                    onClick={() => updateSetting("buttonPosition", "bottom")}
+                  {/* Code Editor Bottom Option */}
+                  <label
+                    htmlFor="btn-pos-bottom"
                     className={cn(
-                      "group flex flex-col items-center gap-2 outline-none",
+                      "flex flex-col items-start gap-2.5 p-3 rounded-xl border text-left cursor-pointer transition-all",
+                      safeSettings.buttonPosition === "bottom"
+                        ? "border-primary bg-primary/5 shadow-xs"
+                        : "border-border/70 bg-card hover:bg-muted/40 hover:border-border"
                     )}
                   >
-                    <div className={cn(
-                      "w-full h-20 rounded-md border p-1.5 flex flex-col gap-1 transition-all",
-                      safeSettings.buttonPosition === "bottom" 
-                        ? "border-emerald-500 bg-emerald-500/5" 
-                        : "border-zinc-800 bg-zinc-900/50 group-hover:border-zinc-600"
-                    )}>
-                      <div className="w-full h-3 flex justify-between items-center px-1">
-                        <div className="flex gap-1">
-                          <div className="w-1.5 h-1.5 rounded-full bg-zinc-700" />
-                          <div className="w-1.5 h-1.5 rounded-full bg-zinc-700" />
-                        </div>
-                      </div>
-                      {/* Fake Editor & Output */}
-                      <div className="flex gap-1 flex-1 relative">
-                        <div className="w-full bg-zinc-800/50 rounded-sm" />
-                        {/* Fake bottom bar */}
-                        <div className="absolute bottom-1 right-1 left-1 h-2 rounded-sm flex justify-end px-1 items-center">
-                          <div className={cn(
-                            "w-5 h-1.5 rounded-sm bg-zinc-700",
-                            safeSettings.buttonPosition === "bottom" && "bg-emerald-500/80"
-                          )} />
-                        </div>
-                      </div>
+                    <div className="flex items-center justify-between w-full">
+                      <RadioGroupItem value="bottom" id="btn-pos-bottom" />
+                      <span className="text-[10px] font-mono text-muted-foreground uppercase">Bottom</span>
                     </div>
-                    <span className={cn(
-                      "text-xs font-medium",
-                      safeSettings.buttonPosition === "bottom" ? "text-emerald-500" : "text-zinc-400 group-hover:text-zinc-300"
-                    )}>Code Editor</span>
-                  </button>
-                </div>
+                    <div>
+                      <span className="text-xs font-semibold text-foreground block">Editor Footer</span>
+                      <span className="text-[11px] text-muted-foreground leading-tight block mt-0.5">
+                        Floating at code bottom
+                      </span>
+                    </div>
+                  </label>
+                </RadioGroup>
               </div>
             </TabsContent>
 
             {/* Code Editor Tab */}
-            <TabsContent value="code-editor" className="m-0 space-y-5 animate-in fade-in-50">
+            <TabsContent value="code-editor" className="m-0 space-y-4 animate-in fade-in-50">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-sm font-medium text-zinc-300">Font Size</Label>
-                  <p className="text-xs text-zinc-500 mt-0.5">Adjust the editor's font size</p>
+                  <Label className="text-xs font-semibold text-foreground">Font Size</Label>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Adjust editor typography scale</p>
                 </div>
                 <Select 
                   value={(safeSettings.fontSize || 13).toString()} 
@@ -197,14 +173,15 @@ export function IdeSettingsModal({
                     }
                   }}
                 >
-                  <SelectTrigger className="w-24 h-8 bg-zinc-950 border-zinc-800 text-sm">
+                  <SelectTrigger size="sm" className="w-24 text-xs font-medium">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent position="popper" className="bg-zinc-950 border-zinc-800 text-zinc-200 z-100000">
+                  <SelectContent position="popper" className="z-100000 min-w-24">
                     {[12, 13, 14, 15, 16, 17, 18, 19, 20].map((size) => (
                       <SelectItem 
                         key={size} 
                         value={size.toString()}
+                        className="text-xs font-medium cursor-pointer"
                         onPointerEnter={() => {
                           if (onPreviewFontSize) onPreviewFontSize(size);
                         }}
@@ -221,26 +198,27 @@ export function IdeSettingsModal({
 
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-sm font-medium text-zinc-300">Word Wrap</Label>
-                  <p className="text-xs text-zinc-500 mt-0.5">Wrap lines exceeding editor width</p>
+                  <Label className="text-xs font-semibold text-foreground">Word Wrap</Label>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Wrap lines exceeding viewport width</p>
                 </div>
                 <Switch 
                   checked={safeSettings.wordWrap === "on"}
                   onCheckedChange={(c) => updateSetting("wordWrap", c ? "on" : "off")}
                 />
               </div>
+
               <div 
-                className="flex items-center justify-between cursor-pointer group py-1 -mx-2 px-2 rounded-md hover:bg-zinc-800/50 transition-colors"
+                className="flex items-center justify-between cursor-pointer group py-2 px-2.5 rounded-lg border border-border/60 hover:bg-muted/40 transition-colors"
                 onClick={() => {
                   if (onOpenShortcuts) onOpenShortcuts();
                   onOpenChange(false);
                 }}
               >
                 <div>
-                  <Label className="text-sm font-medium text-zinc-300 cursor-pointer group-hover:text-white transition-colors">Keyboard Shortcuts</Label>
-                  <p className="text-xs text-zinc-500 mt-0.5">View all editor shortcuts</p>
+                  <Label className="text-xs font-semibold text-foreground cursor-pointer">Keyboard Shortcuts</Label>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">View all editor shortcuts</p>
                 </div>
-                <div className="flex items-center gap-1 text-zinc-500 group-hover:text-zinc-300 transition-colors">
+                <div className="flex items-center gap-1 text-muted-foreground group-hover:text-foreground transition-colors">
                   <span className="text-xs font-medium">View</span>
                   <ChevronRight className="h-4 w-4" />
                 </div>
