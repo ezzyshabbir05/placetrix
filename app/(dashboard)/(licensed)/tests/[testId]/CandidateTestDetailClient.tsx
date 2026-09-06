@@ -462,7 +462,7 @@ export function CandidateTestDetailClient({ test, attempt, serverNow }: Props) {
                       )}
                       {canSeeResults && att.status !== "in_progress" && (
                         <Button asChild variant="outline" size="sm" className="h-7 text-xs font-medium">
-                          <Link href={`/tests/${test.id}/result/${att.id}`}>
+                          <Link href={`/tests/${test.id}/result/${att.id}`} prefetch={false}>
                             View Details
                           </Link>
                         </Button>
@@ -490,7 +490,7 @@ export function CandidateTestDetailClient({ test, attempt, serverNow }: Props) {
             </div>
             <div className="pt-1">
               <Button asChild size="sm" className="w-full sm:w-auto">
-                <Link href={`${test.id}/attempt`}>
+                <Link href={`${test.id}/attempt`} prefetch={false}>
                   <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
                   Resume Test
                 </Link>
@@ -503,7 +503,7 @@ export function CandidateTestDetailClient({ test, attempt, serverNow }: Props) {
         {(!attempt || attempt.status === "submitted") && isLive && (
           <div>
             <Button asChild size="lg" className="w-full sm:w-auto">
-              <Link href={`${test.id}/attempt`}>
+              <Link href={`${test.id}/attempt`} prefetch={false}>
                 {(test.completed_count ?? 0) > 0 ? "Retake Assessment" : "Start Assessment"}
               </Link>
             </Button>
@@ -628,7 +628,7 @@ export function CandidateTestDetailClient({ test, attempt, serverNow }: Props) {
           {canSeeResults && (
             <div className="pt-2">
               <Button asChild variant="default" className="w-full sm:w-auto">
-                <Link href={`/tests/${test.id}/result/${attempt?.id}`}>
+                <Link href={`/tests/${test.id}/result/${attempt?.id}`} prefetch={false}>
                   View Detailed Report
                 </Link>
               </Button>

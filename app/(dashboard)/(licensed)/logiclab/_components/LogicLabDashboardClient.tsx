@@ -57,7 +57,12 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { fetchProblemsInfinite } from "../actions"
+import {
+  fetchLogicLabDashboardData,
+  fetchProblemsDirectClient,
+  type LogicLabDashboardData,
+} from "@/lib/supabase/logiclab-data"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Progress } from "@/components/ui/progress"
 import {
   AlertDialog,
@@ -95,17 +100,17 @@ const DIFFICULTY_COLORS: Record<string, { text: string; bg: string }> = {
 }
 
 interface LogicLabDashboardProps {
-  initialProblems: Problem[]
-  initialHasMore: boolean
+  initialProblems?: Problem[]
+  initialHasMore?: boolean
   isAdmin: boolean
-  streakStats: {
+  streakStats?: {
     currentStreak: number
     maxStreak: number
   }
-  activityCalendar: CalendarCell[]
-  allTags: string[]
-  tagCounts: Record<string, number>
-  globalStats: {
+  activityCalendar?: CalendarCell[]
+  allTags?: string[]
+  tagCounts?: Record<string, number>
+  globalStats?: {
     total: number
     solved: number
     easy: { total: number; solved: number }
@@ -122,18 +127,37 @@ export function LogicLabDashboardClient({
   initialProblems,
   initialHasMore,
   isAdmin,
-  streakStats,
-  activityCalendar,
-  allTags,
-  tagCounts,
-  globalStats,
-  initialPotd,
-  fullPotdProblem,
+  streakStats: initialStreakStats,
+  activityCalendar: initialActivityCalendar,
+  allTags: initialAllTags,
+  tagCounts: initialTagCounts,
+  globalStats: initialGlobalStats,
+  initialPotd: initialPotdProp,
+  fullPotdProblem: initialFullPotdProblem,
   userId,
   userSolvedNumbers = [],
 }: LogicLabDashboardProps) {
   const router = useRouter()
   const pathname = usePathname()
+
+  const [data, setData] = useState<LogicLabDashboardData | null>(() => {
+    if (initialProblems && initialStreakStats && initialActivityCalendar && initialAllTags && initialGlobalStats) {
+      return {
+        problems: initialProblems,
+        hasMore: initialHasMore ?? false,
+        totalCount: initialGlobalStats.total,
+        globalStats: initialGlobalStats,
+        allTags: initialAllTags,
+        tagCounts: initialTagCounts || {},
+        streakStats: initialStreakStats,
+        activityCalendar: initialActivityCalendar,
+        initialPotd: initialPotdProp || null,
+        fullPotdProblem: initialFullPotdProblem || null,
+      }
+    }
+    return null
+  })
+  const [isLoading, setIsLoading] = useState<boolean>(!data)
 
   // ── Hover states & layout config ──
   const [hoverDifficulty, setHoverDifficulty] = useState<"Easy" | "Medium" | "Hard" | null>(null)
@@ -143,12 +167,51 @@ export function LogicLabDashboardClient({
   const cellRadiusClass = "rounded-[18%]"
 
   // ── Infinite scroll & Filter state ──
-  const [problems, setProblems] = useState<Problem[]>(initialProblems)
-  const [hasMore, setHasMore] = useState(initialHasMore)
+  const [problems, setProblems] = useState<Problem[]>(initialProblems || [])
+  const [hasMore, setHasMore] = useState(initialHasMore ?? false)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [isPending, setIsPending] = useState(false)
-  const [offset, setOffset] = useState(initialProblems.length)
-  const [totalCount, setTotalCount] = useState(globalStats.total)
+  const [offset, setOffset] = useState(initialProblems ? initialProblems.length : 0)
+  const [totalCount, setTotalCount] = useState(initialGlobalStats?.total || 0)
+
+  useEffect(() => {
+    if (data) return
+    let isMounted = true
+
+    fetchLogicLabDashboardData(userId)
+      .then((res) => {
+        if (isMounted) {
+          setData(res)
+          setProblems(res.problems)
+          setHasMore(res.hasMore)
+          setOffset(res.problems.length)
+          setTotalCount(res.totalCount)
+          setIsLoading(false)
+        }
+      })
+      .catch((err) => {
+        console.error("[LogicLabDashboardClient] Client fetch error:", err)
+        if (isMounted) setIsLoading(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [userId, data])
+
+  const globalStats = data?.globalStats || {
+    total: 0,
+    solved: 0,
+    easy: { total: 0, solved: 0 },
+    medium: { total: 0, solved: 0 },
+    hard: { total: 0, solved: 0 },
+  }
+  const streakStats = data?.streakStats || { currentStreak: 0, maxStreak: 0 }
+  const activityCalendar = data?.activityCalendar || []
+  const allTags = data?.allTags || []
+  const tagCounts = data?.tagCounts || {}
+  const potd = data?.initialPotd || null
+  const fullPotdProblem = data?.fullPotdProblem || null
 
   const [searchInput, setSearchInput] = useState("")
   const [activeTab, setActiveTab] = useState("all")
@@ -176,9 +239,6 @@ export function LogicLabDashboardClient({
     const sortedTags = [...list].sort((a, b) => (tagCounts[b] || 0) - (tagCounts[a] || 0))
     return sortedTags.slice(0, 8)
   }, [allTags, tagCounts, showAllTags, tagSearchInput])
-
-  const potd = initialPotd
-
   const calculateTimeLeft = () => {
     const now = new Date();
     const nextMidnightUTC = new Date(now);
@@ -263,7 +323,7 @@ export function LogicLabDashboardClient({
   const [deletingProblemId, setDeletingProblemId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Fetch problems using the robust Server Action which includes fallback logic
+  // Fetch problems directly on the client via Supabase client SDK
   const fetchProblemsClient = useCallback(
     async (params: {
       offset: number
@@ -277,7 +337,7 @@ export function LogicLabDashboardClient({
       sortBy: string
     }) => {
       try {
-        const result = await fetchProblemsInfinite({
+        const result = await fetchProblemsDirectClient({
           userId: userId || "",
           offset: params.offset,
           limit: params.limit,
@@ -291,7 +351,7 @@ export function LogicLabDashboardClient({
         })
         return result
       } catch (err) {
-        console.error("[LogicLabDashboardClient] Exception fetching problems on client via server action:", err)
+        console.error("[LogicLabDashboardClient] Exception fetching problems on client:", err)
       }
       return { problems: [], hasMore: false, totalCount: 0 }
     },
@@ -531,100 +591,123 @@ export function LogicLabDashboardClient({
 
       {/* Metrics Row */}
       {showDashboardCards && (
-        <div className={cn('grid', 'grid-cols-1', 'lg:grid-cols-3', 'gap-6', 'animate-in', 'fade-in', 'slide-in-from-top-2', 'duration-300', 'min-w-0')}>
-          <LogicLabStatsCards globalStats={globalStats} activityCalendar={activityCalendar} streakStats={streakStats} />
+        isLoading && !data ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-w-0">
+            <div className="rounded-xl border bg-card p-5 space-y-4">
+              <Skeleton className="h-5 w-36 rounded" />
+              <div className="flex items-center justify-between pt-2">
+                <Skeleton className="size-28 rounded-full" />
+                <div className="space-y-3 flex-1 ml-6">
+                  <Skeleton className="h-4 w-full rounded" />
+                  <Skeleton className="h-4 w-full rounded" />
+                  <Skeleton className="h-4 w-full rounded" />
+                </div>
+              </div>
+            </div>
+            <div className="rounded-xl border bg-card p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-5 w-32 rounded" />
+                <Skeleton className="h-5 w-20 rounded" />
+              </div>
+              <Skeleton className="h-28 w-full rounded-lg" />
+            </div>
+            <div className="rounded-xl border bg-card p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-5 w-32 rounded" />
+                <Skeleton className="h-5 w-24 rounded" />
+              </div>
+              <Skeleton className="h-6 w-3/4 rounded" />
+              <Skeleton className="h-10 w-full rounded-md" />
+            </div>
+          </div>
+        ) : (
+          <div className={cn('grid', 'grid-cols-1', 'lg:grid-cols-3', 'gap-6', 'animate-in', 'fade-in', 'slide-in-from-top-2', 'duration-300', 'min-w-0')}>
+            <LogicLabStatsCards globalStats={globalStats} activityCalendar={activityCalendar} streakStats={streakStats} />
 
-          {/* Card 3: POTD Card */}
-          <Card className={cn('group/potd', 'min-w-0', 'flex', 'flex-col', 'relative', 'py-0')}>
-            <CardHeader className={cn('flex', 'flex-row', 'items-center', 'justify-between', 'pt-4', 'pb-1')}>
-              <Link href="/logiclab/dailychallenges" className={cn('hover:opacity-80', 'transition-opacity', 'cursor-pointer')}>
-                <CardTitle className={cn('text-xs', 'font-semibold', 'text-muted-foreground', 'uppercase', 'tracking-wider', 'flex', 'items-center', 'gap-1', 'hover:text-orange-500', 'transition-colors')}>
-                  Daily Challenge<ChevronRight className="size-3" />
-                </CardTitle>
-              </Link>
-              {timeLeft && (
-                <CardAction className={cn('text-xs', 'text-muted-foreground/80', 'flex', 'items-center', 'gap-1', 'font-medium', 'select-none')}>
-                  <Clock className="size-3.5" />
-                  {timeLeft}
-                </CardAction>
-              )}
-            </CardHeader>
-
-            <CardContent className={cn('flex', 'flex-col', 'flex-1', 'justify-between', 'gap-5', 'pb-4')}>
-              <div className={cn('flex', 'flex-col', 'gap-4', 'min-w-0')}>
-                {activeChallenge ? (
-                  <div className={cn('flex', 'flex-col', 'gap-1.5')}>
-                    <div className={cn('flex', 'items-start', 'justify-between', 'gap-3')}>
-                      <h3 className={cn('font-bold', 'text-lg', 'sm:text-xl', 'text-foreground', 'leading-snug', 'group-hover/potd:text-primary', 'transition-colors')}>
-                        {activeChallenge.title}
-                      </h3>
-                      {activeChallenge.solved_status === "Accepted" && (
-                        <CircleCheck className={cn('size-6', 'text-emerald-500', 'shrink-0', 'mt-0.5')} />
-                      )}
-                    </div>
-
-                    <div className={cn('flex', 'flex-wrap', 'items-center', 'gap-x-2', 'gap-y-1', 'text-xs', 'sm:text-sm', 'text-muted-foreground')}>
-                      {/* Difficulty (clean inline text) */}
-                      {activeChallenge.difficulty && (
-                        <span className={cn(
-                          "font-semibold",
-                          activeChallenge.difficulty === "Easy" ? "text-emerald-600 dark:text-emerald-400" :
-                            activeChallenge.difficulty === "Medium" ? "text-amber-600 dark:text-amber-400" :
-                              "text-rose-600 dark:text-rose-400"
-                        )}>
-                          {activeChallenge.difficulty}
-                        </span>
-                      )}
-
-                      <span>•</span>
-
-                      {/* Acceptance rate */}
-                      {activeChallenge.acceptance_rate !== undefined && activeChallenge.acceptance_rate !== null && (
-                        <>
-                          <span>{activeChallenge.acceptance_rate}% acceptance</span>
-                          <span>•</span>
-                        </>
-                      )}
-
-                      {/* Submissions count */}
-                      <span>{activeChallenge.total_submissions?.toLocaleString() || 0} submissions</span>
-                    </div>
-
-                    {/* Clean Tags Row */}
-                    {activeChallenge.tags && activeChallenge.tags.length > 0 && (
-                      <div className={cn('flex', 'flex-wrap', 'gap-1.5', 'pt-0.5')}>
-                        {activeChallenge.tags.slice(0, 2).map((t: string) => (
-                          <span key={t} className={cn('text-[11px]', 'bg-muted', 'px-2.5', 'py-1', 'rounded-md', 'text-muted-foreground', 'font-medium')}>
-                            {t}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className={cn('flex', 'flex-col', 'items-center', 'justify-center', 'text-center', 'gap-2', 'py-4', 'text-muted-foreground')}>
-                    <span className={cn('text-sm', 'font-semibold')}>No Challenge Available</span>
-                    <span className="text-xs">Check back later for today's puzzle.</span>
-                  </div>
+            {/* Card 3: POTD Card */}
+            <Card className={cn('group/potd', 'min-w-0', 'flex', 'flex-col', 'relative', 'py-0')}>
+              <CardHeader className={cn('flex', 'flex-row', 'items-center', 'justify-between', 'pt-4', 'pb-1')}>
+                <Link href="/logiclab/dailychallenges" className={cn('hover:opacity-80', 'transition-opacity', 'cursor-pointer')}>
+                  <CardTitle className={cn('text-xs', 'font-semibold', 'text-muted-foreground', 'uppercase', 'tracking-wider', 'flex', 'items-center', 'gap-1', 'hover:text-orange-500', 'transition-colors')}>
+                    Daily Challenge<ChevronRight className="size-3" />
+                  </CardTitle>
+                </Link>
+                {timeLeft && (
+                  <CardAction className={cn('text-xs', 'text-muted-foreground/80', 'flex', 'items-center', 'gap-1', 'font-medium', 'select-none')}>
+                    <Clock className="size-3.5" />
+                    {timeLeft}
+                  </CardAction>
                 )}
-              </div>
+              </CardHeader>
 
-              {/* Action Button: Cool Animated Solve Challenge Button */}
-              <div className="mt-auto pt-2">
-                <SolveChallengeButton
-                  isSolved={activeChallenge?.solved_status === "Accepted"}
-                  disabled={!potd || !activeChallenge}
-                  onClick={() => {
-                    if (potd) {
-                      startNavigationProgress()
-                      router.push(`/logiclab/dailychallenges/${potd.id}`)
-                    }
-                  }}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              <CardContent className={cn('flex', 'flex-col', 'flex-1', 'justify-between', 'gap-5', 'pb-4')}>
+                <div className={cn('flex', 'flex-col', 'gap-4', 'min-w-0')}>
+                  {activeChallenge ? (
+                    <div className={cn('flex', 'flex-col', 'gap-1.5')}>
+                      <div className={cn('flex', 'items-start', 'justify-between', 'gap-3')}>
+                        <h3 className={cn('font-bold', 'text-lg', 'sm:text-xl', 'text-foreground', 'leading-snug', 'group-hover/potd:text-primary', 'transition-colors')}>
+                          {activeChallenge.title}
+                        </h3>
+                        {activeChallenge.solved_status === "Accepted" && (
+                          <CircleCheck className={cn('size-6', 'text-emerald-500', 'shrink-0', 'mt-0.5')} />
+                        )}
+                      </div>
+
+                      {/* Difficulty and Acceptance */}
+                      <div className={cn('flex', 'items-center', 'gap-2', 'text-xs')}>
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            'text-[10px]', 'h-5', 'px-2', 'font-semibold', 'border-0',
+                            DIFFICULTY_COLORS[activeChallenge.difficulty]?.bg,
+                            DIFFICULTY_COLORS[activeChallenge.difficulty]?.text
+                          )}
+                        >
+                          {activeChallenge.difficulty}
+                        </Badge>
+                        {activeChallenge.acceptance_rate != null && (
+                          <span className="text-muted-foreground text-[11px] font-medium">
+                            {activeChallenge.acceptance_rate}% acceptance
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Tags preview */}
+                      {activeChallenge.tags && activeChallenge.tags.length > 0 && (
+                        <div className={cn('flex', 'flex-wrap', 'gap-1', 'mt-1')}>
+                          {activeChallenge.tags.slice(0, 3).map((t: string) => (
+                            <span key={t} className={cn('text-[11px]', 'bg-muted', 'px-2.5', 'py-1', 'rounded-md', 'text-muted-foreground', 'font-medium')}>
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className={cn('flex', 'flex-col', 'items-center', 'justify-center', 'text-center', 'gap-2', 'py-4', 'text-muted-foreground')}>
+                      <span className={cn('text-sm', 'font-semibold')}>No Challenge Available</span>
+                      <span className="text-xs">Check back later for today's puzzle.</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Button: Cool Animated Solve Challenge Button */}
+                <div className="mt-auto pt-2">
+                  <SolveChallengeButton
+                    isSolved={activeChallenge?.solved_status === "Accepted"}
+                    disabled={!potd || !activeChallenge}
+                    onClick={() => {
+                      if (activeChallenge?.id) {
+                        startNavigationProgress()
+                        router.push(`/logiclab/problems/${activeChallenge.id}`)
+                      }
+                    }}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )
       )}
 
       {/* Placement Tracks & Company Interview Sets CTA Cards (Mesh Gradient card-07 Style) */}
@@ -802,7 +885,21 @@ export function LogicLabDashboardClient({
           )}
 
           <div className={cn("transition-opacity duration-200 flex flex-col gap-2.5", isPending && problems.length === 0 && "opacity-40 pointer-events-none")}>
-            {problems.length === 0 && !isPending ? (
+            {isLoading && !data ? (
+              <div className="flex flex-col gap-1">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                  <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-sm border bg-card/60">
+                    <Skeleton className="size-4 rounded-full" />
+                    <Skeleton className="h-4 w-12 rounded" />
+                    <Skeleton className="h-4 w-48 sm:w-64 rounded" />
+                    <div className="ml-auto hidden sm:flex items-center gap-3">
+                      <Skeleton className="h-4 w-14 rounded" />
+                      <Skeleton className="h-4 w-16 rounded" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : problems.length === 0 && !isPending ? (
               <Empty className="border border-dashed border-border/60 rounded-xl bg-card/50 p-12">
                 <EmptyHeader>
                   <EmptyMedia variant="icon">

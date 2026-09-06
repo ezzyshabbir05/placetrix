@@ -498,7 +498,7 @@ export function CreateCourseClient({ initialCourse, initialModules = [], adminPr
                     placeholder="Summarize what users will learn from this course…"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="min-h-[5rem] resize-none"
+                    className="min-h-20 resize-none"
                   />
                 </div>
 
@@ -776,7 +776,7 @@ export function CreateCourseClient({ initialCourse, initialModules = [], adminPr
                                 </div>
                               </div>
                               {isPreviewActive ? (
-                                <div className="max-h-[300px] overflow-y-auto rounded-lg border border-border/40 bg-background/50 p-4 leading-relaxed">
+                                <div className="max-h-75 overflow-y-auto rounded-lg border border-border/40 bg-background/50 p-4 leading-relaxed">
                                   <RichText content={mod.content ?? ""} />
                                 </div>
                               ) : (
@@ -785,7 +785,7 @@ export function CreateCourseClient({ initialCourse, initialModules = [], adminPr
                                   value={mod.content ?? ""}
                                   placeholder={`\\section{Introduction to Big-O}\n\nUse standard LaTeX math and formatting:\n- \\subsection{Complexity}\n- \\textbf{Bold text} and \\textit{italic text}\n- \\begin{itemize}\n  \\item First item\n\\end{itemize}\n\nBlock math:\n\\begin{equation}\nE = mc^2\n\\end{equation}\n\nInline math: $x \\ge y$.`}
                                   onChange={(e) => updateModuleField(index, "content", e.target.value)}
-                                  className="min-h-[140px] resize-y font-mono text-sm"
+                                  className="min-h-35 resize-y font-mono text-sm"
                                 />
                               )}
                             </div>
@@ -819,7 +819,7 @@ export function CreateCourseClient({ initialCourse, initialModules = [], adminPr
                       />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="max-w-[150px] truncate text-[10px] text-muted-foreground">
+                      <span className="max-w-37.5 truncate text-[10px] text-muted-foreground">
                         {coverImagePath?.split("/").pop()}
                       </span>
                       <Button

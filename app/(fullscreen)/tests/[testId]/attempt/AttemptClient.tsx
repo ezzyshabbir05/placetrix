@@ -1366,18 +1366,43 @@ export function AttemptClient({
             return
         }
 
+        // ── Single Channel Violation Sync: Direct Client Supabase RPC (0 Next.js server requests) ──
+        const recordViolation = (type: "focus_loss" | "fullscreen_exit", count: number) => {
+            if (!attemptInfo) return
+            const now = Date.now()
+            const lastSync = (window as any)._lastViolationSync ?? 0
+            if (now - lastSync > 2000) {
+                (window as any)._lastViolationSync = now
+                const timestamp = getNowOnServer().toISOString()
+                const supabase = createClient()
+                ;(supabase as any)
+                    .rpc("record_attempt_violation", {
+                        p_attempt_id: attemptInfo.id,
+                        p_type: type,
+                        p_total_count: count,
+                        p_timestamp: timestamp,
+                    })
+                    .then(({ error }: any) => {
+                        if (error && onViolation) {
+                            // Fallback to Server Action only if direct RPC returns error
+                            onViolation(attemptInfo.id, type, count, timestamp).catch(() => {})
+                        }
+                    })
+                    .catch(() => {
+                        if (onViolation) {
+                            onViolation(attemptInfo.id, type, count, timestamp).catch(() => {})
+                        }
+                    })
+            }
+        }
+
         // 1. Fullscreen change ─────────────────────────────────────────────────
         const handleFullscreenChange = () => {
             const active = !!getFullscreenElement()
             if (!active && !autoSubmitted.current && !isSubmittingRef.current && attemptInfo) {
                 setShowFullscreenWarning(true)
-                // Persist fullscreen-exit violation (fire-and-forget)
-                onViolation?.(
-                    attemptInfo.id,
-                    "fullscreen_exit",
-                    focusLostCountRef.current,
-                    getNowOnServer().toISOString()
-                ).catch(() => { /* never throw */ })
+                // Persist fullscreen-exit violation via direct client Supabase RPC
+                recordViolation("fullscreen_exit", focusLostCountRef.current)
             } else {
                 setShowFullscreenWarning(false)
             }
@@ -1397,17 +1422,7 @@ export function AttemptClient({
             setShowFocusWarning(true)
 
             if (attemptInfo) {
-                const now = Date.now()
-                const lastSync = (window as any)._lastViolationSync ?? 0
-                if (now - lastSync > 2000) {
-                    (window as any)._lastViolationSync = now
-                    onViolation?.(
-                        attemptInfo.id,
-                        "focus_loss",
-                        currentCount,
-                        getNowOnServer().toISOString()
-                    ).catch(() => { /* never throw */ })
-                }
+                recordViolation("focus_loss", currentCount)
             }
 
             // Auto-submit once the threshold is crossed (strict mode only).
@@ -1424,20 +1439,7 @@ export function AttemptClient({
 
                 if (showFocusWarningRef.current) return
                 awayStartRef.current = getNowOnServer().getTime()
-                if (phase === "active" && attemptInfo) {
-                    beaconSentRef.current = true
-                    try {
-                        navigator.sendBeacon(
-                            "/api/attempt/beacon",
-                            JSON.stringify({
-                                attemptId: attemptInfo.id,
-                                type: "tab_switch",
-                                count: focusLostCountRef.current + 1,
-                                timestamp: getNowOnServer().toISOString(),
-                            })
-                        )
-                    } catch {}
-                }
+                // Focus-loss is synced via single direct client RPC in triggerFocusLoss() (0 Next.js server requests)
                 triggerFocusLoss()
             } else if (document.visibilityState === "visible") {
                 activeQuestionTrackerRef.current.lastActivePerfTime = performance.now()

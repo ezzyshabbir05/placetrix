@@ -151,6 +151,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
                 supabaseResponse.cookies.delete(c.name);
               }
             });
+            supabaseResponse.cookies.delete("mfa_checked");
           }
         }
       } catch (e: any) {
@@ -161,6 +162,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
               supabaseResponse.cookies.delete(c.name);
             }
           });
+          supabaseResponse.cookies.delete("mfa_checked");
         } else {
           console.error("[Middleware] Refresh exception:", e);
         }
@@ -187,21 +189,33 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   // 3b. Session present on protected route — check MFA assurance level.
   //     If the user has enrolled MFA (nextLevel=aal2) but this session hasn't verified
   //     it yet (currentLevel=aal1), redirect to the TOTP challenge page.
-  //     This covers BOTH password logins and Google OAuth logins.
-  //     getAuthenticatorAssuranceLevel() is documented as "very fast, rarely uses network."
+  //     Once verified or if the user has no MFA enrolled, a session cookie (mfa_checked)
+  //     is set so we avoid hitting getAuthenticatorAssuranceLevel() on every subsequent GET request.
   if (isProtected(pathname) && user && request.method === "GET" && (user as any).aal !== "aal2") {
-    const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (aalData?.currentLevel === "aal1" && aalData?.nextLevel === "aal2") {
-      const mfaUrl = request.nextUrl.clone();
-      mfaUrl.pathname = "/auth/mfa";
-      mfaUrl.searchParams.set("next", pathname);
-      const redirectRes = NextResponse.redirect(mfaUrl);
-      redirectRes.headers.set("Cache-Control", "no-store, max-age=0");
-      supabaseResponse.cookies.getAll().forEach((c) => {
-        const { name, value, ...options } = c;
-        redirectRes.cookies.set(name, value, options);
-      });
-      return redirectRes;
+    const hasMfaCheckedCookie = request.cookies.get("mfa_checked")?.value === "1";
+    if (!hasMfaCheckedCookie) {
+      const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aalData?.currentLevel === "aal1" && aalData?.nextLevel === "aal2") {
+        const mfaUrl = request.nextUrl.clone();
+        mfaUrl.pathname = "/auth/mfa";
+        mfaUrl.searchParams.set("next", pathname);
+        const redirectRes = NextResponse.redirect(mfaUrl);
+        redirectRes.headers.set("Cache-Control", "no-store, max-age=0");
+        supabaseResponse.cookies.getAll().forEach((c) => {
+          const { name, value, ...options } = c;
+          redirectRes.cookies.set(name, value, options);
+        });
+        return redirectRes;
+      } else {
+        // User has no MFA enrolled or current session is verified.
+        // Set cookie so subsequent requests skip this check.
+        supabaseResponse.cookies.set("mfa_checked", "1", {
+          path: "/",
+          sameSite: "lax",
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+        });
+      }
     }
   }
 
@@ -221,7 +235,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   }
 
   if (isProtected(pathname) || isAuthPage(pathname)) {
-    supabaseResponse.headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+    supabaseResponse.headers.set("Cache-Control", "private, no-cache, no-transform");
   }
 
   return supabaseResponse;

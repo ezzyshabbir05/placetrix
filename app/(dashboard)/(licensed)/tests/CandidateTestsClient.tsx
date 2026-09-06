@@ -82,7 +82,8 @@ import {
 import { cn, formatDateTime } from "@/lib/utils"
 import type { CandidateTest, DerivedCandidateStatus } from "./_types"
 import { deriveStatus } from "./_types"
-import { getCandidateTestsAction } from "./actions"
+import { fetchCandidateTestsClient } from "@/lib/supabase/tests-data"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export { formatDateTime }
 
@@ -557,7 +558,9 @@ const TestCard = React.memo(function TestCard({
 // ─── Component ────────────────────────────────────────────────────────────────
 
 interface Props {
-  tests: CandidateTest[]
+  userId: string
+  instituteId: string | null
+  tests?: CandidateTest[]
   serverNow: string
   initialPageSize: number
   initialSearch: string
@@ -565,12 +568,14 @@ interface Props {
   initialSort?: string
   initialDuration?: string
   initialAttemptStatus?: string
-  totalCount: number
-  tabCounts: { all: number; live: number; upcoming: number; past: number; attempted: number }
+  totalCount?: number
+  tabCounts?: { all: number; live: number; upcoming: number; past: number; attempted: number }
 }
 
 export function CandidateTestsClient({
-  tests,
+  userId,
+  instituteId,
+  tests: initialTests,
   serverNow,
   initialPageSize,
   initialSearch,
@@ -578,13 +583,12 @@ export function CandidateTestsClient({
   initialSort = "",
   initialDuration = "all",
   initialAttemptStatus = "all",
-  totalCount,
-  tabCounts,
+  totalCount: initialTotalCount = 0,
+  tabCounts: initialTabCounts = { all: 0, live: 0, upcoming: 0, past: 0, attempted: 0 },
 }: Props) {
   const router = useRouter()
   const pathname = usePathname()
 
-  const [isPending, startTransition] = useTransition()
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
 
   // Local state for search input text
@@ -593,6 +597,21 @@ export function CandidateTestsClient({
 
   // Tracks whether the last URL change was triggered by our own debounce
   const isOwnUpdateRef = useRef(false)
+
+  // Active filter states
+  const [activeTab, setActiveTab] = useState<Tab>((initialTab || "all") as Tab)
+  const [activeSort, setActiveSort] = useState<string>(initialSort || "default")
+  const [activeDuration, setActiveDuration] = useState<string>(initialDuration || "all")
+  const [activeAttemptStatus, setActiveAttemptStatus] = useState<string>(initialAttemptStatus || "all")
+
+  // Data states
+  const [items, setItems] = useState<CandidateTest[]>(initialTests || [])
+  const [totalCount, setTotalCount] = useState<number>(initialTotalCount)
+  const [tabCounts, setTabCounts] = useState(initialTabCounts)
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(initialTests ? initialTests.length < initialTotalCount : false)
+  const [isLoading, setIsLoading] = useState(!initialTests)
+  const [loadingMore, setLoadingMore] = useState(false)
 
   // Sync search input ONLY on external navigation (back/forward)
   useEffect(() => {
@@ -626,8 +645,8 @@ export function CandidateTestsClient({
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [])
 
-  // Helper to push updated search parameters to the URL
-  const updateParams = useCallback(
+  // Helper to push updated search parameters to the URL without triggering SSR
+  const updateUrl = useCallback(
     (newParams: Partial<Record<string, string | number>>) => {
       const params = new URLSearchParams(window.location.search)
       Object.entries(newParams).forEach(([key, val]) => {
@@ -643,29 +662,87 @@ export function CandidateTestsClient({
           params.set(key, String(val))
         }
       })
-      startTransition(() => {
-        const queryStr = params.toString()
-        router.push(queryStr ? `${pathname}?${queryStr}` : pathname, { scroll: false })
-      })
+      const queryStr = params.toString()
+      const newUrl = queryStr ? `${pathname}?${queryStr}` : pathname
+      window.history.replaceState(null, "", newUrl)
     },
-    [pathname, router]
+    [pathname]
   )
+
+  // Client-side test loader directly from Supabase
+  const loadTests = useCallback(
+    async (opts?: {
+      tab?: Tab
+      search?: string
+      page?: number
+    }) => {
+      const targetTab = opts?.tab !== undefined ? opts.tab : activeTab
+      const targetSearch = opts?.search !== undefined ? opts.search : searchInput
+      const targetPage = opts?.page ?? 1
+
+      if (targetPage === 1) {
+        setIsLoading(true)
+      }
+
+      try {
+        const res = await fetchCandidateTestsClient({
+          userId,
+          instituteId,
+          now: serverNow,
+          page: targetPage,
+          size: initialPageSize,
+          search: targetSearch,
+          tab: targetTab,
+        })
+
+        if (targetPage === 1) {
+          setItems(res.tests)
+          setPage(1)
+          setHasMore(res.tests.length < res.count)
+        } else {
+          setItems((prev) => {
+            const existingIds = new Set(prev.map((i) => i.id))
+            const newItems = res.tests.filter((t) => !existingIds.has(t.id))
+            const updated = [...prev, ...newItems]
+            setHasMore(updated.length < res.count)
+            return updated
+          })
+          setPage(targetPage)
+        }
+        setTotalCount(res.count)
+        setTabCounts(res.tabCounts)
+      } catch (e) {
+        console.error("Error loading candidate tests:", e)
+        toast.error("Failed to load tests")
+      } finally {
+        setIsLoading(false)
+        setLoadingMore(false)
+      }
+    },
+    [userId, instituteId, serverNow, initialPageSize, activeTab, searchInput]
+  )
+
+  // Initial client fetch on mount if tests weren't passed
+  const initialMountDone = useRef(false)
+  useEffect(() => {
+    if (initialMountDone.current) return
+    initialMountDone.current = true
+    if (!initialTests) {
+      loadTests({ tab: (initialTab || "all") as Tab, search: initialSearch, page: 1 })
+    }
+  }, [initialTests, initialTab, initialSearch, loadTests])
 
   // Debounce search input
   useEffect(() => {
-    if (searchInput === initialSearch) return
+    if (searchInput === initialSearch && !initialMountDone.current) return
 
     const timer = setTimeout(() => {
       isOwnUpdateRef.current = true
-      updateParams({ search: searchInput })
+      updateUrl({ search: searchInput })
+      loadTests({ search: searchInput, page: 1 })
     }, 400)
     return () => clearTimeout(timer)
-  }, [searchInput, initialSearch, updateParams])
-
-  const activeTab = (initialTab || "all") as Tab
-  const activeSort = initialSort || "default"
-  const activeDuration = initialDuration || "all"
-  const activeAttemptStatus = initialAttemptStatus || "all"
+  }, [searchInput, initialSearch, updateUrl, loadTests])
 
   // Local draft filter states for the Filter Sheet (applied only on "Apply" click)
   const [draftTab, setDraftTab] = useState<Tab>(activeTab)
@@ -702,15 +779,25 @@ export function CandidateTestsClient({
     setDraftAttemptStatus("all")
   }
 
-  // Apply draft filters to URL
+  // Apply draft filters
   const handleApplyFilters = () => {
-    updateParams({
+    const tabChanged = draftTab !== activeTab
+    setActiveTab(draftTab)
+    setActiveSort(draftSort)
+    setActiveDuration(draftDuration)
+    setActiveAttemptStatus(draftAttemptStatus)
+
+    updateUrl({
       tab: draftTab,
       sort: draftSort,
       duration: draftDuration,
       attemptStatus: draftAttemptStatus,
     })
     setFilterSheetOpen(false)
+
+    if (tabChanged) {
+      loadTests({ tab: draftTab, page: 1 })
+    }
   }
 
   // Count active filters
@@ -727,10 +814,13 @@ export function CandidateTestsClient({
   const handleResetAll = useCallback(() => {
     isOwnUpdateRef.current = true
     setSearchInput("")
-    startTransition(() => {
-      router.push(pathname, { scroll: false })
-    })
-  }, [pathname, router])
+    setActiveTab("all")
+    setActiveSort("default")
+    setActiveDuration("all")
+    setActiveAttemptStatus("all")
+    updateUrl({ search: "", tab: "all", sort: "default", duration: "all", attemptStatus: "all" })
+    loadTests({ tab: "all", search: "", page: 1 })
+  }, [updateUrl, loadTests])
 
   // ── Server Time Sync ───────────────────────────────────────────────────────
   const serverTimeOffset = useMemo(() => {
@@ -748,62 +838,18 @@ export function CandidateTestsClient({
     return () => clearInterval(id)
   }, [getNowOnServer])
 
-  // Infinite scroll states
-  const [items, setItems] = useState<CandidateTest[]>(tests)
-  const [page, setPage] = useState(1)
-  const [hasMore, setHasMore] = useState(tests.length < totalCount)
-  const [loadingMore, setLoadingMore] = useState(false)
-
-  useEffect(() => {
-    setItems(tests)
-    setPage(1)
-    setHasMore(tests.length < totalCount)
-  }, [tests, totalCount])
-
   const loadMore = useCallback(async () => {
-    if (loadingMore || !hasMore || isPending) return
+    if (loadingMore || !hasMore || isLoading) return
     setLoadingMore(true)
-    try {
-      const nextPage = page + 1
-      const res = await getCandidateTestsAction({
-        page: nextPage,
-        size: initialPageSize,
-        search: initialSearch,
-        tab: activeTab,
-        now: serverNow,
-      })
-
-      setItems((prev) => {
-        const existingIds = new Set(prev.map((i) => i.id))
-        const newItems = res.tests.filter((t) => !existingIds.has(t.id))
-        const updated = [...prev, ...newItems]
-        setHasMore(updated.length < res.count)
-        return updated
-      })
-      setPage(nextPage)
-    } catch (e) {
-      console.error("Error loading more tests:", e)
-      toast.error("Failed to load more tests")
-    } finally {
-      setLoadingMore(false)
-    }
-  }, [
-    loadingMore,
-    hasMore,
-    isPending,
-    page,
-    initialPageSize,
-    initialSearch,
-    activeTab,
-    serverNow,
-  ])
+    await loadTests({ page: page + 1 })
+  }, [loadingMore, hasMore, isLoading, page, loadTests])
 
   const observerTarget = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore && !isPending) {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !isLoading) {
           loadMore()
         }
       },
@@ -820,7 +866,7 @@ export function CandidateTestsClient({
         observer.unobserve(target)
       }
     }
-  }, [loadMore, hasMore, loadingMore, isPending])
+  }, [loadMore, hasMore, loadingMore, isLoading])
 
   // Dynamically re-derive status on the client with synced server time
   const enrichedTests = useMemo(() => {
@@ -960,7 +1006,7 @@ export function CandidateTestsClient({
         <div className="flex items-center gap-2 w-full min-w-0">
           <InputGroup className="flex-1 min-w-0">
             <InputGroupAddon align="inline-start">
-              {isPending ? (
+              {isLoading ? (
                 <Loader2 className="size-4 text-primary animate-spin" />
               ) : (
                 <Search className="size-4 text-muted-foreground" />
@@ -981,7 +1027,8 @@ export function CandidateTestsClient({
                   onClick={() => {
                     isOwnUpdateRef.current = true
                     setSearchInput("")
-                    updateParams({ search: "" })
+                    updateUrl({ search: "" })
+                    loadTests({ search: "", page: 1 })
                   }}
                   aria-label="Clear search"
                 >
@@ -1191,7 +1238,11 @@ export function CandidateTestsClient({
                 Status: <span className="font-medium capitalize">{activeTab}</span>
                 <button
                   type="button"
-                  onClick={() => updateParams({ tab: "all" })}
+                  onClick={() => {
+                    setActiveTab("all")
+                    updateUrl({ tab: "all" })
+                    loadTests({ tab: "all", page: 1 })
+                  }}
                   className="hover:opacity-70 ml-0.5 rounded-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   aria-label="Remove status filter"
                 >
@@ -1206,7 +1257,10 @@ export function CandidateTestsClient({
                 Sort: <span className="font-medium">{activeSortLabel}</span>
                 <button
                   type="button"
-                  onClick={() => updateParams({ sort: "default" })}
+                  onClick={() => {
+                    setActiveSort("default")
+                    updateUrl({ sort: "default" })
+                  }}
                   className="hover:opacity-70 ml-0.5 rounded-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   aria-label="Remove sort filter"
                 >
@@ -1224,7 +1278,10 @@ export function CandidateTestsClient({
                 </span>
                 <button
                   type="button"
-                  onClick={() => updateParams({ duration: "all" })}
+                  onClick={() => {
+                    setActiveDuration("all")
+                    updateUrl({ duration: "all" })
+                  }}
                   className="hover:opacity-70 ml-0.5 rounded-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   aria-label="Remove duration filter"
                 >
@@ -1242,7 +1299,10 @@ export function CandidateTestsClient({
                 </span>
                 <button
                   type="button"
-                  onClick={() => updateParams({ attemptStatus: "all" })}
+                  onClick={() => {
+                    setActiveAttemptStatus("all")
+                    updateUrl({ attemptStatus: "all" })
+                  }}
                   className="hover:opacity-70 ml-0.5 rounded-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   aria-label="Remove attempt status filter"
                 >
@@ -1265,17 +1325,25 @@ export function CandidateTestsClient({
 
       {/* ── Test Cards List Area ── */}
       <div className="relative">
-        {isPending && (
-          <div className="absolute inset-0 z-50 bg-background/50 backdrop-blur-[1px] rounded-lg flex items-center justify-center min-h-48">
-            <div className="flex items-center gap-2 rounded-md border bg-popover px-4 py-2 shadow-sm">
-              <Loader2 className="size-4 animate-spin text-primary" />
-              <span className="text-xs text-muted-foreground">Updating tests...</span>
+        <div className="space-y-3">
+          {isLoading && items.length === 0 ? (
+            <div className="grid gap-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="rounded-xl border bg-card p-4 sm:p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Skeleton className="h-5 w-48 rounded" />
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                  </div>
+                  <Skeleton className="h-4 w-3/4 rounded" />
+                  <div className="flex items-center gap-4 pt-1">
+                    <Skeleton className="h-3.5 w-24 rounded" />
+                    <Skeleton className="h-3.5 w-32 rounded" />
+                    <Skeleton className="h-3.5 w-28 rounded" />
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-        )}
-
-        <div className={cn("space-y-3 transition-opacity duration-150", isPending && "opacity-40 pointer-events-none")}>
-          {totalCount === 0 || enrichedTests.length === 0 ? (
+          ) : totalCount === 0 || enrichedTests.length === 0 ? (
             <Empty className="border border-dashed rounded-xl p-12">
               <EmptyHeader>
                 <EmptyMedia variant="icon">

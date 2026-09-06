@@ -35,6 +35,7 @@ export function BrandLogo({
         className="size-auto dark:invert"
         style={{ width: iconSize, height: iconSize }}
         priority={priority}
+        unoptimized
       />
       <span className={cn("text-zinc-950 dark:text-white", textSize)}>
         PlaceTrix

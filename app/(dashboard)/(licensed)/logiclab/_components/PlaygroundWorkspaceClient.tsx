@@ -242,8 +242,38 @@ export default function PlaygroundWorkspaceClient({ userId }: PlaygroundWorkspac
         processedCode = processedCode.replace(/(?:public\s+)?class\s+[a-zA-Z0-9_]+\s*\{/, "class Main {");
       }
 
-      const data = await runCodeAction({ source_code: processedCode, language_id: selectedLang.id, stdin });
-      if (!data) throw new Error("Execution failed with empty response.");
+      const runRes = await fetch("/api/logiclab/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source_code: processedCode, language_id: selectedLang.id, stdin, mode: "playground" }),
+      });
+      const runInit = await runRes.json();
+      if (!runRes.ok || !runInit.success) {
+        throw new Error(runInit.error || "Execution submission failed.");
+      }
+
+      const { tokens } = runInit;
+      let runAttempts = 0;
+      let data: any = null;
+
+      while (runAttempts < 25) {
+        await new Promise(r => setTimeout(r, Math.min(800 + runAttempts * 200, 2000)));
+        const statusRes = await fetch("/api/logiclab/run-status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tokens, mode: "playground" }),
+        });
+        if (statusRes.ok) {
+          const statusJson = await statusRes.json();
+          if (statusJson.completed) {
+            data = statusJson;
+            break;
+          }
+        }
+        runAttempts++;
+      }
+
+      if (!data) throw new Error("Execution timed out. Please try again.");
       if (data.error) throw new Error(data.error);
       setResults(data);
       if (data.status?.id === 3) {

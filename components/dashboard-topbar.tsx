@@ -186,19 +186,19 @@ export function DashboardTopbar({ user, onMenuClick, mobileOpen }: DashboardTopb
                 {/* ── Account Links ─────────────────── */}
                 <DropdownMenuGroup>
                   <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link href="/myprofile">
+                    <Link href="/myprofile" prefetch={false}>
                       <User className="size-4 shrink-0" />
                       <span>My Profile</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link href="/settings">
+                    <Link href="/settings" prefetch={false}>
                       <Settings className="size-4 shrink-0" />
                       <span>Settings</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link href="/gethelp">
+                    <Link href="/gethelp" prefetch={false}>
                       <HelpCircle className="size-4 shrink-0" />
                       <span>Get Help</span>
                     </Link>
@@ -209,7 +209,7 @@ export function DashboardTopbar({ user, onMenuClick, mobileOpen }: DashboardTopb
 
                 {/* ── Changelog ─────────────────────── */}
                 <DropdownMenuItem asChild className="cursor-pointer">
-                  <Link href="/changelog">
+                  <Link href="/changelog" prefetch={false}>
                     <History className="size-4 shrink-0" />
                     <span>Changelog</span>
                   </Link>

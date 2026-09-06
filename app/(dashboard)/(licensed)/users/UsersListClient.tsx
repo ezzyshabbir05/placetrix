@@ -759,11 +759,6 @@ export function UsersListClient({
                     <ContextMenuTrigger asChild>
                       <TableRow
                         onClick={() => handleUserClick(user)}
-                        onMouseEnter={() => {
-                          if (user.username?.trim()) {
-                            router.prefetch(`/users/${user.username.trim()}`)
-                          }
-                        }}
                         data-nav-href={user.username ? `/users/${user.username.trim()}` : undefined}
                         className="cursor-pointer hover:bg-muted/50 transition-colors"
                       >
@@ -839,11 +834,6 @@ export function UsersListClient({
               <div
                 key={user.id}
                 onClick={() => handleUserClick(user)}
-                onMouseEnter={() => {
-                  if (user.username?.trim()) {
-                    router.prefetch(`/users/${user.username.trim()}`)
-                  }
-                }}
                 data-nav-href={user.username ? `/users/${user.username.trim()}` : undefined}
                 className="rounded-lg border bg-card p-4 shadow-xs space-y-3 cursor-pointer hover:bg-muted/50 transition-colors"
               >

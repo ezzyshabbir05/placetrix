@@ -1241,15 +1241,50 @@ export function ProblemWorkspaceClient({
         processedCode = processedCode.replace(/public\s+class\s+/g, "class ");
       }
 
-      const data = await runCodeAction({
-        source_code: processedCode,
-        language_id: selectedLang.id,
-        problem_id: problem.id,
-        mode: "problem",
-        custom_cases: customInputs.map(ci => ci.trim()),
-        custom_expected: customExpectedOutputs,
+      const runRes = await fetch("/api/logiclab/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source_code: processedCode,
+          language_id: selectedLang.id,
+          problem_id: problem.id,
+          mode: "problem",
+          custom_cases: customInputs.map(ci => ci.trim()),
+          custom_expected: customExpectedOutputs,
+        }),
       });
-      if (!data) throw new Error("Execution failed with empty response.");
+      const runInit = await runRes.json();
+      if (!runRes.ok || !runInit.success) {
+        throw new Error(runInit.error || "Execution submission failed.");
+      }
+
+      const { tokens: runTokens, line_offset, sample_cases } = runInit;
+      let runAttempts = 0;
+      let data: any = null;
+
+      while (runAttempts < 30) {
+        await new Promise(r => setTimeout(r, Math.min(800 + runAttempts * 200, 2000)));
+        const statusRes = await fetch("/api/logiclab/run-status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tokens: runTokens,
+            mode: "problem",
+            line_offset,
+            sample_cases,
+          }),
+        });
+        if (statusRes.ok) {
+          const statusJson = await statusRes.json();
+          if (statusJson.completed) {
+            data = statusJson;
+            break;
+          }
+        }
+        runAttempts++;
+      }
+
+      if (!data) throw new Error("Execution timed out. Please try again.");
       if (data.error) throw new Error(data.error);
 
       setRunResult(data);
@@ -1294,13 +1329,49 @@ export function ProblemWorkspaceClient({
         processedCode = processedCode.replace(/public\s+class\s+/g, "class ");
       }
 
-      const data: any = await submitCodeAction({
-        problem_id: problem.id,
-        code: processedCode,
-        language_id: selectedLang.id,
-        daily_challenge_id: isDailyChallenge ? dailyChallengeId : undefined,
+      const submitRes = await fetch("/api/logiclab/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          problem_id: problem.id,
+          code: processedCode,
+          language_id: selectedLang.id,
+          daily_challenge_id: isDailyChallenge ? dailyChallengeId : undefined,
+        }),
       });
-      if (!data) throw new Error("Submission failed with empty response.");
+      const submitInit = await submitRes.json();
+      if (!submitRes.ok || !submitInit.success) {
+        throw new Error(submitInit.error || "Submission initialization failed.");
+      }
+
+      const { tokens: submitTokens } = submitInit;
+      let submitAttempts = 0;
+      let data: any = null;
+
+      while (submitAttempts < 35) {
+        await new Promise(r => setTimeout(r, Math.min(1000 + submitAttempts * 200, 2000)));
+        const statusRes = await fetch("/api/logiclab/status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tokens: submitTokens,
+            problem_id: problem.id,
+            code: processedCode,
+            language_id: selectedLang.id,
+            daily_challenge_id: isDailyChallenge ? dailyChallengeId : undefined,
+          }),
+        });
+        if (statusRes.ok) {
+          const statusJson = await statusRes.json();
+          if (statusJson.completed) {
+            data = statusJson;
+            break;
+          }
+        }
+        submitAttempts++;
+      }
+
+      if (!data) throw new Error("Submission timed out. Please try again.");
       if (data.error) throw new Error(data.error);
 
       // Inject the static snapshot so changing live code doesn't affect the submitted view

@@ -183,9 +183,10 @@ export default async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Run middleware on all routes except Next.js internals and static files.
-     * This is required so maintenance mode can intercept any page, not just protected routes.
+     * Run middleware on all routes except Next.js internals, API routes, and static assets.
+     * This is required so maintenance mode can intercept any page, not just protected routes,
+     * while preventing unnecessary serverless middleware invocations on /api and static files.
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|otf)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|otf|txt|xml|json)$).*)",
   ],
 };

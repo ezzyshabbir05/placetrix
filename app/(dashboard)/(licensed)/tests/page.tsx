@@ -5,7 +5,6 @@ import { redirect } from "next/navigation"
 import { CandidateTestsClient } from "./CandidateTestsClient"
 import { InstituteTestsClient } from "./InstituteTestsClient"
 import { UnderDevelopment } from "@/components/under-development"
-import { getCandidateTestsAction, getInstituteTestsAction } from "./actions"
 
 interface SearchParams {
   page?: string
@@ -37,20 +36,13 @@ export default async function TestsPage(props: {
   const size = Math.max(1, parseInt(params.size || "10", 10))
   const search = params.search || ""
   const tab = params.tab || ""
-
   const nowStr = new Date().toISOString()
 
   if (profile.account_type === "institute_candidate") {
-    const { tests, count, tabCounts } = await getCandidateTestsAction({
-      page: 1,
-      size,
-      search,
-      tab,
-      now: nowStr,
-    })
     return (
       <CandidateTestsClient
-        tests={tests}
+        userId={profile.id}
+        instituteId={profile.institute_id}
         serverNow={nowStr}
         initialPageSize={size}
         initialSearch={search}
@@ -58,30 +50,19 @@ export default async function TestsPage(props: {
         initialSort={params.sort || ""}
         initialDuration={params.duration || "all"}
         initialAttemptStatus={params.attemptStatus || "all"}
-        totalCount={count}
-        tabCounts={tabCounts}
       />
     )
   }
 
-  if (profile.account_type === "institute_staff" || profile.account_type === "institute_placement_officer" || profile.account_type === "institute_primary") {
-    const { tests, count, tabCounts } = await getInstituteTestsAction({
-      page: 1,
-      size,
-      search,
-      tab,
-      sort: params.sort,
-      duration: params.duration,
-      questions: params.questions,
-      results: params.results,
-      marks: params.marks,
-      attempts: params.attempts,
-      author: params.author,
-      now: nowStr,
-    })
+  if (
+    profile.account_type === "institute_staff" ||
+    profile.account_type === "institute_placement_officer" ||
+    profile.account_type === "institute_primary"
+  ) {
     return (
       <InstituteTestsClient
-        tests={tests}
+        instituteId={profile.institute_id || ""}
+        currentUserId={profile.id}
         serverNow={nowStr}
         initialPageSize={size}
         initialSearch={search}
@@ -93,9 +74,6 @@ export default async function TestsPage(props: {
         initialMarks={params.marks || "all"}
         initialAttempts={params.attempts || "all"}
         initialAuthor={params.author || "all"}
-        currentUserId={profile.id}
-        totalCount={count}
-        tabCounts={tabCounts}
       />
     )
   }

@@ -505,7 +505,7 @@ export function CandidateDashboardClient({
             <CardContent className="p-5 flex flex-col flex-1 justify-between gap-5 h-full">
               <div className="flex flex-col gap-4 min-w-0">
                 <div className="flex flex-row items-center justify-between pb-1">
-                  <Link href="/logiclab/dailychallenges" className="hover:opacity-80 transition-opacity cursor-pointer">
+                  <Link href="/logiclab/dailychallenges" prefetch={false} className="hover:opacity-80 transition-opacity cursor-pointer">
                     <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                       Daily Challenge<ChevronRight className="size-3" />
                     </div>
@@ -791,7 +791,7 @@ export function CandidateDashboardClient({
                   <>
                     <div className="flex flex-col gap-4 min-w-0">
                       <div className="flex flex-row items-center justify-between pb-1">
-                        <Link href="/tests" className="hover:opacity-80 transition-opacity cursor-pointer">
+                        <Link href="/tests" prefetch={false} className="hover:opacity-80 transition-opacity cursor-pointer">
                           <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                             Tests<ChevronRight className="size-3" />
                           </div>
@@ -867,7 +867,7 @@ export function CandidateDashboardClient({
             <CardContent className="p-5 flex flex-col flex-1 justify-between gap-5 h-full">
               <div className="flex flex-col gap-4 min-w-0">
                 <div className="flex flex-row items-center justify-between pb-1">
-                  <Link href="/events" className="hover:opacity-80 transition-opacity cursor-pointer">
+                  <Link href="/events" prefetch={false} className="hover:opacity-80 transition-opacity cursor-pointer">
                     <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                       Events<ChevronRight className="size-3" />
                     </div>
@@ -953,7 +953,7 @@ export function CandidateDashboardClient({
                   <>
                     <div className="flex flex-col gap-4 min-w-0">
                       <div className="flex flex-row items-center justify-between pb-1">
-                        <Link href="/opportunities" className="hover:opacity-80 transition-opacity cursor-pointer">
+                        <Link href="/opportunities" prefetch={false} className="hover:opacity-80 transition-opacity cursor-pointer">
                           <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                             Opportunities<ChevronRight className="size-3" />
                           </div>
