@@ -140,6 +140,10 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent, EmptyMedia } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 // Robust memory usage display formatter
 const formatMemory = (
@@ -1068,11 +1072,11 @@ export function ProblemWorkspaceClient({
                 {paramName} =
               </span>
               {isEditable ? (
-                <input
+                <Input
                   type="text"
                   value={line}
                   onChange={(e) => onChange?.(idx, e.target.value)}
-                  className={cn('w-full', 'px-3', 'py-2', 'bg-zinc-100/80 dark:bg-zinc-900/50', 'border', 'border-border/60', 'rounded-md', 'text-foreground', 'text-[15px]', 'font-mono', 'outline-none', 'transition-colors', 'focus:border-zinc-400 dark:focus:border-zinc-600 focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 shadow-sm')}
+                  className={cn('font-mono', 'text-[15px]', 'bg-zinc-100/80', 'dark:bg-zinc-900/50')}
                 />
               ) : (
                 <pre className={cn('p-3', 'bg-zinc-100/70 dark:bg-zinc-900/30', 'border', 'border-border/40', 'rounded-md', 'text-zinc-900 dark:text-foreground/90', 'text-[15px]', 'font-mono', 'whitespace-pre-wrap', 'leading-relaxed', 'max-h-32', 'overflow-y-auto')}>
@@ -1596,7 +1600,7 @@ export function ProblemWorkspaceClient({
               className={cn('h-8', 'px-3', 'text-xs', 'font-semibold', 'bg-background', 'hover:bg-accent', 'flex', 'items-center', 'gap-1.5', 'group')}
             >
               {running ? (
-                <div className={cn('h-3.5', 'w-3.5', 'border', 'border-current', 'border-t-transparent', 'rounded-full', 'animate-spin')} />
+                <Spinner className="size-3.5" />
               ) : (
                 <IconPlayerPlay className={cn('h-3.5', 'w-3.5', 'text-emerald-600', 'dark:text-emerald-400', 'fill-emerald-500/20')} />
               )}
@@ -1610,7 +1614,7 @@ export function ProblemWorkspaceClient({
               className={cn('h-8', 'px-3', 'text-xs', 'font-semibold', 'bg-background', 'hover:bg-accent', 'flex', 'items-center', 'gap-1.5', 'group')}
             >
               {submitting ? (
-                <div className={cn('h-3.5', 'w-3.5', 'border', 'border-current', 'border-t-transparent', 'rounded-full', 'animate-spin')} />
+                <Spinner className="size-3.5" />
               ) : (
                 <IconSend className={cn('h-3.5', 'w-3.5', 'text-sky-600', 'dark:text-sky-400', 'fill-sky-500/20')} />
               )}
@@ -1821,17 +1825,17 @@ export function ProblemWorkspaceClient({
         {/* Tab Content */}
         <div className={cn('flex-1', 'w-full', 'min-h-0', 'flex', 'flex-col', 'relative')}>
           <TabsContent value="description" className={cn('mt-0', 'outline-none', 'flex-1', 'w-full', 'min-h-0', 'flex', 'flex-col')}>
-            <div className={cn('flex-1', 'w-full', 'overflow-y-auto', '[&::-webkit-scrollbar]:hidden', '[-ms-overflow-style:none]', 'scrollbar-none')}>
+            <ScrollArea className={cn('flex-1', 'w-full', 'min-h-0')}>
               <div className="p-5">
                 {isTransitioning ? (
                   <div className={cn('flex', 'flex-col', 'w-full', 'space-y-4', 'pt-2')}>
-                    <div className={cn('h-6', 'animate-shimmer', 'rounded-md', 'w-1/3', 'mb-4')} />
-                    <div className={cn('h-3.5', 'animate-shimmer', 'rounded-md', 'w-5/6')} />
-                    <div className={cn('h-3.5', 'animate-shimmer', 'rounded-md', 'w-4/5')} />
-                    <div className={cn('h-3.5', 'animate-shimmer', 'rounded-md', 'w-full')} />
-                    <div className={cn('h-3.5', 'animate-shimmer', 'rounded-md', 'w-2/3')} />
-                    <div className={cn('h-3.5', 'animate-shimmer', 'rounded-md', 'w-3/4', 'mt-8')} />
-                    <div className={cn('h-24', 'animate-shimmer', 'rounded-lg', 'w-full', 'mt-2')} />
+                    <Skeleton className={cn('h-6', 'w-1/3', 'mb-4')} />
+                    <Skeleton className={cn('h-3.5', 'w-5/6')} />
+                    <Skeleton className={cn('h-3.5', 'w-4/5')} />
+                    <Skeleton className={cn('h-3.5', 'w-full')} />
+                    <Skeleton className={cn('h-3.5', 'w-2/3')} />
+                    <Skeleton className={cn('h-3.5', 'w-3/4', 'mt-8')} />
+                    <Skeleton className={cn('h-24', 'w-full', 'mt-2', 'rounded-lg')} />
                   </div>
                 ) : (
                   <div className="space-y-5">
@@ -1842,18 +1846,18 @@ export function ProblemWorkspaceClient({
                         {problem.title}
                       </h1>
                       <div className={cn('flex', 'flex-wrap', 'items-center', 'gap-2', 'select-none')}>
-                        <span
-                          className={cn(
-                            "px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide border",
+                        <Badge
+                          variant={
                             problem.difficulty === "Easy"
-                              ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
+                              ? "success"
                               : problem.difficulty === "Medium"
-                                ? "text-amber-500 bg-amber-500/10 border-amber-500/20"
-                                : "text-rose-500 bg-rose-500/10 border-rose-500/20",
-                          )}
+                                ? "warning"
+                                : "destructive"
+                          }
+                          className="text-xs font-semibold tracking-wide"
                         >
                           {problem.difficulty || "Hard"}
-                        </span>
+                        </Badge>
                         {/* Company Badges with Interview Frequency */}
                         {getProblemCompanyBadges(problem).map((b) => (
                           <CompanyBadge
@@ -1866,9 +1870,9 @@ export function ProblemWorkspaceClient({
                         ))}
                         {/* Topic Tags */}
                         {problem.tags && problem.tags.length > 0 && problem.tags.filter((t: string) => !isCompanyTag(t)).map((tag: string, i: number) => (
-                          <span key={i} className={cn('px-2.5', 'py-0.5', 'bg-muted/50', 'border', 'border-border/50', 'text-zinc-600 dark:text-muted-foreground', 'rounded-full', 'text-[11px]', 'font-semibold', 'tracking-wide')}>
+                          <Badge key={i} variant="secondary" className={cn('text-[11px]', 'font-semibold', 'tracking-wide')}>
                             {tag}
-                          </span>
+                          </Badge>
                         ))}
                       </div>
                     </div>
@@ -1952,16 +1956,16 @@ export function ProblemWorkspaceClient({
                   </div>
                 )}
               </div>
-            </div>
+            </ScrollArea>
           </TabsContent>
           <TabsContent value="submissions" className={cn('container-pane-submissions', 'mt-0', 'outline-none', 'flex-1', 'w-full', 'min-h-0', 'flex', 'flex-col')}>
             <ScrollArea className={cn('flex-1', 'w-full', '**:data-[slot=scroll-area-scrollbar]:hidden')}>
               <div className="p-5">
                 {isTransitioning ? (
                   <div className={cn('flex', 'flex-col', 'w-full', 'space-y-4', 'pt-2')}>
-                    <div className={cn('h-16', 'animate-shimmer', 'rounded-lg', 'w-full', 'mb-2')} />
-                    <div className={cn('h-16', 'animate-shimmer', 'rounded-lg', 'w-full', 'mb-2')} />
-                    <div className={cn('h-16', 'animate-shimmer', 'rounded-lg', 'w-full', 'mb-2')} />
+                    <Skeleton className={cn('h-16', 'rounded-lg', 'w-full', 'mb-2')} />
+                    <Skeleton className={cn('h-16', 'rounded-lg', 'w-full', 'mb-2')} />
+                    <Skeleton className={cn('h-16', 'rounded-lg', 'w-full', 'mb-2')} />
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -2069,7 +2073,9 @@ export function ProblemWorkspaceClient({
                                       }}
                                     />
                                     <div className={cn('absolute', 'top-3', 'right-4', 'flex', 'gap-2', 'opacity-0', 'group-hover/editor:opacity-100', 'transition-opacity')}>
-                                      <button
+                                      <Button
+                                        variant="outline"
+                                        size="icon"
                                         onClick={() => {
                                           const lang = LANGUAGES.find(
                                             (l) =>
@@ -2089,18 +2095,20 @@ export function ProblemWorkspaceClient({
                                           setCode(viewingCode);
                                           toast.success("Restored to workspace!");
                                         }}
-                                        className={cn('bg-emerald-500/10', 'hover:bg-emerald-500/20', 'text-emerald-500', 'border', 'border-emerald-500/20', 'p-1.5', 'rounded-md', 'transition-all', 'shadow-sm')}
+                                        className={cn('bg-emerald-500/10', 'hover:bg-emerald-500/20', 'text-emerald-500', 'border-emerald-500/20', 'size-7')}
                                         title="Restore"
                                       >
-                                        <IconRefresh className={cn('h-4', 'w-4')} />
-                                      </button>
-                                      <button
+                                        <IconRefresh className={cn('size-4')} />
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="icon"
                                         onClick={() => handleCopyToClipboard(viewingCode)}
-                                        className={cn('bg-muted', 'hover:bg-accent', 'text-foreground', 'border', 'border-border', 'p-1.5', 'rounded-md', 'transition-all', 'shadow-sm')}
+                                        className={cn('size-7')}
                                         title="Copy"
                                       >
-                                        <IconCopy className={cn('h-4', 'w-4')} />
-                                      </button>
+                                        <IconCopy className={cn('size-4')} />
+                                      </Button>
                                     </div>
                                   </div>
                                 )}
@@ -2110,12 +2118,14 @@ export function ProblemWorkspaceClient({
                         );
                       })
                     ) : (
-                      <div className={cn('flex', 'flex-col', 'items-center', 'justify-center', 'py-12', 'gap-2', 'select-none')}>
-                        <IconHistory className={cn('h-8', 'w-8', 'text-muted-foreground/20')} />
-                        <p className={cn('text-[10px]', 'text-zinc-500 dark:text-muted-foreground/40', 'uppercase', 'font-bold', 'tracking-widest')}>
+                      <Empty className={cn('py-12', 'select-none')}>
+                        <EmptyMedia>
+                          <IconHistory className={cn('size-8', 'text-muted-foreground/30')} />
+                        </EmptyMedia>
+                        <EmptyTitle className={cn('text-xs', 'uppercase', 'font-bold', 'tracking-widest', 'text-muted-foreground/60')}>
                           No submissions yet
-                        </p>
-                      </div>
+                        </EmptyTitle>
+                      </Empty>
                     )}
                   </div>
                 )}
@@ -2131,7 +2141,7 @@ export function ProblemWorkspaceClient({
                 {submitting ? (
                   <div className={cn('flex', 'flex-col', 'items-center', 'justify-center', 'py-20', 'gap-4', 'animate-pulse', 'select-none')}>
                     <div className="relative">
-                      <div className={cn('h-14', 'w-14', 'border-2', 'border-emerald-500/20', 'border-t-emerald-400', 'rounded-full', 'animate-spin')} />
+                      <Spinner className="size-14 text-emerald-400" />
                       <div className={cn('absolute', 'inset-0', 'flex', 'items-center', 'justify-center')}>
                         <IconTerminal2 className={cn('h-6', 'w-6', 'text-emerald-400')} />
                       </div>
@@ -2318,9 +2328,9 @@ export function ProblemWorkspaceClient({
                         <div className={cn('flex', 'flex-col', 'sm:flex-row', 'sm:items-center', 'justify-between', 'gap-3', 'border-b', 'border-border/40', 'pb-3', 'select-none')}>
                           <div className="space-y-1">
                             <div className={cn('flex', 'items-center', 'gap-2')}>
-                              <span className={cn('text-emerald-500', 'font-extrabold', 'text-lg', 'tracking-tight', 'uppercase', 'flex', 'items-center', 'gap-1.5', 'animate-pulse')}>
+                              <Badge variant="success" className={cn('font-extrabold', 'text-sm', 'tracking-tight', 'uppercase', 'px-2.5', 'py-1', 'gap-1.5', 'animate-pulse')}>
                                 Accepted
-                              </span>
+                              </Badge>
                               <span className={cn('text-zinc-600 dark:text-muted-foreground/80', 'text-xs', 'font-semibold')}>
                                 {submitResult?.passed_count || totalTestCases}/
                                 {submitResult?.total_count || totalTestCases}{" "}
@@ -2346,7 +2356,7 @@ export function ProblemWorkspaceClient({
                         {/* Metrics cards row */}
                         <div className={cn('grid', 'grid-cols-2', 'grid-metrics-accepted', 'gap-4', 'select-none')}>
                           {/* Runtime Card */}
-                          <div className={cn('bg-zinc-100/70 dark:bg-zinc-900/45', 'border', 'border-border/60', 'rounded-lg', 'p-3.5', 'flex', 'flex-col', 'gap-1', 'hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors shadow-sm')}>
+                          <Card className={cn('bg-zinc-100/70 dark:bg-zinc-900/45', 'border-border/60', 'p-3.5', 'gap-1', 'shadow-sm', 'hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors')}>
                             <span className={cn('text-zinc-500 dark:text-muted-foreground/60', 'text-[10px]', 'font-bold', 'uppercase', 'tracking-wider', 'flex', 'items-center', 'gap-1')}>
                               <IconClock className={cn('h-3.5', 'w-3.5', 'text-zinc-500 dark:text-muted-foreground/80')} />
                               Runtime
@@ -2365,10 +2375,10 @@ export function ProblemWorkspaceClient({
                                 </span>
                               </span>
                             </div>
-                          </div>
+                          </Card>
 
                           {/* Memory Card */}
-                          <div className={cn('bg-zinc-100/70 dark:bg-zinc-900/45', 'border', 'border-border/60', 'rounded-lg', 'p-3.5', 'flex', 'flex-col', 'gap-1', 'hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors shadow-sm')}>
+                          <Card className={cn('bg-zinc-100/70 dark:bg-zinc-900/45', 'border-border/60', 'p-3.5', 'gap-1', 'shadow-sm', 'hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors')}>
                             <span className={cn('text-zinc-500 dark:text-muted-foreground/60', 'text-[10px]', 'font-bold', 'uppercase', 'tracking-wider', 'flex', 'items-center', 'gap-1')}>
                               <IconCpu className={cn('h-3.5', 'w-3.5', 'text-zinc-500 dark:text-muted-foreground/80')} />
                               Memory
@@ -2387,7 +2397,7 @@ export function ProblemWorkspaceClient({
                                 </span>
                               </span>
                             </div>
-                          </div>
+                          </Card>
                         </div>
 
                         {/* SVG Algorithmic Scaling Curve */}
@@ -2396,9 +2406,9 @@ export function ProblemWorkspaceClient({
                             <p className={cn('text-[9px]', 'text-zinc-500 dark:text-muted-foreground/60', 'uppercase', 'tracking-widest', 'font-extrabold')}>
                               Algorithmic Scaling Curve (Time vs. Input)
                             </p>
-                            <span className={cn('text-[10px]', 'text-emerald-600', 'dark:text-emerald-400', 'font-extrabold', 'bg-emerald-500/10', 'px-2', 'py-0.5', 'rounded', 'border', 'border-emerald-500/25')}>
+                            <Badge variant="success" className={cn('text-[10px]', 'font-extrabold')}>
                               {estimatedComplexity}
-                            </span>
+                            </Badge>
                           </div>
 
                           <div className={cn('relative', 'w-full', 'h-40')}>
@@ -2584,17 +2594,19 @@ export function ProblemWorkspaceClient({
                               <div className={cn('flex', 'items-center', 'gap-2')}>
                                 <IconCode className={cn('h-3.5', 'w-3.5', 'text-zinc-500 dark:text-muted-foreground/70')} />
                                 <span className={cn('text-[10px]', 'font-extrabold', 'uppercase', 'tracking-widest', 'text-zinc-600 dark:text-muted-foreground/80')}>Submitted Code</span>
-                                <span className={cn('px-2', 'py-0.5', 'rounded-full', 'bg-emerald-500/10', 'border', 'border-emerald-500/20', 'text-emerald-600', 'dark:text-emerald-400', 'text-[10px]', 'font-bold')}>
+                                <Badge variant="success" className={cn('text-[10px]', 'font-bold')}>
                                   {submitResult?.submitted_language?.name || selectedLang.name}
-                                </span>
+                                </Badge>
                               </div>
-                              <button
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={() => { navigator.clipboard.writeText(submitResult?.submitted_code || code); toast.success('Copied!'); }}
-                                className={cn('p-1.5', 'rounded-md', 'text-zinc-500 dark:text-muted-foreground/70', 'hover:text-foreground', 'hover:bg-muted', 'transition-colors')}
+                                className={cn('size-7', 'text-zinc-500 dark:text-muted-foreground/70')}
                                 title="Copy"
                               >
-                                <IconCopy className={cn('h-4', 'w-4')} />
-                              </button>
+                                <IconCopy className={cn('size-4')} />
+                              </Button>
                             </div>
                             {/* Editor */}
                             <div className={cn('flex-1', 'relative', 'min-h-75', 'overflow-hidden', 'bg-background')}>
@@ -2736,17 +2748,19 @@ export function ProblemWorkspaceClient({
                           <div className={cn('flex', 'items-center', 'gap-2')}>
                             <IconCode className={cn('h-3.5', 'w-3.5', 'text-zinc-500 dark:text-muted-foreground/70')} />
                             <span className={cn('text-[10px]', 'font-extrabold', 'uppercase', 'tracking-widest', 'text-zinc-600 dark:text-muted-foreground/80')}>Submitted Code</span>
-                            <span className={cn('px-2', 'py-0.5', 'rounded-full', 'bg-zinc-200/60 dark:bg-zinc-800/60', 'border', 'border-border/50', 'text-zinc-600 dark:text-muted-foreground', 'text-[10px]', 'font-bold')}>
+                            <Badge variant="secondary" className={cn('text-[10px]', 'font-bold')}>
                               {submitResult?.submitted_language?.name || selectedLang.name}
-                            </span>
+                            </Badge>
                           </div>
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => { navigator.clipboard.writeText(submitResult?.submitted_code || code); toast.success('Copied!'); }}
-                            className={cn('p-1.5', 'rounded-md', 'text-zinc-500 dark:text-muted-foreground/70', 'hover:text-foreground', 'hover:bg-muted', 'transition-colors')}
+                            className={cn('size-7', 'text-zinc-500 dark:text-muted-foreground/70')}
                             title="Copy"
                           >
-                            <IconCopy className={cn('h-4', 'w-4')} />
-                          </button>
+                            <IconCopy className={cn('size-4')} />
+                          </Button>
                         </div>
                         {/* Editor */}
                         <div className={cn('flex-1', 'relative', 'min-h-75', 'overflow-hidden', 'bg-background')}>
@@ -2956,8 +2970,8 @@ export function ProblemWorkspaceClient({
                   <div
                     style={{ paddingLeft: `${indent[i]}rem`, width: "100%" }}
                   >
-                    <div
-                      className={cn('h-3.5', 'animate-shimmer', 'rounded-md')}
+                    <Skeleton
+                      className="h-3.5"
                       style={{ width: `${widths[i]}%` }}
                     />
                   </div>
@@ -3036,8 +3050,8 @@ export function ProblemWorkspaceClient({
                     <div
                       style={{ paddingLeft: `${indent[i]}rem`, width: "100%" }}
                     >
-                      <div
-                        className={cn('h-3.5', 'animate-shimmer', 'rounded-md')}
+                      <Skeleton
+                        className="h-3.5"
                         style={{ width: `${widths[i]}%` }}
                       />
                     </div>
@@ -3060,7 +3074,7 @@ export function ProblemWorkspaceClient({
                 className={cn('h-8', 'px-3', 'text-xs', 'font-semibold', 'bg-zinc-900/90', 'hover:bg-zinc-800', 'border-zinc-700', 'text-zinc-300', 'hover:text-zinc-100', 'backdrop-blur-md', 'flex', 'items-center', 'gap-1.5', 'group', 'shadow-lg')}
               >
                 {running ? (
-                  <div className={cn('h-3.5', 'w-3.5', 'border', 'border-current', 'border-t-transparent', 'rounded-full', 'animate-spin')} />
+                  <Spinner className="size-3.5" />
                 ) : (
                   <IconPlayerPlay className={cn('h-3.5', 'w-3.5', 'text-emerald-500', 'group-hover:text-emerald-400', 'transition-colors')} />
                 )}
@@ -3074,7 +3088,7 @@ export function ProblemWorkspaceClient({
                 className={cn('h-8', 'px-3', 'text-xs', 'font-semibold', 'bg-zinc-900/90', 'hover:bg-zinc-800', 'border-zinc-700', 'text-zinc-300', 'hover:text-zinc-100', 'backdrop-blur-md', 'flex', 'items-center', 'gap-1.5', 'group', 'shadow-lg')}
               >
                 {submitting ? (
-                  <div className={cn('h-3.5', 'w-3.5', 'border', 'border-current', 'border-t-transparent', 'rounded-full', 'animate-spin')} />
+                  <Spinner className="size-3.5" />
                 ) : (
                   <IconSend className={cn('h-3.5', 'w-3.5', 'text-sky-500', 'group-hover:text-sky-400', 'transition-colors')} />
                 )}
@@ -3151,14 +3165,14 @@ export function ProblemWorkspaceClient({
               {isTransitioning ? (
                 <div className={cn('flex', 'flex-col', 'w-full', 'space-y-4', 'pt-2')}>
                   <div className={cn('flex', 'gap-2', 'mb-4')}>
-                    <div className={cn('h-6', 'animate-shimmer', 'rounded-md', 'w-16')} />
-                    <div className={cn('h-6', 'animate-shimmer', 'rounded-md', 'w-16')} />
-                    <div className={cn('h-6', 'animate-shimmer', 'rounded-md', 'w-16')} />
+                    <Skeleton className="h-6 w-16" />
+                    <Skeleton className="h-6 w-16" />
+                    <Skeleton className="h-6 w-16" />
                   </div>
-                  <div className={cn('h-3.5', 'animate-shimmer', 'rounded-md', 'w-24')} />
-                  <div className={cn('h-10', 'animate-shimmer', 'rounded-lg', 'w-full')} />
-                  <div className={cn('h-3.5', 'animate-shimmer', 'rounded-md', 'w-24', 'mt-4')} />
-                  <div className={cn('h-10', 'animate-shimmer', 'rounded-lg', 'w-full')} />
+                  <Skeleton className="h-3.5 w-24" />
+                  <Skeleton className="h-10 w-full rounded-lg" />
+                  <Skeleton className="h-3.5 w-24 mt-4" />
+                  <Skeleton className="h-10 w-full rounded-lg" />
                 </div>
               ) : customInputs.length > 0 ? (
                 <div className="space-y-3.5">
@@ -3248,7 +3262,7 @@ export function ProblemWorkspaceClient({
                         Expected Output {activeTestcaseIndex >= sampleTestCases.length ? "(Optional) =" : "="}
                       </span>
                       {activeTestcaseIndex >= sampleTestCases.length ? (
-                        <input
+                        <Input
                           type="text"
                           value={customExpectedOutputs[activeTestcaseIndex] || ""}
                           onChange={(e) => {
@@ -3259,7 +3273,7 @@ export function ProblemWorkspaceClient({
                             });
                           }}
                           placeholder="Expected Output (e.g. 2)"
-                          className={cn('w-full', 'px-3', 'py-2', 'bg-zinc-100/80 dark:bg-zinc-900/50', 'border', 'border-border/60', 'rounded-md', 'text-foreground', 'text-[15px]', 'font-mono', 'outline-none', 'transition-colors', 'focus:border-zinc-400 dark:focus:border-zinc-600 focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 shadow-sm')}
+                          className={cn('bg-zinc-100/80 dark:bg-zinc-900/50', 'font-mono', 'text-[15px]')}
                         />
                       ) : (
                         <div className={cn('w-full', 'px-3', 'py-2', 'bg-zinc-100/40 dark:bg-zinc-900/30', 'border', 'border-border/30', 'rounded-md', 'text-foreground/70', 'text-[15px]', 'font-mono')}>
@@ -3280,7 +3294,7 @@ export function ProblemWorkspaceClient({
                 {running ? (
                   <div className={cn('flex', 'flex-col', 'items-center', 'justify-center', 'py-6', 'gap-3', 'animate-pulse', 'my-auto')}>
                     <div className="relative">
-                      <div className={cn('h-10', 'w-10', 'border-2', 'border-emerald-500/20', 'border-t-emerald-400', 'rounded-full', 'animate-spin')} />
+                      <Spinner className="size-10 text-emerald-400" />
                       <div className={cn('absolute', 'inset-0', 'flex', 'items-center', 'justify-center')}>
                         <IconTerminal2 className={cn('h-4', 'w-4', 'text-emerald-400')} />
                       </div>
@@ -3513,12 +3527,14 @@ export function ProblemWorkspaceClient({
                     );
                   })()
                 ) : (
-                  <div className={cn('flex', 'flex-col', 'items-center', 'justify-center', 'h-full', 'gap-1.5', 'select-none', 'my-auto')}>
-                    <IconTerminal2 className={cn('h-6', 'w-6', 'text-muted-foreground/20')} />
-                    <p className={cn('text-[10px]', 'text-zinc-550 dark:text-muted-foreground/40', 'uppercase', 'font-bold', 'tracking-widest')}>
+                  <Empty className={cn('h-full', 'select-none', 'my-auto')}>
+                    <EmptyMedia>
+                      <IconTerminal2 className={cn('size-8', 'text-muted-foreground/30')} />
+                    </EmptyMedia>
+                    <EmptyTitle className={cn('text-xs', 'uppercase', 'font-bold', 'tracking-wider', 'text-muted-foreground/60')}>
                       Run your code to see results
-                    </p>
-                  </div>
+                    </EmptyTitle>
+                  </Empty>
                 )}
               </div>
             </TabsContent>
@@ -3560,18 +3576,18 @@ export function ProblemWorkspaceClient({
           </div>
 
           <div className={cn('flex', 'items-center', 'gap-1.5')}>
-            <span
-              className={cn(
-                "px-2 py-0.5 rounded-full text-[10px] font-semibold border",
+            <Badge
+              variant={
                 problem.difficulty === "Easy"
-                  ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
+                  ? "success"
                   : problem.difficulty === "Medium"
-                    ? "text-amber-500 bg-amber-500/10 border-amber-500/20"
-                    : "text-rose-500 bg-rose-500/10 border-rose-500/20",
-              )}
+                    ? "warning"
+                    : "destructive"
+              }
+              className="text-[10px] font-semibold"
             >
               {problem.difficulty || "Hard"}
-            </span>
+            </Badge>
           </div>
         </div>
 
@@ -3646,9 +3662,9 @@ export function ProblemWorkspaceClient({
                   ))}
                   {/* Topic Tags */}
                   {problem.tags && problem.tags.length > 0 && problem.tags.filter((t: string) => !isCompanyTag(t)).map((tag: string, i: number) => (
-                    <span key={i} className={cn('px-2', 'py-0.5', 'bg-muted/60', 'border', 'border-border/50', 'text-zinc-650', 'dark:text-muted-foreground', 'rounded-full', 'text-[10px]', 'font-semibold')}>
+                    <Badge key={i} variant="secondary" className="text-[10px] font-semibold">
                       {tag}
-                    </span>
+                    </Badge>
                   ))}
                 </div>
               </div>
@@ -3815,7 +3831,9 @@ export function ProblemWorkspaceClient({
                                 />
                               </pre>
                               <div className={cn('absolute', 'top-2', 'right-2', 'flex', 'gap-1.5', 'opacity-85', 'hover:opacity-100', 'transition-opacity')}>
-                                <button
+                                <Button
+                                  variant="outline"
+                                  size="icon"
                                   onClick={() => {
                                     const lang = LANGUAGES.find((l) => l.id === viewingSubmission?.language_id);
                                     if (lang) {
@@ -3828,18 +3846,20 @@ export function ProblemWorkspaceClient({
                                     setCode(viewingCode);
                                     toast.success("Restored to workspace!");
                                   }}
-                                  className={cn('bg-emerald-500/10', 'hover:bg-emerald-500/20', 'text-emerald-500', 'border', 'border-emerald-500/20', 'p-1.5', 'rounded', 'transition-all', 'shadow-sm')}
+                                  className={cn('bg-emerald-500/10', 'hover:bg-emerald-500/20', 'text-emerald-500', 'border-emerald-500/20', 'size-7')}
                                   title="Restore"
                                 >
-                                  <IconRefresh className={cn('h-3.5', 'w-3.5')} />
-                                </button>
-                                <button
+                                  <IconRefresh className={cn('size-3.5')} />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
                                   onClick={() => handleCopyToClipboard(viewingCode)}
-                                  className={cn('bg-muted', 'hover:bg-accent', 'text-foreground', 'border', 'border-border', 'p-1.5', 'rounded', 'transition-all', 'shadow-sm')}
+                                  className={cn('size-7')}
                                   title="Copy"
                                 >
-                                  <IconCopy className={cn('h-3.5', 'w-3.5')} />
-                                </button>
+                                  <IconCopy className={cn('size-3.5')} />
+                                </Button>
                               </div>
                             </div>
                           )}
@@ -3849,12 +3869,14 @@ export function ProblemWorkspaceClient({
                   );
                 })
               ) : (
-                <div className={cn('flex', 'flex-col', 'items-center', 'justify-center', 'py-12', 'gap-2', 'select-none')}>
-                  <IconHistory className={cn('h-8', 'w-8', 'text-muted-foreground/20')} />
-                  <p className={cn('text-[10px]', 'text-muted-foreground/45', 'uppercase', 'font-bold', 'tracking-widest')}>
+                <Empty className={cn('py-12', 'select-none')}>
+                  <EmptyMedia>
+                    <IconHistory className={cn('size-8', 'text-muted-foreground/20')} />
+                  </EmptyMedia>
+                  <EmptyTitle className={cn('text-[10px]', 'text-muted-foreground/45', 'uppercase', 'font-bold', 'tracking-widest')}>
                     No submissions yet
-                  </p>
-                </div>
+                  </EmptyTitle>
+                </Empty>
               )}
             </div>
           )}
@@ -3866,7 +3888,7 @@ export function ProblemWorkspaceClient({
         {topNavbarContent}
         <div className={cn('flex-1', 'p-2', 'min-h-0', 'overflow-hidden')}>
           {!isMounted ? (
-            <div className={cn('w-full', 'h-full', 'bg-card', 'rounded-md', 'border', 'border-border/40', 'animate-pulse')} />
+            <Skeleton className={cn('w-full', 'h-full', 'rounded-md', 'border', 'border-border/40')} />
           ) : (
             <>
               {ideLayout === "standard" && (
@@ -4028,148 +4050,148 @@ export function ProblemWorkspaceClient({
       </div>
 
       {/* PROBLEM LIST DRAWER */}
-      {isProblemListOpen && (
-        <div
-          className={cn('absolute', 'inset-0', 'bg-background/40', 'backdrop-blur-[1px]', 'z-9998')}
-          onClick={() => setIsProblemListOpen(false)}
-        />
-      )}
-      <div
-        className={cn(
-          "absolute top-0 left-0 h-full w-[320px] bg-background border-r shadow-2xl z-9999 flex flex-col transition-transform duration-300 ease-in-out",
-          isProblemListOpen ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
-        <div className={cn('border-b', 'px-4', 'py-3', 'shrink-0', 'relative', 'flex', 'items-center', 'justify-between', 'pr-8')}>
-          <h2 className={cn('font-bold', 'text-lg')}>Problem List</h2>
-          <span className={cn('text-xs', 'text-muted-foreground', 'font-semibold', 'tracking-wide')}>
-            {totalProblemsCount} Problems
-          </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn('absolute', 'right-2', 'top-2', 'h-7', 'w-7', 'rounded-md', 'opacity-70', 'transition-opacity', 'hover:opacity-100', 'text-muted-foreground')}
-            onClick={() => setIsProblemListOpen(false)}
-          >
-            <IconX className={cn('h-4', 'w-4')} />
-            <span className="sr-only">Close</span>
-          </Button>
-        </div>
-
-        <div className={cn('p-3', 'border-b', 'shrink-0', 'bg-muted/20', 'flex', 'flex-col', 'gap-2')}>
-          {/* Search and filter controls */}
-          <div className={cn('relative', 'w-full')}>
-            <IconSearch className={cn('absolute', 'left-2.5', 'top-1/2', '-translate-y-1/2', 'size-4', 'text-muted-foreground')} />
-            <Input
-              type="text"
-              placeholder="Search by title or ID..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={cn('pl-8', 'h-8', 'text-xs', 'bg-background')}
-            />
-          </div>
-          <div className={cn('flex', 'items-center', 'gap-2')}>
-            <Select
-              value={statusFilter}
-              onValueChange={(v: any) => setStatusFilter(v)}
-            >
-              <SelectTrigger size="sm" className={cn('flex-1', 'text-xs', 'font-medium')}>
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent
-                position="popper"
-                sideOffset={4}
-                className="z-10000"
-              >
-                <SelectGroup>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="unsolved">Unsolved</SelectItem>
-                  <SelectItem value="solved">Solved</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            <Select
-              value={difficultyFilter}
-              onValueChange={(v: any) => setDifficultyFilter(v)}
-            >
-              <SelectTrigger size="sm" className={cn('flex-1', 'text-xs', 'font-medium')}>
-                <SelectValue placeholder="Difficulty" />
-              </SelectTrigger>
-              <SelectContent
-                position="popper"
-                sideOffset={4}
-                className="z-10000"
-              >
-                <SelectGroup>
-                  <SelectItem value="all">All Levels</SelectItem>
-                  <SelectItem value="easy">Easy</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="hard">Hard</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <ScrollArea
-          id="problem-list-scroll-area"
-          className={cn('flex-1', 'w-full', 'min-h-0')}
+      <Sheet open={isProblemListOpen} onOpenChange={setIsProblemListOpen}>
+        <SheetContent
+          side="left"
+          showCloseButton={true}
+          className={cn('w-[320px]', 'sm:max-w-[320px]', 'p-0', 'flex', 'flex-col', 'gap-0', 'border-r')}
         >
-          <div className="py-2">
-            {isLoadingProblems ? (
-              <div className={cn('flex', 'flex-col', 'items-center', 'justify-center', 'py-20', 'gap-3')}>
-                <div className={cn('size-6', 'border-2', 'border-emerald-500/20', 'border-t-emerald-500', 'rounded-full', 'animate-spin')} />
-                <span className={cn('text-xs', 'text-muted-foreground', 'font-semibold', 'uppercase', 'tracking-wider')}>
-                  Loading...
-                </span>
-              </div>
-            ) : problemList.length > 0 ? (
-              <>
-                {problemList.map((p) => (
-                  <div
-                    key={p.id}
-                    id={p.id === problem.id ? "active-problem-link" : undefined}
-                    onClick={() => {
-                      handleNavigate(p.id);
-                      setIsProblemListOpen(false);
-                    }}
-                    className={`flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-muted/60 transition-colors ${p.id === problem.id ? "bg-muted border-l-2 border-emerald-500" : ""}`}
-                  >
-                    <div className={cn('flex', 'items-start', 'gap-3', 'pr-4')}>
-                      {p.isSolved ? (
-                        <IconCheck className={cn('size-4', 'text-emerald-500', 'shrink-0', 'mt-0.5')} />
-                      ) : (
-                        <div className={cn('size-4', 'shrink-0')} />
-                      )}
-                      <span
-                        className={`text-sm whitespace-normal wrap-break-word leading-tight ${p.id === problem.id ? "font-bold" : "font-medium"}`}
-                      >
-                        {p.number}. {p.title}
-                      </span>
-                    </div>
-                    <span
-                      className={`text-xs font-bold shrink-0 ${p.difficulty === "Easy" ? "text-emerald-500" : p.difficulty === "Medium" ? "text-amber-500" : "text-rose-500"}`}
-                    >
-                      {p.difficulty === "Medium" ? "Med." : p.difficulty}
-                    </span>
-                  </div>
-                ))}
+          <SheetHeader className={cn('border-b', 'px-4', 'py-3', 'shrink-0', 'flex', 'flex-row', 'items-center', 'justify-between', 'space-y-0', 'pr-8')}>
+            <SheetTitle className={cn('font-bold', 'text-lg')}>Problem List</SheetTitle>
+            <span className={cn('text-xs', 'text-muted-foreground', 'font-semibold', 'tracking-wide')}>
+              {totalProblemsCount} Problems
+            </span>
+            <SheetDescription className="sr-only">Browse and search problems</SheetDescription>
+          </SheetHeader>
 
-                {/* Infinite Scroll Sentinel */}
-                <div ref={sentinelRef} className={cn('h-10', 'flex', 'items-center', 'justify-center')}>
-                  {isNextPageLoading && (
-                    <div className={cn('size-4', 'border-2', 'border-emerald-500/20', 'border-t-emerald-500', 'rounded-full', 'animate-spin')} />
-                  )}
-                </div>
-              </>
-            ) : (
-              <div className={cn('flex', 'flex-col', 'items-center', 'justify-center', 'py-20', 'text-muted-foreground', 'text-sm')}>
-                No problems found.
-              </div>
-            )}
+          <div className={cn('p-3', 'border-b', 'shrink-0', 'bg-muted/20', 'flex', 'flex-col', 'gap-2')}>
+            {/* Search and filter controls */}
+            <div className={cn('relative', 'w-full')}>
+              <IconSearch className={cn('absolute', 'left-2.5', 'top-1/2', '-translate-y-1/2', 'size-4', 'text-muted-foreground')} />
+              <Input
+                type="text"
+                placeholder="Search by title or ID..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={cn('pl-8', 'h-8', 'text-xs', 'bg-background')}
+              />
+            </div>
+            <div className={cn('flex', 'items-center', 'gap-2')}>
+              <Select
+                value={statusFilter}
+                onValueChange={(v: any) => setStatusFilter(v)}
+              >
+                <SelectTrigger size="sm" className={cn('flex-1', 'text-xs', 'font-medium')}>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent
+                  position="popper"
+                  sideOffset={4}
+                  className="z-10000"
+                >
+                  <SelectGroup>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="unsolved">Unsolved</SelectItem>
+                    <SelectItem value="solved">Solved</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              <Select
+                value={difficultyFilter}
+                onValueChange={(v: any) => setDifficultyFilter(v)}
+              >
+                <SelectTrigger size="sm" className={cn('flex-1', 'text-xs', 'font-medium')}>
+                  <SelectValue placeholder="Difficulty" />
+                </SelectTrigger>
+                <SelectContent
+                  position="popper"
+                  sideOffset={4}
+                  className="z-10000"
+                >
+                  <SelectGroup>
+                    <SelectItem value="all">All Levels</SelectItem>
+                    <SelectItem value="easy">Easy</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="hard">Hard</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        </ScrollArea>
-      </div>
+
+          <ScrollArea
+            id="problem-list-scroll-area"
+            className={cn('flex-1', 'w-full', 'min-h-0')}
+          >
+            <div className="py-2">
+              {isLoadingProblems ? (
+                <div className={cn('flex', 'flex-col', 'items-center', 'justify-center', 'py-20', 'gap-3')}>
+                  <Spinner className="size-6 text-emerald-500" />
+                  <span className={cn('text-xs', 'text-muted-foreground', 'font-semibold', 'uppercase', 'tracking-wider')}>
+                    Loading...
+                  </span>
+                </div>
+              ) : problemList.length > 0 ? (
+                <>
+                  {problemList.map((p) => (
+                    <div
+                      key={p.id}
+                      id={p.id === problem.id ? "active-problem-link" : undefined}
+                      onClick={() => {
+                        handleNavigate(p.id);
+                        setIsProblemListOpen(false);
+                      }}
+                      className={cn(
+                        "flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-muted/60 transition-colors",
+                        p.id === problem.id && "bg-muted border-l-2 border-emerald-500"
+                      )}
+                    >
+                      <div className={cn('flex', 'items-start', 'gap-3', 'pr-4')}>
+                        {p.isSolved ? (
+                          <IconCheck className={cn('size-4', 'text-emerald-500', 'shrink-0', 'mt-0.5')} />
+                        ) : (
+                          <div className={cn('size-4', 'shrink-0')} />
+                        )}
+                        <span
+                          className={cn(
+                            "text-sm whitespace-normal wrap-break-word leading-tight",
+                            p.id === problem.id ? "font-bold" : "font-medium"
+                          )}
+                        >
+                          {p.number}. {p.title}
+                        </span>
+                      </div>
+                      <Badge
+                        variant={
+                          p.difficulty === "Easy"
+                            ? "success"
+                            : p.difficulty === "Medium"
+                              ? "warning"
+                              : "destructive"
+                        }
+                        className="text-xs font-bold shrink-0"
+                      >
+                        {p.difficulty === "Medium" ? "Med." : p.difficulty}
+                      </Badge>
+                    </div>
+                  ))}
+
+                  {/* Infinite Scroll Sentinel */}
+                  <div ref={sentinelRef} className={cn('h-10', 'flex', 'items-center', 'justify-center')}>
+                    {isNextPageLoading && (
+                      <Spinner className="size-4 text-emerald-500" />
+                    )}
+                  </div>
+                </>
+              ) : (
+                <Empty className={cn('py-20', 'text-muted-foreground')}>
+                  <EmptyTitle className="text-xs">No problems found.</EmptyTitle>
+                </Empty>
+              )}
+            </div>
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
       {/* Submit Confirmation Dialog */}
       <AlertDialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
         <AlertDialogContent>
@@ -4280,26 +4302,27 @@ export function ProblemWorkspaceClient({
 
               {/* Action Buttons (OUTSIDE THE CARD) */}
               <div className={cn('flex', 'flex-col', 'gap-3', 'w-full', 'mt-4')}>
-                <button
+                <Button
+                  size="lg"
                   onClick={() => {
-                    console.log("Continue clicked!");
                     setUnlockedBadgeModal(null);
                   }}
-                  className={cn('w-full', 'bg-primary', 'text-primary-foreground', 'hover:bg-primary/90', 'h-11', 'px-8', 'rounded-md', 'font-medium', 'transition-colors')}
+                  className="w-full h-11"
                 >
                   Continue
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
                   onClick={(e) => {
                     e.preventDefault();
-                    console.log("Download clicked!");
                     handleDownloadBadge();
                   }}
-                  className={cn('w-full', 'border', 'border-input', 'bg-background', 'hover:bg-accent', 'hover:text-accent-foreground', 'h-11', 'px-8', 'rounded-md', 'font-medium', 'text-muted-foreground', 'flex', 'items-center', 'justify-center', 'transition-colors')}
+                  className="w-full h-11"
                 >
-                  <IconDownload className={cn('mr-2', 'h-4', 'w-4')} />
+                  <IconDownload data-icon="inline-start" className={cn('mr-2', 'h-4', 'w-4')} />
                   Download Badge
-                </button>
+                </Button>
               </div>
             </motion.div>
           </motion.div>

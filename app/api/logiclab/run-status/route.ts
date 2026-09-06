@@ -81,21 +81,24 @@ export async function POST(req: Request) {
       });
     }
 
-    let executedResults = sample_cases.map((tc: any, i: number) => {
-      const data = submissions[i];
-      if (!data) return { index: i + 1, tc, error: "Judge0 service timed out or dropped token." };
-      if (data.status?.id <= 2) return { index: i + 1, tc, error: "Judge0 Timeout: Execution stuck in queue or processing too long." };
-      if (data.status?.id === 13) return { index: i + 1, tc, error: "Internal Error in Judge0." };
-      return { index: i + 1, tc, data };
-    });
+    let passedCount = 0;
+    let maxRuntime = 0;
+    let maxMemory = 0;
+    let overallStatus = "Accepted";
+    let firstFailedResult: any = null;
+    const testResults: any[] = [];
 
-    executedResults.sort((a: any, b: any) => a.index - b.index);
-
-    for (const execution of executedResults) {
-      let { error, data } = execution;
+    for (let i = 0; i < sample_cases.length; i++) {
+      const tc = sample_cases[i];
+      const data = submissions[i] || {};
+      let error = "";
       let consoleOutput = "";
 
-      if (!error && data?.stdout) {
+      if (data.status?.id === 13) {
+        error = "Internal Error in Judge0.";
+      }
+
+      if (!error && data.stdout) {
         const stdoutRaw = decode(data.stdout).trim();
         const errMatch = stdoutRaw.match(/@@@LOGICLAB_ERR_START@@@([\s\S]*?)@@@LOGICLAB_ERR_END@@@/);
         if (errMatch) {
@@ -132,14 +135,74 @@ export async function POST(req: Request) {
         data.compile_output = Buffer.from(compOut).toString("base64");
       }
 
-      execution.error = error;
-      execution.consoleOutput = consoleOutput;
+      if (error) {
+        if (overallStatus === "Accepted") overallStatus = "Runtime Error";
+        const item = {
+          index: i + 1,
+          passed: false,
+          input: tc.input,
+          expected: tc.expected_output,
+          actual: error,
+          status: data.status || { id: 11, description: "Runtime Error" },
+          time: "0.000",
+          memory: "0",
+          consoleOutput,
+          stderr: decode(data.stderr),
+          compile_output: decode(data.compile_output),
+        };
+        testResults.push(item);
+        if (!firstFailedResult) firstFailedResult = item;
+        continue;
+      }
+
+      const stdout = decode(data.stdout).trim();
+      const expectedTrimmed = (tc.expected_output || "").trim();
+      const statusId = data.status?.id || 0;
+      const passed = statusId === 3 && (!expectedTrimmed || stdout === expectedTrimmed);
+
+      const runtimeSec = parseFloat(data.time || "0");
+      const runtimeMs = Math.round(runtimeSec * 1000);
+      const memoryKb = parseInt(data.memory || "0", 10);
+
+      if (runtimeMs > maxRuntime) maxRuntime = runtimeMs;
+      if (memoryKb > maxMemory) maxMemory = memoryKb;
+
+      if (passed) {
+        passedCount++;
+      } else if (overallStatus === "Accepted") {
+        overallStatus = data.status?.description || "Wrong Answer";
+      }
+
+      const item = {
+        index: i + 1,
+        passed,
+        input: tc.input,
+        expected: expectedTrimmed,
+        actual: stdout || decode(data.stderr) || decode(data.compile_output),
+        status: data.status,
+        time: runtimeSec.toFixed(3),
+        memory: String(memoryKb),
+        consoleOutput,
+        stderr: decode(data.stderr),
+        compile_output: decode(data.compile_output),
+      };
+      testResults.push(item);
+      if (!passed && !firstFailedResult) firstFailedResult = item;
     }
+
+    const isAllPassed = passedCount === sample_cases.length;
 
     return NextResponse.json({
       completed: true,
-      success: true,
-      results: executedResults,
+      success: isAllPassed,
+      status: overallStatus,
+      time: (maxRuntime / 1000).toFixed(3),
+      memory: String(maxMemory),
+      passed_count: passedCount,
+      total_count: sample_cases.length,
+      cases: testResults,
+      results: testResults,
+      first_failed: firstFailedResult,
     });
   } catch (err: any) {
     console.error("[api/logiclab/run-status] Error:", err);
