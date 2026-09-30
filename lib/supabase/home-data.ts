@@ -385,7 +385,7 @@ export async function fetchCandidateDashboardData(
   const potdData = potdRes.data;
   const potdProb = potdData?.logiclab_problems as any;
 
-  const [testCohortsRes, oppCohortsRes, potdSubRes] = await Promise.all([
+  const [testCohortsRes, oppCohortsRes, potdSubRes, potdStatsRes] = await Promise.all([
     cohortIds.length > 0
       ? (supabase as any)
           .from("test_cohorts")
@@ -406,6 +406,13 @@ export async function fetchCandidateDashboardData(
           .eq("problem_id", potdData.problem_id)
           .eq("status", "Accepted")
           .limit(1)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    potdData?.problem_id
+      ? (supabase as any)
+          .from("logiclab_problem_stats")
+          .select("total_submissions, accepted_submissions")
+          .eq("problem_id", potdData.problem_id)
           .maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
@@ -491,6 +498,10 @@ export async function fetchCandidateDashboardData(
       },
     };
 
+    const totalSubmissions = potdStatsRes?.data?.total_submissions || 0;
+    const acceptedSubmissions = potdStatsRes?.data?.accepted_submissions || 0;
+    const acceptanceRate = totalSubmissions > 0 ? Math.round((acceptedSubmissions / totalSubmissions) * 100) : null;
+
     fullPotdProblem = {
       id: potdProb.id || potdData.problem_id,
       number: potdProb.number,
@@ -498,6 +509,8 @@ export async function fetchCandidateDashboardData(
       difficulty: potdProb.difficulty,
       tags: potdProb.tags,
       solved_status: potdSubRes?.data?.status === "Accepted" ? "Accepted" : null,
+      total_submissions: totalSubmissions,
+      acceptance_rate: acceptanceRate,
     };
   }
 

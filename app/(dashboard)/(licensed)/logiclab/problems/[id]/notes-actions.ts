@@ -10,8 +10,8 @@ export async function getPersonalNote(problemId: string, isDailyChallenge?: bool
   const profile = await getUserProfile()
   if (!profile) return { note: null, error: "Unauthorized" }
 
-  // Check if user has solved
-  const submissionTable = isDailyChallenge ? "logiclab_daily_challenge_submissions" : "logiclab_problem_submissions"
+  // Check if user has solved (always use logiclab_problem_submissions to include historical POTDs)
+  const submissionTable = "logiclab_problem_submissions"
   const { data: solvedData } = await supabase
     .from(submissionTable)
     .select("status")
@@ -72,8 +72,8 @@ export async function getCommunityNotes(problemId: string, isDailyChallenge?: bo
   const profile = await getUserProfile()
   if (!profile) return { notes: [], error: "Unauthorized" }
 
-  // 1. Check if the user has solved this problem
-  const submissionTable = isDailyChallenge ? "logiclab_daily_challenge_submissions" : "logiclab_problem_submissions"
+  // 1. Check if the user has solved this problem (always use logiclab_problem_submissions)
+  const submissionTable = "logiclab_problem_submissions"
   const { data: solvedData } = await supabase
     .from(submissionTable)
     .select("status")
@@ -160,7 +160,7 @@ export async function getSubmissionCode(submissionId: string, isDailyChallenge: 
   const profile = await getUserProfile()
   if (!profile) return { code: null, error: "Unauthorized" }
 
-  const table = isDailyChallenge ? "logiclab_daily_challenge_submissions" : "logiclab_problem_submissions"
+  const table = "logiclab_problem_submissions"
   const { data, error } = await supabase
     .from(table)
     .select("code, language_id")

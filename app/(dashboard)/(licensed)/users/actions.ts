@@ -46,7 +46,7 @@ export async function createAccount(params: {
       app_metadata: { account_type: params.role }
     })
     
-    await adminClient.from("profiles").update({
+    await (adminClient as any).from("profiles").update({
       account_type: params.role,
       institute_id: profile.institute_id
     }).eq("id", userData.user.id)
@@ -83,7 +83,7 @@ export async function createAccount(params: {
 
   revalidatePath("/users")
 
-  return userData
+  return { success: true, user: userData.user }
 }
 
 export async function getInstituteCourses() {

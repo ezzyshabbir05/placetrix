@@ -63,11 +63,11 @@ export default async function DailyChallengePage({ params }: { params: Promise<{
 
   const totalTestCases = parsedTestCases.length
 
-  // Fetch user's past submissions for this daily challenge
+  // Fetch user's past submissions for this daily challenge (using problem_id to include all past attempts)
   const { data: submissions } = await (supabase as any)
-    .from("logiclab_daily_challenge_submissions")
+    .from("logiclab_problem_submissions")
     .select("id, status, language_id, runtime, memory, passed_count, total_count, created_at")
-    .eq("daily_challenge_id", dailychallengeid)
+    .eq("problem_id", problem.id)
     .eq("user_id", profile.id)
     .order("created_at", { ascending: false })
     .limit(20)

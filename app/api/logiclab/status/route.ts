@@ -177,18 +177,27 @@ export async function POST(req: Request) {
     const supabase = (await createServerClient()) as any;
 
     if (daily_challenge_id) {
-      await supabase.from("logiclab_daily_challenge_submissions").insert({
-        daily_challenge_id,
-        user_id,
-        problem_id,
-        code,
-        language_id: Number(language_id),
-        status: overallStatus,
-        passed_count: passedCount,
-        total_count: testCases.length,
-        runtime: maxRuntime,
-        memory: maxMemory,
-      });
+      const { data: potdData } = await supabase
+        .from("logiclab_daily_challenges")
+        .select("date")
+        .eq("id", daily_challenge_id)
+        .single();
+
+      if (potdData?.date) {
+        await supabase.from("logiclab_daily_challenge_submissions").insert({
+          daily_challenge_id,
+          user_id,
+          problem_id,
+          date: potdData.date,
+          code,
+          language_id: Number(language_id),
+          status: overallStatus,
+          passed_count: passedCount,
+          total_count: testCases.length,
+          runtime: maxRuntime,
+          memory: maxMemory,
+        });
+      }
     }
 
     // Insert regular submission (PostgreSQL trigger trg_logiclab_problem_solve fires automatically)
