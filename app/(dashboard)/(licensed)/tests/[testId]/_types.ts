@@ -37,6 +37,11 @@ export interface CandidateAnswerDetail {
   section_id?: string | null
   question_text: string
   marks: number
+  question_type?: "single_correct" | "multiple_correct" | "essay"
+  essay_text?: string | null
+  essay_evaluation?: any | null
+  min_words?: number | null
+  max_words?: number | null
   is_correct: boolean | null
   marks_awarded: number | null
   selected_option_ids: string[]

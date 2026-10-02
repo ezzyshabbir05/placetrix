@@ -32,6 +32,7 @@ export async function getTestQuestions(testId: string): Promise<AttemptQuestion[
     .from("test_questions")
     .select(
       `id, section_id, question_text, question_type, marks, order_index,
+       min_words, max_words, rubric_guidelines,
        test_question_options (id, option_text, order_index),
        question_tags (
          test_question_tags (id, name)
@@ -58,9 +59,12 @@ export async function getTestQuestions(testId: string): Promise<AttemptQuestion[
     id: q.id,
     section_id: q.section_id ?? defaultSecId,
     question_text: q.question_text,
-    question_type: q.question_type as "single_correct" | "multiple_correct",
+    question_type: q.question_type as "single_correct" | "multiple_correct" | "essay",
     marks: q.marks,
     order_index: q.order_index,
+    min_words: q.min_words ?? 250,
+    max_words: q.max_words ?? 350,
+    rubric_guidelines: q.rubric_guidelines,
     options: ((q.test_question_options as any[]) ?? [])
       .map((o: any) => ({
         id: o.id,

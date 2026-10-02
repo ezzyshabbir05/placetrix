@@ -2,7 +2,8 @@ import { createClient } from "@/lib/supabase/client"
 
 export interface SyncBatchItem {
   questionId: string
-  selectedOptionIds: string[]
+  selectedOptionIds?: string[]
+  essayText?: string
   timeSpentSeconds: number
 }
 

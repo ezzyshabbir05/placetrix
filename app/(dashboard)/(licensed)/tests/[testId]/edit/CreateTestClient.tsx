@@ -668,6 +668,9 @@ function TestContentPanel({
       tag_names: form.tag_names.map((t) => normalizeTag(t, availableTags)),
       options: form.options,
       section_id: finalSecId,
+      min_words: form.question_type === "essay" ? (form.min_words ?? 250) : undefined,
+      max_words: form.question_type === "essay" ? (form.max_words ?? 350) : undefined,
+      rubric_guidelines: form.question_type === "essay" ? form.rubric_guidelines : undefined,
     }
 
     setQuestions((prev) =>
@@ -1297,7 +1300,7 @@ function SortableQuestionRow({
 
         <div className="flex flex-wrap gap-1">
           <Badge variant="outline" className="text-[11px] h-4 px-1.5 py-0">
-            {question.question_type === "single_correct" ? "Single" : "Multiple"}
+            {question.question_type === "single_correct" ? "Single" : question.question_type === "essay" ? "Essay" : "Multiple"}
           </Badge>
 
           <Badge variant="outline" className="text-[11px] h-4 px-1.5 py-0">
@@ -1926,6 +1929,13 @@ const makeOptions = (): OptionForm[] =>
     is_correct: false,
   }))
 
+export const DEFAULT_ESSAY_RUBRIC =
+`• Structure & Organization: Clear introductory paragraph with a well-defined thesis statement; structured body paragraphs each focusing on a single key argument supported with examples; and an insightful conclusion.
+• Grammar, Mechanics & Syntax: Consistent verb tenses, proper subject-verb agreement, varied sentence structures, and accurate punctuation and spelling throughout.
+• Vocabulary & Style: Academic, formal tone with precise word choices, avoiding colloquialisms and repetitive phrasing.
+• Coherence & Flow: Smooth logical transitions between paragraphs and ideas.
+• Word Count Compliance: Target 250–350 words. Ensure balanced depth within the recommended length.`
+
 const EMPTY_FORM: QuestionForm = {
   question_text: "",
   question_type: "single_correct",
@@ -1933,6 +1943,9 @@ const EMPTY_FORM: QuestionForm = {
   explanation: "",
   options: makeOptions(),
   tag_names: [],
+  min_words: 250,
+  max_words: 350,
+  rubric_guidelines: DEFAULT_ESSAY_RUBRIC,
 }
 
 function QuestionSheet({
@@ -1967,10 +1980,17 @@ function QuestionSheet({
     const e: string[] = []
     if (!form.question_text.trim()) e.push("Question text is required.")
     if (!selectedSectionId) e.push("Select a section for this question.")
-    if (form.options.some((o) => !o.option_text.trim())) e.push("All options must have text or an image.")
-    if (!form.options.some((o) => o.is_correct)) e.push("Mark at least one correct answer.")
-    if (form.question_type === "single_correct" && form.options.filter((o) => o.is_correct).length > 1)
-      e.push("Single-answer type can only have one correct option.")
+    if (form.question_type === "essay") {
+      const minW = Number(form.min_words) || 250
+      const maxW = Number(form.max_words) || 350
+      if (minW < 50) e.push("Minimum words must be at least 50.")
+      if (maxW < minW) e.push("Maximum words cannot be less than minimum words.")
+    } else {
+      if (form.options.some((o) => !o.option_text.trim())) e.push("All options must have text or an image.")
+      if (!form.options.some((o) => o.is_correct)) e.push("Mark at least one correct answer.")
+      if (form.question_type === "single_correct" && form.options.filter((o) => o.is_correct).length > 1)
+        e.push("Single-answer type can only have one correct option.")
+    }
     const m = Number(form.marks)
     if (isNaN(m) || m <= 0) e.push("Marks must be a positive number.")
     return e
@@ -2028,11 +2048,12 @@ function QuestionSheet({
               <Label>Answer Type</Label>
               <Select
                 value={form.question_type}
-                onValueChange={(v: "single_correct" | "multiple_correct") =>
+                onValueChange={(v: "single_correct" | "multiple_correct" | "essay") =>
                   setForm((f) => ({
                     ...f,
                     question_type: v,
-                    options: f.options.map((o) => ({ ...o, is_correct: false })),
+                    options: v === "essay" ? [] : (f.options.length ? f.options : makeOptions()),
+                    rubric_guidelines: v === "essay" && !f.rubric_guidelines ? DEFAULT_ESSAY_RUBRIC : f.rubric_guidelines,
                   }))
                 }
               >
@@ -2040,6 +2061,7 @@ function QuestionSheet({
                 <SelectContent>
                   <SelectItem value="single_correct">Single correct</SelectItem>
                   <SelectItem value="multiple_correct">Multiple correct</SelectItem>
+                  <SelectItem value="essay">Essay Writing (AI Evaluated)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -2072,20 +2094,81 @@ function QuestionSheet({
             </Select>
           </div>
 
-          <div className="space-y-1.5">
-            <Label>
-              Options <span className="text-destructive">*</span>
-              <span className="ml-2 text-xs font-normal text-muted-foreground">
-                {form.question_type === "single_correct" ? "Pick one correct" : "Pick all correct"}
-              </span>
-            </Label>
-            <OptionsBuilder
-              options={form.options}
-              questionType={form.question_type}
-              onChange={(v) => set("options", v)}
-              onStageFile={onStageFile}
-            />
-          </div>
+          {form.question_type !== "essay" ? (
+            <div className="space-y-1.5">
+              <Label>
+                Options <span className="text-destructive">*</span>
+                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  {form.question_type === "single_correct" ? "Pick one correct" : "Pick all correct"}
+                </span>
+              </Label>
+              <OptionsBuilder
+                options={form.options}
+                questionType={form.question_type}
+                onChange={(v) => set("options", v)}
+                onStageFile={onStageFile}
+              />
+            </div>
+          ) : (
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3.5">
+              <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                <Sparkles className="h-4 w-4" />
+                <span>Essay Writing & AI Evaluation Parameters</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Candidates write their essay in an editor with live word counting. On submission, their essay is evaluated by the automated scoring engine for linguistic structure, coherence, and rubric compliance.
+              </p>
+
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium">Min Words Target</Label>
+                  <Input
+                    type="number"
+                    min={50}
+                    step={10}
+                    value={form.min_words ?? 250}
+                    onChange={(e) => set("min_words", parseInt(e.target.value, 10) || 250)}
+                    className="h-8 text-xs bg-background"
+                  />
+                  <p className="text-[10px] text-muted-foreground">Default: 250 words</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium">Max Words Target</Label>
+                  <Input
+                    type="number"
+                    min={form.min_words ?? 250}
+                    step={10}
+                    value={form.max_words ?? 350}
+                    onChange={(e) => set("max_words", parseInt(e.target.value, 10) || 350)}
+                    className="h-8 text-xs bg-background"
+                  />
+                  <p className="text-[10px] text-muted-foreground">Default: 350 words</p>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-medium">Instructions / Rubric Guidelines</Label>
+                  <button
+                    type="button"
+                    onClick={() => set("rubric_guidelines", DEFAULT_ESSAY_RUBRIC)}
+                    className="text-[10px] text-primary hover:underline font-medium"
+                  >
+                    Reset to Default Rubric
+                  </button>
+                </div>
+                <Textarea
+                  value={form.rubric_guidelines ?? ""}
+                  onChange={(e) => set("rubric_guidelines", e.target.value)}
+                  placeholder="e.g. Focus on structure, thesis clarity, supporting arguments, and grammar."
+                  className="min-h-[105px] text-xs resize-y bg-background font-sans leading-relaxed"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Displayed to the candidate above the editor to guide their writing and self-assessment.
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label>Topic Tags</Label>

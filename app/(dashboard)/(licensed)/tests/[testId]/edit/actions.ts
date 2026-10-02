@@ -44,22 +44,28 @@ export type SectionForm = {
 export type LocalQuestion = {
   id: string
   question_text: string
-  question_type: "single_correct" | "multiple_correct"
+  question_type: "single_correct" | "multiple_correct" | "essay"
   marks: number
   order_index: number
   tag_names: string[]
   options: OptionForm[]
   explanation: string
   section_id: string | null
+  min_words?: number
+  max_words?: number
+  rubric_guidelines?: string
 }
 
 export type QuestionForm = {
   question_text: string
-  question_type: "single_correct" | "multiple_correct"
+  question_type: "single_correct" | "multiple_correct" | "essay"
   marks: number
   explanation: string
   options: OptionForm[]
   tag_names: string[]
+  min_words?: number
+  max_words?: number
+  rubric_guidelines?: string
 }
 
 export type AiGenerateForm = {
@@ -117,6 +123,9 @@ async function saveTestToDb(
       explanation: q.explanation?.trim() || null,
       tag_names: q.tag_names,
       section_id: q.section_id || null,
+      min_words: q.question_type === "essay" ? (q.min_words ?? 250) : null,
+      max_words: q.question_type === "essay" ? (q.max_words ?? 350) : null,
+      rubric_guidelines: q.question_type === "essay" ? (q.rubric_guidelines?.trim() || null) : null,
       options: q.options.map((opt) => ({
         id: opt._key,
         option_text: opt.option_text,
@@ -136,6 +145,27 @@ async function saveTestToDb(
   if (error) {
     console.error("[TEST_SAVE] Supabase RPC error:", error)
     throw new Error(getFriendlyErrorMessage(error, "Failed to save the test. Please try again."))
+  }
+
+  // Ensure essay-specific metadata is persisted into test_questions
+  const essayQuestions = questions.filter((q) => q.question_type === "essay")
+  if (essayQuestions.length > 0) {
+    try {
+      await Promise.all(
+        essayQuestions.map((eq) =>
+          (supabase as any)
+            .from("test_questions")
+            .update({
+              min_words: eq.min_words ?? 250,
+              max_words: eq.max_words ?? 350,
+              rubric_guidelines: eq.rubric_guidelines?.trim() || null,
+            })
+            .eq("id", eq.id)
+        )
+      )
+    } catch (essaySyncErr) {
+      console.warn("[TEST_SAVE] Failed syncing essay metadata to test_questions:", essaySyncErr)
+    }
   }
 }
 
@@ -163,6 +193,7 @@ export async function loadTestAction(
         shuffle_questions, shuffle_options, strict_mode, pass_percentage,
         test_questions (
           id, question_text, question_type, marks, order_index, explanation, section_id,
+          min_words, max_words, rubric_guidelines,
           test_question_options ( id, option_text, is_correct, order_index ),
           question_tags ( test_question_tags ( id, name ) )
         )
@@ -218,6 +249,9 @@ export async function loadTestAction(
         order_index: q.order_index,
         explanation: q.explanation ?? "",
         section_id: q.section_id ?? null,
+        min_words: q.min_words ?? 250,
+        max_words: q.max_words ?? 350,
+        rubric_guidelines: q.rubric_guidelines ?? "",
         tag_names: (q.question_tags ?? [])
           .map((qt: any) => qt.test_question_tags?.name)
           .filter(Boolean),
@@ -312,9 +346,10 @@ export async function publishTestAction(
     throw new Error("Invalid cohorts selected.")
   }
 
-  // Group G Correctness check: Ensure each question has at least one correct option
+  // Group G Correctness check: Ensure each question has at least one correct option (except essays)
   for (let i = 0; i < questions.length; i++) {
     const q = questions[i]
+    if (q.question_type === "essay") continue
     const hasCorrect = q.options.some((o) => o.is_correct)
     if (!hasCorrect) {
       throw new Error(`Question ${i + 1} ("${q.question_text.slice(0, 40)}...") has no correct options defined. Please mark at least one option as correct.`)

@@ -47,7 +47,8 @@ async function fetchCandidateView(
       shuffle_questions, shuffle_options, max_attempts,
       institute:institutes(institute_name, logo_path),
       test_questions (
-        id, question_text, marks, explanation, order_index,
+        id, question_text, question_type, marks, explanation, order_index,
+        min_words, max_words, rubric_guidelines,
         test_question_options (id, option_text, is_correct, order_index),
         question_tags (test_question_tags (id, name))
       ),
@@ -55,7 +56,7 @@ async function fetchCandidateView(
         id, status, submitted_at, started_at, score, total_marks, percentage, 
         active_time_taken, total_time_taken, tab_switch_count,
         test_attempt_answers (
-          question_id, selected_option_ids, is_correct, marks_awarded, time_spent_seconds
+          question_id, selected_option_ids, is_correct, marks_awarded, time_spent_seconds, essay_text, essay_evaluation
         )
       )
     `)
@@ -76,7 +77,8 @@ async function fetchCandidateView(
         shuffle_questions, shuffle_options, max_attempts,
         institute:institutes(institute_name, logo_path),
         test_questions (
-          id, question_text, marks, explanation, order_index,
+          id, question_text, question_type, marks, explanation, order_index,
+          min_words, max_words, rubric_guidelines,
           test_question_options (id, option_text, is_correct, order_index),
           question_tags (test_question_tags (id, name))
         ),
@@ -84,7 +86,7 @@ async function fetchCandidateView(
           id, status, submitted_at, started_at, score, total_marks, percentage, 
           active_time_taken, total_time_taken, tab_switch_count,
           test_attempt_answers (
-            question_id, selected_option_ids, is_correct, marks_awarded, time_spent_seconds
+            question_id, selected_option_ids, is_correct, marks_awarded, time_spent_seconds, essay_text, essay_evaluation
           )
         )
       `)
@@ -210,6 +212,11 @@ async function fetchCandidateView(
       question_id: q.id,
       question_text: q.question_text,
       marks: q.marks,
+      question_type: q.question_type ?? "single_correct",
+      essay_text: ans?.essay_text ?? null,
+      essay_evaluation: ans?.essay_evaluation ?? null,
+      min_words: q.min_words ?? null,
+      max_words: q.max_words ?? null,
       is_correct: ans?.is_correct ?? null,
       marks_awarded: ans?.marks_awarded ?? null,
       selected_option_ids: (ans?.selected_option_ids as string[]) ?? [],

@@ -8,6 +8,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getUserProfile } from "@/lib/supabase/profile"
 import { getFriendlyErrorMessage } from "@/lib/errors"
+import { scoreCandidateEssay } from "@/lib/essay-evaluator"
 import type { AttemptInfo } from "./_types"
 
 
@@ -130,9 +131,77 @@ export async function claimSessionAction(
 }
 
 
+// ─── Sync Essay Answer Action ────────────────────────────────────────────────
+export async function syncEssayAnswerAction(
+  attemptId: string,
+  questionId: string,
+  essayText: string,
+  timeSpentSeconds: number = 0
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { supabase } = await requireFastAuth()
+
+    const { error } = await (supabase as any)
+      .from("test_attempt_answers")
+      .upsert(
+        {
+          attempt_id: attemptId,
+          question_id: questionId,
+          selected_option_ids: [],
+          essay_text: essayText,
+          time_spent_seconds: timeSpentSeconds,
+          answered_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "attempt_id,question_id" }
+      )
+
+    if (error) {
+      console.warn("[syncEssayAnswerAction] direct upsert failed, retrying without onConflict:", error.message)
+      // Fallback update if existing row
+      const { data: existing } = await (supabase as any)
+        .from("test_attempt_answers")
+        .select("id")
+        .eq("attempt_id", attemptId)
+        .eq("question_id", questionId)
+        .maybeSingle()
+
+      if (existing) {
+        await (supabase as any)
+          .from("test_attempt_answers")
+          .update({
+            essay_text: essayText,
+            time_spent_seconds: timeSpentSeconds,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id)
+      } else {
+        await (supabase as any)
+          .from("test_attempt_answers")
+          .insert({
+            attempt_id: attemptId,
+            question_id: questionId,
+            selected_option_ids: [],
+            essay_text: essayText,
+            time_spent_seconds: timeSpentSeconds,
+            answered_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+      }
+    }
+
+    return { ok: true }
+  } catch (err: any) {
+    console.error("[syncEssayAnswerAction] unexpected error:", err)
+    return { ok: false, error: err.message || "Failed to sync essay" }
+  }
+}
+
+
 // ─── Submit Attempt ────────────────────────────────────────────────────────────
 export async function submitAttemptAction(
-  attemptId: string
+  attemptId: string,
+  pendingEssays?: Record<string, string>
 ): Promise<{ error?: string; redirectPath?: string }> {
   const { supabase, userId } = await requireAuth()
 
@@ -148,6 +217,109 @@ export async function submitAttemptAction(
     return { error: "Attempt not found or already submitted" }
   }
 
+  // ── 0. Flush any pending essays passed directly from client ────────────────
+  if (pendingEssays && Object.keys(pendingEssays).length > 0) {
+    for (const [qId, text] of Object.entries(pendingEssays)) {
+      if (!qId) continue
+      try {
+        await (supabase as any)
+          .from("test_attempt_answers")
+          .upsert(
+            {
+              attempt_id: attemptId,
+              question_id: qId,
+              selected_option_ids: [],
+              essay_text: text ?? "",
+              answered_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "attempt_id,question_id" }
+          )
+      } catch (upsertErr) {
+        console.warn(`[submitAttemptAction] Warning flushing pending essay ${qId}:`, upsertErr)
+      }
+    }
+  }
+
+  // ── 1. Evaluate any essay answers with Automated Essay Assessment AI ─────────
+  try {
+    const { data: essayAnswers } = await (supabase as any)
+      .from("test_attempt_answers")
+      .select(`
+        id,
+        question_id,
+        essay_text,
+        test_questions (
+          id,
+          question_type,
+          marks,
+          min_words,
+          max_words
+        )
+      `)
+      .eq("attempt_id", attemptId)
+      .not("essay_text", "is", null)
+
+    if (essayAnswers && essayAnswers.length > 0) {
+      for (const answer of essayAnswers) {
+        const text = (answer.essay_text ?? "").trim()
+        const q = answer.test_questions
+
+        if (text.length === 0) {
+          await (supabase as any)
+            .from("test_attempt_answers")
+            .update({
+              marks_awarded: 0,
+              is_correct: false,
+              essay_evaluation: {
+                band_score: 1,
+                scaled_marks: 0,
+                band_descriptor: {
+                  name: "No Response",
+                  description: "No essay response was submitted."
+                },
+                metrics: {
+                  word_count: 0,
+                  length_compliance: "under_length"
+                }
+              }
+            })
+            .eq("id", answer.id)
+          continue
+        }
+
+        try {
+          const evaluation = await scoreCandidateEssay({
+            essayText: text,
+            minWords: q?.min_words ?? 250,
+            maxWords: q?.max_words ?? 350,
+            maxMarks: Number(q?.marks) || 10.0,
+          })
+
+          await (supabase as any)
+            .from("test_attempt_answers")
+            .update({
+              marks_awarded: evaluation.scaled_marks,
+              is_correct: evaluation.scaled_marks >= ((Number(q?.marks) || 10.0) * 0.5),
+              essay_evaluation: evaluation,
+            })
+            .eq("id", answer.id)
+        } catch (evalErr) {
+          console.error(`[submitAttemptAction] Error scoring essay answer ${answer.id}:`, evalErr)
+          await (supabase as any)
+            .from("test_attempt_answers")
+            .update({
+              essay_evaluation: { error: "Automated scoring queued for retry" },
+            })
+            .eq("id", answer.id)
+        }
+      }
+    }
+  } catch (essayQueryErr) {
+    console.warn("[submitAttemptAction] Failed checking essay answers:", essayQueryErr)
+  }
+
+  // ── 2. Run Database Test Grading RPC ───────────────────────────────────────
   const { data: result, error } = await (supabase as any).rpc("test_attempt_grade", {
     p_attempt_id: attemptId,
   })
@@ -155,6 +327,39 @@ export async function submitAttemptAction(
   if (error) {
     console.error("[submitAttemptAction] RPC error:", error)
     return { error: getFriendlyErrorMessage(error, "Failed to submit your test. Please try again.") }
+  }
+
+  // ── 3. Recalculate total marks to ensure essay scores are included ──────────
+  try {
+    const { data: allAnswers } = await (supabase as any)
+      .from("test_attempt_answers")
+      .select("marks_awarded")
+      .eq("attempt_id", attemptId)
+
+    if (allAnswers && allAnswers.length > 0) {
+      const totalScore = allAnswers.reduce(
+        (sum: number, a: any) => sum + (Number(a.marks_awarded) || 0),
+        0
+      )
+      const { data: attemptData } = await (supabase as any)
+        .from("test_attempts")
+        .select("total_marks")
+        .eq("id", attemptId)
+        .maybeSingle()
+
+      const maxMarks = Number(attemptData?.total_marks) || 1
+      const percentage = Math.min(100, Math.round((totalScore / maxMarks) * 100))
+
+      await (supabase as any)
+        .from("test_attempts")
+        .update({
+          score: totalScore,
+          percentage: percentage,
+        })
+        .eq("id", attemptId)
+    }
+  } catch (recalcErr) {
+    console.warn("[submitAttemptAction] Total score recalculation warning:", recalcErr)
   }
 
   const typedResult = result as { test_id?: string; error?: string } | null

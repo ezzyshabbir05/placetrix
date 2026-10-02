@@ -64,6 +64,8 @@ import { cn } from "@/lib/utils"
 import { InlineRichText } from "@/components/others/rich-text"
 import { createClient } from "@/lib/supabase/client"
 import { syncAttemptDirect } from "./sync-client"
+import { syncEssayAnswerAction } from "./actions"
+import { EssayAnswerEditor } from "@/components/test/EssayAnswerEditor"
 import { isDeploymentError, getFriendlyErrorMessage } from "@/lib/errors"
 import type { AttemptTest, AttemptQuestion, AttemptSection, AttemptInfo, SavedAnswer } from "./_types"
 
@@ -289,6 +291,8 @@ function QuestionNavigator({
     currentIndex,
     answers,
     syncedAnswers = {},
+    essayAnswers = {},
+    syncedEssayAnswers = {},
     flagged,
     disabled,
     onJump,
@@ -298,25 +302,37 @@ function QuestionNavigator({
     currentIndex: number
     answers: Record<string, string[]>
     syncedAnswers?: Record<string, string[]>
+    essayAnswers?: Record<string, string>
+    syncedEssayAnswers?: Record<string, string>
     flagged: Record<string, boolean>
     disabled?: boolean
     onJump: (i: number) => void
 }) {
     const savedCount = useMemo(() => {
         return displayQuestions.filter((q) => {
+            if (q.question_type === "essay") {
+                const local = (essayAnswers[q.id] ?? "").trim()
+                const synced = (syncedEssayAnswers[q.id] ?? "").trim()
+                return local.length > 0 && local === synced
+            }
             const current = answers[q.id] ?? []
             const synced = syncedAnswers[q.id] ?? []
             return current.length > 0 && JSON.stringify([...current].sort()) === JSON.stringify([...synced].sort())
         }).length
-    }, [displayQuestions, answers, syncedAnswers])
+    }, [displayQuestions, answers, syncedAnswers, essayAnswers, syncedEssayAnswers])
 
     const unsavedCount = useMemo(() => {
         return displayQuestions.filter((q) => {
+            if (q.question_type === "essay") {
+                const local = (essayAnswers[q.id] ?? "").trim()
+                const synced = (syncedEssayAnswers[q.id] ?? "").trim()
+                return local.length > 0 && local !== synced
+            }
             const current = answers[q.id] ?? []
             const synced = syncedAnswers[q.id] ?? []
             return current.length > 0 && JSON.stringify([...current].sort()) !== JSON.stringify([...synced].sort())
         }).length
-    }, [displayQuestions, answers, syncedAnswers])
+    }, [displayQuestions, answers, syncedAnswers, essayAnswers, syncedEssayAnswers])
 
     const flaggedCount = useMemo(() => {
         return Object.values(flagged).filter(Boolean).length
@@ -350,6 +366,11 @@ function QuestionNavigator({
                       const secQuestions = displayQuestions.filter((q) => q.section_id === sec.id)
                       if (secQuestions.length === 0) return null
                       const secSaved = secQuestions.filter((q) => {
+                        if (q.question_type === "essay") {
+                          const local = (essayAnswers[q.id] ?? "").trim()
+                          const synced = (syncedEssayAnswers[q.id] ?? "").trim()
+                          return local.length > 0 && local === synced
+                        }
                         const local = answers[q.id] ?? []
                         const synced = syncedAnswers[q.id] ?? []
                         return local.length > 0 && JSON.stringify([...local].sort()) === JSON.stringify([...synced].sort())
@@ -368,8 +389,13 @@ function QuestionNavigator({
                               const globalIndex = displayQuestions.findIndex((dq) => dq.id === q.id)
                               const localAns = answers[q.id] ?? []
                               const syncedAns = syncedAnswers[q.id] ?? []
-                              const hasLocal = localAns.length > 0
-                              const isSaved = hasLocal && JSON.stringify([...localAns].sort()) === JSON.stringify([...syncedAns].sort())
+                              const isEssay = q.question_type === "essay"
+                              const localEssay = (essayAnswers[q.id] ?? "").trim()
+                              const syncedEssay = (syncedEssayAnswers[q.id] ?? "").trim()
+                              const hasLocal = isEssay ? Boolean(localEssay) : localAns.length > 0
+                              const isSaved = isEssay 
+                                ? (Boolean(localEssay) && localEssay === syncedEssay) 
+                                : (hasLocal && JSON.stringify([...localAns].sort()) === JSON.stringify([...syncedAns].sort()))
                               const isPending = hasLocal && !isSaved
                               const isFlagged = flagged[q.id] ?? false
                               const isCurrent = globalIndex === currentIndex
@@ -412,8 +438,13 @@ function QuestionNavigator({
                     {displayQuestions.map((q, i) => {
                         const localAns = answers[q.id] ?? []
                         const syncedAns = syncedAnswers[q.id] ?? []
-                        const hasLocal = localAns.length > 0
-                        const isSaved = hasLocal && JSON.stringify([...localAns].sort()) === JSON.stringify([...syncedAns].sort())
+                        const isEssay = q.question_type === "essay"
+                        const localEssay = (essayAnswers[q.id] ?? "").trim()
+                        const syncedEssay = (syncedEssayAnswers[q.id] ?? "").trim()
+                        const hasLocal = isEssay ? Boolean(localEssay) : localAns.length > 0
+                        const isSaved = isEssay 
+                          ? (Boolean(localEssay) && localEssay === syncedEssay) 
+                          : (hasLocal && JSON.stringify([...localAns].sort()) === JSON.stringify([...syncedAns].sort()))
                         const isPending = hasLocal && !isSaved
                         const isFlagged = flagged[q.id] ?? false
                         const isCurrent = i === currentIndex
@@ -546,12 +577,18 @@ function QuestionView({
     total,
     selectedIds,
     syncedIds,
+    essayText,
+    syncedEssayText,
+    essaySaveStatus = "idle",
     isSaving,
     isUnsynced,
     saveError,
     isFlagged,
     disabled,
     onAnswer,
+    onEssayChange,
+    onEssayBlur,
+    onRetryEssaySave,
     onToggleFlag,
     onClearResponse,
 }: {
@@ -561,17 +598,30 @@ function QuestionView({
     total: number
     selectedIds: string[]
     syncedIds: string[]
+    essayText?: string
+    syncedEssayText?: string
+    essaySaveStatus?: "idle" | "saving" | "saved" | "error"
     isSaving: boolean
     isUnsynced: boolean
     saveError: string | null
     isFlagged: boolean
     disabled?: boolean
     onAnswer: (optionId: string) => void
+    onEssayChange?: (text: string) => void
+    onEssayBlur?: () => void
+    onRetryEssaySave?: () => void
     onToggleFlag: () => void
     onClearResponse: () => void
 }) {
-    const isActuallySynced = JSON.stringify([...selectedIds].sort()) === JSON.stringify([...syncedIds].sort())
-    const hasSelection = selectedIds.length > 0
+    const isEssay = question.question_type === "essay"
+    const hasSelection = isEssay ? Boolean((essayText ?? "").trim()) : selectedIds.length > 0
+    const isActuallySynced = isEssay
+        ? (essaySaveStatus === "saved" || (Boolean((essayText ?? "").trim()) && (essayText ?? "").trim() === (syncedEssayText ?? "").trim()))
+        : JSON.stringify([...selectedIds].sort()) === JSON.stringify([...syncedIds].sort())
+
+    const effectiveIsSaving = isEssay ? essaySaveStatus === "saving" : isSaving
+    const effectiveIsUnsynced = isEssay ? (!isActuallySynced && hasSelection) : isUnsynced
+    const effectiveSaveError = saveError
 
     const currentSecIdx = sections && question.section_id
         ? sections.findIndex((s) => s.id === question.section_id)
@@ -612,6 +662,8 @@ function QuestionView({
                     <Badge variant="outline" className="shrink-0 text-xs text-muted-foreground">
                         {question.question_type === "single_correct"
                             ? "Single correct answer"
+                            : question.question_type === "essay"
+                            ? "Essay Writing"
                             : "Select all correct answers"}
                     </Badge>
 
@@ -654,18 +706,33 @@ function QuestionView({
             </div>
 
             <div className="space-y-2.5">
-                {question.options.map((opt, optIdx) => (
-                    <OptionButton
-                        key={opt.id}
-                        option={opt}
-                        optionIndex={optIdx}
-                        isSelected={selectedIds.includes(opt.id)}
-                        questionType={question.question_type}
-                        isSaving={isSaving}
+                {isEssay ? (
+                    <EssayAnswerEditor
+                        value={essayText ?? ""}
+                        onChange={(val) => onEssayChange?.(val)}
+                        onBlur={onEssayBlur}
                         disabled={disabled}
-                        onClick={() => onAnswer(opt.id)}
+                        minWords={question.min_words ?? 250}
+                        maxWords={question.max_words ?? 350}
+                        rubricGuidelines={question.rubric_guidelines}
+                        saveStatus={essaySaveStatus}
+                        saveError={effectiveSaveError}
+                        onRetrySave={onRetryEssaySave}
                     />
-                ))}
+                ) : (
+                    question.options.map((opt, optIdx) => (
+                        <OptionButton
+                            key={opt.id}
+                            option={opt}
+                            optionIndex={optIdx}
+                            isSelected={selectedIds.includes(opt.id)}
+                            questionType={question.question_type as "single_correct" | "multiple_correct"}
+                            isSaving={isSaving}
+                            disabled={disabled}
+                            onClick={() => onAnswer(opt.id)}
+                        />
+                    ))
+                )}
             </div>
 
             {/* ── Clear Selection Control ────────────────────────────────────── */}
@@ -676,22 +743,22 @@ function QuestionView({
                         variant="ghost"
                         size="sm"
                         onClick={onClearResponse}
-                        disabled={disabled || isSaving}
+                        disabled={disabled || effectiveIsSaving}
                         className="h-8 px-3 text-xs text-muted-foreground hover:text-foreground"
                     >
-                        Clear Selection
+                        {isEssay ? "Clear Essay Draft" : "Clear Selection"}
                     </Button>
                 </div>
             )}
 
-            {saveError ? (
+            {effectiveSaveError ? (
                 <p className="flex items-center gap-1.5 text-xs text-destructive font-medium">
                     <AlertTriangle className="h-3 w-3 shrink-0" />
-                    Failed to save: {saveError}
+                    Failed to save: {effectiveSaveError}
                 </p>
-            ) : (isSaving || isUnsynced || !isActuallySynced || selectedIds.length > 0) ? (
+            ) : (effectiveIsSaving || effectiveIsUnsynced || hasSelection) ? (
                 <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    {isSaving ? (
+                    {effectiveIsSaving ? (
                         <>
                             <Loader2 className="h-3 w-3 animate-spin text-primary" />
                             <span className="text-primary font-medium">Saving to database…</span>
@@ -704,7 +771,9 @@ function QuestionView({
                     ) : (
                         <>
                             <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">Saved to database</span>
+                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                                {isEssay ? "Draft saved to database" : "Saved to database"}
+                            </span>
                         </>
                     )}
                 </p>
@@ -985,7 +1054,7 @@ interface Props {
         }>
     ) => Promise<{ ok: boolean; error?: string }>
     onClaimSession: (attemptId: string, sessionToken: string) => Promise<{ ok: boolean; error?: string }>
-    onSubmit?: (attemptId: string) => Promise<{ error?: string; redirectPath?: string }>
+    onSubmit?: (attemptId: string, pendingEssays?: Record<string, string>) => Promise<{ error?: string; redirectPath?: string }>
     serverNow: string
     // Called on every detected violation — fire-and-forget, never throws.
     onViolation?: (
@@ -1149,6 +1218,47 @@ export function AttemptClient({
         () => Object.fromEntries(savedAnswers.map((a) => [a.question_id, a.selected_option_ids]))
     )
 
+    const [essayAnswers, setEssayAnswers] = useState<Record<string, string>>(() => {
+        const initial: Record<string, string> = {}
+        savedAnswers.forEach((a) => {
+            if (a.essay_text) initial[a.question_id] = a.essay_text
+        })
+        if (typeof window !== "undefined" && storagePrefix) {
+            displayQuestions.forEach((q) => {
+                if (q.question_type === "essay") {
+                    const localDraft = localStorage.getItem(`${storagePrefix}_essay_${q.id}`)
+                    if (localDraft && localDraft.trim().length > (initial[q.id]?.trim().length ?? 0)) {
+                        initial[q.id] = localDraft
+                    }
+                }
+            })
+        }
+        return initial
+    })
+
+    const [syncedEssayAnswers, setSyncedEssayAnswers] = useState<Record<string, string>>(() => {
+        const initial: Record<string, string> = {}
+        savedAnswers.forEach((a) => {
+            if (a.essay_text) initial[a.question_id] = a.essay_text
+        })
+        return initial
+    })
+
+    const [essaySaveStatus, setEssaySaveStatus] = useState<Record<string, "idle" | "saving" | "saved" | "error">>({})
+    const [essaySaveErrors, setEssaySaveErrors] = useState<Record<string, string | null>>({})
+
+    const essayAnswersRef = useRef<Record<string, string>>(essayAnswers)
+    useEffect(() => {
+        essayAnswersRef.current = essayAnswers
+    }, [essayAnswers])
+
+    const syncedEssayAnswersRef = useRef<Record<string, string>>(syncedEssayAnswers)
+    useEffect(() => {
+        syncedEssayAnswersRef.current = syncedEssayAnswers
+    }, [syncedEssayAnswers])
+
+    const essaySyncTimeoutRef = useRef<Record<string, NodeJS.Timeout>>({})
+
     // flagged: tracks which question IDs are flagged for review (client-side only)
     const [flagged, setFlagged] = useState<Record<string, boolean>>(() => {
         if (typeof window !== "undefined" && storagePrefix) {
@@ -1272,6 +1382,103 @@ export function AttemptClient({
             }
         }
     }, [attemptInfo])
+
+    const flushEssaySync = useCallback(
+        async (questionId: string): Promise<boolean> => {
+            if (!attemptInfo) return true
+
+            if (essaySyncTimeoutRef.current[questionId]) {
+                clearTimeout(essaySyncTimeoutRef.current[questionId])
+                delete essaySyncTimeoutRef.current[questionId]
+            }
+
+            const currentText = essayAnswersRef.current[questionId] ?? ""
+            const syncedText = syncedEssayAnswersRef.current[questionId] ?? ""
+
+            // If already identical to server state, no-op
+            if (currentText === syncedText) {
+                setEssaySaveStatus((prev) => ({ ...prev, [questionId]: "saved" }))
+                return true
+            }
+
+            setEssaySaveStatus((prev) => ({ ...prev, [questionId]: "saving" }))
+            setEssaySaveErrors((prev) => ({ ...prev, [questionId]: null }))
+
+            const timeSpent = questionPacingRef.current[questionId] ?? 0
+
+            try {
+                // Try direct client RPC sync first (0 next.js server requests, direct to postgres)
+                let directRes = await syncAttemptDirect(attemptInfo.id, sessionTokenRef.current, [
+                    {
+                        questionId,
+                        essayText: currentText,
+                        timeSpentSeconds: timeSpent,
+                    },
+                ])
+
+                if (!directRes.ok && directRes.error !== "session_superseded") {
+                    // Fallback to server action
+                    const actionRes = await syncEssayAnswerAction(attemptInfo.id, questionId, currentText, timeSpent)
+                    if (actionRes.ok) {
+                        directRes = { ok: true }
+                    } else {
+                        directRes = { ok: false, error: actionRes.error }
+                    }
+                }
+
+                if (directRes.ok) {
+                    setSyncedEssayAnswers((prev) => ({ ...prev, [questionId]: currentText }))
+                    syncedEssayAnswersRef.current[questionId] = currentText
+                    setEssaySaveStatus((prev) => ({ ...prev, [questionId]: "saved" }))
+                    setEssaySaveErrors((prev) => ({ ...prev, [questionId]: null }))
+                    return true
+                } else {
+                    setEssaySaveStatus((prev) => ({ ...prev, [questionId]: "error" }))
+                    setEssaySaveErrors((prev) => ({ ...prev, [questionId]: directRes.error ?? "Failed to save essay draft" }))
+                    return false
+                }
+            } catch (err: any) {
+                setEssaySaveStatus((prev) => ({ ...prev, [questionId]: "error" }))
+                setEssaySaveErrors((prev) => ({ ...prev, [questionId]: err?.message ?? "Network error saving essay" }))
+                return false
+            }
+        },
+        [attemptInfo]
+    )
+
+    const flushAllDirtyEssays = useCallback(async (): Promise<boolean> => {
+        if (!attemptInfo) return true
+        const dirtyEssayQIds = displayQuestions
+            .filter((q) => q.question_type === "essay")
+            .map((q) => q.id)
+            .filter((id) => (essayAnswersRef.current[id] ?? "") !== (syncedEssayAnswersRef.current[id] ?? ""))
+
+        if (dirtyEssayQIds.length === 0) return true
+
+        const results = await Promise.allSettled(dirtyEssayQIds.map((id) => flushEssaySync(id)))
+        return results.every((r) => r.status === "fulfilled" && r.value === true)
+    }, [attemptInfo, displayQuestions, flushEssaySync])
+
+    const handleEssayChange = useCallback((questionId: string, text: string) => {
+        setEssayAnswers((prev) => ({ ...prev, [questionId]: text }))
+        essayAnswersRef.current[questionId] = text
+
+        if (typeof window !== "undefined" && storagePrefix) {
+            try {
+                localStorage.setItem(`${storagePrefix}_essay_${questionId}`, text)
+            } catch {}
+        }
+
+        setEssaySaveStatus((prev) => ({ ...prev, [questionId]: "saving" }))
+
+        if (essaySyncTimeoutRef.current[questionId]) {
+            clearTimeout(essaySyncTimeoutRef.current[questionId])
+        }
+
+        essaySyncTimeoutRef.current[questionId] = setTimeout(() => {
+            flushEssaySync(questionId)
+        }, 750)
+    }, [storagePrefix, flushEssaySync])
 
     // Update active question target on question navigation
     useEffect(() => {
@@ -1852,23 +2059,32 @@ export function AttemptClient({
     const handleNext = useCallback(() => {
         if (isSubmittingRef.current) return
         flushCurrentQuestionActiveTime()
+        if (currentQuestion?.question_type === "essay") {
+            flushEssaySync(currentQuestion.id)
+        }
         setCurrentIndex((i) => Math.min(displayQuestions.length - 1, i + 1))
         performSync()
-    }, [displayQuestions.length, flushCurrentQuestionActiveTime, performSync])
+    }, [currentQuestion, displayQuestions.length, flushCurrentQuestionActiveTime, performSync, flushEssaySync])
 
     const handlePrevious = useCallback(() => {
         if (isSubmittingRef.current) return
         flushCurrentQuestionActiveTime()
+        if (currentQuestion?.question_type === "essay") {
+            flushEssaySync(currentQuestion.id)
+        }
         setCurrentIndex((i) => Math.max(0, i - 1))
         performSync()
-    }, [flushCurrentQuestionActiveTime, performSync])
+    }, [currentQuestion, flushCurrentQuestionActiveTime, performSync, flushEssaySync])
 
     const handleJump = useCallback((targetIndex: number) => {
         if (isSubmittingRef.current || targetIndex === currentIndex) return
         flushCurrentQuestionActiveTime()
+        if (currentQuestion?.question_type === "essay") {
+            flushEssaySync(currentQuestion.id)
+        }
         setCurrentIndex(targetIndex)
         performSync()
-    }, [currentIndex, flushCurrentQuestionActiveTime, performSync])
+    }, [currentIndex, currentQuestion, flushCurrentQuestionActiveTime, performSync, flushEssaySync])
 
     const autoSyncTimerRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -1884,6 +2100,19 @@ export function AttemptClient({
     const handleClearResponse = useCallback(() => {
         if (!currentQuestion || isSubmittingRef.current) return
         const qId = currentQuestion.id
+
+        if (currentQuestion.question_type === "essay") {
+            setEssayAnswers((prev) => ({ ...prev, [qId]: "" }))
+            essayAnswersRef.current[qId] = ""
+            if (typeof window !== "undefined" && storagePrefix) {
+                try {
+                    localStorage.removeItem(`${storagePrefix}_essay_${qId}`)
+                } catch {}
+            }
+            flushEssaySync(qId)
+            return
+        }
+
         answersRef.current[qId] = []
 
         const synced = syncedAnswersRef.current[qId] ?? []
@@ -1895,7 +2124,7 @@ export function AttemptClient({
 
         setAnswers((prev) => ({ ...prev, [qId]: [] }))
         triggerDebouncedSync()
-    }, [currentQuestion, triggerDebouncedSync])
+    }, [currentQuestion, triggerDebouncedSync, flushEssaySync, storagePrefix])
 
     const handleNextRef = useRef<() => void>(() => {})
     const handlePreviousRef = useRef<() => void>(() => {})
@@ -1943,7 +2172,7 @@ export function AttemptClient({
         (
             questionId: string,
             optionId: string,
-            questionType: "single_correct" | "multiple_correct"
+            questionType: "single_correct" | "multiple_correct" | "essay"
         ) => {
             if (isSubmittingRef.current) return
 
@@ -1988,12 +2217,14 @@ export function AttemptClient({
             setShowFocusWarning(false)
 
             try {
-                // Final flush of all pending answers and pacing
+                // Final flush of all pending MCQ answers and pacing
                 if (phase === "active" && performSyncRef.current) {
-                    const syncOk = await performSyncRef.current(true)
-                    if (syncOk === false && !auto) {
-                        throw new Error("Failed to save pending answers. Please check your connection and retry.")
-                    }
+                    await performSyncRef.current(true)
+                }
+
+                // Final flush of all pending essay answers
+                if (phase === "active") {
+                    await flushAllDirtyEssays()
                 }
 
                 await leaveFullscreen()
@@ -2001,8 +2232,21 @@ export function AttemptClient({
                 const prefix = `pt_attempt_${attemptInfo.id}`
                 localStorage.removeItem(`${prefix}_idx`)
                 localStorage.removeItem(`${prefix}_flags`)
+                displayQuestions.forEach((q) => {
+                    if (q.question_type === "essay") {
+                        localStorage.removeItem(`${prefix}_essay_${q.id}`)
+                    }
+                })
 
-                const submitResult = await onSubmit?.(attemptInfo.id)
+                // Snapshot latest essay answers
+                const essaySnapshot: Record<string, string> = {}
+                displayQuestions.forEach((q) => {
+                    if (q.question_type === "essay") {
+                        essaySnapshot[q.id] = essayAnswersRef.current[q.id] ?? ""
+                    }
+                })
+
+                const submitResult = await onSubmit?.(attemptInfo.id, essaySnapshot)
                 if (submitResult?.error) {
                     throw new Error(submitResult.error)
                 }
@@ -2032,7 +2276,7 @@ export function AttemptClient({
                 toast.error(userFriendlyMsg)
             }
         },
-        [attemptInfo, onSubmit, leaveFullscreen, phase, test.id]
+        [attemptInfo, onSubmit, leaveFullscreen, phase, test.id, displayQuestions, flushAllDirtyEssays]
     )
 
     useEffect(() => {
@@ -2071,22 +2315,40 @@ export function AttemptClient({
 
     const savedCount = useMemo(() => {
         return displayQuestions.filter((q) => {
+            if (q.question_type === "essay") {
+                const local = (essayAnswers[q.id] ?? "").trim()
+                const synced = (syncedEssayAnswers[q.id] ?? "").trim()
+                return local.length > 0 && local === synced
+            }
             const current = answers[q.id] ?? []
             const synced = syncedAnswers[q.id] ?? []
             return current.length > 0 && JSON.stringify([...current].sort()) === JSON.stringify([...synced].sort())
         }).length
-    }, [displayQuestions, answers, syncedAnswers])
+    }, [displayQuestions, answers, syncedAnswers, essayAnswers, syncedEssayAnswers])
 
     const pendingCount = useMemo(() => {
         return displayQuestions.filter((q) => {
+            if (q.question_type === "essay") {
+                const local = (essayAnswers[q.id] ?? "").trim()
+                const synced = (syncedEssayAnswers[q.id] ?? "").trim()
+                return local.length > 0 && local !== synced
+            }
             const current = answers[q.id] ?? []
             const synced = syncedAnswers[q.id] ?? []
             return current.length > 0 && JSON.stringify([...current].sort()) !== JSON.stringify([...synced].sort())
         }).length
-    }, [displayQuestions, answers, syncedAnswers])
+    }, [displayQuestions, answers, syncedAnswers, essayAnswers, syncedEssayAnswers])
 
     const currentAnswers = answers[currentQuestion?.id ?? ""] ?? []
-    const answeredCount = displayQuestions.filter((q) => (answers[q.id] ?? []).length > 0).length
+    const answeredCount = useMemo(() => {
+        return displayQuestions.filter((q) => {
+            if (q.question_type === "essay") {
+                return Boolean((essayAnswers[q.id] ?? "").trim())
+            }
+            return (answers[q.id] ?? []).length > 0
+        }).length
+    }, [displayQuestions, answers, essayAnswers])
+
     const unansweredCount = displayQuestions.length - answeredCount
     const flaggedCount = Object.values(flagged).filter(Boolean).length
     const progressPct = displayQuestions.length > 0
@@ -2353,11 +2615,34 @@ export function AttemptClient({
                 msUserSelect: "none",
                 userSelect: "none",
             }}
-            onCopy={(e) => e.preventDefault()}
-            onCut={(e) => e.preventDefault()}
-            onPaste={(e) => e.preventDefault()}
-            onContextMenu={(e) => e.preventDefault()}
-            onDragStart={(e) => e.preventDefault()}
+            onCopy={(e) => {
+                const target = e.target as HTMLElement | null
+                if (target?.tagName === "TEXTAREA" || target?.tagName === "INPUT" || target?.isContentEditable) return
+                e.preventDefault()
+            }}
+            onCut={(e) => {
+                const target = e.target as HTMLElement | null
+                if (target?.tagName === "TEXTAREA" || target?.tagName === "INPUT" || target?.isContentEditable) return
+                e.preventDefault()
+            }}
+            onPaste={(e) => {
+                const target = e.target as HTMLElement | null
+                if (target?.tagName === "TEXTAREA" || target?.tagName === "INPUT" || target?.isContentEditable) {
+                    // Temporarily allow pasting in essay / text fields
+                    return
+                }
+                e.preventDefault()
+            }}
+            onContextMenu={(e) => {
+                const target = e.target as HTMLElement | null
+                if (target?.tagName === "TEXTAREA" || target?.tagName === "INPUT" || target?.isContentEditable) return
+                e.preventDefault()
+            }}
+            onDragStart={(e) => {
+                const target = e.target as HTMLElement | null
+                if (target?.tagName === "TEXTAREA" || target?.tagName === "INPUT" || target?.isContentEditable) return
+                e.preventDefault()
+            }}
         >
 
             {/* Heavy Blur & Opacity Backdrop Overlay when any modal is open */}
@@ -2566,14 +2851,20 @@ export function AttemptClient({
                             total={displayQuestions.length}
                             selectedIds={currentAnswers}
                             syncedIds={syncedAnswers[currentQuestion.id] ?? []}
-                            isSaving={syncStatus === "syncing"}
-                            isUnsynced={syncStatus === "error"}
-                            saveError={syncStatus === "error" ? syncError : null}
+                            essayText={essayAnswers[currentQuestion.id] ?? ""}
+                            syncedEssayText={syncedEssayAnswers[currentQuestion.id] ?? ""}
+                            essaySaveStatus={essaySaveStatus[currentQuestion.id] ?? "idle"}
+                            isSaving={currentQuestion.question_type === "essay" ? essaySaveStatus[currentQuestion.id] === "saving" : syncStatus === "syncing"}
+                            isUnsynced={currentQuestion.question_type === "essay" ? (essayAnswers[currentQuestion.id] ?? "").trim() !== (syncedEssayAnswers[currentQuestion.id] ?? "").trim() && Boolean((essayAnswers[currentQuestion.id] ?? "").trim()) : syncStatus === "error"}
+                            saveError={currentQuestion.question_type === "essay" ? (essaySaveErrors[currentQuestion.id] ?? null) : (syncStatus === "error" ? syncError : null)}
                             isFlagged={flagged[currentQuestion.id] ?? false}
                             disabled={isSubmitting}
                             onAnswer={(optId) =>
                                 handleAnswer(currentQuestion.id, optId, currentQuestion.question_type)
                             }
+                            onEssayChange={(text) => handleEssayChange(currentQuestion.id, text)}
+                            onEssayBlur={() => flushEssaySync(currentQuestion.id)}
+                            onRetryEssaySave={() => flushEssaySync(currentQuestion.id)}
                             onToggleFlag={() => toggleFlag(currentQuestion.id)}
                             onClearResponse={handleClearResponse}
                         />
@@ -2638,6 +2929,8 @@ export function AttemptClient({
                             currentIndex={currentIndex}
                             answers={answers}
                             syncedAnswers={syncedAnswers}
+                            essayAnswers={essayAnswers}
+                            syncedEssayAnswers={syncedEssayAnswers}
                             flagged={flagged}
                             disabled={isSubmitting}
                             onJump={handleJump}
@@ -2770,6 +3063,8 @@ export function AttemptClient({
                             currentIndex={currentIndex}
                             answers={answers}
                             syncedAnswers={syncedAnswers}
+                            essayAnswers={essayAnswers}
+                            syncedEssayAnswers={syncedEssayAnswers}
                             flagged={flagged}
                             disabled={isSubmitting}
                             onJump={(i) => {

@@ -26,7 +26,7 @@ export interface AttemptQuestion {
   id: string
   section_id: string | null
   question_text: string
-  question_type: "single_correct" | "multiple_correct"
+  question_type: "single_correct" | "multiple_correct" | "essay"
   marks: number
   order_index: number
   tags: { id: string; name: string }[]
@@ -35,6 +35,9 @@ export interface AttemptQuestion {
     option_text: string
     order_index: number
   }[]
+  min_words?: number | null
+  max_words?: number | null
+  rubric_guidelines?: string | null
 }
 
 export interface AttemptInfo {
@@ -51,4 +54,5 @@ export interface AttemptInfo {
 export interface SavedAnswer {
   question_id: string
   selected_option_ids: string[]
+  essay_text?: string | null
 }

@@ -29,7 +29,8 @@ async function fetchResultData(
       institute:institutes(institute_name, logo_path),
       test_sections (id, name, description, order_index),
       test_questions (
-        id, section_id, question_text, marks, explanation, order_index,
+        id, section_id, question_text, question_type, marks, explanation, order_index,
+        min_words, max_words, rubric_guidelines,
         test_question_options (id, option_text, is_correct, order_index),
         question_tags (test_question_tags (id, name))
       ),
@@ -38,7 +39,7 @@ async function fetchResultData(
         active_time_taken, total_time_taken, tab_switch_count, ai_diagnosis,
         student:profiles(full_name),
         test_attempt_answers (
-          question_id, selected_option_ids, is_correct, marks_awarded, time_spent_seconds
+          question_id, selected_option_ids, is_correct, marks_awarded, time_spent_seconds, essay_text, essay_evaluation
         )
       )
     `)
@@ -57,7 +58,8 @@ async function fetchResultData(
         institute:institutes(institute_name, logo_path),
         test_sections (id, name, description, order_index),
         test_questions (
-          id, section_id, question_text, marks, explanation, order_index,
+          id, section_id, question_text, question_type, marks, explanation, order_index,
+          min_words, max_words, rubric_guidelines,
           test_question_options (id, option_text, is_correct, order_index),
           question_tags (test_question_tags (id, name))
         ),
@@ -66,7 +68,7 @@ async function fetchResultData(
           active_time_taken, total_time_taken, tab_switch_count, ai_diagnosis,
           student:profiles(full_name),
           test_attempt_answers (
-            question_id, selected_option_ids, is_correct, marks_awarded, time_spent_seconds
+            question_id, selected_option_ids, is_correct, marks_awarded, time_spent_seconds, essay_text, essay_evaluation
           )
         )
       `)
@@ -174,6 +176,11 @@ async function fetchResultData(
       section_id: q.section_id ?? null,
       question_text: q.question_text,
       marks: q.marks,
+      question_type: q.question_type ?? "single_correct",
+      essay_text: ans?.essay_text ?? null,
+      essay_evaluation: ans?.essay_evaluation ?? null,
+      min_words: q.min_words ?? null,
+      max_words: q.max_words ?? null,
       is_correct: ans?.is_correct ?? null,
       marks_awarded: ans?.marks_awarded ?? null,
       selected_option_ids: (ans?.selected_option_ids as string[]) ?? [],

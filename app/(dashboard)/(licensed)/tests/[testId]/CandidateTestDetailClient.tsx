@@ -39,9 +39,11 @@ import {
   Lightbulb,
   ListChecks,
   RotateCw,
+  Sparkles,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { InlineRichText } from "@/components/others/rich-text"
+import { EssayEvaluationCard } from "@/components/test/EssayEvaluationCard"
 import type {
   CandidateTestDetail,
   CandidateAttemptDetail,
@@ -213,7 +215,10 @@ function QuestionReviewItem({
   index: number
   isInProgress?: boolean
 }) {
-  const isSkipped = (answer.selected_option_ids ?? []).length === 0
+  const isEssay = answer.question_type === "essay"
+  const isSkipped = isEssay
+    ? !(answer.essay_text ?? "").trim()
+    : (answer.selected_option_ids ?? []).length === 0
   const isOptionMatchCorrect = (() => {
     if (answer.is_correct != null) return answer.is_correct === true
     const correctOptionIds = (answer.options ?? []).filter((o) => o.is_correct === true).map((o) => o.id).sort()
@@ -274,6 +279,12 @@ function QuestionReviewItem({
                   {formatSeconds(answer.time_spent_seconds)}
                 </Badge>
               )}
+              {isEssay && (
+                <Badge variant="outline" className="h-4 gap-1 border-primary/30 bg-primary/10 text-primary px-1.5 text-[10px] font-normal">
+                  <Sparkles className="h-2.5 w-2.5 shrink-0" />
+                  Essay Assessment
+                </Badge>
+              )}
             </div>
           </div>
         </div>
@@ -282,14 +293,22 @@ function QuestionReviewItem({
       <AccordionContent className="px-4 pb-4 pt-0">
         <Separator className="mb-3" />
         <div className="space-y-2.5">
-          {(answer.options ?? []).map((opt) => (
-            <OptionItem
-              key={opt.id}
-              opt={opt}
-              isSelected={(answer.selected_option_ids ?? []).includes(opt.id)}
-              isInProgress={isInProgress}
+          {isEssay ? (
+            <EssayEvaluationCard
+              evaluation={answer.essay_evaluation}
+              candidateEssay={answer.essay_text}
+              maxMarks={answer.marks}
             />
-          ))}
+          ) : (
+            (answer.options ?? []).map((opt) => (
+              <OptionItem
+                key={opt.id}
+                opt={opt}
+                isSelected={(answer.selected_option_ids ?? []).includes(opt.id)}
+                isInProgress={isInProgress}
+              />
+            ))
+          )}
         </div>
 
         {((answer.tags ?? []).length > 0 || (answer.explanation && !isInProgress)) && (
