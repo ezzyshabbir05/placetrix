@@ -4,7 +4,8 @@ import React, { useMemo } from "react"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Sparkles, FileText, CheckCircle2, Loader2, AlertCircle, RefreshCw } from "lucide-react"
+import { toast } from "sonner"
+import { Sparkles, FileText, CheckCircle2, Loader2, AlertCircle, RefreshCw, Lock } from "lucide-react"
 
 interface EssayAnswerEditorProps {
   value: string
@@ -24,8 +25,8 @@ export function EssayAnswerEditor({
   onChange,
   onBlur,
   disabled,
-  minWords = 250,
-  maxWords = 350,
+  minWords = 180,
+  maxWords = 220,
   rubricGuidelines,
   saveStatus = "idle",
   saveError,
@@ -66,13 +67,58 @@ export function EssayAnswerEditor({
     }
   }, [wordCount, minWords, maxWords])
 
+  const handleBlockedAction = (e: React.SyntheticEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    toast.error("Copy and paste is disabled during the assessment. Please type your response directly.", {
+      id: "essay-copy-paste-disabled",
+    })
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const isModifier = e.ctrlKey || e.metaKey
+    const key = e.key.toLowerCase()
+
+    if (isModifier && (key === "v" || key === "c" || key === "x")) {
+      e.preventDefault()
+      e.stopPropagation()
+      toast.error("Copy and paste is disabled during the assessment. Please type your response directly.", {
+        id: "essay-copy-paste-disabled",
+      })
+      return
+    }
+
+    if (e.shiftKey && e.key === "Insert") {
+      e.preventDefault()
+      e.stopPropagation()
+      toast.error("Copy and paste is disabled during the assessment. Please type your response directly.", {
+        id: "essay-copy-paste-disabled",
+      })
+      return
+    }
+
+    if (isModifier && e.key === "Insert") {
+      e.preventDefault()
+      e.stopPropagation()
+      toast.error("Copy and paste is disabled during the assessment. Please type your response directly.", {
+        id: "essay-copy-paste-disabled",
+      })
+      return
+    }
+  }
+
   return (
     <div className="space-y-3.5">
       {/* Top Header Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/30 px-3.5 py-2">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground font-medium">
           <FileText className="h-3.5 w-3.5 text-primary" />
           <span>Recommended Target: {minWords} – {maxWords} words</span>
+          <span className="text-muted-foreground/40 hidden sm:inline">•</span>
+          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/80 font-normal">
+            <Lock className="h-3 w-3 text-muted-foreground" />
+            Copy/Paste Disabled
+          </span>
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -132,16 +178,18 @@ export function EssayAnswerEditor({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}
-          onPaste={(e) => {
-            // Allow pasting into essay textarea
+          onKeyDown={handleKeyDown}
+          onPaste={handleBlockedAction}
+          onCopy={handleBlockedAction}
+          onCut={handleBlockedAction}
+          onDrop={handleBlockedAction}
+          onContextMenu={(e) => {
+            e.preventDefault()
             e.stopPropagation()
           }}
-          onCopy={(e) => e.stopPropagation()}
-          onCut={(e) => e.stopPropagation()}
-          onContextMenu={(e) => e.stopPropagation()}
           disabled={disabled}
           placeholder="Type your essay here... Structure your essay with an introductory paragraph, supporting points with examples, and a well-reasoned conclusion."
-          className="min-h-[320px] font-sans text-sm leading-relaxed p-4 resize-y focus-visible:ring-primary/40 focus-visible:border-primary select-text"
+          className="min-h-[320px] font-sans text-sm leading-relaxed p-4 resize-y focus-visible:ring-primary/40 focus-visible:border-primary"
           spellCheck
         />
       </div>

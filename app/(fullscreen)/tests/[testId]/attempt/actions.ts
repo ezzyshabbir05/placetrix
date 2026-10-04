@@ -70,6 +70,65 @@ export async function startAttemptAction(testId: string): Promise<AttemptInfo> {
     expires_at: data.expires_at,
     tab_switch_count: data.tab_switch_count ?? 0,
     attempt_number: data.attempt_number ?? 1,
+    current_section_id: data.current_section_id ?? null,
+    section_started_at: data.section_started_at ?? null,
+    section_expires_at: data.section_expires_at ?? null,
+    completed_section_ids: data.completed_section_ids ?? [],
+  }
+}
+
+// ─── Advance Section Action ───────────────────────────────────────────────────
+export async function advanceSectionAction(
+  attemptId: string,
+  fromSectionId: string
+): Promise<{
+  ok: boolean
+  status?: "next_section" | "submitted" | "auto_submitted" | "already_submitted"
+  current_section_id?: string
+  section_name?: string
+  section_started_at?: string
+  section_expires_at?: string
+  completed_section_ids?: string[]
+  redirectPath?: string
+  error?: string
+}> {
+  try {
+    const { supabase } = await requireAuth()
+
+    const { data, error } = await (supabase as any).rpc("test_attempt_advance_section", {
+      p_attempt_id: attemptId,
+      p_from_section_id: fromSectionId,
+    })
+
+    if (error) {
+      console.error("[advanceSectionAction] RPC error:", error)
+      return { ok: false, error: getFriendlyErrorMessage(error, "Failed to advance section.") }
+    }
+
+    if (data?.error) {
+      return { ok: false, error: getFriendlyErrorMessage(data, data.error) }
+    }
+
+    if (data?.status === "next_section") {
+      return {
+        ok: true,
+        status: "next_section",
+        current_section_id: data.current_section_id,
+        section_name: data.section_name,
+        section_started_at: data.section_started_at,
+        section_expires_at: data.section_expires_at,
+        completed_section_ids: data.completed_section_ids,
+      }
+    }
+
+    const testId = data?.test_id
+    return {
+      ok: true,
+      status: "submitted",
+      redirectPath: testId ? `/tests/${testId}` : "/tests",
+    }
+  } catch (err: any) {
+    return { ok: false, error: getFriendlyErrorMessage(err, "Failed to advance section.") }
   }
 }
 
@@ -291,8 +350,8 @@ export async function submitAttemptAction(
         try {
           const evaluation = await scoreCandidateEssay({
             essayText: text,
-            minWords: q?.min_words ?? 250,
-            maxWords: q?.max_words ?? 350,
+            minWords: q?.min_words ?? 180,
+            maxWords: q?.max_words ?? 220,
             maxMarks: Number(q?.marks) || 10.0,
           })
 

@@ -46,6 +46,7 @@ async function fetchCandidateView(
       creator:profiles!created_by(id, full_name, email, avatar_path),
       shuffle_questions, shuffle_options, max_attempts,
       institute:institutes(institute_name, logo_path),
+      test_sections (id, name, description, order_index, time_limit_seconds, pass_percentage),
       test_questions (
         id, question_text, question_type, marks, explanation, order_index,
         min_words, max_words, rubric_guidelines,
@@ -54,7 +55,7 @@ async function fetchCandidateView(
       ),
       test_attempts (
         id, status, submitted_at, started_at, score, total_marks, percentage, 
-        active_time_taken, total_time_taken, tab_switch_count,
+        active_time_taken, total_time_taken, tab_switch_count, passed, section_results,
         test_attempt_answers (
           question_id, selected_option_ids, is_correct, marks_awarded, time_spent_seconds, essay_text, essay_evaluation
         )
@@ -76,6 +77,7 @@ async function fetchCandidateView(
         available_from, available_until, results_available, status, institute_id,
         shuffle_questions, shuffle_options, max_attempts,
         institute:institutes(institute_name, logo_path),
+        test_sections (id, name, description, order_index, time_limit_seconds, pass_percentage),
         test_questions (
           id, question_text, question_type, marks, explanation, order_index,
           min_words, max_words, rubric_guidelines,
@@ -84,7 +86,7 @@ async function fetchCandidateView(
         ),
         test_attempts (
           id, status, submitted_at, started_at, score, total_marks, percentage, 
-          active_time_taken, total_time_taken, tab_switch_count,
+          active_time_taken, total_time_taken, tab_switch_count, passed, section_results,
           test_attempt_answers (
             question_id, selected_option_ids, is_correct, marks_awarded, time_spent_seconds, essay_text, essay_evaluation
           )
@@ -133,6 +135,17 @@ async function fetchCandidateView(
   const attempts = raw.test_attempts ?? []
   const completedCount = attempts.filter((a: any) => a.status === "submitted" || a.status === "auto_submitted").length
 
+  const sections = ((raw.test_sections as any[]) ?? [])
+    .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
+    .map((s) => ({
+      id: s.id,
+      name: s.name,
+      description: s.description ?? null,
+      order_index: s.order_index,
+      time_limit_seconds: s.time_limit_seconds ?? 1800,
+      pass_percentage: s.pass_percentage ?? 50,
+    }))
+
   const test: CandidateTestDetail = {
     id: raw.id,
     title: raw.title,
@@ -147,6 +160,7 @@ async function fetchCandidateView(
     shuffle_options: raw.shuffle_options,
     max_attempts: raw.max_attempts,
     completed_count: completedCount,
+    sections,
     pastAttempts: attempts.map((a: any) => ({
       id: a.id,
       score: a.score ?? null,
@@ -185,6 +199,8 @@ async function fetchCandidateView(
     active_time_taken: rawAttempt.active_time_taken ?? null,
     total_time_taken: rawAttempt.total_time_taken ?? (rawAttempt.started_at && rawAttempt.submitted_at ? Math.max(0, Math.round((new Date(rawAttempt.submitted_at).getTime() - new Date(rawAttempt.started_at).getTime()) / 1000)) : null),
     tab_switch_count: rawAttempt.tab_switch_count ?? null,
+    passed: rawAttempt.passed ?? null,
+    section_results: (rawAttempt.section_results as any[]) ?? null,
   }
 
   // If results aren't available, we don't return the full answer set
@@ -285,7 +301,7 @@ async function fetchInstituteView(
       available_from, available_until, status, results_available, marks_available, institute_id, created_by,
       creator:profiles!created_by(id, full_name, email, avatar_path),
       institute:institutes(institute_name),
-      test_sections (id, name, description, order_index),
+      test_sections (id, name, description, order_index, time_limit_seconds, pass_percentage),
       test_questions (
         id, section_id, question_text, question_type, marks, order_index, explanation,
         test_question_options (id, option_text, is_correct, order_index),
@@ -305,7 +321,7 @@ async function fetchInstituteView(
         available_from, available_until, status, results_available, institute_id, created_by,
         creator:profiles!created_by(id, full_name, email, avatar_path),
         institute:institutes(institute_name),
-        test_sections (id, name, description, order_index),
+        test_sections (id, name, description, order_index, time_limit_seconds, pass_percentage),
         test_questions (
           id, section_id, question_text, question_type, marks, order_index, explanation,
           test_question_options (id, option_text, is_correct, order_index),
@@ -334,14 +350,14 @@ async function fetchInstituteView(
       .order("id", { ascending: true })
       .range(0, PAGE_SIZE - 1),
 
-    // 3. Aggregate stats across ALL attempts (pre-aggregated via RPC)
-    (supabase as any).rpc("get_test_attempt_stats", { p_test_id: testId }),
+  // 3. Aggregate stats across ALL attempts (pre-aggregated via RPC)
+  (supabase as any).rpc("get_test_attempt_stats", { p_test_id: testId }),
 
-    // 4. Question analysis data
-    (supabase as any)
-      .from("view_test_question_analysis")
-      .select("question_id, question_text, marks, total_answers, correct_answers, success_rate_pct, avg_time_spent")
-      .eq("test_id", testId),
+  // 4. Question analysis data
+  (supabase as any)
+    .from("view_test_question_analysis")
+    .select("question_id, question_text, marks, total_answers, correct_answers, success_rate_pct, avg_time_spent")
+    .eq("test_id", testId),
   ])
 
   if (attemptsRes.error) console.error("[fetchInstituteView] attempts error:", attemptsRes.error)
@@ -374,6 +390,8 @@ async function fetchInstituteView(
       name: s.name,
       description: s.description ?? null,
       order_index: s.order_index,
+      time_limit_seconds: s.time_limit_seconds ?? 1800,
+      pass_percentage: s.pass_percentage ?? 50,
     }))
 
   const questions: InstituteQuestion[] = (raw.test_questions ?? []).map((q: any) => ({

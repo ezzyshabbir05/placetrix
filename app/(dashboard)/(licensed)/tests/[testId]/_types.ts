@@ -51,6 +51,18 @@ export interface CandidateAnswerDetail {
   tags: Pick<TagRow, "id" | "name">[]
 }
 
+export interface SectionResult {
+  section_id: string
+  name: string
+  order_index: number
+  time_limit_seconds: number
+  pass_percentage: number
+  total_marks: number
+  score: number
+  percentage: number
+  passed: boolean
+}
+
 export interface CandidateAttemptDetail
   extends Pick<
     AttemptRow,
@@ -61,6 +73,8 @@ export interface CandidateAttemptDetail
   status: "in_progress" | "submitted"   // narrow the DB string union
   student_name?: string | null
   ai_diagnosis?: any | null
+  passed?: boolean | null
+  section_results?: SectionResult[] | null
   answers: CandidateAnswerDetail[]
 }
 
@@ -91,7 +105,14 @@ export interface CandidateTestDetail
   institute_name: string | null
   institute_logo_url: string | null
   creator?: TestDetailCreator | null
-  sections?: Array<{ id: string; name: string; description: string | null; order_index: number }>
+  sections?: Array<{
+    id: string
+    name: string
+    description: string | null
+    order_index: number
+    time_limit_seconds?: number
+    pass_percentage?: number
+  }>
   max_attempts?: number | null
   completed_count?: number
   pastAttempts?: {
@@ -122,6 +143,8 @@ export interface InstituteSection {
   name: string
   description: string | null
   order_index: number
+  time_limit_seconds?: number
+  pass_percentage?: number
 }
 
 export interface InstituteQuestion

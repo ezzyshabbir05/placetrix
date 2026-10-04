@@ -1400,6 +1400,49 @@ function OverviewTab({
               />
             )}
           </div>
+
+          {test.sections && test.sections.length > 0 && (
+            <div className="space-y-3 pt-2">
+              <div className="flex flex-wrap items-center justify-between gap-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                  <ListChecks className="h-3.5 w-3.5" />
+                  Sections ({test.sections.length})
+                </p>
+                <span className="text-[11px] text-muted-foreground font-medium">
+                  Sequential • Each timed separately with individual pass cutoff
+                </span>
+              </div>
+              <div className="grid gap-2.5 sm:grid-cols-2">
+                {test.sections.map((sec, idx) => {
+                  const secQs = test.questions.filter((q) => q.section_id === sec.id || test.sections?.length === 1)
+                  const secMarks = secQs.reduce((s, q) => s + q.marks, 0)
+                  const durationMins = sec.time_limit_seconds ? Math.round(sec.time_limit_seconds / 60) : 30
+                  const passMark = sec.pass_percentage ?? 50
+                  return (
+                    <div key={sec.id} className="rounded-lg border bg-muted/20 p-3 space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-sm text-foreground">
+                          {idx + 1}. {sec.name}
+                        </span>
+                        <Badge variant="outline" className="text-[10px] font-semibold text-primary border-primary/30 shrink-0">
+                          {passMark}% cutoff
+                        </Badge>
+                      </div>
+                      {sec.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2">{sec.description}</p>
+                      )}
+                      <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t border-border/40">
+                        <span>{secQs.length} question{secQs.length !== 1 ? "s" : ""} ({secMarks} pts)</span>
+                        <span className="flex items-center gap-1 font-medium text-foreground">
+                          <Clock className="h-3 w-3 text-muted-foreground" /> {durationMins} min{durationMins !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

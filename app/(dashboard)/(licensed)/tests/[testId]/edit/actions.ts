@@ -34,11 +34,15 @@ export type LocalSection = {
   name: string
   description: string
   order_index: number
+  time_limit_minutes: string
+  pass_percentage: string
 }
 
 export type SectionForm = {
   name: string
   description: string
+  time_limit_minutes: string
+  pass_percentage: string
 }
 
 export type LocalQuestion = {
@@ -99,21 +103,31 @@ async function saveTestToDb(
 ): Promise<void> {
   const supabase = await createClient()
 
+  const computedTimeLimitSeconds = settings.time_limit_minutes
+    ? Math.round(parseFloat(settings.time_limit_minutes) * 60)
+    : (sections.length > 0
+        ? sections.reduce((sum, s) => sum + Math.round((parseFloat(s.time_limit_minutes) || 30) * 60), 0)
+        : null)
+
+  const computedPassPercentage = settings.pass_percentage
+    ? parseFloat(settings.pass_percentage)
+    : (sections.length > 0
+        ? Math.round(sections.reduce((sum, s) => sum + (parseFloat(s.pass_percentage) || 50), 0) / sections.length)
+        : 50)
+
   const { error } = await (supabase as any).rpc("test_save", {
     p_test_id: testId,
     p_settings: {
       title: settings.title.trim(),
       description: settings.description.trim() || null,
       instructions: settings.instructions.trim() || null,
-      time_limit_seconds: settings.time_limit_minutes
-        ? Math.round(parseFloat(settings.time_limit_minutes) * 60)
-        : null,
+      time_limit_seconds: computedTimeLimitSeconds,
       available_from: settings.available_from || null,
       available_until: settings.available_until || null,
       shuffle_questions: settings.shuffle_questions,
       shuffle_options: settings.shuffle_options,
       strict_mode: settings.strict_mode,
-      pass_percentage: settings.pass_percentage ? parseFloat(settings.pass_percentage) : null,
+      pass_percentage: computedPassPercentage,
     },
     p_questions: questions.map((q) => ({
       id: q.id,
@@ -123,8 +137,8 @@ async function saveTestToDb(
       explanation: q.explanation?.trim() || null,
       tag_names: q.tag_names,
       section_id: q.section_id || null,
-      min_words: q.question_type === "essay" ? (q.min_words ?? 250) : null,
-      max_words: q.question_type === "essay" ? (q.max_words ?? 350) : null,
+      min_words: q.question_type === "essay" ? (q.min_words ?? 180) : null,
+      max_words: q.question_type === "essay" ? (q.max_words ?? 220) : null,
       rubric_guidelines: q.question_type === "essay" ? (q.rubric_guidelines?.trim() || null) : null,
       options: q.options.map((opt) => ({
         id: opt._key,
@@ -138,6 +152,8 @@ async function saveTestToDb(
           id: s.id,
           name: s.name.trim(),
           description: s.description?.trim() || null,
+          time_limit_seconds: s.time_limit_minutes ? Math.round(parseFloat(s.time_limit_minutes) * 60) : 1800,
+          pass_percentage: s.pass_percentage ? parseFloat(s.pass_percentage) : 50,
         }))
       : null,
   })
@@ -145,6 +161,38 @@ async function saveTestToDb(
   if (error) {
     console.error("[TEST_SAVE] Supabase RPC error:", error)
     throw new Error(getFriendlyErrorMessage(error, "Failed to save the test. Please try again."))
+  }
+
+  // Ensure test duration and pass_percentage are recorded on the tests row
+  try {
+    await (supabase as any)
+      .from("tests")
+      .update({
+        time_limit_seconds: computedTimeLimitSeconds,
+        pass_percentage: computedPassPercentage,
+      })
+      .eq("id", testId)
+  } catch (testSyncErr) {
+    console.warn("[TEST_SAVE] Failed syncing computed test metrics to tests row:", testSyncErr)
+  }
+
+  // Ensure section-specific metadata is persisted into test_sections
+  if (sections.length > 0) {
+    try {
+      await Promise.all(
+        sections.map((sec) =>
+          (supabase as any)
+            .from("test_sections")
+            .update({
+              time_limit_seconds: sec.time_limit_minutes ? Math.round(parseFloat(sec.time_limit_minutes) * 60) : 1800,
+              pass_percentage: sec.pass_percentage ? parseFloat(sec.pass_percentage) : 50,
+            })
+            .eq("id", sec.id)
+        )
+      )
+    } catch (secSyncErr) {
+      console.warn("[TEST_SAVE] Failed syncing section metadata to test_sections:", secSyncErr)
+    }
   }
 
   // Ensure essay-specific metadata is persisted into test_questions
@@ -156,8 +204,8 @@ async function saveTestToDb(
           (supabase as any)
             .from("test_questions")
             .update({
-              min_words: eq.min_words ?? 250,
-              max_words: eq.max_words ?? 350,
+              min_words: eq.min_words ?? 180,
+              max_words: eq.max_words ?? 220,
               rubric_guidelines: eq.rubric_guidelines?.trim() || null,
             })
             .eq("id", eq.id)
@@ -207,7 +255,7 @@ export async function loadTestAction(
       .eq("test_id", testId),
     (supabase as any)
       .from("test_sections")
-      .select("id, name, description, order_index")
+      .select("id, name, description, order_index, time_limit_seconds, pass_percentage")
       .eq("test_id", testId)
       .order("order_index"),
   ])
@@ -238,6 +286,8 @@ export async function loadTestAction(
       name: s.name,
       description: s.description ?? "",
       order_index: s.order_index,
+      time_limit_minutes: s.time_limit_seconds ? String(Math.round(s.time_limit_seconds / 60)) : "30",
+      pass_percentage: s.pass_percentage != null ? String(s.pass_percentage) : "50",
     })),
     questions: (test.test_questions ?? [])
       .sort((a: any, b: any) => a.order_index - b.order_index)
@@ -249,8 +299,8 @@ export async function loadTestAction(
         order_index: q.order_index,
         explanation: q.explanation ?? "",
         section_id: q.section_id ?? null,
-        min_words: q.min_words ?? 250,
-        max_words: q.max_words ?? 350,
+        min_words: q.min_words ?? 180,
+        max_words: q.max_words ?? 220,
         rubric_guidelines: q.rubric_guidelines ?? "",
         tag_names: (q.question_tags ?? [])
           .map((qt: any) => qt.test_question_tags?.name)

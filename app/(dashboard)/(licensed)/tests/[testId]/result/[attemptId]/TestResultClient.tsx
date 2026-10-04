@@ -549,6 +549,35 @@ export function TestResultClient({ test, attempt, accountType, serverNow }: Prop
     return groups.filter((g) => g.answers.length > 0)
   }, [displayAnswers, test.sections])
 
+  const sectionBreakdown = useMemo(() => {
+    if (attempt.section_results && attempt.section_results.length > 0) {
+      return attempt.section_results
+    }
+
+    if (sectionGroupMap.length > 0) {
+      return sectionGroupMap.map((g) => {
+        const sec = g.section
+        const total = g.totalMarks
+        const score = g.earnedMarks
+        const pct = total > 0 ? (score / total) * 100 : 0
+        const cutoff = (sec as any).pass_percentage ?? 50
+        const passed = pct >= cutoff
+        return {
+          section_id: sec.id,
+          name: sec.name,
+          order_index: sec.order_index,
+          time_limit_seconds: (sec as any).time_limit_seconds ?? 1800,
+          pass_percentage: cutoff,
+          total_marks: total,
+          score,
+          percentage: pct,
+          passed,
+        }
+      })
+    }
+    return []
+  }, [attempt.section_results, sectionGroupMap])
+
   return (
     <div className="flex flex-col gap-6 px-4 py-8 md:px-8 pb-12 animate-in fade-in duration-500">
 
@@ -667,9 +696,23 @@ export function TestResultClient({ test, attempt, accountType, serverNow }: Prop
                   </>
                 ) : (
                   <>
-                    <p className={cn("mt-1 text-3xl sm:text-4xl font-bold tabular-nums tracking-tight wrap-break-word", pctColorClass)}>
-                      {pct.toFixed(2)}%
-                    </p>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <p className={cn("mt-1 text-3xl sm:text-4xl font-bold tabular-nums tracking-tight wrap-break-word", pctColorClass)}>
+                        {pct.toFixed(2)}%
+                      </p>
+                      {attempt.passed != null && (
+                        <Badge
+                          className={cn(
+                            "h-6 px-2.5 text-xs font-bold uppercase tracking-wider",
+                            attempt.passed
+                              ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
+                              : "bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30"
+                          )}
+                        >
+                          {attempt.passed ? "Passed Overall" : "Did Not Pass"}
+                        </Badge>
+                      )}
+                    </div>
                     {attempt.score != null && attempt.total_marks != null && (
                       <p className="mt-0.5 text-xs sm:text-sm tabular-nums text-muted-foreground">
                         {attempt.score} / {attempt.total_marks} pts
@@ -755,6 +798,107 @@ export function TestResultClient({ test, attempt, accountType, serverNow }: Prop
             )}
 
           </div>
+
+          {/* ── Sectional Performance Breakdown ───────────────────────────── */}
+          {!isInProgress && sectionBreakdown.length > 0 && (
+            <Card className="overflow-hidden border">
+              <CardHeader className="p-4 sm:p-5 pb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <CardTitle className="text-base font-semibold flex items-center gap-2">
+                      <Target className="size-4 text-primary" />
+                      Section Performance Breakdown
+                    </CardTitle>
+                    <CardDescription className="text-xs mt-0.5">
+                      To qualify overall, you must meet or exceed the pass percentage cutoff in each individual section.
+                    </CardDescription>
+                  </div>
+                  {attempt.passed != null && (
+                    <Badge
+                      className={cn(
+                        "h-6 px-2.5 text-xs font-bold uppercase tracking-wider self-start sm:self-auto",
+                        attempt.passed
+                          ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
+                          : "bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30"
+                      )}
+                    >
+                      {attempt.passed ? (
+                        <span className="flex items-center gap-1.5"><CheckCircle2 className="size-3.5" /> All Cutoffs Cleared</span>
+                      ) : (
+                        <span className="flex items-center gap-1.5"><X className="size-3.5" /> Cutoff Not Met</span>
+                      )}
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-5 pt-0">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {sectionBreakdown.map((sec, idx) => {
+                    const secMins = Math.round(sec.time_limit_seconds / 60)
+                    const isSecPassed = sec.passed
+                    return (
+                      <div
+                        key={sec.section_id}
+                        className={cn(
+                          "rounded-xl border p-4 space-y-3 transition-colors",
+                          isSecPassed
+                            ? "bg-emerald-500/5 border-emerald-500/20"
+                            : "bg-red-500/5 border-red-500/20"
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                              Section {idx + 1}
+                            </span>
+                            <h4 className="font-semibold text-sm text-foreground leading-tight">
+                              {sec.name}
+                            </h4>
+                          </div>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-[10px] font-bold uppercase shrink-0",
+                              isSecPassed
+                                ? "border-emerald-500/40 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10"
+                                : "border-red-500/40 text-red-700 dark:text-red-400 bg-red-500/10"
+                            )}
+                          >
+                            {isSecPassed ? "Cleared" : "Failed"}
+                          </Badge>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <div className="flex items-baseline justify-between">
+                            <span className="text-2xl font-bold tabular-nums text-foreground">
+                              {sec.percentage.toFixed(1)}%
+                            </span>
+                            <span className="text-xs text-muted-foreground tabular-nums">
+                              {sec.score} / {sec.total_marks} marks
+                            </span>
+                          </div>
+                          <Progress
+                            value={Math.min(100, Math.max(0, sec.percentage))}
+                            className={cn(
+                              "h-1.5",
+                              isSecPassed
+                                ? "[&>div]:bg-emerald-600 dark:[&>div]:bg-emerald-500"
+                                : "[&>div]:bg-red-600 dark:[&>div]:bg-red-500"
+                            )}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1 border-t border-border/50">
+                          <span>Pass Cutoff: <strong className="text-foreground">{sec.pass_percentage}%</strong></span>
+                          <span>Time: <strong className="text-foreground">{secMins}m</strong></span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* ── Trixy AI Conceptual Diagnostic Assistant ─────────────────── */}
           {!isInProgress && (

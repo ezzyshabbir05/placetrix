@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // lib/essay-evaluator.ts
-// Intelligent, Continuous, and Proportional Client for Essay Scoring
+// Intelligent, Continuous, and Lenient Client for Essay Scoring
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface EssayEvaluationResult {
@@ -68,7 +68,7 @@ export const BAND_RUBRIC_DESCRIPTORS: Record<
 
 /**
  * Sends candidate essay text to the self-hosted essay scoring service
- * and applies continuous, proportional mark calculation without artificial quantization.
+ * and applies lenient, continuous, proportional mark calculation.
  */
 export async function scoreCandidateEssay(
   params: ScoreEssayParams
@@ -85,8 +85,8 @@ export async function scoreCandidateEssay(
   const rawText = params.essayText?.trim() ?? ""
   const words = rawText.split(/\s+/).filter(Boolean)
   const wordCount = words.length
-  const minWords = Math.max(1, params.minWords ?? 250)
-  const maxWords = Math.max(minWords, params.maxWords ?? 350)
+  const minWords = Math.max(1, params.minWords ?? 180)
+  const maxWords = Math.max(minWords, params.maxWords ?? 220)
   const maxMarks = params.maxMarks ?? 10.0
 
   // ── Edge Case 1: Trivially short or empty submission (< 10 words) ───────────
@@ -140,31 +140,35 @@ export async function scoreCandidateEssay(
   // the neural model's dataset bias against shorter responses.
   const lingBand = evaluateLinguisticQuality(rawResult.metrics, wordCount)
 
-  // ── 2. Synthesize Quality Band Continuously ─────────────────────────────────
-  // Smooth blend between neural expectation and linguistic indicators
+  // ── 2. Synthesize Quality Band with Generous, Lenient Blending ───────────────
+  // Strongly weights linguistic maturity & coherence over harsh neural classification.
   const neuralExpected = rawResult.expected_score || rawResult.band_score
-  let synthesizedBand = neuralExpected
+  let synthesizedBand = Math.max(neuralExpected, lingBand)
 
-  if (wordCount < 250) {
-    // When shorter than 250 words, blend linguistic quality proportionally
-    const lingWeight = 0.50 * Math.min(1.0, (250 - wordCount) / 150)
-    synthesizedBand = neuralExpected * (1.0 - lingWeight) + lingBand * lingWeight
+  // If linguistic analysis or neural model detects reasonable quality, blend generously
+  if (lingBand > neuralExpected) {
+    const deficit = Math.min(1.0, Math.max(0, (220 - wordCount) / 100))
+    const weight = 0.60 + 0.35 * deficit // 60% to 95% weight on linguistic quality
+    synthesizedBand = neuralExpected * (1.0 - weight) + lingBand * weight
+  } else {
+    // Even when neural score is higher, give the candidate the benefit of the higher score
+    synthesizedBand = Math.max(neuralExpected, lingBand)
   }
 
-  // Cap elementary ceiling for extremely short text (< 20 words)
-  if (wordCount < 20 && synthesizedBand > 2.0) {
+  // Baseline floor: Any non-empty, genuine paragraph (20+ words) starts at minimum Band 2.0
+  if (wordCount >= 20 && synthesizedBand < 2.0) {
     synthesizedBand = 2.0
   }
 
-  // ── 3. Academic Quality Factor (Smooth Continuous Spline) ───────────────────
-  // Band 1.0 = 10% | Band 2.0 = 30% | Band 3.0 = 55% (Pass) | Band 4.0 = 75% | Band 5.0 = 88% | Band 6.0 = 100%
+  // ── 3. Ultra-Lenient Academic Quality Factor ─────────────────────────────────
+  // Band 1.0 = 40% | Band 2.0 = 60% (Pass) | Band 3.0 = 75% | Band 4.0 = 88% | Band 5.0 = 95% | Band 6.0 = 100%
   const qualityFactor = mapBandToQualityFactor(synthesizedBand)
 
-  // ── 4. Continuous Monotonic Length Multiplier ───────────────────────────────
+  // ── 4. Lenient Continuous Length Multiplier (With 70% Grace Zone) ───────────
   const { multiplier: lengthMultiplier, compliance: lengthCompliance } =
     computeContinuousLengthMultiplier(wordCount, minWords, maxWords)
 
-  // ── 5. Continuous Scaled Marks (NO Snapping / No Forced 100% or 0%) ─────────
+  // ── 5. Continuous Scaled Marks ──────────────────────────────────────────────
   const rawMarks = qualityFactor * maxMarks * lengthMultiplier
   const calibratedMarks = Math.min(
     maxMarks,
@@ -180,12 +184,11 @@ export async function scoreCandidateEssay(
   let descriptorText = defaultDescriptor.description
 
   if (lengthCompliance === "under_length" && wordCount < minWords) {
-    const pct = Math.round(lengthMultiplier * 100)
-    descriptorName = `${descriptorName} (Under Length)`
-    descriptorText = `${descriptorText} Note: Written response was ${wordCount} words (recommended target: ${minWords} words). A ${pct}% length factor was applied.`
+    descriptorName = `${descriptorName} (Concise)`
+    descriptorText = `${descriptorText} Note: Written response was ${wordCount} words (suggested target: ${minWords} words). Generous partial credit awarded for content.`
   } else if (lengthCompliance === "over_length") {
-    descriptorName = `${descriptorName} (Over Length)`
-    descriptorText = `${descriptorText} Note: Written response exceeded ${maxWords} words (${wordCount} words written). A minor 5% conciseness adjustment was applied.`
+    descriptorName = `${descriptorName} (Comprehensive)`
+    descriptorText = `${descriptorText} Note: Written response was thorough (${wordCount} words written). Full credit applied without penalty.`
   }
 
   return {
@@ -207,7 +210,7 @@ export async function scoreCandidateEssay(
 
 /**
  * Evaluates linguistic proficiency based on vocabulary diversity and syntactic maturity.
- * Returns an estimated quality band between 1.5 and 4.5.
+ * Returns an estimated quality band between 2.0 and 5.5.
  */
 function evaluateLinguisticQuality(
   metrics: {
@@ -219,39 +222,40 @@ function evaluateLinguisticQuality(
 ): number {
   const { avg_sentence_length, lexical_diversity } = metrics
 
-  // Vocabulary richness (Type-Token Ratio clamped between 0.35 and 0.63)
-  const vocabScore = Math.max(0, Math.min(1, (lexical_diversity - 0.35) / 0.28))
+  // Vocabulary richness (Type-Token Ratio clamped between 0.30 and 0.60)
+  const vocabScore = Math.max(0, Math.min(1, (lexical_diversity - 0.30) / 0.30))
 
-  // Sentence maturity (optimal range is 12 to 26 words per sentence)
-  let sentenceScore = 0.5
-  if (avg_sentence_length >= 12 && avg_sentence_length <= 26) {
+  // Sentence maturity (generous range: 10 to 30 words per sentence)
+  let sentenceScore = 0.75
+  if (avg_sentence_length >= 10 && avg_sentence_length <= 28) {
     sentenceScore = 1.0
-  } else if (avg_sentence_length >= 8 && avg_sentence_length < 12) {
-    sentenceScore = 0.75
-  } else if (avg_sentence_length > 26 && avg_sentence_length <= 34) {
-    sentenceScore = 0.8
-  } else if (avg_sentence_length < 8) {
-    sentenceScore = 0.4
+  } else if (avg_sentence_length >= 6 && avg_sentence_length < 10) {
+    sentenceScore = 0.85
+  } else if (avg_sentence_length > 28 && avg_sentence_length <= 36) {
+    sentenceScore = 0.90
+  } else if (avg_sentence_length < 6) {
+    sentenceScore = 0.65
   }
 
-  const rawLingBand = 1.5 + (vocabScore * 0.60 + sentenceScore * 0.40) * 3.0
+  const rawLingBand = 2.0 + (vocabScore * 0.55 + sentenceScore * 0.45) * 3.2
 
-  // Prevent very short texts with artificially inflated TTR from exceeding Band 4
+  // Adaptive ceiling to prevent tiny fragments from getting Band 5 or 6
   let maxAllowable = 6.0
-  if (wordCount < 100) {
-    maxAllowable = 3.6
-  } else if (wordCount < 180) {
+  if (wordCount < 40) {
+    maxAllowable = 3.5
+  } else if (wordCount < 80) {
     maxAllowable = 4.2
-  } else if (wordCount < 250) {
-    maxAllowable = 4.8
+  } else if (wordCount < 130) {
+    maxAllowable = 5.0
   }
 
   return Math.min(maxAllowable, rawLingBand)
 }
 
 /**
- * Computes a strictly continuous, monotonic length multiplier (0.20 to 1.00).
- * Guarantees that every additional word written towards the target strictly increases marks.
+ * Computes a lenient length multiplier (0.65 to 1.00) with a 70% grace zone.
+ * If candidate writes >= 70% of minWords, full 1.0 credit is granted.
+ * Over-length writing is never penalized.
  */
 function computeContinuousLengthMultiplier(
   wordCount: number,
@@ -262,45 +266,46 @@ function computeContinuousLengthMultiplier(
     return { multiplier: 0.0, compliance: "under_length" }
   }
 
-  if (wordCount >= minWords && wordCount <= maxWords * 1.30) {
-    return { multiplier: 1.0, compliance: "optimal" }
+  // Grace zone: If candidate writes >= 70% of minWords, 100% optimal length credit
+  const graceThreshold = Math.round(minWords * 0.70)
+  if (wordCount >= graceThreshold) {
+    return {
+      multiplier: 1.0,
+      compliance: wordCount > maxWords * 1.5 ? "over_length" : "optimal",
+    }
   }
 
-  if (wordCount > maxWords * 1.30) {
-    return { multiplier: 0.95, compliance: "over_length" }
-  }
-
-  // Under-length: smooth monotonic power curve (concave, rewarding effort)
-  const ratio = Math.max(0.01, Math.min(1.0, wordCount / minWords))
-  const multiplier = 0.35 + 0.65 * Math.pow(ratio, 0.70)
+  // Under-length: extremely encouraging curve (0.65 floor + 0.35 * sqrt(ratio))
+  const ratio = Math.max(0.01, Math.min(1.0, wordCount / graceThreshold))
+  const multiplier = 0.65 + 0.35 * Math.sqrt(ratio)
 
   return {
-    multiplier: Math.min(1.0, Math.max(0.20, multiplier)),
+    multiplier: Math.min(1.0, Math.max(0.50, Math.round(multiplier * 100) / 100)),
     compliance: "under_length",
   }
 }
 
 /**
- * Maps continuous AI band (1.0 - 6.0) to academic percentage factor (0.10 - 1.00).
- * - Band 1.0: 10%
- * - Band 2.0: 30%
- * - Band 3.0: 55% (Pass threshold)
- * - Band 4.0: 75% (Proficient / Merit)
- * - Band 5.0: 88% (Advanced / Distinction)
- * - Band 6.0: 100% (Exemplary / Mastery)
+ * Maps continuous AI band (1.0 - 6.0) to an encouraging, lenient academic percentage factor (0.40 - 1.00).
+ * - Band 1.0: 40% (Basic attempt / partial understanding)
+ * - Band 2.0: 60% (Elementary / Developing - passes cutoff)
+ * - Band 3.0: 75% (Good competence / solid core)
+ * - Band 4.0: 88% (Proficient / High merit)
+ * - Band 5.0: 95% (Advanced / Near distinction)
+ * - Band 6.0: 100% (Exemplary / Full marks)
  */
 function mapBandToQualityFactor(continuousBand: number): number {
   const b = Math.max(1.0, Math.min(6.0, continuousBand))
 
   if (b <= 2.0) {
-    return 0.10 + (b - 1.0) * 0.20
+    return 0.40 + (b - 1.0) * 0.20 // 40% to 60%
   } else if (b <= 3.0) {
-    return 0.30 + (b - 2.0) * 0.25
+    return 0.60 + (b - 2.0) * 0.15 // 60% to 75%
   } else if (b <= 4.0) {
-    return 0.55 + (b - 3.0) * 0.20
+    return 0.75 + (b - 3.0) * 0.13 // 75% to 88%
   } else if (b <= 5.0) {
-    return 0.75 + (b - 4.0) * 0.13
+    return 0.88 + (b - 4.0) * 0.07 // 88% to 95%
   } else {
-    return 0.88 + (b - 5.0) * 0.12
+    return 0.95 + (b - 5.0) * 0.05 // 95% to 100%
   }
 }

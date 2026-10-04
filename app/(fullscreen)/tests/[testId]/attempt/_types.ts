@@ -7,6 +7,8 @@ export interface AttemptSection {
   name: string
   description: string | null
   order_index: number
+  time_limit_seconds: number
+  pass_percentage: number
 }
 
 export interface AttemptTest {
@@ -49,6 +51,10 @@ export interface AttemptInfo {
   tab_switch_count: number
   attempt_number: number
   active_session_token?: string | null
+  current_section_id?: string | null
+  section_started_at?: string | null
+  section_expires_at?: string | null
+  completed_section_ids?: string[]
 }
 
 export interface SavedAnswer {

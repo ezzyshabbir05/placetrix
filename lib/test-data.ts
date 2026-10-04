@@ -62,8 +62,8 @@ export async function getTestQuestions(testId: string): Promise<AttemptQuestion[
     question_type: q.question_type as "single_correct" | "multiple_correct" | "essay",
     marks: q.marks,
     order_index: q.order_index,
-    min_words: q.min_words ?? 250,
-    max_words: q.max_words ?? 350,
+    min_words: q.min_words ?? 180,
+    max_words: q.max_words ?? 220,
     rubric_guidelines: q.rubric_guidelines,
     options: ((q.test_question_options as any[]) ?? [])
       .map((o: any) => ({
@@ -83,7 +83,7 @@ export async function getTestSections(testId: string) {
   // 1. Direct query on test_sections
   const { data: sections } = await (supabase as any)
     .from("test_sections")
-    .select("id, name, description, order_index")
+    .select("id, name, description, order_index, time_limit_seconds, pass_percentage")
     .eq("test_id", testId)
     .order("order_index")
 
@@ -93,13 +93,15 @@ export async function getTestSections(testId: string) {
       name: string
       description: string | null
       order_index: number
+      time_limit_seconds: number
+      pass_percentage: number
     }>
   }
 
   // 2. Query sections via tests relationship fallback (in case direct query RLS is restricted)
   const { data: testData } = await (supabase as any)
     .from("tests")
-    .select("test_sections (id, name, description, order_index)")
+    .select("test_sections (id, name, description, order_index, time_limit_seconds, pass_percentage)")
     .eq("id", testId)
     .maybeSingle()
 
@@ -110,6 +112,8 @@ export async function getTestSections(testId: string) {
       name: string
       description: string | null
       order_index: number
+      time_limit_seconds: number
+      pass_percentage: number
     }>
   }
 
@@ -120,6 +124,8 @@ export async function getTestSections(testId: string) {
       name: "Section A",
       description: null,
       order_index: 0,
+      time_limit_seconds: 1800,
+      pass_percentage: 50,
     },
   ]
 }

@@ -25,7 +25,6 @@ export function EssayEvaluationCard({
   const {
     band_score,
     scaled_marks,
-    confidence,
     band_descriptor,
     metrics,
   } = evaluation
@@ -42,7 +41,7 @@ export function EssayEvaluationCard({
             <h4 className="font-semibold text-sm">Automated Essay Evaluation</h4>
           </div>
           <p className="text-xs text-muted-foreground">
-            Automated AI Evaluation ({confidence}% confidence)
+            Automated Rubric &amp; Linguistic Assessment
           </p>
         </div>
 

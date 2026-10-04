@@ -59,6 +59,7 @@ import {
     RotateCw,
     ArrowRight,
     WifiOff,
+    Lock,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { InlineRichText } from "@/components/others/rich-text"
@@ -288,6 +289,8 @@ function KeyboardShortcutsDialog({
 function QuestionNavigator({
     questions: displayQuestions,
     sections,
+    currentSectionId,
+    completedSectionIds,
     currentIndex,
     answers,
     syncedAnswers = {},
@@ -299,6 +302,8 @@ function QuestionNavigator({
 }: {
     questions: AttemptQuestion[]
     sections?: AttemptSection[]
+    currentSectionId?: string
+    completedSectionIds?: Set<string>
     currentIndex: number
     answers: Record<string, string[]>
     syncedAnswers?: Record<string, string[]>
@@ -365,6 +370,10 @@ function QuestionNavigator({
                     {sections.map((sec) => {
                       const secQuestions = displayQuestions.filter((q) => q.section_id === sec.id)
                       if (secQuestions.length === 0) return null
+                      const isSecCompleted = completedSectionIds?.has(sec.id) ?? false
+                      const isSecActive = sec.id === currentSectionId
+                      const isSecLocked = !isSecActive && !isSecCompleted
+
                       const secSaved = secQuestions.filter((q) => {
                         if (q.question_type === "essay") {
                           const local = (essayAnswers[q.id] ?? "").trim()
@@ -379,8 +388,25 @@ function QuestionNavigator({
                       return (
                         <div key={sec.id} className="space-y-2 border-t pt-3 first:border-t-0 first:pt-0">
                           <div className="flex items-center justify-between text-[11px] font-bold text-foreground uppercase tracking-wider">
-                            <span>{sec.name}</span>
-                            <span className="text-[10px] text-muted-foreground font-normal">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="truncate">{sec.name}</span>
+                              {isSecCompleted && (
+                                <span className="inline-flex items-center rounded px-1 py-0.2 text-[9px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300">
+                                  Done
+                                </span>
+                              )}
+                              {isSecActive && (
+                                <span className="inline-flex items-center rounded px-1 py-0.2 text-[9px] font-semibold text-primary bg-primary/10 border border-primary/30">
+                                  Current
+                                </span>
+                              )}
+                              {isSecLocked && (
+                                <span className="inline-flex items-center rounded px-1 py-0.2 text-[9px] font-medium text-muted-foreground bg-muted border border-border">
+                                  <Lock className="mr-0.5 size-2.5" /> Locked
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-muted-foreground font-normal shrink-0">
                               {secSaved} / {secQuestions.length}
                             </span>
                           </div>
@@ -399,28 +425,33 @@ function QuestionNavigator({
                               const isPending = hasLocal && !isSaved
                               const isFlagged = flagged[q.id] ?? false
                               const isCurrent = globalIndex === currentIndex
+                              const isClickable = isSecActive && !disabled
 
                               return (
                                 <button
                                   key={q.id}
-                                  onClick={() => !disabled && onJump(globalIndex)}
-                                  disabled={disabled}
+                                  onClick={() => isClickable && onJump(globalIndex)}
+                                  disabled={!isClickable}
                                   className={cn(
-                                    "relative aspect-square w-full rounded-full border text-xs font-bold transition-all duration-150 flex items-center justify-center cursor-pointer select-none",
+                                    "relative aspect-square w-full rounded-full border text-xs font-bold transition-all duration-150 flex items-center justify-center select-none",
+                                    isClickable ? "cursor-pointer" : "cursor-not-allowed",
                                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                                     isCurrent && "ring-2 ring-primary ring-offset-2 z-10 scale-105 shadow-sm",
-                                    isSaved
-                                      ? "border-emerald-500 bg-emerald-50/80 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300 font-bold"
-                                      : isPending
-                                        ? "border-amber-500 bg-amber-50/80 text-amber-700 hover:bg-amber-100 animate-pulse dark:border-amber-600 dark:bg-amber-950/40 dark:text-amber-300 font-bold"
-                                        : isFlagged
-                                          ? "border-indigo-500 bg-indigo-50/80 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-300 font-bold"
-                                          : "border-border bg-background text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground font-semibold",
-                                    disabled && "cursor-not-allowed opacity-60"
+                                    isSecActive
+                                      ? (isSaved
+                                          ? "border-emerald-500 bg-emerald-50/80 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300 font-bold"
+                                          : isPending
+                                            ? "border-amber-500 bg-amber-50/80 text-amber-700 hover:bg-amber-100 animate-pulse dark:border-amber-600 dark:bg-amber-950/40 dark:text-amber-300 font-bold"
+                                            : isFlagged
+                                              ? "border-indigo-500 bg-indigo-50/80 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-300 font-bold"
+                                              : "border-border bg-background text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground font-semibold")
+                                      : isSecCompleted
+                                        ? "opacity-60 bg-muted/60 border-emerald-300/80 dark:border-emerald-900/60 text-muted-foreground"
+                                        : "opacity-35 bg-muted/20 border-dashed border-border text-muted-foreground"
                                   )}
                                 >
                                   {globalIndex + 1}
-                                  {isFlagged && (
+                                  {isFlagged && isSecActive && (
                                     <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-indigo-200 bg-indigo-600 shadow-xs dark:border-indigo-900">
                                       <Flag className="h-2 w-2 fill-white text-white" />
                                     </span>
@@ -712,8 +743,8 @@ function QuestionView({
                         onChange={(val) => onEssayChange?.(val)}
                         onBlur={onEssayBlur}
                         disabled={disabled}
-                        minWords={question.min_words ?? 250}
-                        maxWords={question.max_words ?? 350}
+                        minWords={question.min_words ?? 180}
+                        maxWords={question.max_words ?? 220}
                         rubricGuidelines={question.rubric_guidelines}
                         saveStatus={essaySaveStatus}
                         saveError={effectiveSaveError}
@@ -866,7 +897,7 @@ function IntroScreen({
                 )}
 
                 {(() => {
-                    const sectionsToUse = test.sections && test.sections.length > 0 ? test.sections : [{ id: "default-section-a", name: "Section A", description: null, order_index: 0 }]
+                    const sectionsToUse: AttemptSection[] = test.sections && test.sections.length > 0 ? test.sections : [{ id: "default-section-a", name: "Section A", description: null, order_index: 0, time_limit_seconds: 1800, pass_percentage: 50 }]
                     return (
                         <div className="space-y-3 rounded-xl border bg-muted/40 p-5">
                             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -876,8 +907,10 @@ function IntroScreen({
                                 {sectionsToUse.map((sec, idx) => {
                                     const secQs = displayQuestions.filter((q) => (q.section_id ?? "default-section-a") === sec.id || sectionsToUse.length === 1)
                                     const secMarks = secQs.reduce((s, q) => s + q.marks, 0)
+                                    const secMins = Math.round((sec.time_limit_seconds ?? 1800) / 60)
+                                    const secPass = sec.pass_percentage ?? 50
                                     return (
-                                        <div key={sec.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                                        <div key={sec.id} className="flex flex-wrap items-center justify-between gap-2 text-sm rounded-lg border bg-background/50 p-2.5">
                                             <div className="flex items-center gap-2">
                                                 <span className="font-semibold text-foreground">
                                                     {idx + 1}. {sec.name}
@@ -888,9 +921,13 @@ function IntroScreen({
                                                     </span>
                                                 )}
                                             </div>
-                                            <span className="text-xs text-muted-foreground font-medium tabular-nums">
-                                                {secQs.length} {secQs.length === 1 ? "question" : "questions"} ({secMarks} {secMarks === 1 ? "mark" : "marks"})
-                                            </span>
+                                            <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium tabular-nums">
+                                                <span>{secQs.length} {secQs.length === 1 ? "question" : "questions"} ({secMarks} {secMarks === 1 ? "mark" : "marks"})</span>
+                                                <span>•</span>
+                                                <span className="text-foreground font-semibold">{secMins} min{secMins !== 1 ? "s" : ""}</span>
+                                                <span>•</span>
+                                                <span className="text-primary font-semibold">{secPass}% pass mark</span>
+                                            </div>
                                         </div>
                                     )
                                 })}
@@ -1063,6 +1100,20 @@ interface Props {
         totalCount: number,
         timestamp: string
     ) => Promise<void>
+    onAdvanceSection?: (
+        attemptId: string,
+        fromSectionId: string
+    ) => Promise<{
+        ok: boolean
+        status?: "next_section" | "submitted" | "auto_submitted" | "already_submitted"
+        current_section_id?: string
+        section_name?: string
+        section_started_at?: string
+        section_expires_at?: string
+        completed_section_ids?: string[]
+        redirectPath?: string
+        error?: string
+    }>
     shuffleSeed: string
 }
 
@@ -1097,6 +1148,7 @@ export function AttemptClient({
     onClaimSession,
     onSubmit,
     onViolation,
+    onAdvanceSection,
     serverNow,
     shuffleSeed,
 }: Props) {
@@ -1108,7 +1160,11 @@ export function AttemptClient({
 
     const effectiveSections = useMemo<AttemptSection[]>(() => {
         if (test.sections && test.sections.length > 0) {
-            return test.sections
+            return test.sections.map((s) => ({
+                ...s,
+                time_limit_seconds: s.time_limit_seconds ?? 1800,
+                pass_percentage: s.pass_percentage ?? 50,
+            }))
         }
         return [
             {
@@ -1116,6 +1172,8 @@ export function AttemptClient({
                 name: "Section A",
                 description: null,
                 order_index: 0,
+                time_limit_seconds: 1800,
+                pass_percentage: 50,
             },
         ]
     }, [test.sections])
@@ -1181,6 +1239,24 @@ export function AttemptClient({
     // ── State ──────────────────────────────────────────────────────────────────
 
     const [attemptInfo, setAttemptInfo] = useState<AttemptInfo | null>(initialAttemptInfo)
+    const [currentSectionId, setCurrentSectionId] = useState<string>(() => {
+        if (initialAttemptInfo?.current_section_id) {
+            return initialAttemptInfo.current_section_id
+        }
+        return effectiveSections[0]?.id ?? "default-section-a"
+    })
+    const [completedSectionIds, setCompletedSectionIds] = useState<Set<string>>(() => {
+        return new Set(initialAttemptInfo?.completed_section_ids ?? [])
+    })
+    const [sectionExpiresAt, setSectionExpiresAt] = useState<string | null>(
+        initialAttemptInfo?.section_expires_at ?? null
+    )
+    const [sectionStartedAt, setSectionStartedAt] = useState<string | null>(
+        initialAttemptInfo?.section_started_at ?? null
+    )
+    const [showSectionSubmitDialog, setShowSectionSubmitDialog] = useState(false)
+    const [isAdvancingSection, setIsAdvancingSection] = useState(false)
+
     const [phase, setPhase] = useState<"intro" | "active" | "submitted">("intro")
     const [submitReason, setSubmitReason] = useState<"manual" | "auto">("manual")
     const [submitRedirectPath, setSubmitRedirectPath] = useState<string | null>(null)
@@ -1211,6 +1287,40 @@ export function AttemptClient({
         }
         return 0
     })
+
+    const currentSectionIndex = useMemo(() => {
+        const idx = effectiveSections.findIndex((s) => s.id === currentSectionId)
+        return idx >= 0 ? idx : 0
+    }, [effectiveSections, currentSectionId])
+
+    const currentSection = effectiveSections[currentSectionIndex] ?? effectiveSections[0]
+    const isFinalSection = currentSectionIndex >= effectiveSections.length - 1
+
+    const sectionQuestionIndices = useMemo(() => {
+        const indices: number[] = []
+        displayQuestions.forEach((q, idx) => {
+            if (q.section_id === currentSection.id || effectiveSections.length === 1) {
+                indices.push(idx)
+            }
+        })
+        return indices.length > 0 ? indices : displayQuestions.map((_, i) => i)
+    }, [displayQuestions, currentSection.id, effectiveSections.length])
+
+    const isFirstQuestionOfSection = currentIndex === (sectionQuestionIndices[0] ?? 0)
+    const isLastQuestionOfSection = currentIndex === (sectionQuestionIndices[sectionQuestionIndices.length - 1] ?? 0)
+
+    const currentSectionQuestions = useMemo(() => {
+        return displayQuestions.filter((q) => q.section_id === currentSection.id || effectiveSections.length === 1)
+    }, [displayQuestions, currentSection.id, effectiveSections.length])
+
+    // Ensure candidate always views questions belonging to current section
+    useEffect(() => {
+        if (phase === "active" && sectionQuestionIndices.length > 0) {
+            if (!sectionQuestionIndices.includes(currentIndex)) {
+                setCurrentIndex(sectionQuestionIndices[0])
+            }
+        }
+    }, [phase, currentSectionId, sectionQuestionIndices, currentIndex])
 
     const [isStarting, setIsStarting] = useState(false)
 
@@ -1678,23 +1788,36 @@ export function AttemptClient({
 
         // 3. Copy / keyboard blocking / Navigation ──────────────────────────
         const handleKeyDown = (e: KeyboardEvent) => {
+            const ctrl = e.ctrlKey || e.metaKey
+            const keyLower = e.key.toLowerCase()
+
+            // ── Global Copy / Paste / Cut Blocking ──────────────────────────
+            if (ctrl && ["c", "v", "x"].includes(keyLower)) {
+                e.preventDefault()
+                toast.error("Copy and paste is disabled during the examination.", { id: "test-no-copy-paste" })
+                return
+            }
+            if ((e.shiftKey || ctrl) && e.key === "Insert") {
+                e.preventDefault()
+                toast.error("Copy and paste is disabled during the examination.", { id: "test-no-copy-paste" })
+                return
+            }
+
+            // DevTools & print blocking
+            if (ctrl && ["p", "u"].includes(keyLower)) {
+                e.preventDefault()
+            }
+            if (ctrl && e.shiftKey && ["i", "j", "c"].includes(keyLower)) {
+                e.preventDefault()
+            }
+            if (e.key === "F12") e.preventDefault()
+
             if (
                 e.target instanceof HTMLInputElement ||
                 e.target instanceof HTMLTextAreaElement
             ) {
                 return
             }
-
-            const ctrl = e.ctrlKey || e.metaKey
-
-            // Copy & DevTools blocking
-            if (ctrl && ["p", "u"].includes(e.key.toLowerCase())) {
-                e.preventDefault()
-            }
-            if (ctrl && e.shiftKey && ["i", "j", "c"].includes(e.key.toLowerCase())) {
-                e.preventDefault()
-            }
-            if (e.key === "F12") e.preventDefault()
 
             if (
                 !showSubmitDialogRef.current &&
@@ -1770,9 +1893,21 @@ export function AttemptClient({
             }
         }
 
-        const handleCopy = (e: ClipboardEvent) => e.preventDefault()
+        const handleCopy = (e: ClipboardEvent) => {
+            e.preventDefault()
+            toast.error("Copying is disabled during the examination.", { id: "test-no-copy-paste" })
+        }
+        const handlePaste = (e: ClipboardEvent) => {
+            e.preventDefault()
+            toast.error("Pasting is disabled during the examination.", { id: "test-no-copy-paste" })
+        }
+        const handleCut = (e: ClipboardEvent) => {
+            e.preventDefault()
+            toast.error("Cutting content is disabled during the examination.", { id: "test-no-copy-paste" })
+        }
         const handleContextMenu = (e: MouseEvent) => e.preventDefault()
         const handleDragStart = (e: DragEvent) => e.preventDefault()
+        const handleDrop = (e: DragEvent) => e.preventDefault()
 
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
             if (autoSubmitted.current || isSubmittingRef.current) return
@@ -1801,8 +1936,11 @@ export function AttemptClient({
         document.addEventListener("visibilitychange", handleVisibilityChange)
         document.addEventListener("keydown", handleKeyDown)
         document.addEventListener("copy", handleCopy)
+        document.addEventListener("paste", handlePaste)
+        document.addEventListener("cut", handleCut)
         document.addEventListener("contextmenu", handleContextMenu)
         document.addEventListener("dragstart", handleDragStart)
+        document.addEventListener("drop", handleDrop)
         window.addEventListener("blur", handleBlur)
         window.addEventListener("focus", handleWindowFocus)
         window.addEventListener("beforeunload", handleBeforeUnload)
@@ -1814,8 +1952,11 @@ export function AttemptClient({
             document.removeEventListener("visibilitychange", handleVisibilityChange)
             document.removeEventListener("keydown", handleKeyDown)
             document.removeEventListener("copy", handleCopy)
+            document.removeEventListener("paste", handlePaste)
+            document.removeEventListener("cut", handleCut)
             document.removeEventListener("contextmenu", handleContextMenu)
             document.removeEventListener("dragstart", handleDragStart)
+            document.removeEventListener("drop", handleDrop)
             window.removeEventListener("blur", handleBlur)
             window.removeEventListener("focus", handleWindowFocus)
             window.removeEventListener("beforeunload", handleBeforeUnload)
@@ -2052,39 +2193,167 @@ export function AttemptClient({
         performSyncRef.current = performSync
     }, [performSync])
 
+    // ── Section Advance Handler ───────────────────────────────────────────────
+
+    const handleAdvanceSection = useCallback(
+        async (isAuto = false) => {
+            if (isAdvancingSection || isSubmittingRef.current || !attemptInfo || !onAdvanceSection) return
+            setIsAdvancingSection(true)
+            setShowSectionSubmitDialog(false)
+
+            try {
+                flushCurrentQuestionActiveTime()
+
+                if (performSyncRef.current) {
+                    await performSyncRef.current(true)
+                }
+
+                await flushAllDirtyEssays()
+
+                const res = await onAdvanceSection(attemptInfo.id, currentSection.id)
+                if (!res.ok) {
+                    throw new Error(res.error || "Failed to advance section.")
+                }
+
+                if (res.status === "submitted" || res.status === "auto_submitted" || res.status === "already_submitted") {
+                    await leaveFullscreen()
+                    const prefix = `pt_attempt_${attemptInfo.id}`
+                    localStorage.removeItem(`${prefix}_idx`)
+                    localStorage.removeItem(`${prefix}_flags`)
+                    displayQuestions.forEach((q) => {
+                        if (q.question_type === "essay") {
+                            localStorage.removeItem(`${prefix}_essay_${q.id}`)
+                        }
+                    })
+
+                    setSubmitReason(isAuto ? "auto" : "manual")
+                    setSubmitRedirectPath(res.redirectPath ?? `/tests/${test.id}`)
+                    setPhase("submitted")
+                    toast.success("All sections completed! Test submitted.")
+                    return
+                }
+
+                // Advanced to next section
+                const nextSecId = res.current_section_id!
+                setCurrentSectionId(nextSecId)
+                const nextCompleted = new Set(res.completed_section_ids ?? [...Array.from(completedSectionIds), currentSection.id])
+                setCompletedSectionIds(nextCompleted)
+                setSectionExpiresAt(res.section_expires_at ?? null)
+                setSectionStartedAt(res.section_started_at ?? null)
+
+                // Jump to first question of new section
+                const nextQIndex = displayQuestions.findIndex((q) => q.section_id === nextSecId)
+                if (nextQIndex !== -1) {
+                    setCurrentIndex(nextQIndex)
+                }
+
+                toast.success(
+                    isAuto
+                        ? `Time expired. Moved to ${res.section_name || "next section"}`
+                        : `Section completed! Now in ${res.section_name || "next section"}`
+                )
+            } catch (err: any) {
+                const userFriendlyMsg = getFriendlyErrorMessage(err, "Failed to advance section. Please check connection.")
+                toast.error(userFriendlyMsg)
+            } finally {
+                setIsAdvancingSection(false)
+            }
+        },
+        [
+            isAdvancingSection,
+            attemptInfo,
+            onAdvanceSection,
+            currentSection.id,
+            completedSectionIds,
+            displayQuestions,
+            leaveFullscreen,
+            test.id,
+            flushCurrentQuestionActiveTime,
+            flushAllDirtyEssays,
+        ]
+    )
+
+    const handleAdvanceSectionRef = useRef<((auto?: boolean) => Promise<void>) | undefined>(undefined)
+    useEffect(() => {
+        handleAdvanceSectionRef.current = handleAdvanceSection
+    }, [handleAdvanceSection])
+
     // ── Navigation & Integrated Auto-Save Handlers ─────────────────────────────
 
     const currentQuestion = displayQuestions[currentIndex]
 
     const handleNext = useCallback(() => {
-        if (isSubmittingRef.current) return
+        if (isSubmittingRef.current || isAdvancingSection) return
         flushCurrentQuestionActiveTime()
         if (currentQuestion?.question_type === "essay") {
             flushEssaySync(currentQuestion.id)
         }
-        setCurrentIndex((i) => Math.min(displayQuestions.length - 1, i + 1))
+
+        if (isLastQuestionOfSection) {
+            if (isFinalSection) {
+                setShowSubmitDialog(true)
+            } else {
+                setShowSectionSubmitDialog(true)
+            }
+            return
+        }
+
+        const currPos = sectionQuestionIndices.indexOf(currentIndex)
+        if (currPos !== -1 && currPos < sectionQuestionIndices.length - 1) {
+            setCurrentIndex(sectionQuestionIndices[currPos + 1])
+        } else {
+            setCurrentIndex((i) => Math.min(displayQuestions.length - 1, i + 1))
+        }
         performSync()
-    }, [currentQuestion, displayQuestions.length, flushCurrentQuestionActiveTime, performSync, flushEssaySync])
+    }, [
+        isAdvancingSection,
+        currentQuestion,
+        isLastQuestionOfSection,
+        isFinalSection,
+        sectionQuestionIndices,
+        currentIndex,
+        displayQuestions.length,
+        flushCurrentQuestionActiveTime,
+        performSync,
+        flushEssaySync,
+    ])
 
     const handlePrevious = useCallback(() => {
-        if (isSubmittingRef.current) return
+        if (isSubmittingRef.current || isAdvancingSection || isFirstQuestionOfSection) return
         flushCurrentQuestionActiveTime()
         if (currentQuestion?.question_type === "essay") {
             flushEssaySync(currentQuestion.id)
         }
-        setCurrentIndex((i) => Math.max(0, i - 1))
+
+        const currPos = sectionQuestionIndices.indexOf(currentIndex)
+        if (currPos > 0) {
+            setCurrentIndex(sectionQuestionIndices[currPos - 1])
+        } else {
+            setCurrentIndex((i) => Math.max(0, i - 1))
+        }
         performSync()
-    }, [currentQuestion, flushCurrentQuestionActiveTime, performSync, flushEssaySync])
+    }, [
+        isAdvancingSection,
+        isFirstQuestionOfSection,
+        currentQuestion,
+        sectionQuestionIndices,
+        currentIndex,
+        flushCurrentQuestionActiveTime,
+        performSync,
+        flushEssaySync,
+    ])
 
     const handleJump = useCallback((targetIndex: number) => {
-        if (isSubmittingRef.current || targetIndex === currentIndex) return
+        if (isSubmittingRef.current || isAdvancingSection || targetIndex === currentIndex) return
+        if (!sectionQuestionIndices.includes(targetIndex)) return
+
         flushCurrentQuestionActiveTime()
         if (currentQuestion?.question_type === "essay") {
             flushEssaySync(currentQuestion.id)
         }
         setCurrentIndex(targetIndex)
         performSync()
-    }, [currentIndex, currentQuestion, flushCurrentQuestionActiveTime, performSync, flushEssaySync])
+    }, [currentIndex, isAdvancingSection, sectionQuestionIndices, currentQuestion, flushCurrentQuestionActiveTime, performSync, flushEssaySync])
 
     const autoSyncTimerRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -2290,10 +2559,12 @@ export function AttemptClient({
     const initialRemainingRef = useRef<number>(0)
 
     useEffect(() => {
-        if (phase !== "active" || !test.time_limit_seconds || !attemptInfo || !attemptInfo.expires_at) return
+        if (phase !== "active" || !attemptInfo) return
+        const targetExpiresAt = sectionExpiresAt || attemptInfo.expires_at
+        if (!targetExpiresAt) return
 
-        const serverNowMs = new Date(attemptInfo.server_time).getTime()
-        const expiresAtMs = new Date(attemptInfo.expires_at).getTime()
+        const serverNowMs = getNowOnServer().getTime()
+        const expiresAtMs = new Date(targetExpiresAt).getTime()
         initialRemainingRef.current = Math.max(0, expiresAtMs - serverNowMs)
         timerStartRef.current = window.performance.now()
 
@@ -2301,16 +2572,22 @@ export function AttemptClient({
             const elapsedMs = window.performance.now() - timerStartRef.current
             const remaining = Math.max(0, Math.floor((initialRemainingRef.current - elapsedMs) / 1000))
             setTimeRemaining(remaining)
-            if (remaining === 0 && !autoSubmitted.current) {
-                autoSubmitted.current = true
-                handleSubmitRef.current?.(true)
+            if (remaining === 0) {
+                if (isFinalSection) {
+                    if (!autoSubmitted.current) {
+                        autoSubmitted.current = true
+                        handleSubmitRef.current?.(true)
+                    }
+                } else {
+                    handleAdvanceSectionRef.current?.(true)
+                }
             }
         }
 
         tick()
         const id = setInterval(tick, 1000)
         return () => clearInterval(id)
-    }, [phase, test.time_limit_seconds, attemptInfo])
+    }, [phase, sectionExpiresAt, attemptInfo?.expires_at, isFinalSection, getNowOnServer, attemptInfo])
 
 
     const savedCount = useMemo(() => {
@@ -2348,6 +2625,19 @@ export function AttemptClient({
             return (answers[q.id] ?? []).length > 0
         }).length
     }, [displayQuestions, answers, essayAnswers])
+
+    // Current section answer stats
+    const secAnsweredCount = useMemo(() => {
+        return currentSectionQuestions.filter((q) => {
+            if (q.question_type === "essay") {
+                return Boolean((essayAnswers[q.id] ?? "").trim())
+            }
+            return (answers[q.id] ?? []).length > 0
+        }).length
+    }, [currentSectionQuestions, answers, essayAnswers])
+
+    const secUnansweredCount = currentSectionQuestions.length - secAnsweredCount
+    const secFlaggedCount = currentSectionQuestions.filter((q) => flagged[q.id]).length
 
     const unansweredCount = displayQuestions.length - answeredCount
     const flaggedCount = Object.values(flagged).filter(Boolean).length
@@ -2563,6 +2853,18 @@ export function AttemptClient({
                                 setAttemptInfo(info)
                                 setFocusLostCount(info.tab_switch_count)
                                 focusLostCountRef.current = info.tab_switch_count
+                                if (info.current_section_id) {
+                                    setCurrentSectionId(info.current_section_id)
+                                }
+                                if (info.completed_section_ids) {
+                                    setCompletedSectionIds(new Set(info.completed_section_ids))
+                                }
+                                if (info.section_expires_at) {
+                                    setSectionExpiresAt(info.section_expires_at)
+                                }
+                                if (info.section_started_at) {
+                                    setSectionStartedAt(info.section_started_at)
+                                }
                             } catch (err: any) {
                                 await exitFullscreen()
                                 if (isDeploymentError(err)) {
@@ -2600,6 +2902,7 @@ export function AttemptClient({
         showMultiMonitorWarning ||
         showDevToolsWarning ||
         showSubmitDialog ||
+        showSectionSubmitDialog ||
         showShortcutsModal ||
         navSheetOpen
 
@@ -2761,6 +3064,11 @@ export function AttemptClient({
                         <h1 className="truncate text-sm font-bold text-foreground">
                             {test.title}
                         </h1>
+                        {effectiveSections.length > 1 && (
+                            <Badge variant="secondary" className="hidden sm:inline-flex text-[11px] font-semibold shrink-0">
+                                {currentSection.name} ({currentSectionIndex + 1}/{effectiveSections.length})
+                            </Badge>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -2877,29 +3185,49 @@ export function AttemptClient({
                         variant="outline"
                         size="sm"
                         onClick={handlePrevious}
-                        disabled={currentIndex === 0}
+                        disabled={isFirstQuestionOfSection || isSubmitting || isAdvancingSection}
                     >
                         <ChevronLeft className="mr-1 h-4 w-4" />
                         Previous
                     </Button>
 
-                    <span className="text-xs tabular-nums text-muted-foreground font-medium">
-                        {currentIndex + 1} / {questions.length}
-                    </span>
+                    <div className="flex items-center gap-2">
+                        {effectiveSections.length > 1 && (
+                            <span className="text-xs font-semibold text-foreground bg-muted px-2 py-0.5 rounded border border-border">
+                                {currentSection.name}
+                            </span>
+                        )}
+                        <span className="text-xs tabular-nums text-muted-foreground font-medium">
+                            {currentIndex + 1} / {displayQuestions.length}
+                        </span>
+                    </div>
 
-                    {isLastQuestion ? (
-                        <Button
-                            size="sm"
-                            onClick={() => setShowSubmitDialog(true)}
-                            disabled={isSubmitting}
-                        >
-                            <Send className="mr-1.5 h-4 w-4" />
-                            Submit Test
-                        </Button>
+                    {isLastQuestionOfSection ? (
+                        isFinalSection ? (
+                            <Button
+                                size="sm"
+                                onClick={() => setShowSubmitDialog(true)}
+                                disabled={isSubmitting || isAdvancingSection}
+                            >
+                                <Send className="mr-1.5 h-4 w-4" />
+                                Submit Test
+                            </Button>
+                        ) : (
+                            <Button
+                                size="sm"
+                                onClick={() => setShowSectionSubmitDialog(true)}
+                                disabled={isSubmitting || isAdvancingSection}
+                                className="font-semibold px-4 bg-primary text-primary-foreground"
+                            >
+                                Submit Section
+                                <ArrowRight className="ml-1.5 h-4 w-4" />
+                            </Button>
+                        )
                     ) : (
                         <Button
                             size="sm"
                             onClick={handleNext}
+                            disabled={isSubmitting || isAdvancingSection}
                             className="font-semibold px-5"
                         >
                             Next
@@ -2914,41 +3242,65 @@ export function AttemptClient({
             <aside className="hidden md:flex md:w-56 lg:w-64 xl:w-72 shrink-0 h-full flex-col border-l bg-card/30 overflow-y-auto">
                 <div className="flex flex-col gap-5 p-5 lg:p-6">
 
-                    {test.time_limit_seconds && timeRemaining !== null && (
-                        <TimerDisplay
-                            timeRemaining={timeRemaining}
-                            timerDanger={timerDanger}
-                            timerWarning={timerWarning}
-                        />
+                    {timeRemaining !== null && (
+                        <div className="space-y-1.5">
+                            <div className="flex items-center justify-between text-[11px] text-muted-foreground font-medium">
+                                <span>Section Time</span>
+                                {effectiveSections.length > 1 && (
+                                    <span>Sec {currentSectionIndex + 1}/{effectiveSections.length}</span>
+                                )}
+                            </div>
+                            <TimerDisplay
+                                timeRemaining={timeRemaining}
+                                timerDanger={timerDanger}
+                                timerWarning={timerWarning}
+                            />
+                        </div>
                     )}
 
                     <div className="px-1">
                         <QuestionNavigator
                             questions={displayQuestions}
                             sections={effectiveSections}
+                            currentSectionId={currentSection.id}
+                            completedSectionIds={completedSectionIds}
                             currentIndex={currentIndex}
                             answers={answers}
                             syncedAnswers={syncedAnswers}
                             essayAnswers={essayAnswers}
                             syncedEssayAnswers={syncedEssayAnswers}
                             flagged={flagged}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isAdvancingSection}
                             onJump={handleJump}
                         />
                     </div>
 
                     <div className="space-y-4">
-                        <Button
-                            className="w-full shrink-0"
-                            onClick={() => setShowSubmitDialog(true)}
-                            disabled={isSubmitting}
-                        >
-                            {isSubmitting ? (
-                                <><Loader2 className="h-4 w-4 animate-spin" />Submitting…</>
-                            ) : (
-                                <><Send className="h-4 w-4" />Submit Test</>
-                            )}
-                        </Button>
+                        {isFinalSection ? (
+                            <Button
+                                className="w-full shrink-0"
+                                onClick={() => setShowSubmitDialog(true)}
+                                disabled={isSubmitting || isAdvancingSection}
+                            >
+                                {isSubmitting ? (
+                                    <><Loader2 className="h-4 w-4 animate-spin" />Submitting…</>
+                                ) : (
+                                    <><Send className="h-4 w-4" />Submit Test</>
+                                )}
+                            </Button>
+                        ) : (
+                            <Button
+                                className="w-full shrink-0 bg-primary text-primary-foreground"
+                                onClick={() => setShowSectionSubmitDialog(true)}
+                                disabled={isSubmitting || isAdvancingSection}
+                            >
+                                {isAdvancingSection ? (
+                                    <><Loader2 className="h-4 w-4 animate-spin" />Advancing…</>
+                                ) : (
+                                    <><ArrowRight className="h-4 w-4" />Submit & Next Section</>
+                                )}
+                            </Button>
+                        )}
                     </div>
 
                 </div>
@@ -2964,14 +3316,14 @@ export function AttemptClient({
                         size="icon"
                         className="h-9 w-9 shrink-0"
                         onClick={handlePrevious}
-                        disabled={currentIndex === 0}
+                        disabled={isFirstQuestionOfSection || isSubmitting || isAdvancingSection}
                         aria-label="Previous question"
                     >
                         <ChevronLeft className="h-4 w-4" />
                     </Button>
 
                     <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
-                        {test.time_limit_seconds && timeRemaining !== null ? (
+                        {timeRemaining !== null ? (
                             <TimerDisplay
                                 timeRemaining={timeRemaining}
                                 timerDanger={timerDanger}
@@ -3017,25 +3369,41 @@ export function AttemptClient({
                         <Menu className="h-4 w-4" />
                     </Button>
 
-                    {isLastQuestion ? (
-                        <Button
-                            size="sm"
-                            className="shrink-0"
-                            onClick={() => setShowSubmitDialog(true)}
-                            disabled={isSubmitting}
-                        >
-                            {isSubmitting ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                                <><Send className="mr-1.5 h-3.5 w-3.5" />Submit</>
-                            )}
-                        </Button>
+                    {isLastQuestionOfSection ? (
+                        isFinalSection ? (
+                            <Button
+                                size="sm"
+                                className="shrink-0"
+                                onClick={() => setShowSubmitDialog(true)}
+                                disabled={isSubmitting || isAdvancingSection}
+                            >
+                                {isSubmitting ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <><Send className="mr-1.5 h-3.5 w-3.5" />Submit</>
+                                )}
+                            </Button>
+                        ) : (
+                            <Button
+                                size="sm"
+                                className="shrink-0 bg-primary text-primary-foreground text-xs font-semibold px-3"
+                                onClick={() => setShowSectionSubmitDialog(true)}
+                                disabled={isSubmitting || isAdvancingSection}
+                            >
+                                {isAdvancingSection ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <>Next Sec<ChevronRight className="ml-1 h-3.5 w-3.5" /></>
+                                )}
+                            </Button>
+                        )
                     ) : (
                         <Button
                             variant="outline"
                             size="icon"
                             className="h-9 w-9 shrink-0"
                             onClick={handleNext}
+                            disabled={isSubmitting || isAdvancingSection}
                             aria-label="Next question"
                         >
                             <ChevronRight className="h-4 w-4" />
@@ -3060,13 +3428,15 @@ export function AttemptClient({
                         <QuestionNavigator
                             questions={displayQuestions}
                             sections={effectiveSections}
+                            currentSectionId={currentSection.id}
+                            completedSectionIds={completedSectionIds}
                             currentIndex={currentIndex}
                             answers={answers}
                             syncedAnswers={syncedAnswers}
                             essayAnswers={essayAnswers}
                             syncedEssayAnswers={syncedEssayAnswers}
                             flagged={flagged}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isAdvancingSection}
                             onJump={(i) => {
                                 handleJump(i)
                                 setNavSheetOpen(false)
@@ -3078,16 +3448,83 @@ export function AttemptClient({
                             className="w-full"
                             onClick={() => {
                                 setNavSheetOpen(false)
-                                setShowSubmitDialog(true)
+                                if (isFinalSection) {
+                                    setShowSubmitDialog(true)
+                                } else {
+                                    setShowSectionSubmitDialog(true)
+                                }
                             }}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isAdvancingSection}
                         >
-                            <Send />
-                            Submit Test
+                            {isFinalSection ? (
+                                <><Send className="mr-2 h-4 w-4" />Submit Test</>
+                            ) : (
+                                <><ArrowRight className="mr-2 h-4 w-4" />Submit Section</>
+                            )}
                         </Button>
                     </div>
                 </SheetContent>
             </Sheet>
+
+
+            {/* ── Section Submit dialog ───────────────────────────────────────── */}
+            <AlertDialog open={showSectionSubmitDialog} onOpenChange={setShowSectionSubmitDialog}>
+                <AlertDialogContent className="max-w-md">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="text-xl font-bold">
+                            Submit Section: {currentSection.name}?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription asChild>
+                            <div className="space-y-4 pt-2">
+                                <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20 p-3 text-xs text-amber-800 dark:text-amber-300">
+                                    <strong>Important:</strong> Once you submit this section, you cannot return to review or change any of its answers.
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2.5 rounded-xl border bg-muted/30 p-3.5 text-xs">
+                                    <div className="flex flex-col gap-0.5 rounded-lg border bg-background p-2.5">
+                                        <span className="text-muted-foreground font-medium">Answered</span>
+                                        <span className="text-base font-bold text-emerald-600 dark:text-emerald-400">
+                                            {secAnsweredCount} / {currentSectionQuestions.length}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-col gap-0.5 rounded-lg border bg-background p-2.5">
+                                        <span className="text-muted-foreground font-medium">Unanswered</span>
+                                        <span className="text-base font-bold text-muted-foreground">
+                                            {secUnansweredCount}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-col gap-0.5 rounded-lg border bg-background p-2.5">
+                                        <span className="text-muted-foreground font-medium">Flagged</span>
+                                        <span className="text-base font-bold text-indigo-600 dark:text-indigo-400">
+                                            {secFlaggedCount}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-col gap-0.5 rounded-lg border bg-background p-2.5">
+                                        <span className="text-muted-foreground font-medium">Pass Cutoff</span>
+                                        <span className="text-base font-bold text-primary">
+                                            {currentSection.pass_percentage}%
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="mt-2">
+                        <AlertDialogCancel disabled={isAdvancingSection}>Review Questions</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => handleAdvanceSection(false)}
+                            disabled={isAdvancingSection}
+                            className="bg-primary text-primary-foreground font-semibold"
+                        >
+                            {isAdvancingSection ? (
+                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Submitting…</>
+                            ) : (
+                                "Confirm & Go to Next Section"
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
 
             {/* ── Submit dialog ─────────────────────────────────────────────────── */}

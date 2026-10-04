@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils"
 import {
   Loader2, Save, Send, AlertCircle, AlertTriangle, BookOpen, CheckCircle2, Circle, Plus, Tag, X,
   PlusCircle, Sparkles, Upload, Trash2, Pencil, ChevronDown, ChevronUp, Info, FileJson, Image,
-  GripVertical, Layers, Check, Eye, Code
+  GripVertical, Layers, Check, Eye, Code, Clock
 } from "lucide-react"
 import {
   Combobox,
@@ -165,9 +165,13 @@ export function CreateTestClient({
   // Ensure default Section A exists if test has no sections
   const [sections, setSections] = useState<LocalSection[]>(() => {
     if (initialData?.sections && initialData.sections.length > 0) {
-      return initialData.sections
+      return initialData.sections.map((s) => ({
+        ...s,
+        time_limit_minutes: s.time_limit_minutes || "30",
+        pass_percentage: s.pass_percentage || "50",
+      }))
     }
-    return [{ id: crypto.randomUUID(), name: "Section A", description: "", order_index: 1 }]
+    return [{ id: crypto.randomUUID(), name: "Section A", description: "", order_index: 1, time_limit_minutes: "30", pass_percentage: "50" }]
   })
 
   const [questions, setQuestions] = useState<LocalQuestion[]>(() => {
@@ -179,7 +183,14 @@ export function CreateTestClient({
   useEffect(() => {
     if (sections.length === 0) {
       const defaultSecId = crypto.randomUUID()
-      const defaultSec: LocalSection = { id: defaultSecId, name: "Section A", description: "", order_index: 1 }
+      const defaultSec: LocalSection = {
+        id: defaultSecId,
+        name: "Section A",
+        description: "",
+        order_index: 1,
+        time_limit_minutes: "30",
+        pass_percentage: "50",
+      }
       setSections([defaultSec])
       setQuestions((prev) => prev.map((q) => ({ ...q, section_id: defaultSecId })))
     } else {
@@ -220,6 +231,17 @@ export function CreateTestClient({
       if (!titleValid) toast.error("Title is required to save.")
       return
     }
+
+    const invalidSection = sections.find((s) => {
+      const mins = parseFloat(s.time_limit_minutes)
+      const passPct = parseFloat(s.pass_percentage)
+      return isNaN(mins) || mins <= 0 || isNaN(passPct) || passPct < 0 || passPct > 100
+    })
+    if (invalidSection) {
+      toast.error(`Please provide a valid duration (> 0 mins) and pass percentage (0-100%) for "${invalidSection.name}".`)
+      return
+    }
+
     setIsSaving(true)
     try {
       let finalQuestions = questions
@@ -250,6 +272,17 @@ export function CreateTestClient({
       if (!titleValid) toast.error("Title is required to publish.")
       return
     }
+
+    const invalidSection = sections.find((s) => {
+      const mins = parseFloat(s.time_limit_minutes)
+      const passPct = parseFloat(s.pass_percentage)
+      return isNaN(mins) || mins <= 0 || isNaN(passPct) || passPct < 0 || passPct > 100
+    })
+    if (invalidSection) {
+      toast.error(`Please provide a valid duration (> 0 mins) and pass percentage (0-100%) for "${invalidSection.name}".`)
+      return
+    }
+
     setIsPublishing(true)
     try {
       let finalQuestions = questions
@@ -408,32 +441,12 @@ function SettingsFormComponent({ values, onChange, cohortOptions }: SettingsForm
             />
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="time_limit">Time Limit (minutes)</Label>
-            <Input
-              id="time_limit"
-              type="number"
-              min={1}
-              className="w-40"
-              placeholder="e.g. 60"
-              value={values.time_limit_minutes}
-              onChange={set("time_limit_minutes")}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="pass_percentage">Pass Percentage (%)</Label>
-            <Input
-              id="pass_percentage"
-              type="number"
-              min={0}
-              max={100}
-              className="w-40"
-              placeholder="e.g. 50"
-              value={values.pass_percentage}
-              onChange={set("pass_percentage")}
-            />
-            <p className="text-[10px] text-muted-foreground">Optional. Leave empty for no pass threshold.</p>
+          <div className="rounded-lg border bg-muted/40 p-3.5 flex items-start gap-3 text-xs text-muted-foreground">
+            <Info className="size-4 shrink-0 text-primary mt-0.5" />
+            <div className="space-y-0.5">
+              <p className="font-semibold text-foreground">Section-Based Timing & Cutoffs</p>
+              <p>Duration and pass percentage are configured per section in the test builder below. Total test duration will be automatically calculated as the sum of all sections.</p>
+            </div>
           </div>
 
           <div className="space-y-1.5">
@@ -668,8 +681,8 @@ function TestContentPanel({
       tag_names: form.tag_names.map((t) => normalizeTag(t, availableTags)),
       options: form.options,
       section_id: finalSecId,
-      min_words: form.question_type === "essay" ? (form.min_words ?? 250) : undefined,
-      max_words: form.question_type === "essay" ? (form.max_words ?? 350) : undefined,
+      min_words: form.question_type === "essay" ? (form.min_words ?? 180) : undefined,
+      max_words: form.question_type === "essay" ? (form.max_words ?? 220) : undefined,
       rubric_guidelines: form.question_type === "essay" ? form.rubric_guidelines : undefined,
     }
 
@@ -733,6 +746,8 @@ function TestContentPanel({
       name: newName,
       description: "",
       order_index: sections.length + 1,
+      time_limit_minutes: "30",
+      pass_percentage: "50",
     }
     setSections((prev) => [...prev, newSec])
     toast.success(`Created "${newName}"`)
@@ -749,6 +764,18 @@ function TestContentPanel({
   function handleUpdateSectionDescription(sectionId: string, description: string) {
     setSections((prev) =>
       prev.map((s) => (s.id === sectionId ? { ...s, description } : s))
+    )
+  }
+
+  function handleUpdateSectionTime(sectionId: string, time_limit_minutes: string) {
+    setSections((prev) =>
+      prev.map((s) => (s.id === sectionId ? { ...s, time_limit_minutes } : s))
+    )
+  }
+
+  function handleUpdateSectionPassPercentage(sectionId: string, pass_percentage: string) {
+    setSections((prev) =>
+      prev.map((s) => (s.id === sectionId ? { ...s, pass_percentage } : s))
     )
   }
 
@@ -849,11 +876,11 @@ function TestContentPanel({
               <CardTitle className="text-base flex items-center gap-2">
                 Test Content & Sections
                 <Badge variant="secondary" className="text-xs font-normal">
-                  {sections.length} section{sections.length !== 1 ? "s" : ""} · {questions.length} Qs · {totalMarks} marks
+                  {sections.length} section{sections.length !== 1 ? "s" : ""} · {sections.reduce((sum, s) => sum + (parseFloat(s.time_limit_minutes) || 0), 0)} mins total · {questions.length} Qs · {totalMarks} marks
                 </Badge>
               </CardTitle>
               <CardDescription>
-                Organize your test into sections. Drag and drop sections or questions to reorder.
+                Organize your test into sections. Each section has its own time limit and passing cutoff.
               </CardDescription>
             </div>
 
@@ -895,6 +922,8 @@ function TestContentPanel({
                       availableTags={availableTags}
                       onRename={(newName) => handleRenameSection(sec.id, newName)}
                       onUpdateDescription={(newDesc) => handleUpdateSectionDescription(sec.id, newDesc)}
+                      onUpdateTime={(newTime) => handleUpdateSectionTime(sec.id, newTime)}
+                      onUpdatePassPercentage={(newPct) => handleUpdateSectionPassPercentage(sec.id, newPct)}
                       onDelete={() => handleDeleteSection(sec.id)}
                       onAddQuestion={() => openAddQuestion(sec.id)}
                       onAiGenerate={() => openAiGenerate(sec.id)}
@@ -988,6 +1017,8 @@ interface SortableSectionCardProps {
   availableTags: { id: string; name: string }[]
   onRename: (newName: string) => void
   onUpdateDescription: (newDesc: string) => void
+  onUpdateTime: (newTime: string) => void
+  onUpdatePassPercentage: (newPct: string) => void
   onDelete: () => void
   onAddQuestion: () => void
   onAiGenerate: () => void
@@ -1003,6 +1034,8 @@ function SortableSectionCard({
   availableTags,
   onRename,
   onUpdateDescription,
+  onUpdateTime,
+  onUpdatePassPercentage,
   onDelete,
   onAddQuestion,
   onAiGenerate,
@@ -1161,7 +1194,7 @@ function SortableSectionCard({
           </div>
 
           <Badge variant="secondary" className="ml-2 text-[11px] font-normal shrink-0">
-            {questions.length} Q{questions.length !== 1 ? "s" : ""} · {sectionMarks} M
+            {section.time_limit_minutes || 0}m · Pass {section.pass_percentage || 0}% · {questions.length} Q{questions.length !== 1 ? "s" : ""} · {sectionMarks} M
           </Badge>
         </div>
 
@@ -1198,6 +1231,51 @@ function SortableSectionCard({
               <Trash2 className="size-3.5" />
             </Button>
           )}
+        </div>
+      </div>
+
+      {/* Section Timing & Pass Percentage Settings Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2 bg-muted/20 border-b text-xs">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-1.5">
+            <Clock className="size-3.5 text-muted-foreground shrink-0" />
+            <span className="font-medium text-foreground">Section Time:</span>
+            <div className="flex items-center gap-1">
+              <Input
+                type="number"
+                min={1}
+                className="h-7 w-20 text-xs px-2 text-center font-medium bg-background"
+                value={section.time_limit_minutes ?? "30"}
+                onChange={(e) => onUpdateTime(e.target.value)}
+                placeholder="30"
+              />
+              <span className="text-muted-foreground text-[11px]">mins</span>
+            </div>
+          </div>
+
+          <Separator orientation="vertical" className="h-4 hidden sm:block" />
+
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 className="size-3.5 text-muted-foreground shrink-0" />
+            <span className="font-medium text-foreground">Section Pass Mark:</span>
+            <div className="flex items-center gap-1">
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                className="h-7 w-20 text-xs px-2 text-center font-medium bg-background"
+                value={section.pass_percentage ?? "50"}
+                onChange={(e) => onUpdatePassPercentage(e.target.value)}
+                placeholder="50"
+              />
+              <span className="text-muted-foreground text-[11px]">%</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+          <span className="inline-block size-1.5 rounded-full bg-emerald-500 shrink-0" />
+          <span>Cutoff: candidate must score ≥ {section.pass_percentage || 50}% in this section</span>
         </div>
       </div>
 
@@ -1934,7 +2012,7 @@ export const DEFAULT_ESSAY_RUBRIC =
 • Grammar, Mechanics & Syntax: Consistent verb tenses, proper subject-verb agreement, varied sentence structures, and accurate punctuation and spelling throughout.
 • Vocabulary & Style: Academic, formal tone with precise word choices, avoiding colloquialisms and repetitive phrasing.
 • Coherence & Flow: Smooth logical transitions between paragraphs and ideas.
-• Word Count Compliance: Target 250–350 words. Ensure balanced depth within the recommended length.`
+• Word Count Compliance: Target 180–220 words. Ensure balanced depth within the recommended length.`
 
 const EMPTY_FORM: QuestionForm = {
   question_text: "",
@@ -1943,8 +2021,8 @@ const EMPTY_FORM: QuestionForm = {
   explanation: "",
   options: makeOptions(),
   tag_names: [],
-  min_words: 250,
-  max_words: 350,
+  min_words: 180,
+  max_words: 220,
   rubric_guidelines: DEFAULT_ESSAY_RUBRIC,
 }
 
@@ -1981,8 +2059,8 @@ function QuestionSheet({
     if (!form.question_text.trim()) e.push("Question text is required.")
     if (!selectedSectionId) e.push("Select a section for this question.")
     if (form.question_type === "essay") {
-      const minW = Number(form.min_words) || 250
-      const maxW = Number(form.max_words) || 350
+      const minW = Number(form.min_words) || 180
+      const maxW = Number(form.max_words) || 220
       if (minW < 50) e.push("Minimum words must be at least 50.")
       if (maxW < minW) e.push("Maximum words cannot be less than minimum words.")
     } else {
@@ -2126,23 +2204,23 @@ function QuestionSheet({
                     type="number"
                     min={50}
                     step={10}
-                    value={form.min_words ?? 250}
-                    onChange={(e) => set("min_words", parseInt(e.target.value, 10) || 250)}
+                    value={form.min_words ?? 180}
+                    onChange={(e) => set("min_words", parseInt(e.target.value, 10) || 180)}
                     className="h-8 text-xs bg-background"
                   />
-                  <p className="text-[10px] text-muted-foreground">Default: 250 words</p>
+                  <p className="text-[10px] text-muted-foreground">Default: 180 words</p>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs font-medium">Max Words Target</Label>
                   <Input
                     type="number"
-                    min={form.min_words ?? 250}
+                    min={form.min_words ?? 180}
                     step={10}
-                    value={form.max_words ?? 350}
-                    onChange={(e) => set("max_words", parseInt(e.target.value, 10) || 350)}
+                    value={form.max_words ?? 220}
+                    onChange={(e) => set("max_words", parseInt(e.target.value, 10) || 220)}
                     className="h-8 text-xs bg-background"
                   />
-                  <p className="text-[10px] text-muted-foreground">Default: 350 words</p>
+                  <p className="text-[10px] text-muted-foreground">Default: 220 words</p>
                 </div>
               </div>
 
