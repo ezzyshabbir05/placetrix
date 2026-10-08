@@ -2085,7 +2085,7 @@ function QuestionSheet({
 
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) handleClose() }}>
-      <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-xl">
+      <SheetContent side="right" onInteractOutside={(e) => e.preventDefault()} className="flex w-full flex-col gap-0 p-0 sm:max-w-xl">
 
         <SheetHeader className="shrink-0 border-b px-6 py-4">
           <SheetTitle>{mode === "edit" ? "Edit Question" : "Add Question"}</SheetTitle>
@@ -2459,7 +2459,7 @@ function AiGenerateSheet({
         if (!v) handleClose()
       }}
     >
-      <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-xl">
+      <SheetContent side="right" onInteractOutside={(e) => e.preventDefault()} className="flex w-full flex-col gap-0 p-0 sm:max-w-xl">
         <SheetHeader className="shrink-0 border-b px-6 py-4">
           <SheetTitle>
             Generate with Trixy AI
@@ -2963,7 +2963,7 @@ function ImportSheet({
 
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) handleClose() }}>
-      <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-xl">
+      <SheetContent side="right" onInteractOutside={(e) => e.preventDefault()} className="flex w-full flex-col gap-0 p-0 sm:max-w-xl">
 
         <SheetHeader className="shrink-0 border-b px-6 py-4">
           <SheetTitle>
