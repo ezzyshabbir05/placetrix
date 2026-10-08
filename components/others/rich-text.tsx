@@ -343,8 +343,8 @@ function ZoomableImage({
         <span className={cn(
           "relative flex items-center justify-center overflow-hidden rounded-lg border border-border/70 bg-muted/20 p-1 shadow-xs transition-all duration-300 group-hover:border-primary/60 group-hover:shadow-md",
           inline
-            ? "max-w-40 max-h-27.5 w-auto h-auto"
-            : "max-w-70 sm:max-w-85 max-h-47.5 w-auto h-auto"
+            ? "max-w-[90vw] sm:max-w-md md:max-w-3xl max-h-[55vh] w-auto h-auto"
+            : "max-w-[90vw] sm:max-w-md md:max-w-2xl lg:max-w-4xl max-h-[50vh] md:max-h-[60vh] w-auto h-auto"
         )}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -353,7 +353,7 @@ function ZoomableImage({
             onError={() => setHasError(true)}
             className={cn(
               "object-contain select-none rounded-md transition-transform duration-300 group-hover:scale-[1.02]",
-              inline ? "max-w-38 max-h-25.5 w-auto h-auto" : "max-w-full max-h-45 w-auto h-auto"
+              inline ? "max-w-full max-h-[calc(55vh-10px)] w-auto h-auto" : "max-w-full max-h-[calc(50vh-10px)] md:max-h-[calc(60vh-10px)] w-auto h-auto"
             )}
           />
 
@@ -389,8 +389,8 @@ function ZoomableImage({
               alt={alt ?? "Enlarged view"}
               onClick={() => setIsZoomed((z) => !z)}
               className={cn(
-                "h-auto max-w-full object-contain rounded-lg transition-all duration-300 select-none",
-                isZoomed ? "scale-125 cursor-zoom-out" : "max-h-[75vh] cursor-zoom-in"
+                "w-full h-full object-contain rounded-lg transition-all duration-300 select-none",
+                isZoomed ? "scale-[1.5] cursor-zoom-out" : "max-h-[75vh] cursor-zoom-in"
               )}
             />
           </div>
