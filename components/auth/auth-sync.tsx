@@ -27,6 +27,7 @@ const AUTH_FLOW_PATHS = [
   "/auth/confirm",
   "/auth/mfa",
   "/auth/change-password",
+  "/auth/reset-password",
   "/auth/error",
 ];
 
@@ -86,6 +87,12 @@ function AuthSyncContent() {
 
       // Signed in: user ID went from null to non-null
       if (prevUserId === null && newUserId !== null) {
+        // Active multi-step auth flows (e.g. OTP reset password, change password, MFA)
+        // should never be interrupted or redirected to /home.
+        if (AUTH_FLOW_PATHS.some((p) => currentPath === p || currentPath.startsWith(p + "/"))) {
+          return;
+        }
+
         if (isAuthPath(currentPath)) {
           const next = currentParams.get("next") ?? "/home";
           supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data }) => {

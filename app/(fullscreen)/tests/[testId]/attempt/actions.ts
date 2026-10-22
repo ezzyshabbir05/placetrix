@@ -413,7 +413,6 @@ export async function submitAttemptAction(
         .from("test_attempts")
         .update({
           score: totalScore,
-          percentage: percentage,
         })
         .eq("id", attemptId)
     }

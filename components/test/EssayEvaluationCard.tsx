@@ -14,20 +14,18 @@ export function EssayEvaluationCard({
   candidateEssay,
   maxMarks = 10,
 }: EssayEvaluationCardProps) {
-  if (!evaluation) {
+  if (!evaluation || (evaluation as any).error) {
     return (
       <div className="rounded-xl border border-dashed p-4 text-center text-xs text-muted-foreground">
-        No automated assessment data available for this essay.
+        {(evaluation as any)?.error || "No automated assessment data available for this essay."}
       </div>
     )
   }
 
-  const {
-    band_score,
-    scaled_marks,
-    band_descriptor,
-    metrics,
-  } = evaluation
+  const band_score = evaluation.band_score ?? 1
+  const scaled_marks = evaluation.scaled_marks ?? 0
+  const band_descriptor = evaluation.band_descriptor
+  const metrics = evaluation.metrics
 
   const isPassing = scaled_marks >= (maxMarks * 0.5)
 
@@ -75,22 +73,22 @@ export function EssayEvaluationCard({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center">
         <div className="rounded-lg border bg-muted/30 p-2.5">
           <span className="text-[11px] font-medium text-muted-foreground block">Word Count</span>
-          <span className="text-sm font-bold font-mono text-foreground">{metrics.word_count}</span>
+          <span className="text-sm font-bold font-mono text-foreground">{metrics?.word_count ?? 0}</span>
           <span className="text-[10px] text-muted-foreground block capitalize mt-0.5">
-            {metrics.length_compliance.replace("_", " ")}
+            {metrics?.length_compliance ? metrics.length_compliance.replace("_", " ") : "standard"}
           </span>
         </div>
 
         <div className="rounded-lg border bg-muted/30 p-2.5">
           <span className="text-[11px] font-medium text-muted-foreground block">Sentences</span>
-          <span className="text-sm font-bold font-mono text-foreground">{metrics.sentence_count}</span>
+          <span className="text-sm font-bold font-mono text-foreground">{metrics?.sentence_count ?? 0}</span>
           <span className="text-[10px] text-muted-foreground block mt-0.5">Structure</span>
         </div>
 
         <div className="rounded-lg border bg-muted/30 p-2.5">
           <span className="text-[11px] font-medium text-muted-foreground block">Avg Sentence Len</span>
           <span className="text-sm font-bold font-mono text-foreground">
-            {metrics.avg_sentence_length} <span className="text-[10px] font-normal">w/s</span>
+            {metrics?.avg_sentence_length ?? 0} <span className="text-[10px] font-normal">w/s</span>
           </span>
           <span className="text-[10px] text-muted-foreground block mt-0.5">Readability</span>
         </div>
@@ -98,7 +96,7 @@ export function EssayEvaluationCard({
         <div className="rounded-lg border bg-muted/30 p-2.5">
           <span className="text-[11px] font-medium text-muted-foreground block">Lexical Richness</span>
           <span className="text-sm font-bold font-mono text-foreground">
-            {Math.round(metrics.lexical_diversity * 100)}%
+            {metrics?.lexical_diversity ? Math.round(metrics.lexical_diversity * 100) : 0}%
           </span>
           <span className="text-[10px] text-muted-foreground block mt-0.5">Unique vocabulary</span>
         </div>

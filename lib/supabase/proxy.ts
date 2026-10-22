@@ -37,7 +37,14 @@ const AUTH_PATHS = ["/auth"] as const;
  * Auth sub-routes that are part of a flow and must be reachable even when
  * the user has an active session (e.g. MFA challenge, OAuth callback, confirm).
  */
-const AUTH_FLOW_PATHS = ["/auth/callback", "/auth/confirm", "/auth/mfa", "/auth/change-password", "/auth/error"] as const;
+const AUTH_FLOW_PATHS = [
+  "/auth/callback",
+  "/auth/confirm",
+  "/auth/mfa",
+  "/auth/change-password",
+  "/auth/reset-password",
+  "/auth/error"
+] as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

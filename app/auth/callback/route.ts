@@ -11,7 +11,12 @@ export async function GET(request: NextRequest) {
     if (!target.startsWith("/") || target.startsWith("//") || target.startsWith("/\\")) {
       return "/home";
     }
-    if (target.startsWith("/auth/") && target !== "/auth/mfa" && target !== "/auth/change-password") {
+    if (
+      target.startsWith("/auth/") &&
+      target !== "/auth/mfa" &&
+      target !== "/auth/change-password" &&
+      target !== "/auth/reset-password"
+    ) {
       return "/home";
     }
     return target;
