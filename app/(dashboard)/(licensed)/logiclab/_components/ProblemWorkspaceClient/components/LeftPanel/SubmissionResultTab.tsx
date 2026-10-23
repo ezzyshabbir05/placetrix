@@ -567,6 +567,7 @@ export function SubmissionResultTab({
               {formatErrorDiagnostic(
                 truncateText(
                   submitResult.failed_test_case_info?.actual ||
+                    submitResult.first_failed?.actual ||
                     submitResult.compile_output ||
                     submitResult.stderr ||
                     submitResult.status
@@ -588,7 +589,7 @@ export function SubmissionResultTab({
               <div className="rounded-lg border border-border/50 overflow-hidden">
                 <div className="px-3 py-1.5 bg-muted/40 border-b border-border/40 select-none">
                   <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
-                    Input
+                    {isCompileOrRuntimeError ? "Last Executed Input" : "Input"}
                   </span>
                 </div>
                 <pre className="p-3 bg-muted/10 whitespace-pre-wrap text-foreground/90 leading-relaxed max-h-32 overflow-y-auto">
@@ -596,31 +597,36 @@ export function SubmissionResultTab({
                 </pre>
               </div>
 
-              {/* Output */}
-              <div className="rounded-lg border border-rose-500/25 overflow-hidden">
-                <div className="px-3 py-1.5 bg-rose-500/5 border-b border-rose-500/20 flex items-center gap-1.5 select-none">
-                  <IconCircleX className="h-3 w-3 text-rose-500" />
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-rose-600 dark:text-rose-400">
-                    Output
-                  </span>
-                </div>
-                <pre className="p-3 bg-rose-500/5 text-rose-600 dark:text-rose-400 font-semibold whitespace-pre-wrap leading-relaxed max-h-32 overflow-y-auto">
-                  {truncateText(submitResult.failed_test_case_info.actual || "(empty)")}
-                </pre>
-              </div>
+              {/* Only show Output & Expected when not compile/runtime crash */}
+              {!isCompileOrRuntimeError && (
+                <>
+                  {/* Output */}
+                  <div className="rounded-lg border border-rose-500/25 overflow-hidden">
+                    <div className="px-3 py-1.5 bg-rose-500/5 border-b border-rose-500/20 flex items-center gap-1.5 select-none">
+                      <IconCircleX className="h-3 w-3 text-rose-500" />
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-rose-600 dark:text-rose-400">
+                        Output
+                      </span>
+                    </div>
+                    <pre className="p-3 bg-rose-500/5 text-rose-600 dark:text-rose-400 font-semibold whitespace-pre-wrap leading-relaxed max-h-32 overflow-y-auto">
+                      {truncateText(submitResult.failed_test_case_info.actual || "(empty)")}
+                    </pre>
+                  </div>
 
-              {/* Expected */}
-              <div className="rounded-lg border border-emerald-500/25 overflow-hidden">
-                <div className="px-3 py-1.5 bg-emerald-500/5 border-b border-emerald-500/20 flex items-center gap-1.5 select-none">
-                  <IconCircleCheck className="h-3 w-3 text-emerald-500" />
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
-                    Expected
-                  </span>
-                </div>
-                <pre className="p-3 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400 whitespace-pre-wrap leading-relaxed max-h-32 overflow-y-auto">
-                  {truncateText(submitResult.failed_test_case_info.expected || "(none)")}
-                </pre>
-              </div>
+                  {/* Expected */}
+                  <div className="rounded-lg border border-emerald-500/25 overflow-hidden">
+                    <div className="px-3 py-1.5 bg-emerald-500/5 border-b border-emerald-500/20 flex items-center gap-1.5 select-none">
+                      <IconCircleCheck className="h-3 w-3 text-emerald-500" />
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+                        Expected
+                      </span>
+                    </div>
+                    <pre className="p-3 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400 whitespace-pre-wrap leading-relaxed max-h-32 overflow-y-auto">
+                      {truncateText(submitResult.failed_test_case_info.expected || "(none)")}
+                    </pre>
+                  </div>
+                </>
+              )}
 
               {/* Console Output (if any) */}
               {submitResult.failed_test_case_info.console_output &&

@@ -235,47 +235,46 @@ export function TestResultTab({
           </div>
         </div>
 
-        {/* Output vs Expected Side-by-Side */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block select-none">
-              Output
-            </span>
-            <div
-              className={cn(
-                "p-2.5 rounded-lg border text-xs max-h-32 overflow-y-auto leading-relaxed",
-                activeCase.passed
-                  ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
-                  : "bg-rose-500/5 border-rose-500/20 text-rose-600 dark:text-rose-400 font-bold"
-              )}
-            >
-              {renderTestcaseValue(truncateText(activeCase.actual || "(empty)"))}
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block select-none">
-              Expected
-            </span>
-            <div className="p-2.5 bg-emerald-500/5 border border-emerald-500/20 rounded-lg text-emerald-700 dark:text-emerald-400 text-xs max-h-32 overflow-y-auto leading-relaxed">
-              {renderTestcaseValue(truncateText(activeCase.expected || "(none)"))}
-            </div>
-          </div>
-        </div>
-
-        {/* Case error diagnostics if present */}
-        {(activeCase.compile_output || activeCase.stderr) && (
-          <div className="mt-3 p-3 bg-rose-500/5 border border-rose-500/20 rounded-lg">
+        {/* Output vs Expected Side-by-Side OR Single Runtime Error Box */}
+        {(activeCase.compile_output || activeCase.stderr || (typeof activeCase.actual === "string" && activeCase.actual.startsWith("Runtime Error"))) ? (
+          <div className="mt-2 p-3 bg-rose-500/5 border border-rose-500/20 rounded-lg">
             <p className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
-              <IconAlertTriangle className="h-3.5 w-3.5" /> Error Diagnostics
+              <IconAlertTriangle className="h-3.5 w-3.5" /> Runtime Error
             </p>
             <pre className="p-2.5 bg-black/40 border border-border/80 rounded-lg text-rose-400 text-xs font-mono whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
               {formatErrorDiagnostic(
-                activeCase.compile_output || activeCase.stderr,
+                activeCase.compile_output || activeCase.stderr || activeCase.actual,
                 runResult.lineOffset || 0,
                 selectedLang.name
               )}
             </pre>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block select-none">
+                Output
+              </span>
+              <div
+                className={cn(
+                  "p-2.5 rounded-lg border text-xs max-h-32 overflow-y-auto leading-relaxed",
+                  activeCase.passed
+                    ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                    : "bg-rose-500/5 border-rose-500/20 text-rose-600 dark:text-rose-400 font-bold"
+                )}
+              >
+                {renderTestcaseValue(truncateText(activeCase.actual || "(empty)"))}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block select-none">
+                Expected
+              </span>
+              <div className="p-2.5 bg-emerald-500/5 border border-emerald-500/20 rounded-lg text-emerald-700 dark:text-emerald-400 text-xs max-h-32 overflow-y-auto leading-relaxed">
+                {renderTestcaseValue(truncateText(activeCase.expected || "(none)"))}
+              </div>
+            </div>
           </div>
         )}
 

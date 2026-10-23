@@ -15,9 +15,28 @@ export function EssayEvaluationCard({
   maxMarks = 10,
 }: EssayEvaluationCardProps) {
   if (!evaluation || (evaluation as any).error) {
+    const errorMsg = (evaluation as any)?.error
     return (
-      <div className="rounded-xl border border-dashed p-4 text-center text-xs text-muted-foreground">
-        {(evaluation as any)?.error || "No automated assessment data available for this essay."}
+      <div className="space-y-3">
+        <div className="rounded-xl border border-dashed p-4 text-center text-xs text-muted-foreground bg-muted/10">
+          <p className="font-medium text-foreground">{errorMsg ? "Evaluation Notice" : "Evaluation Pending"}</p>
+          <p className="mt-0.5">{errorMsg || "Automated AI assessment data is not yet available for this response."}</p>
+        </div>
+        {candidateEssay ? (
+          <div className="space-y-1.5 pt-1">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+              <FileText className="h-3.5 w-3.5" />
+              <span>Candidate Submitted Text ({candidateEssay.trim().split(/\s+/).length} words)</span>
+            </div>
+            <div className="rounded-lg border bg-muted/20 p-3.5 text-xs leading-relaxed text-foreground/90 whitespace-pre-wrap font-sans">
+              {candidateEssay}
+            </div>
+          </div>
+        ) : (
+          <div className="text-xs text-center text-muted-foreground italic">
+            No essay response was entered by the candidate.
+          </div>
+        )}
       </div>
     )
   }

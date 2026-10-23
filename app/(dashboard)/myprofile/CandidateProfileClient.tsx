@@ -447,12 +447,16 @@ export function CandidateProfileClient({
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
+  const incompleteToastShown = useRef(false);
   useEffect(() => {
-    if (searchParams.get("incomplete") === "true") {
+    if (searchParams.get("incomplete") === "true" && !incompleteToastShown.current) {
+      incompleteToastShown.current = true;
       toast.error("Profile Incomplete", {
         description: "Please fill in all mandatory fields to unlock all features of PlaceTrix.",
         id: "profile-incomplete-toast",
       });
+      // Remove the ?incomplete=true query param so it doesn't re-fire on router.refresh()
+      window.history.replaceState(null, "", "/myprofile");
     }
   }, [searchParams]);
 
@@ -646,7 +650,7 @@ export function CandidateProfileClient({
   // Section completeness (from server data)
   const accountComplete = !!(userProfile.username?.trim());
   const personalComplete = !!(
-    initialData?.first_name && initialData?.middle_name && initialData?.last_name &&
+    initialData?.first_name && initialData?.last_name &&
     initialData?.gender && initialData?.phone_number && initialData?.date_of_birth
   );
   const educationComplete = !!(
@@ -1128,12 +1132,12 @@ export function CandidateProfileClient({
       e.firstName = "First name cannot exceed 50 characters";
     }
 
-    if (!middleName.trim()) {
-      e.middleName = "Middle name is required";
-    } else if (!/^[a-zA-Z]+$/.test(middleName.trim())) {
-      e.middleName = "Middle name must contain only alphabets";
-    } else if (middleName.trim().length > 50) {
-      e.middleName = "Middle name cannot exceed 50 characters";
+    if (middleName.trim()) {
+      if (!/^[a-zA-Z]+$/.test(middleName.trim())) {
+        e.middleName = "Middle name must contain only alphabets";
+      } else if (middleName.trim().length > 50) {
+        e.middleName = "Middle name cannot exceed 50 characters";
+      }
     }
 
     if (!lastName.trim()) {
@@ -1967,7 +1971,7 @@ export function CandidateProfileClient({
                     <FieldError message={errors.firstName} />
                   </div>
                   <div className="space-y-2">
-                    <Label>Middle Name<RequiredMark /></Label>
+                    <Label>Middle Name</Label>
                     <Input
                       placeholder="Middle name"
                       maxLength={50}
@@ -2265,7 +2269,7 @@ export function CandidateProfileClient({
 
                 {/* HSC / Diploma Checkboxes */}
                 <div className="space-y-3">
-                  <Label>Education After SSC<RequiredMark /></Label>
+                  <Label>Education After SSC</Label>
                   <div className="flex gap-6">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" checked={isHsc} onChange={(e) => setIsHsc(e.target.checked)} className="h-4 w-4 accent-primary" />

@@ -1092,7 +1092,7 @@ def graph_node_to_list(node):
   const driver = `
 # === Driver Code (hidden from student) ===
 # @@@LOGICLAB_BATCH_V2@@@
-import sys, json, traceback, collections
+import sys, json, traceback, collections, linecache
 ${usesListNode ? listNodePyHelpers : ""}
 ${usesTreeNode ? treeNodePyHelpers : ""}
 ${usesGraphNode ? graphNodePyHelpers : ""}
@@ -1134,9 +1134,18 @@ if __name__ == "__main__":
             ${normReturnType === "ListNode" ? "result = list_node_to_list(result)" : ""}
             ${normReturnType === "TreeNode" ? "result = tree_node_to_list(result)" : ""}
             ${normReturnType === "Node" ? "result = graph_node_to_list(result)" : ""}
-            print("@@@LOGICLAB_RES_START@@@" + json.dumps(result).replace(" ", "") + "@@@LOGICLAB_RES_END@@@")
+            if isinstance(result, str):
+                print("@@@LOGICLAB_RES_START@@@" + result + "@@@LOGICLAB_RES_END@@@")
+            else:
+                print("@@@LOGICLAB_RES_START@@@" + json.dumps(result).replace(" ", "") + "@@@LOGICLAB_RES_END@@@")
         except Exception as e:
-            print("@@@LOGICLAB_ERR_START@@@" + "\\n".join(traceback.format_exception_only(type(e), e)).strip() + "@@@LOGICLAB_ERR_END@@@")
+            tb = traceback.extract_tb(e.__traceback__)
+            sol_frame = next((f for f in reversed(tb) if f.name != "<module>" and "sol." not in (f.line or "")), tb[-1])
+            err_line = max(1, sol_frame.lineno - 6)
+            err_code = linecache.getline(sol_frame.filename, sol_frame.lineno).strip()
+            err_cls = type(e).__name__
+            err_msg = str(e)
+            print("@@@LOGICLAB_ERR_START@@@" + f"{err_cls}: {err_msg}\\n    {err_code}\\nLine {err_line} in {sol_frame.name} (Solution.py)" + "@@@LOGICLAB_ERR_END@@@")
         
         print("@@@LOGICLAB_TC_SEP@@@")
 `;
@@ -1373,7 +1382,7 @@ function run() {
             ${normReturnType === "ListNode" ? "result = listNodeToArray(result);" : ""}
             ${normReturnType === "TreeNode" ? "result = treeNodeToArray(result);" : ""}
             ${normReturnType === "Node" ? "result = graphNodeToArray(result);" : ""}
-            console.log("@@@LOGICLAB_RES_START@@@" + JSON.stringify(result) + "@@@LOGICLAB_RES_END@@@");
+            console.log("@@@LOGICLAB_RES_START@@@" + (typeof result === "string" ? result : JSON.stringify(result)) + "@@@LOGICLAB_RES_END@@@");
         } catch(e) {
             console.log("@@@LOGICLAB_ERR_START@@@" + (e.stack || e.toString()) + "@@@LOGICLAB_ERR_END@@@");
         }

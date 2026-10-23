@@ -77,6 +77,149 @@ export async function startAttemptAction(testId: string): Promise<AttemptInfo> {
   }
 }
 
+// ─── Essay Evaluation & Recalculation Helper ─────────────────────────────────
+async function evaluateEssaysAndRecalculateAttempt(
+  supabase: any,
+  attemptId: string
+) {
+  try {
+    const { data: essayAnswers } = await (supabase as any)
+      .from("test_attempt_answers")
+      .select(`
+        id,
+        question_id,
+        essay_text,
+        marks_awarded,
+        test_questions (
+          id,
+          question_type,
+          marks,
+          min_words,
+          max_words,
+          section_id
+        )
+      `)
+      .eq("attempt_id", attemptId)
+      .not("essay_text", "is", null)
+
+    if (essayAnswers && essayAnswers.length > 0) {
+      await Promise.all(
+        essayAnswers.map(async (answer: any) => {
+          const text = (answer.essay_text ?? "").trim()
+          const q = answer.test_questions
+
+          if (text.length === 0) {
+            await (supabase as any)
+              .from("test_attempt_answers")
+              .update({
+                marks_awarded: 0,
+                is_correct: false,
+                essay_evaluation: {
+                  band_score: 1,
+                  scaled_marks: 0,
+                  band_descriptor: {
+                    name: "No Response",
+                    description: "No essay response was submitted."
+                  },
+                  metrics: {
+                    word_count: 0,
+                    length_compliance: "under_length"
+                  }
+                }
+              })
+              .eq("id", answer.id)
+            return
+          }
+
+          try {
+            const evaluation = await scoreCandidateEssay({
+              essayText: text,
+              minWords: q?.min_words ?? 180,
+              maxWords: q?.max_words ?? 220,
+              maxMarks: Number(q?.marks) || 10.0,
+            })
+
+            await (supabase as any)
+              .from("test_attempt_answers")
+              .update({
+                marks_awarded: evaluation.scaled_marks,
+                is_correct: evaluation.scaled_marks >= ((Number(q?.marks) || 10.0) * 0.5),
+                essay_evaluation: evaluation,
+              })
+              .eq("id", answer.id)
+          } catch (evalErr) {
+            console.error(`[evaluateEssaysAndRecalculateAttempt] Error scoring essay answer ${answer.id}:`, evalErr)
+            await (supabase as any)
+              .from("test_attempt_answers")
+              .update({
+                essay_evaluation: { error: "Automated scoring queued for retry" },
+              })
+              .eq("id", answer.id)
+          }
+        })
+      )
+
+      // Recalculate total marks and sync section_results
+      const { data: allAnswers } = await (supabase as any)
+        .from("test_attempt_answers")
+        .select("marks_awarded, question_id, test_questions(section_id)")
+        .eq("attempt_id", attemptId)
+
+      if (allAnswers && allAnswers.length > 0) {
+        const totalScore = allAnswers.reduce(
+          (sum: number, a: any) => sum + (Number(a.marks_awarded) || 0),
+          0
+        )
+        const roundedTotal = Math.round(totalScore * 100) / 100
+
+        const { data: attemptData } = await (supabase as any)
+          .from("test_attempts")
+          .select("section_results")
+          .eq("id", attemptId)
+          .maybeSingle()
+
+        let updatedSectionResults = attemptData?.section_results
+        if (Array.isArray(updatedSectionResults)) {
+          const sectionScores: Record<string, number> = {}
+          for (const ans of allAnswers) {
+            const secId = ans.test_questions?.section_id
+            if (secId) {
+              sectionScores[secId] = (sectionScores[secId] || 0) + (Number(ans.marks_awarded) || 0)
+            }
+          }
+
+          updatedSectionResults = updatedSectionResults.map((sec: any) => {
+            if (sectionScores[sec.section_id] !== undefined) {
+              const secScore = Math.round(sectionScores[sec.section_id] * 100) / 100
+              const secTotal = Number(sec.total_marks) || 1
+              const secPct = Math.round((secScore / secTotal) * 10000) / 100
+              const passPct = Number(sec.pass_percentage) || 80
+              return {
+                ...sec,
+                score: secScore,
+                percentage: secPct,
+                passed: secPct >= passPct,
+              }
+            }
+            return sec
+          })
+        }
+
+        // Note: percentage is a generated column in Postgres, so we only update score and section_results
+        await (supabase as any)
+          .from("test_attempts")
+          .update({
+            score: roundedTotal,
+            section_results: updatedSectionResults,
+          })
+          .eq("id", attemptId)
+      }
+    }
+  } catch (err) {
+    console.warn("[evaluateEssaysAndRecalculateAttempt] Warning:", err)
+  }
+}
+
 // ─── Advance Section Action ───────────────────────────────────────────────────
 export async function advanceSectionAction(
   attemptId: string,
@@ -120,6 +263,9 @@ export async function advanceSectionAction(
         completed_section_ids: data.completed_section_ids,
       }
     }
+
+    // Attempt concluded upon section advance - evaluate any pending essays & update score
+    await evaluateEssaysAndRecalculateAttempt(supabase, attemptId)
 
     const testId = data?.test_id
     return {
@@ -300,85 +446,7 @@ export async function submitAttemptAction(
     }
   }
 
-  // ── 1. Evaluate any essay answers with Automated Essay Assessment AI ─────────
-  try {
-    const { data: essayAnswers } = await (supabase as any)
-      .from("test_attempt_answers")
-      .select(`
-        id,
-        question_id,
-        essay_text,
-        test_questions (
-          id,
-          question_type,
-          marks,
-          min_words,
-          max_words
-        )
-      `)
-      .eq("attempt_id", attemptId)
-      .not("essay_text", "is", null)
-
-    if (essayAnswers && essayAnswers.length > 0) {
-      for (const answer of essayAnswers) {
-        const text = (answer.essay_text ?? "").trim()
-        const q = answer.test_questions
-
-        if (text.length === 0) {
-          await (supabase as any)
-            .from("test_attempt_answers")
-            .update({
-              marks_awarded: 0,
-              is_correct: false,
-              essay_evaluation: {
-                band_score: 1,
-                scaled_marks: 0,
-                band_descriptor: {
-                  name: "No Response",
-                  description: "No essay response was submitted."
-                },
-                metrics: {
-                  word_count: 0,
-                  length_compliance: "under_length"
-                }
-              }
-            })
-            .eq("id", answer.id)
-          continue
-        }
-
-        try {
-          const evaluation = await scoreCandidateEssay({
-            essayText: text,
-            minWords: q?.min_words ?? 180,
-            maxWords: q?.max_words ?? 220,
-            maxMarks: Number(q?.marks) || 10.0,
-          })
-
-          await (supabase as any)
-            .from("test_attempt_answers")
-            .update({
-              marks_awarded: evaluation.scaled_marks,
-              is_correct: evaluation.scaled_marks >= ((Number(q?.marks) || 10.0) * 0.5),
-              essay_evaluation: evaluation,
-            })
-            .eq("id", answer.id)
-        } catch (evalErr) {
-          console.error(`[submitAttemptAction] Error scoring essay answer ${answer.id}:`, evalErr)
-          await (supabase as any)
-            .from("test_attempt_answers")
-            .update({
-              essay_evaluation: { error: "Automated scoring queued for retry" },
-            })
-            .eq("id", answer.id)
-        }
-      }
-    }
-  } catch (essayQueryErr) {
-    console.warn("[submitAttemptAction] Failed checking essay answers:", essayQueryErr)
-  }
-
-  // ── 2. Run Database Test Grading RPC ───────────────────────────────────────
+  // ── 1. Run Database Test Grading RPC ───────────────────────────────────────
   const { data: result, error } = await (supabase as any).rpc("test_attempt_grade", {
     p_attempt_id: attemptId,
   })
@@ -388,37 +456,8 @@ export async function submitAttemptAction(
     return { error: getFriendlyErrorMessage(error, "Failed to submit your test. Please try again.") }
   }
 
-  // ── 3. Recalculate total marks to ensure essay scores are included ──────────
-  try {
-    const { data: allAnswers } = await (supabase as any)
-      .from("test_attempt_answers")
-      .select("marks_awarded")
-      .eq("attempt_id", attemptId)
-
-    if (allAnswers && allAnswers.length > 0) {
-      const totalScore = allAnswers.reduce(
-        (sum: number, a: any) => sum + (Number(a.marks_awarded) || 0),
-        0
-      )
-      const { data: attemptData } = await (supabase as any)
-        .from("test_attempts")
-        .select("total_marks")
-        .eq("id", attemptId)
-        .maybeSingle()
-
-      const maxMarks = Number(attemptData?.total_marks) || 1
-      const percentage = Math.min(100, Math.round((totalScore / maxMarks) * 100))
-
-      await (supabase as any)
-        .from("test_attempts")
-        .update({
-          score: totalScore,
-        })
-        .eq("id", attemptId)
-    }
-  } catch (recalcErr) {
-    console.warn("[submitAttemptAction] Total score recalculation warning:", recalcErr)
-  }
+  // ── 2. Evaluate any essay answers & recalculate total score ─────────────────
+  await evaluateEssaysAndRecalculateAttempt(supabase, attemptId)
 
   const typedResult = result as { test_id?: string; error?: string } | null
 

@@ -186,7 +186,7 @@ export async function getCachedProblemExecutionData(problemId: string) {
       }
       return problems[0];
     },
-    [`problem-exec-${problemId}`],
+    [`problem-exec-v3-${problemId}`],
     { revalidate: 3600, tags: [`problem-exec-${problemId}`] }
   )();
 }

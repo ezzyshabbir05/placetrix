@@ -88,7 +88,7 @@ export function DashboardTopbar({ user, onMenuClick, mobileOpen }: DashboardTopb
   const router = useRouter()
   const pathname = usePathname()
 
-  const displayName = user?.full_name?.trim() || "User"
+  const displayName = user?.full_name?.trim() || user?.first_name || user?.username || "Candidate"
   const email = user?.email?.trim() || "No email"
   const initials = user?.full_name?.trim()
     ? displayName.split(" ").filter(Boolean).map((n) => n[0]).join("").toUpperCase().slice(0, 2)

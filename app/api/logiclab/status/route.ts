@@ -3,6 +3,22 @@ import { getUserProfile } from "@/lib/supabase/profile";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { getCachedProblemExecutionData } from "@/lib/supabase/cached-queries";
 
+const stripQuotes = (s: string): string => {
+  const t = s.trim();
+  if (
+    (t.startsWith('"') && t.endsWith('"') && t.length >= 2) ||
+    (t.startsWith("'") && t.endsWith("'") && t.length >= 2)
+  ) {
+    return t.slice(1, -1).trim();
+  }
+  return t;
+};
+
+const matchesExpected = (stdout: string, expected: string): boolean => {
+  if (stdout === expected) return true;
+  return stripQuotes(stdout) === stripQuotes(expected);
+};
+
 export async function POST(req: Request) {
   try {
     const profile = await getUserProfile();
@@ -114,7 +130,8 @@ export async function POST(req: Request) {
         const stdoutRaw = decode(data.stdout).trim();
         const errMatch = stdoutRaw.match(/@@@LOGICLAB_ERR_START@@@([\s\S]*?)@@@LOGICLAB_ERR_END@@@/);
         if (errMatch) {
-          error = "Runtime Error: " + errMatch[1].trim();
+          const rawMsg = errMatch[1].trim();
+          error = rawMsg.startsWith("Runtime Error") ? rawMsg : `Runtime Error:\n${rawMsg}`;
           consoleOutput = stdoutRaw.replace(errMatch[0], "").trim();
         } else {
           const resMatch = stdoutRaw.match(/@@@LOGICLAB_RES_START@@@([\s\S]*?)@@@LOGICLAB_RES_END@@@/);
@@ -143,7 +160,7 @@ export async function POST(req: Request) {
       const stdout = decode(data.stdout).trim();
       const expectedTrimmed = (tc.expected_output || "").trim();
       const statusId = data.status?.id || 0;
-      const passed = (statusId === 3 && stdout === expectedTrimmed);
+      const passed = (statusId === 3 && matchesExpected(stdout, expectedTrimmed));
 
       const runtimeSec = parseFloat(data.time || "0");
       const runtimeMs = Math.round(runtimeSec * 1000);
@@ -211,6 +228,7 @@ export async function POST(req: Request) {
       total_count: testCases.length,
       runtime: maxRuntime,
       memory: maxMemory,
+      failed_test_case_info: firstFailedResult,
     }).select("id, created_at").single();
 
     // Query newly unlocked badges in the last 10 seconds
@@ -246,6 +264,7 @@ export async function POST(req: Request) {
       runtime: maxRuntime,
       memory: maxMemory,
       first_failed: firstFailedResult,
+      failed_test_case_info: firstFailedResult,
       cases: testResults,
       newly_unlocked_badges: newlyUnlockedBadges,
     });

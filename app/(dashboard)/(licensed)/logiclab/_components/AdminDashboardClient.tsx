@@ -1,7 +1,7 @@
 "use client"
 
 import { seedProblemsAction } from "../actions"
-import React, { useState, useCallback } from "react"
+import React, { useState, useCallback, useMemo } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { startNavigationProgress } from "@/components/ui/navigation-progress"
@@ -22,10 +22,15 @@ import {
   Pencil,
   X,
   LayoutDashboard,
+  Users,
+  Calendar,
 } from "lucide-react"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
 import { AdminProblemEditorClient } from "./AdminProblemEditorClient"
+import { AdminStudentsTab, type StudentAdminRow } from "./AdminStudentsTab"
+import { AdminDailyChallengesTab, type DailyChallenge, type DailyChallengeTopSolver } from "./AdminDailyChallengesTab"
+import { TablePaginationBar } from "./TablePaginationBar"
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -278,19 +283,35 @@ export function AdminDashboardClient({
   problems: initialProblems,
   analytics,
   recentSubmissions: initialRecentSubmissions,
+  students,
+  dailyChallenges,
+  dailyChallengeTopSolvers,
+  leaderboard,
 }: {
   problems: Problem[]
   analytics: AnalyticsData
   recentSubmissions: SubmissionLog[]
+  students: StudentAdminRow[]
+  dailyChallenges: DailyChallenge[]
+  dailyChallengeTopSolvers: DailyChallengeTopSolver[]
+  leaderboard?: any[]
 }) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<"overview" | "problems" | "create">("overview")
+  const [activeTab, setActiveTab] = useState<"overview" | "problems" | "create" | "students" | "daily">("overview")
   const [localProblems, setLocalProblems] = useState<Problem[]>(initialProblems)
   const [recentSubmissions] = useState<SubmissionLog[]>(initialRecentSubmissions)
 
   const [problemSearch, setProblemSearch] = useState("")
   const [difficultyFilter, setDifficultyFilter] = useState("All")
   const [selectedStudent, setSelectedStudent] = useState<StudentStat | null>(null)
+
+  const [tagPage, setTagPage] = useState(0)
+  const [tagPageSize, setTagPageSize] = useState(10)
+  const allTags = analytics.tagStats || []
+  const paginatedTags = useMemo(() => {
+    const start = tagPage * tagPageSize
+    return allTags.slice(start, start + tagPageSize)
+  }, [allTags, tagPage, tagPageSize])
 
   const [deletingProblemId, setDeletingProblemId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -363,9 +384,11 @@ export function AdminDashboardClient({
   const acceptanceRate = ((analytics.totalAccepted / totalSubmissions) * 100).toFixed(1)
 
   const tabConfig = [
-    { value: "overview", label: "Overview", icon: <LayoutDashboard className="h-3.5 w-3.5" /> },
-    { value: "problems", label: "Manage Problems", icon: <Code className="h-3.5 w-3.5" /> },
-    { value: "create", label: "Create / Import", icon: <Plus className="h-3.5 w-3.5" /> },
+    { value: "overview", label: "Overview" },
+    { value: "students", label: "Students" },
+    { value: "daily", label: "Daily Challenges" },
+    { value: "problems", label: "Problems" },
+    { value: "create", label: "Create / Import" },
   ] as const
 
 
@@ -385,13 +408,12 @@ export function AdminDashboardClient({
             </div>
             <div className={cn('overflow-x-auto', 'shrink-0', 'bg-muted/50', 'p-1', 'rounded-xl')}>
               <TabsList className={cn('inline-flex', 'h-8', 'gap-1', 'bg-transparent', 'p-0')}>
-                {tabConfig.map(({ value, label, icon }) => (
+                {tabConfig.map(({ value, label }) => (
                   <TabsTrigger
                     key={value}
                     value={value}
-                    className={cn('gap-2', 'rounded-lg', 'px-4', 'h-7', 'text-xs', 'font-semibold', 'tracking-tight', 'data-[state=active]:bg-background', 'data-[state=active]:text-foreground', 'data-[state=active]:shadow-sm', 'transition-all')}
+                    className={cn('rounded-lg', 'px-4', 'h-7', 'text-xs', 'font-medium', 'tracking-tight', 'data-[state=active]:bg-background', 'data-[state=active]:text-foreground', 'data-[state=active]:shadow-sm', 'transition-all')}
                   >
-                    {icon}
                     {label}
                   </TabsTrigger>
                 ))}
@@ -413,40 +435,111 @@ export function AdminDashboardClient({
                 />
               )}
 
+              {/* Executive Overview KPI Row */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="p-4 bg-background/40 backdrop-blur-sm rounded-lg border flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground font-medium">Curriculum Library</span>
+                    <span className="text-[10px] font-mono text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded">Challenges</span>
+                  </div>
+                  <div className="text-2xl font-bold font-mono text-foreground mt-2">{analytics.totalProblems}</div>
+                  <div className="mt-2 text-[11px] text-muted-foreground flex items-center justify-between font-mono">
+                    <span className="text-emerald-500 font-semibold">{analytics.difficultyCounts.Easy}E</span>
+                    <span>·</span>
+                    <span className="text-amber-500 font-semibold">{analytics.difficultyCounts.Medium}M</span>
+                    <span>·</span>
+                    <span className="text-rose-500 font-semibold">{analytics.difficultyCounts.Hard}H</span>
+                  </div>
+                  <div className="w-full bg-muted/50 rounded-full h-1 mt-1.5 overflow-hidden">
+                    <div className="bg-primary h-full rounded-full w-full" />
+                  </div>
+                </Card>
+
+                <Card className="p-4 bg-background/40 backdrop-blur-sm rounded-lg border flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground font-medium">Total Submissions</span>
+                    <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">{acceptanceRate}% AC</span>
+                  </div>
+                  <div className="text-2xl font-bold font-mono text-foreground mt-2">{analytics.totalSubmissions.toLocaleString()}</div>
+                  <div className="mt-2 text-[11px] text-muted-foreground flex items-center justify-between font-mono">
+                    <span>Accepted solves</span>
+                    <span className="font-semibold text-foreground">{analytics.totalAccepted}</span>
+                  </div>
+                  <div className="w-full bg-muted/50 rounded-full h-1 mt-1.5 overflow-hidden">
+                    <div
+                      className="bg-emerald-500 h-full rounded-full transition-all"
+                      style={{ width: `${Math.min(Number(acceptanceRate) || 0, 100)}%` }}
+                    />
+                  </div>
+                </Card>
+
+                <Card className="p-4 bg-background/40 backdrop-blur-sm rounded-lg border flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground font-medium">Enrolled Students</span>
+                    <span className="text-[10px] font-mono text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded">Cohort</span>
+                  </div>
+                  <div className="text-2xl font-bold font-mono text-foreground mt-2">{students.length}</div>
+                  <div className="mt-2 text-[11px] text-muted-foreground flex items-center justify-between">
+                    <span>Active in lab</span>
+                    <span className="font-mono font-semibold text-foreground">{students.filter(s => s.solved_count > 0).length} students</span>
+                  </div>
+                  <div className="w-full bg-muted/50 rounded-full h-1 mt-1.5 overflow-hidden">
+                    <div
+                      className="bg-primary h-full rounded-full transition-all"
+                      style={{ width: `${students.length > 0 ? (students.filter(s => s.solved_count > 0).length / students.length) * 100 : 0}%` }}
+                    />
+                  </div>
+                </Card>
+
+                <Card className="p-4 bg-background/40 backdrop-blur-sm rounded-lg border flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground font-medium">Topic Breadth</span>
+                    <span className="text-[10px] font-mono text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded">DSA Tags</span>
+                  </div>
+                  <div className="text-2xl font-bold font-mono text-foreground mt-2">{(analytics.tagStats || []).length}</div>
+                  <div className="mt-2 text-[11px] text-muted-foreground flex items-center justify-between">
+                    <span>Concept coverage</span>
+                    <span className="font-mono font-semibold text-foreground">100% active</span>
+                  </div>
+                  <div className="w-full bg-muted/50 rounded-full h-1 mt-1.5 overflow-hidden">
+                    <div className="bg-primary h-full rounded-full w-full" />
+                  </div>
+                </Card>
+              </div>
+
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
                 {/* Left Column (2/3 width): Concept Tag Analytics */}
                 <div className="lg:col-span-8">
-                  <Card className={cn('min-w-0', 'flex', 'flex-col', 'relative', 'py-0', 'bg-background/40', 'backdrop-blur-sm', 'rounded-lg')}>
-                    <CardHeader className="p-6 pb-4 flex flex-row items-center justify-between border-b select-none">
-                      <div className="space-y-1">
-                        <CardTitle className="text-base font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                          <Tag className="h-4.5 w-4.5 text-amber-500" />
-                          Concept Tag Analytics
+                  <Card className="min-w-0 flex flex-col relative py-0 bg-background/40 backdrop-blur-sm rounded-lg h-[540px]">
+                    <CardHeader className="p-4 pb-3 flex flex-row items-center justify-between border-b select-none shrink-0">
+                      <div className="space-y-0.5">
+                        <CardTitle className="text-sm font-semibold text-foreground">
+                          Topic Tag Performance
                         </CardTitle>
-                        <CardDescription className="text-xs text-muted-foreground">
-                          Detailed tags aggregated from challenge library, student progress profiles, and tag solve efficiency rates.
+                        <CardDescription className="text-xs">
+                          Acceptance rate and student completion by challenge topic.
                         </CardDescription>
                       </div>
-                      <Badge className="bg-amber-100/80 text-amber-700 hover:bg-amber-100 dark:bg-amber-500/15 dark:text-amber-400 border-transparent font-bold text-xs px-2.5 py-0.5 rounded-full">
-                        {analytics.totalProblems} Challenges · {(analytics.tagStats || []).length} Concept Topics
-                      </Badge>
+                      <span className="text-xs text-muted-foreground font-mono shrink-0">
+                        {analytics.totalProblems} problems · {(analytics.tagStats || []).length} tags
+                      </span>
                     </CardHeader>
 
-                    <CardContent className="p-6">
-                      {analytics.tagStats && analytics.tagStats.length > 0 ? (
-                        <div className={cn('flex', 'flex-col', 'border', 'border-border/40', 'rounded-lg', 'overflow-hidden', 'shadow-sm', 'bg-background/40')}>
-                          <Table className="min-w-150 text-xs">
-                            <TableHeader>
-                              <TableRow className={cn('bg-muted/40', 'border-b', 'border-border/50', 'text-xs', 'font-bold', 'text-muted-foreground', 'uppercase', 'tracking-wider', 'select-none')}>
-                                <TableHead className="px-5 py-3.5 font-bold text-muted-foreground">Concept Tag Name</TableHead>
-                                <TableHead className="px-5 py-3.5 text-center w-36 font-bold text-muted-foreground">Total Challenges</TableHead>
-                                <TableHead className="px-5 py-3.5 w-72 font-bold text-muted-foreground">Student Completion Rate</TableHead>
-                                <TableHead className="px-5 py-3.5 text-right w-36 font-bold text-muted-foreground">Average Accuracy</TableHead>
+                    <CardContent className="p-0 flex-1 overflow-hidden">
+                      {allTags.length > 0 ? (
+                        <div className="h-full overflow-y-auto scrollbar-thin">
+                          <Table className="min-w-full text-xs">
+                            <TableHeader className="sticky top-0 bg-background/95 backdrop-blur z-10 border-b border-border/50">
+                              <TableRow className="bg-muted/40 hover:bg-muted/40 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider select-none">
+                                <TableHead className="px-4 py-2.5 font-semibold text-muted-foreground">Tag</TableHead>
+                                <TableHead className="px-4 py-2.5 text-center w-24 font-semibold text-muted-foreground">Problems</TableHead>
+                                <TableHead className="px-4 py-2.5 w-48 font-semibold text-muted-foreground">Completion</TableHead>
+                                <TableHead className="px-4 py-2.5 text-right w-24 font-semibold text-muted-foreground">Acceptance</TableHead>
                               </TableRow>
                             </TableHeader>
-                            <TableBody className="divide-y divide-border/50 text-xs">
-                              {analytics.tagStats.map((tag, idx) => {
+                            <TableBody className="divide-y divide-border/40 text-xs">
+                              {paginatedTags.map((tag, idx) => {
                                 let rateText = "text-muted-foreground/75"
                                 if (tag.submissions > 0) {
                                   if (tag.rate >= 70) { rateText = "text-emerald-600 dark:text-emerald-400 font-bold" }
@@ -457,55 +550,52 @@ export function AdminDashboardClient({
                                 const totalStu = tag.totalStudents || 0
                                 const solvedStu = tag.studentsSolved || 0
                                 const stuPct = totalStu > 0 ? Math.round((solvedStu / totalStu) * 100) : 0
-
-                                const isEven = idx % 2 === 0;
+                                const isEven = idx % 2 === 0
 
                                 return (
                                   <TableRow
                                     key={tag.name}
                                     className={cn(
                                       "transition-colors duration-150",
-                                      isEven ? "bg-transparent" : "bg-zinc-100 dark:bg-white/4",
-                                      idx !== analytics.tagStats!.length - 1 && "border-b border-border/30"
+                                      isEven ? "bg-transparent" : "bg-muted/20",
+                                      idx !== paginatedTags.length - 1 && "border-b border-border/30"
                                     )}
                                   >
-                                    <TableCell className="px-5 py-3.5">
-                                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-md text-xs bg-background border border-border/80 text-foreground/75 font-semibold">
-                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.3)]" />
+                                    <TableCell className="px-4 py-2.5">
+                                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs bg-muted/50 border border-border/60 text-foreground font-medium">
                                         {tag.name}
                                       </span>
                                     </TableCell>
-                                    <TableCell className="px-5 py-3.5 text-center font-mono font-bold text-foreground/90 text-sm">
+                                    <TableCell className="px-4 py-2.5 text-center font-mono font-semibold text-foreground/90">
                                       {tag.problemCount}
                                     </TableCell>
-                                    <TableCell className="px-5 py-3.5">
+                                    <TableCell className="px-4 py-2.5">
                                       {totalStu > 0 ? (
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-2.5">
                                           <Progress
                                             value={stuPct}
                                             className={cn(
-                                              "h-2 bg-muted/60 flex-1 min-w-30",
-                                              stuPct >= 70 ? "[&>div]:bg-emerald-500 dark:[&>div]:bg-emerald-400" :
-                                                stuPct >= 40 ? "[&>div]:bg-amber-500 dark:[&>div]:bg-amber-400" :
-                                                  "[&>div]:bg-rose-500 dark:[&>div]:bg-rose-400"
+                                              "h-1.5 bg-muted/60 flex-1 min-w-20",
+                                              stuPct >= 70 ? "[&>div]:bg-emerald-500" :
+                                                stuPct >= 40 ? "[&>div]:bg-amber-500" :
+                                                  "[&>div]:bg-rose-500"
                                             )}
                                           />
-                                          <span className="text-xs font-mono text-muted-foreground shrink-0 font-bold">
-                                            {solvedStu}
-                                            <span className="text-muted-foreground/50">/{totalStu}</span>
+                                          <span className="text-[11px] font-mono text-muted-foreground shrink-0 font-medium">
+                                            {solvedStu}<span className="text-muted-foreground/40">/{totalStu}</span>
                                           </span>
                                         </div>
                                       ) : (
-                                        <span className="text-xs text-muted-foreground/30 font-medium">0</span>
+                                        <span className="text-xs text-muted-foreground/30 font-mono">0</span>
                                       )}
                                     </TableCell>
-                                    <TableCell className="px-5 py-3.5 text-right">
+                                    <TableCell className="px-4 py-2.5 text-right">
                                       {tag.submissions > 0 ? (
-                                        <span className={`font-mono font-bold text-sm ${rateText}`}>
+                                        <span className={`font-mono font-bold text-xs ${rateText}`}>
                                           {tag.rate}%
                                         </span>
                                       ) : (
-                                        <span className="text-xs text-muted-foreground/30 font-medium">—</span>
+                                        <span className="text-xs text-muted-foreground/30 font-mono">—</span>
                                       )}
                                     </TableCell>
                                   </TableRow>
@@ -515,95 +605,113 @@ export function AdminDashboardClient({
                           </Table>
                         </div>
                       ) : (
-                        <div className="flex flex-col items-center justify-center gap-4 text-muted-foreground/30 border border-border/50 border-dashed rounded-lg py-20 bg-background/10">
-                          <Tag className="h-10 w-10 stroke-[1.2]" />
-                          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground/40">No Concept Tags Configured</p>
+                        <div className="h-full flex flex-col items-center justify-center gap-2 text-muted-foreground/40">
+                          <p className="text-xs font-semibold">No concept tags configured</p>
                         </div>
                       )}
                     </CardContent>
+
+                    <TablePaginationBar
+                      total={allTags.length}
+                      page={tagPage}
+                      pageSize={tagPageSize}
+                      onPageChange={setTagPage}
+                      onPageSizeChange={(newSize) => {
+                        setTagPageSize(newSize)
+                        setTagPage(0)
+                      }}
+                      itemName="tags"
+                      pageSizeOptions={[5, 10, 20]}
+                      className="py-2.5 px-4"
+                    />
                   </Card>
                 </div>
 
                 {/* Right Column (1/3 width): Feed & Language distributing charts */}
-                <div className="lg:col-span-4 space-y-6">
+                <div className="lg:col-span-4 flex flex-col gap-4 h-[540px]">
 
                   {/* Live Activity Feed */}
-                  <Card className={cn('min-w-0', 'flex', 'flex-col', 'relative', 'py-0', 'bg-background/40', 'backdrop-blur-sm', 'rounded-lg')}>
-                    <CardHeader className="p-6 pb-4 flex flex-row items-center justify-between border-b select-none">
-                      <div className="space-y-1">
-                        <CardTitle className="text-base font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                          <Activity className="h-4.5 w-4.5 text-indigo-500" />
-                          Live Submission Feed
+                  <Card className="min-w-0 flex flex-col relative py-0 bg-background/40 backdrop-blur-sm rounded-lg h-[310px] shrink-0">
+                    <CardHeader className="p-4 pb-3 flex flex-row items-center justify-between border-b select-none shrink-0">
+                      <div className="space-y-0.5">
+                        <CardTitle className="text-sm font-semibold text-foreground">
+                          Recent Submissions
                         </CardTitle>
-                        <CardDescription className="text-[10px] text-muted-foreground">
-                          Real-time submissions log of all active students.
+                        <CardDescription className="text-xs">
+                          Latest challenge submissions
                         </CardDescription>
                       </div>
-                      <Badge className="bg-indigo-100/80 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-500/15 dark:text-indigo-400 border-transparent font-bold text-[10px] px-2.5 py-0.5 rounded-full select-none">
-                        {acceptanceRate}% success
-                      </Badge>
+                      <span className="text-xs font-mono text-muted-foreground shrink-0">
+                        {acceptanceRate}% accepted
+                      </span>
                     </CardHeader>
 
-                    <CardContent className="p-6">
-                      <div className="overflow-y-auto border border-border/40 rounded-lg p-2 bg-background/20 space-y-2 max-h-87.5 scrollbar-thin">
+                    <CardContent className="p-3 flex-1 overflow-hidden">
+                      <div className="h-full overflow-y-auto space-y-2 pr-1 scrollbar-thin">
                         {recentSubmissions.length > 0 ? (
-                          recentSubmissions.map((log) => (
-                            <div
-                              key={log.id}
-                              className="bg-muted/20 border border-border/30 rounded-md p-3 flex flex-col items-stretch text-xs hover:border-muted-foreground/20 hover:bg-muted/40 transition-all gap-2"
-                            >
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="space-y-0.5 min-w-0">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="font-semibold text-foreground/90 truncate max-w-30">{log.student_name}</span>
-                                    <span suppressHydrationWarning className="text-[9px] text-muted-foreground/50 shrink-0">
+                          recentSubmissions.map((log) => {
+                            const isAc = log.status === "Accepted"
+                            const isWa = log.status === "Wrong Answer"
+                            return (
+                              <div
+                                key={log.id}
+                                className="bg-muted/20 border border-border/40 rounded-lg p-2.5 flex flex-col gap-1.5 text-xs hover:bg-muted/40 transition-colors"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className="font-semibold text-foreground text-xs truncate max-w-36">
+                                      {log.student_name}
+                                    </span>
+                                    <span suppressHydrationWarning className="text-[10px] text-muted-foreground/60 shrink-0 font-mono">
                                       {new Date(log.created_at).toLocaleTimeString([], {
                                         hour: "2-digit",
                                         minute: "2-digit",
                                       })}
                                     </span>
                                   </div>
-                                  <p className="text-[10px] text-muted-foreground/75 truncate max-w-50">
-                                    <span className="font-bold text-foreground/85">"{log.problem_title}"</span>
-                                    {" · "}
-                                    <span className="font-mono text-muted-foreground/50">{LANG_NAMES[log.language_id] || "Unknown"}</span>
-                                  </p>
+                                  <span
+                                    className={cn(
+                                      "text-[9px] font-bold uppercase px-2 py-0.5 rounded-full select-none shrink-0 border",
+                                      isAc
+                                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                                        : isWa
+                                        ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+                                        : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                                    )}
+                                  >
+                                    {isAc ? "Accepted" : isWa ? "Wrong Answer" : log.status?.slice(0, 10)}
+                                  </span>
                                 </div>
-                                <Badge
-                                  variant="outline"
-                                  className={`shrink-0 text-[8px] font-extrabold uppercase px-2 py-0.5 rounded-full border-0 select-none ${log.status === "Accepted"
-                                    ? "bg-emerald-100/80 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-400 border-transparent"
-                                    : "bg-rose-100/80 text-rose-700 hover:bg-rose-100 dark:bg-rose-500/15 dark:text-rose-400 border-transparent"
-                                    }`}
-                                >
-                                  {log.status === "Accepted" ? "AC" : log.status === "Wrong Answer" ? "WA" : log.status?.slice(0, 4) || "?"}
-                                </Badge>
-                              </div>
 
-                              <div className="flex items-center gap-1.5 pt-1 flex-wrap text-[9px] text-muted-foreground/70 select-none border-t border-border/10">
-                                {log.passed_count !== null && log.total_count !== null && (
-                                  <span className="bg-muted px-1.5 py-0.5 rounded font-mono">
-                                    Passed {log.passed_count}/{log.total_count}
+                                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                                  <span className="truncate max-w-44 text-foreground/85 font-medium">
+                                    {log.problem_title}
                                   </span>
-                                )}
-                                {log.runtime !== null && (
-                                  <span className="bg-muted px-1.5 py-0.5 rounded font-mono">
-                                    {log.runtime}ms
+                                  <span className="font-mono text-[10px] text-muted-foreground/70 bg-muted/60 px-1.5 py-0.5 rounded shrink-0">
+                                    {LANG_NAMES[log.language_id] || "Code"}
                                   </span>
-                                )}
-                                {log.memory !== null && (
-                                  <span className="bg-muted px-1.5 py-0.5 rounded font-mono">
-                                    {(log.memory / 1000).toFixed(1)}MB
-                                  </span>
-                                )}
+                                </div>
+
+                                <div className="flex items-center gap-2 text-[10px] text-muted-foreground/70 font-mono pt-1 border-t border-border/20">
+                                  {log.passed_count !== null && log.total_count !== null && (
+                                    <span>
+                                      Passed {log.passed_count}/{log.total_count}
+                                    </span>
+                                  )}
+                                  {log.runtime !== null && (
+                                    <span>· {log.runtime}ms</span>
+                                  )}
+                                  {log.memory !== null && (
+                                    <span>· {(log.memory / 1000).toFixed(1)}MB</span>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          ))
+                            )
+                          })
                         ) : (
-                          <div className="h-full flex flex-col items-center justify-center py-10 gap-2 text-muted-foreground/30">
-                            <Activity className="h-7 w-7 stroke-[1.2]" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest">
-                              No submissions captured
+                          <div className="h-full flex flex-col items-center justify-center py-10 gap-2 text-muted-foreground/40">
+                            <span className="text-xs font-semibold">
+                              No submissions captured yet
                             </span>
                           </div>
                         )}
@@ -612,45 +720,50 @@ export function AdminDashboardClient({
                   </Card>
 
                   {/* Language Distribution */}
-                  <Card className={cn('min-w-0', 'flex', 'flex-col', 'relative', 'py-0', 'bg-background/40', 'backdrop-blur-sm', 'rounded-lg')}>
-                    <CardHeader className="p-6 pb-4 select-none border-b">
-                      <CardTitle className="text-base font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                        <Cpu className="h-4.5 w-4.5 text-cyan-500" />
-                        Language Popularity
-                      </CardTitle>
-                      <CardDescription className="text-xs text-muted-foreground">
-                        Total compile executions grouped by language.
-                      </CardDescription>
+                  <Card className="min-w-0 flex flex-col relative py-0 bg-background/40 backdrop-blur-sm rounded-lg flex-1 min-h-[214px]">
+                    <CardHeader className="p-4 pb-3 flex flex-row items-center justify-between border-b select-none shrink-0">
+                      <div className="space-y-0.5">
+                        <CardTitle className="text-sm font-semibold text-foreground">
+                          Language Distribution
+                        </CardTitle>
+                        <CardDescription className="text-xs">
+                          Breakdown across all solutions
+                        </CardDescription>
+                      </div>
+                      <span className="text-xs font-mono text-muted-foreground shrink-0">
+                        {analytics.totalSubmissions} total
+                      </span>
                     </CardHeader>
 
-                    <CardContent className="p-6 space-y-4">
+                    <CardContent className="p-4 space-y-2.5 flex-1 overflow-y-auto scrollbar-thin">
                       {[
-                        { id: 71, label: "Python", color: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400", progressClass: "[&>div]:bg-emerald-500 dark:[&>div]:bg-emerald-400" },
-                        { id: 63, label: "JavaScript", color: "bg-amber-500", text: "text-amber-600 dark:text-amber-400", progressClass: "[&>div]:bg-amber-500 dark:[&>div]:bg-amber-400" },
-                        { id: 54, label: "C++", color: "bg-rose-500", text: "text-rose-600 dark:text-rose-400", progressClass: "[&>div]:bg-rose-500 dark:[&>div]:bg-rose-400" },
-                        { id: 62, label: "Java", color: "bg-cyan-500", text: "text-cyan-600 dark:text-cyan-400", progressClass: "[&>div]:bg-cyan-500 dark:[&>div]:bg-cyan-400" },
+                        { id: 71, label: "Python", color: "bg-emerald-500", text: "text-emerald-500", bar: "[&>div]:bg-emerald-500" },
+                        { id: 63, label: "JavaScript", color: "bg-amber-400", text: "text-amber-500", bar: "[&>div]:bg-amber-400" },
+                        { id: 74, label: "TypeScript", color: "bg-sky-500", text: "text-sky-500", bar: "[&>div]:bg-sky-500" },
+                        { id: 54, label: "C++", color: "bg-rose-500", text: "text-rose-500", bar: "[&>div]:bg-rose-500" },
+                        { id: 62, label: "Java", color: "bg-orange-500", text: "text-orange-500", bar: "[&>div]:bg-orange-500" },
                       ].map((lang) => {
                         const count = analytics.languageCounts[lang.id] || 0
-                        const pct = analytics.totalSubmissions ? (count / analytics.totalSubmissions) * 100 : 0
+                        const pct = analytics.totalSubmissions ? Math.round((count / analytics.totalSubmissions) * 100) : 0
                         return (
-                          <div key={lang.id} className="space-y-1.5">
+                          <div key={lang.id} className="space-y-1">
                             <div className="flex items-center justify-between text-xs">
-                              <span className="flex items-center gap-1.5 text-muted-foreground font-semibold">
-                                <span className={`h-2.5 w-2.5 rounded-full ${lang.color}`} />
+                              <span className="flex items-center gap-2 text-foreground font-medium text-xs">
+                                <span className={cn("size-2 rounded-full", lang.color)} />
                                 {lang.label}
                               </span>
-                              <span className={`text-[10px] font-mono font-bold ${count ? lang.text : "text-muted-foreground/30"}`}>
-                                {count} ({pct.toFixed(0)}%)
+                              <span className="text-[11px] font-mono text-muted-foreground">
+                                <span className="font-semibold text-foreground">{count}</span> ({pct}%)
                               </span>
                             </div>
-                            <Progress value={pct} className={cn("h-1.5 bg-muted/60", lang.progressClass)} />
+                            <Progress value={pct} className={cn("h-1.5 bg-muted/60", lang.bar)} />
                           </div>
                         )
                       })}
 
                       {analytics.totalSubmissions === 0 && (
-                        <p className="text-[10px] text-muted-foreground/30 text-center pt-2 font-medium uppercase tracking-widest">
-                          No languages logged
+                        <p className="text-xs text-muted-foreground/40 text-center py-4">
+                          No submissions logged yet
                         </p>
                       )}
                     </CardContent>
@@ -848,6 +961,24 @@ export function AdminDashboardClient({
               </div>
             </div>
           </TabsContent>
+
+          {/* ── STUDENTS TAB ── */}
+          <TabsContent value="students" className="mt-0">
+            <AdminStudentsTab
+              students={students}
+              totalProblems={analytics.totalProblems}
+            />
+          </TabsContent>
+
+          {/* ── DAILY CHALLENGES TAB ── */}
+          <TabsContent value="daily" className="mt-0">
+            <AdminDailyChallengesTab
+              challenges={dailyChallenges}
+              topSolvers={dailyChallengeTopSolvers}
+              totalProblems={analytics.totalProblems}
+            />
+          </TabsContent>
+
 
           {/* ── CREATE / IMPORT TAB ── */}
           <TabsContent value="create" className="mt-0">

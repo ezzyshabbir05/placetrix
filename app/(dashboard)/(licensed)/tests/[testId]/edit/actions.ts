@@ -36,6 +36,7 @@ export type LocalSection = {
   order_index: number
   time_limit_minutes: string
   pass_percentage: string
+  section_total_marks: string  // total marks for section — divided equally across AI-generated questions
 }
 
 export type SectionForm = {
@@ -43,6 +44,7 @@ export type SectionForm = {
   description: string
   time_limit_minutes: string
   pass_percentage: string
+  section_total_marks: string
 }
 
 export type LocalQuestion = {
@@ -77,6 +79,7 @@ export type AiGenerateForm = {
   count: string
   difficulty: "easy" | "medium" | "hard"
   question_type: "single_correct" | "multiple_correct" | "mixed"
+  marks_per_question?: string
 }
 
 export type InitialTestData = {
@@ -103,10 +106,12 @@ async function saveTestToDb(
 ): Promise<void> {
   const supabase = await createClient()
 
-  const computedTimeLimitSeconds = settings.time_limit_minutes
-    ? Math.round(parseFloat(settings.time_limit_minutes) * 60)
-    : (sections.length > 0
-        ? sections.reduce((sum, s) => sum + Math.round((parseFloat(s.time_limit_minutes) || 30) * 60), 0)
+  // When sections exist, ALWAYS derive test duration from section sum (sections are the source of truth).
+  // settings.time_limit_minutes is only used when there are no sections.
+  const computedTimeLimitSeconds = sections.length > 0
+    ? sections.reduce((sum, s) => sum + Math.round((parseFloat(s.time_limit_minutes) || 30) * 60), 0)
+    : (settings.time_limit_minutes
+        ? Math.round(parseFloat(settings.time_limit_minutes) * 60)
         : null)
 
   const computedPassPercentage = settings.pass_percentage
@@ -269,9 +274,10 @@ export async function loadTestAction(
       title: test.title ?? "",
       description: test.description ?? "",
       instructions: test.instructions ?? "",
-      time_limit_minutes: test.time_limit_seconds
-        ? String(test.time_limit_seconds / 60)
-        : "",
+      // Leave time_limit_minutes blank so that saveTestToDb always
+      // re-derives the test duration from section times (sections are the source of truth).
+      // The stored test.time_limit_seconds may be stale if sections changed.
+      time_limit_minutes: "",
       available_from: test.available_from ?? "",
       available_until: test.available_until ?? "",
       shuffle_questions: test.shuffle_questions ?? false,
@@ -288,6 +294,7 @@ export async function loadTestAction(
       order_index: s.order_index,
       time_limit_minutes: s.time_limit_seconds ? String(Math.round(s.time_limit_seconds / 60)) : "30",
       pass_percentage: s.pass_percentage != null ? String(s.pass_percentage) : "50",
+      section_total_marks: "",
     })),
     questions: (test.test_questions ?? [])
       .sort((a: any, b: any) => a.order_index - b.order_index)
@@ -589,7 +596,10 @@ export async function generateQuestionsAction(
   if (!apiKey) return { error: "AI generation is not configured. Missing GEMINI_API_KEY in environment." }
 
   const count = Math.min(60, Math.max(1, parseInt(input.count, 10) || 5))
-  const marksDefault = DIFFICULTY_MARKS[input.difficulty]
+  const parsedMarks = parseFloat(input.marks_per_question || "")
+  const marksDefault = !isNaN(parsedMarks) && parsedMarks > 0
+    ? parsedMarks
+    : (DIFFICULTY_MARKS[input.difficulty] || 1)
 
   const typeInstruction =
     input.question_type === "mixed"
@@ -611,7 +621,7 @@ Generate rigorous, unambiguous, and pedagogy-grade multiple-choice questions fol
 - "single_correct": Exactly 1 option must have is_correct=true; the other 3 must be is_correct=false.
 - "multiple_correct": Exactly 2 or 3 options must have is_correct=true; the remaining must be is_correct=false.
 - Every distractor (wrong option) must be scientifically plausible, reflecting common cognitive misconceptions or calculation pitfalls, but unequivocally incorrect to an expert.
-- Marks = 1 for all questions.
+- Marks = ${marksDefault} for all questions.
 
 ==================================================
 2. EXPLANATION & PEDAGOGY

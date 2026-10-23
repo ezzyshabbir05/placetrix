@@ -173,6 +173,7 @@ export function TestcasesTab({
   const isCustomCase = activeTestcaseIndex >= sampleTestCases.length;
 
   const handleInputChange = (lineIdx: number, newVal: string) => {
+    if (!isCustomCase) return;
     setCustomInputs((prev) => {
       const next = [...prev];
       const lines = (next[activeTestcaseIndex] || "").split("\n");
@@ -183,6 +184,7 @@ export function TestcasesTab({
   };
 
   const handleExpectedChange = (newVal: string) => {
+    if (!isCustomCase) return;
     setCustomExpectedOutputs((prev) => {
       const next = [...prev];
       next[activeTestcaseIndex] = newVal;
@@ -341,19 +343,25 @@ export function TestcasesTab({
               {/* Parameter Code Cell Input */}
               <CardContent className="p-2.5 space-y-1.5">
                 <Textarea
-                  rows={
-                    line.includes("\n") || line.length > 80
-                      ? Math.min(6, (line.split("\n").length || 1) + 1)
-                      : 1
-                  }
+                  rows={1}
                   value={line}
+                  readOnly={!isCustomCase}
                   onChange={(e) => handleInputChange(idx, e.target.value)}
-                  className="w-full resize-y min-h-[34px] font-mono text-xs px-3 py-2 bg-background/80 dark:bg-input/20 border-border/70 rounded-lg text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-ring transition-colors leading-relaxed placeholder:text-muted-foreground/50 shadow-none"
-                  placeholder={`Enter value for ${paramName}...`}
+                  className={cn(
+                    "w-full resize-none h-10 font-mono text-xs px-3 py-2 rounded-lg leading-relaxed placeholder:text-muted-foreground/50 shadow-none overflow-y-auto transition-colors",
+                    isCustomCase
+                      ? "bg-background/80 dark:bg-input/20 border-border/70 text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-ring"
+                      : "bg-muted/30 border-border/50 text-foreground/90 cursor-default focus-visible:outline-none focus-visible:ring-0 focus-visible:border-border/50 select-text"
+                  )}
+                  placeholder={
+                    isCustomCase
+                      ? `Enter value for ${paramName}...`
+                      : `${paramName} value`
+                  }
                 />
 
-                {/* Real-time Syntax / Bracket Warning */}
-                {bracketWarning && (
+                {/* Real-time Syntax / Bracket Warning (Custom cases only) */}
+                {isCustomCase && bracketWarning && (
                   <div className="flex items-center gap-1 text-[11px] text-amber-500 font-mono pl-1">
                     <IconAlertCircle className="size-3.5 shrink-0" />
                     <span>{bracketWarning}</span>
@@ -392,13 +400,19 @@ export function TestcasesTab({
             <Input
               type="text"
               value={currentExpected}
+              readOnly={!isCustomCase}
               onChange={(e) => handleExpectedChange(e.target.value)}
               placeholder={
                 isCustomCase
                   ? "Optional return value to compare against (e.g. 5, [0, 1])"
                   : "Expected return value"
               }
-              className="w-full font-mono text-xs px-3 py-2 bg-background/80 dark:bg-input/20 border-border/70 rounded-lg text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-ring transition-colors leading-relaxed placeholder:text-muted-foreground/50 shadow-none h-8.5"
+              className={cn(
+                "w-full font-mono text-xs px-3 py-2 rounded-lg leading-relaxed placeholder:text-muted-foreground/50 shadow-none h-10 transition-colors",
+                isCustomCase
+                  ? "bg-background/80 dark:bg-input/20 border-border/70 text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-ring"
+                  : "bg-muted/30 border-border/50 text-foreground/90 cursor-default focus-visible:outline-none focus-visible:ring-0 focus-visible:border-border/50 select-text"
+              )}
             />
           </CardContent>
         </Card>

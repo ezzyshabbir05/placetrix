@@ -60,8 +60,8 @@ export default function SignUpPage() {
   return (
     <Suspense
       fallback={
-        <div className="mx-auto flex sm:w-sm items-center justify-center py-12">
-          <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground" />
+        <div className={cn('mx-auto', 'flex', 'sm:w-sm', 'items-center', 'justify-center', 'py-12')}>
+          <Loader2Icon className={cn('h-6', 'w-6', 'animate-spin', 'text-muted-foreground')} />
         </div>
       }
     >
@@ -75,6 +75,7 @@ function SignUpContent() {
 
   const [pageState, setPageState] = useState<PageState>("register-form");
 
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -131,11 +132,14 @@ function SignUpContent() {
         localStorage.setItem(LAST_EMAIL_KEY, cleanEmail);
       } catch {}
 
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: cleanEmail,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback?next=/home`,
+          data: {
+            full_name: fullName.trim() || undefined,
+          },
         },
       });
 
@@ -149,6 +153,11 @@ function SignUpContent() {
           return;
         }
         throw error;
+      }
+
+      if (data?.session) {
+        router.push("/home");
+        return;
       }
 
       setPageState("otp-entry");
@@ -254,7 +263,7 @@ function SignUpContent() {
         }}
       />
 
-      <div className="mx-auto w-full sm:w-sm">
+      <div className={cn('mx-auto', 'w-full', 'sm:w-sm')}>
         <AnimatePresence mode="wait">
           {pageState === "otp-entry" ? (
             /* ── OTP verification screen ── */
@@ -266,16 +275,16 @@ function SignUpContent() {
               transition={{ duration: 0.22, ease: "easeOut" }}
               className="space-y-6"
             >
-              <div className="flex flex-col space-y-1">
-                <h1 className="font-cirka font-bold text-2xl tracking-wide">Confirm Your Email</h1>
-                <p className="text-base text-muted-foreground">
+              <div className={cn('flex', 'flex-col', 'space-y-1')}>
+                <h1 className={cn('font-cirka', 'font-bold', 'text-2xl', 'tracking-wide')}>Confirm Your Email</h1>
+                <p className={cn('text-base', 'text-muted-foreground')}>
                   We sent a 6-digit confirmation code to{" "}
-                  <span className="font-medium text-foreground">{email}</span>.
+                  <span className={cn('font-medium', 'text-foreground')}>{email}</span>.
                   Enter it below to activate your account.
                 </p>
               </div>
               <form className="space-y-4" onSubmit={handleVerifyOtp}>
-                <div className="flex justify-center">
+                <div className={cn('flex', 'justify-center')}>
                   <InputOTP
                     autoFocus
                     maxLength={6}
@@ -305,25 +314,25 @@ function SignUpContent() {
                     initial={{ opacity: 0, x: -6 }}
                     animate={{ opacity: 1, x: [0, -6, 6, -4, 4, 0] }}
                     transition={{ duration: 0.3 }}
-                    className="text-sm text-destructive rounded-md bg-destructive/10 px-3 py-2 text-center"
+                    className={cn('text-sm', 'text-destructive', 'rounded-md', 'bg-destructive/10', 'px-3', 'py-2', 'text-center')}
                   >
                     {error}
                   </motion.p>
                 )}
 
                 <Button
-                  className="w-full cursor-pointer"
+                  className={cn('w-full', 'cursor-pointer')}
                   type="submit"
                   disabled={isBusy || otp.length < 6}
                 >
                   {isRedirecting ? (
                     <>
-                      <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2Icon className={cn('mr-2', 'h-4', 'w-4', 'animate-spin')} />
                       Redirecting…
                     </>
                   ) : isLoading ? (
                     <>
-                      <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2Icon className={cn('mr-2', 'h-4', 'w-4', 'animate-spin')} />
                       Verifying…
                     </>
                   ) : (
@@ -332,7 +341,7 @@ function SignUpContent() {
                 </Button>
               </form>
 
-              <div className="rounded-md border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+              <div className={cn('rounded-md', 'border', 'bg-muted/40', 'px-4', 'py-3', 'text-sm', 'text-muted-foreground')}>
                 <span>
                   Didn&apos;t receive it?{" "}
                   {resendCooldown > 0 ? (
@@ -342,7 +351,7 @@ function SignUpContent() {
                       type="button"
                       disabled={isBusy}
                       onClick={handleResend}
-                      className="underline underline-offset-4 hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      className={cn('underline', 'underline-offset-4', 'hover:text-foreground', 'disabled:opacity-50', 'disabled:cursor-not-allowed', 'cursor-pointer')}
                     >
                       Resend code
                     </button>
@@ -359,7 +368,7 @@ function SignUpContent() {
                   setOtp("");
                   setError(null);
                 }}
-                className="w-full text-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className={cn('w-full', 'text-center', 'text-sm', 'text-muted-foreground', 'underline', 'underline-offset-4', 'hover:text-foreground', 'disabled:opacity-50', 'disabled:cursor-not-allowed', 'cursor-pointer')}
               >
                 Back to sign up
               </button>
@@ -374,40 +383,49 @@ function SignUpContent() {
               transition={{ duration: 0.22, ease: "easeOut" }}
               className="space-y-4"
             >
-              <div className="flex flex-col space-y-1">
-                <h1 className="font-cirka font-bold text-2xl tracking-wide">Create an Account</h1>
-                <p className="text-base text-muted-foreground">
+              <div className={cn('flex', 'flex-col', 'space-y-1')}>
+                <h1 className={cn('font-cirka', 'font-bold', 'text-2xl', 'tracking-wide')}>Create an Account</h1>
+                <p className={cn('text-base', 'text-muted-foreground')}>
                   Sign up to get started with PlaceTrix.
                 </p>
               </div>
               <Button
-                className="w-full cursor-pointer"
+                className={cn('w-full', 'cursor-pointer')}
                 variant="outline"
                 type="button"
                 onClick={handleGoogleSignUp}
                 disabled={isBusy}
               >
                 {isGoogleLoading ? (
-                  <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2Icon className={cn('mr-2', 'h-4', 'w-4', 'animate-spin')} />
                 ) : (
-                  <GoogleIcon className="mr-2 h-4 w-4" />
+                  <GoogleIcon className={cn('mr-2', 'h-4', 'w-4')} />
                 )}
                 {isGoogleLoading ? "Redirecting…" : "Continue with Google"}
               </Button>
 
-              <div className="flex w-full items-center justify-center gap-2">
+              <div className={cn('flex', 'w-full', 'items-center', 'justify-center', 'gap-2')}>
                 <Separator className="flex-1" />
-                <span className="shrink-0 text-muted-foreground text-xs">OR</span>
+                <span className={cn('shrink-0', 'text-muted-foreground', 'text-xs')}>OR</span>
                 <Separator className="flex-1" />
               </div>
 
               <form className="space-y-4" onSubmit={handleSignUp}>
-                <p className="text-start text-muted-foreground text-xs">
+                <p className={cn('text-start', 'text-muted-foreground', 'text-xs')}>
                   Fill in your details to create an account
                 </p>
 
                 <Input
                   autoFocus
+                  placeholder="Full Name "
+                  type="text"
+                  autoComplete="name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  disabled={isBusy}
+                />
+
+                <Input
                   placeholder="your.email@example.com"
                   type="email"
                   autoComplete="email"
@@ -468,20 +486,20 @@ function SignUpContent() {
                     initial={{ opacity: 0, x: -6 }}
                     animate={{ opacity: 1, x: [0, -6, 6, -4, 4, 0] }}
                     transition={{ duration: 0.3 }}
-                    className="text-sm text-destructive rounded-md bg-destructive/10 px-3 py-2"
+                    className={cn('text-sm', 'text-destructive', 'rounded-md', 'bg-destructive/10', 'px-3', 'py-2')}
                   >
                     {error}
                   </motion.p>
                 )}
 
                 <Button
-                  className="w-full cursor-pointer"
+                  className={cn('w-full', 'cursor-pointer')}
                   type="submit"
                   disabled={isBusy}
                 >
                   {isLoading ? (
                     <>
-                      <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2Icon className={cn('mr-2', 'h-4', 'w-4', 'animate-spin')} />
                       Creating account…
                     </>
                   ) : (
@@ -490,7 +508,7 @@ function SignUpContent() {
                 </Button>
               </form>
 
-              <p className="text-center text-sm text-muted-foreground pt-2">
+              <p className={cn('text-center', 'text-sm', 'text-muted-foreground', 'pt-2')}>
                 Already have an account?{" "}
                 <Link
                   href={isBusy ? "#" : "/auth/login"}
@@ -501,18 +519,18 @@ function SignUpContent() {
                   Sign in
                 </Link>
               </p>
-              <p className="text-muted-foreground text-xs text-center pt-1">
+              <p className={cn('text-muted-foreground', 'text-xs', 'text-center', 'pt-1')}>
                 By creating an account, you agree to our{" "}
                 <Link
                   href="/terms-of-service"
-                  className="underline underline-offset-4 hover:text-primary"
+                  className={cn('underline', 'underline-offset-4', 'hover:text-primary')}
                 >
                   Terms
                 </Link>{" "}
                 and{" "}
                 <Link
                   href="/privacy-policy"
-                  className="underline underline-offset-4 hover:text-primary"
+                  className={cn('underline', 'underline-offset-4', 'hover:text-primary')}
                 >
                   Privacy Policy
                 </Link>

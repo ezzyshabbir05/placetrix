@@ -18,6 +18,7 @@ import {
   Briefcase,
   MapPin,
   CalendarDays,
+  Lock,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SolveChallengeButton } from "@/components/ui/solve-challenge-button"
@@ -424,8 +425,11 @@ export function CandidateDashboardClient({
     else setGreeting("Good evening")
   }, [])
 
-  const computedFirstName = profile.full_name ? profile.full_name.split(' ')[0] : null
-  const profileName = computedFirstName || profile.username || "Candidate"
+  const profileName =
+    profile.full_name?.trim() ||
+    [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim() ||
+    profile.username ||
+    "Candidate"
   const isProfileComplete = profile.profile_updated === true
 
   if (isLoading || !data) {
@@ -488,8 +492,8 @@ export function CandidateDashboardClient({
               {!isProfileComplete && (
                 <div className="pt-1">
                   <Link href="/myprofile">
-                    <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs border-indigo-500/30 hover:border-indigo-500 hover:bg-indigo-500/5">
-                      Complete Profile
+                    <Button size="sm" variant="default" className="h-8 gap-1.5 text-xs font-semibold shadow-xs cursor-pointer">
+                      Complete Profile First
                       <ArrowRight className="h-3.5 w-3.5" />
                     </Button>
                   </Link>
@@ -505,7 +509,7 @@ export function CandidateDashboardClient({
             <CardContent className="p-5 flex flex-col flex-1 justify-between gap-5 h-full">
               <div className="flex flex-col gap-4 min-w-0">
                 <div className="flex flex-row items-center justify-between pb-1">
-                  <Link href="/logiclab/dailychallenges" prefetch={false} className="hover:opacity-80 transition-opacity cursor-pointer">
+                  <Link href={!isProfileComplete ? "/myprofile?incomplete=true" : "/logiclab/dailychallenges"} prefetch={false} className="hover:opacity-80 transition-opacity cursor-pointer">
                     <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                       Daily Challenge<ChevronRight className="size-3" />
                     </div>
@@ -569,11 +573,28 @@ export function CandidateDashboardClient({
               </div>
 
               <div className="mt-auto pt-2 shrink-0">
-                <SolveChallengeButton
-                  isSolved={fullPotdProblem?.solved_status === "Accepted"}
-                  disabled={!initialPotd || !fullPotdProblem}
-                  onClick={() => initialPotd && router.push(`/logiclab/dailychallenges/${initialPotd.id}`)}
-                />
+                {!isProfileComplete ? (
+                  <Button
+                    variant="outline"
+                    className="w-full py-5 font-medium text-sm sm:text-base transition-all cursor-pointer shadow-none opacity-60 hover:opacity-90 bg-muted/40 hover:bg-muted/60 text-muted-foreground hover:text-foreground border border-dashed border-border"
+                    onClick={() => router.push("/myprofile?incomplete=true")}
+                  >
+                    <span className="flex items-center justify-center gap-2">
+                      <Lock className="size-4 shrink-0 opacity-70" />
+                      Complete Profile to Solve
+                    </span>
+                  </Button>
+                ) : (
+                  <SolveChallengeButton
+                    isSolved={fullPotdProblem?.solved_status === "Accepted"}
+                    disabled={!initialPotd || !fullPotdProblem}
+                    onClick={() => {
+                      if (initialPotd) {
+                        router.push(`/logiclab/dailychallenges/${initialPotd.id}`);
+                      }
+                    }}
+                  />
+                )}
               </div>
             </CardContent>
           </Card>
@@ -791,7 +812,7 @@ export function CandidateDashboardClient({
                   <>
                     <div className="flex flex-col gap-4 min-w-0">
                       <div className="flex flex-row items-center justify-between pb-1">
-                        <Link href="/tests" prefetch={false} className="hover:opacity-80 transition-opacity cursor-pointer">
+                        <Link href={!isProfileComplete ? "/myprofile?incomplete=true" : "/tests"} prefetch={false} className="hover:opacity-80 transition-opacity cursor-pointer">
                           <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                             Tests<ChevronRight className="size-3" />
                           </div>
@@ -842,17 +863,29 @@ export function CandidateDashboardClient({
                     </div>
 
                     <Button
-                      variant="default"
-                      className="w-full py-5 font-semibold text-sm sm:text-base transition-colors mt-auto shrink-0 cursor-pointer shadow-xs"
+                      variant={!isProfileComplete ? "outline" : "default"}
+                      className={cn(
+                        "w-full py-5 font-semibold text-sm sm:text-base transition-all mt-auto shrink-0 cursor-pointer shadow-xs",
+                        !isProfileComplete && "opacity-60 hover:opacity-90 bg-muted/40 hover:bg-muted/60 text-muted-foreground hover:text-foreground border border-dashed border-border shadow-none font-medium"
+                      )}
                       onClick={() => {
-                        if (displayTest) {
+                        if (!isProfileComplete) {
+                          router.push("/myprofile?incomplete=true")
+                        } else if (displayTest) {
                           router.push(`/tests/${displayTest.id}`)
                         } else {
                           router.push("/tests")
                         }
                       }}
                     >
-                      {displayTest ? (displayTest.isLive ? "Start Test" : "View Test Details") : "Go to Tests Hub"}
+                      {!isProfileComplete ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <Lock className="size-4 shrink-0 opacity-70" />
+                          Complete Profile to Access Tests
+                        </span>
+                      ) : (
+                        displayTest ? (displayTest.isLive ? "Start Test" : "View Test Details") : "Go to Tests Hub"
+                      )}
                     </Button>
                   </>
                 )
@@ -867,7 +900,7 @@ export function CandidateDashboardClient({
             <CardContent className="p-5 flex flex-col flex-1 justify-between gap-5 h-full">
               <div className="flex flex-col gap-4 min-w-0">
                 <div className="flex flex-row items-center justify-between pb-1">
-                  <Link href="/events" prefetch={false} className="hover:opacity-80 transition-opacity cursor-pointer">
+                  <Link href={!isProfileComplete ? "/myprofile?incomplete=true" : "/events"} prefetch={false} className="hover:opacity-80 transition-opacity cursor-pointer">
                     <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                       Events<ChevronRight className="size-3" />
                     </div>
@@ -921,17 +954,29 @@ export function CandidateDashboardClient({
               </div>
 
               <Button
-                variant="default"
-                className="w-full py-5 font-semibold text-sm sm:text-base transition-colors mt-auto shrink-0 cursor-pointer shadow-xs"
+                variant={!isProfileComplete ? "outline" : "default"}
+                className={cn(
+                  "w-full py-5 font-semibold text-sm sm:text-base transition-all mt-auto shrink-0 cursor-pointer shadow-xs",
+                  !isProfileComplete && "opacity-60 hover:opacity-90 bg-muted/40 hover:bg-muted/60 text-muted-foreground hover:text-foreground border border-dashed border-border shadow-none font-medium"
+                )}
                 onClick={() => {
-                  if (candidateEvent) {
+                  if (!isProfileComplete) {
+                    router.push("/myprofile?incomplete=true")
+                  } else if (candidateEvent) {
                     router.push(`/events/${candidateEvent.id}`)
                   } else {
                     router.push("/events")
                   }
                 }}
               >
-                {candidateEvent ? (candidateEvent.derived_status === "live" ? "Join Live Event" : "View Event Details") : "Explore Events"}
+                {!isProfileComplete ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Lock className="size-4 shrink-0 opacity-70" />
+                    Complete Profile to Access Events
+                  </span>
+                ) : (
+                  candidateEvent ? (candidateEvent.derived_status === "live" ? "Join Live Event" : "View Event Details") : "Explore Events"
+                )}
               </Button>
             </CardContent>
           </Card>
@@ -953,7 +998,7 @@ export function CandidateDashboardClient({
                   <>
                     <div className="flex flex-col gap-4 min-w-0">
                       <div className="flex flex-row items-center justify-between pb-1">
-                        <Link href="/opportunities" prefetch={false} className="hover:opacity-80 transition-opacity cursor-pointer">
+                        <Link href={!isProfileComplete ? "/myprofile?incomplete=true" : "/opportunities"} prefetch={false} className="hover:opacity-80 transition-opacity cursor-pointer">
                           <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                             Opportunities<ChevronRight className="size-3" />
                           </div>
@@ -1003,17 +1048,29 @@ export function CandidateDashboardClient({
                     </div>
 
                     <Button
-                      variant="default"
-                      className="w-full py-5 font-semibold text-sm sm:text-base transition-colors mt-auto shrink-0 cursor-pointer shadow-xs"
+                      variant={!isProfileComplete ? "outline" : "default"}
+                      className={cn(
+                        "w-full py-5 font-semibold text-sm sm:text-base transition-all mt-auto shrink-0 cursor-pointer shadow-xs",
+                        !isProfileComplete && "opacity-60 hover:opacity-90 bg-muted/40 hover:bg-muted/60 text-muted-foreground hover:text-foreground border border-dashed border-border shadow-none font-medium"
+                      )}
                       onClick={() => {
-                        if (opp) {
+                        if (!isProfileComplete) {
+                          router.push("/myprofile?incomplete=true")
+                        } else if (opp) {
                           router.push(`/opportunities/${opp.id}`)
                         } else {
                           router.push("/opportunities")
                         }
                       }}
                     >
-                      {opp ? "View Opportunity" : "Explore Opportunities"}
+                      {!isProfileComplete ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <Lock className="size-4 shrink-0 opacity-70" />
+                          Complete Profile to Access Drives
+                        </span>
+                      ) : (
+                        opp ? "View Opportunity" : "Explore Opportunities"
+                      )}
                     </Button>
                   </>
                 )

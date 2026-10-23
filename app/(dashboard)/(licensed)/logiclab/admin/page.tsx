@@ -17,11 +17,12 @@ export default async function AdminPage() {
 
   const supabase = (await createClient()) as any
 
-  // ── 1. Fetch live aggregate data using optimized PostgreSQL RPCs ──
+  // ── 1. Core data: problems + submissions + user stats + profiles ──
   const [
     { data: adminProblemStats },
     { data: adminStudentRankings },
     { data: rawSubmissions },
+    { data: rawUserStats },
     { data: rawProfiles },
   ] = await Promise.all([
     supabase.rpc("get_admin_problem_stats", { p_limit: 1000, p_offset: 0 }),
@@ -32,10 +33,14 @@ export default async function AdminPage() {
       .order("created_at", { ascending: false })
       .limit(100),
     supabase
+      .from("logiclab_user_stats")
+      .select("user_id, total_points, solved_count, easy_solved, medium_solved, hard_solved, current_streak, longest_streak, last_solve_date, potd_streak")
+      .order("total_points", { ascending: false })
+      .limit(500),
+    supabase
       .from("profiles")
       .select("id, full_name, email, account_type")
-      .in("account_type", ["institute_candidate", "admin", null])
-      .limit(500),
+      .limit(1000),
   ])
 
   const problemsList = (adminProblemStats || []).map((p: any) => ({
@@ -55,15 +60,32 @@ export default async function AdminPage() {
     profileMap[p.id] = { full_name: p.full_name || "", email: p.email || "" }
   })
 
-  // Problem title lookup
-  const problemTitleMap: Record<string, string> = {}
+  // Ensure all user IDs from submissions and user_stats are resolved
+  const unmappedUserIds = Array.from(new Set([
+    ...(rawSubmissions || []).map((s: any) => s.user_id),
+    ...(rawUserStats || []).map((s: any) => s.user_id),
+  ])).filter((id): id is string => Boolean(id) && !profileMap[id])
+
+  if (unmappedUserIds.length > 0) {
+    const { data: missingProfiles } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", unmappedUserIds.slice(0, 500))
+    ;(missingProfiles || []).forEach((p: any) => {
+      profileMap[p.id] = { full_name: p.full_name || "", email: p.email || "" }
+    })
+  }
+
+  // Problem lookup by id → { title, difficulty }
+  const problemInfoMap: Record<string, { title: string; difficulty: string }> = {}
   problemsList.forEach((p: any) => {
-    problemTitleMap[p.id] = p.title
+    problemInfoMap[p.id] = { title: p.title, difficulty: p.difficulty }
   })
 
   // ── 2. Live feed of recent detailed submissions ──
-  const recentSubmissions = (rawSubmissions || []).slice(0, 15).map((s: any) => {
+  const recentSubmissions = (rawSubmissions || []).slice(0, 25).map((s: any) => {
     const prof = profileMap[s.user_id]
+    const studentName = prof?.full_name?.trim() || (prof?.email ? prof.email.split("@")[0] : `Student ${s.user_id ? s.user_id.slice(0, 6) : ""}`)
     return {
       id: s.id,
       status: s.status,
@@ -73,11 +95,12 @@ export default async function AdminPage() {
       total_count: s.total_count ?? null,
       language_id: s.language_id,
       created_at: s.created_at,
-      problem_title: problemTitleMap[s.problem_id] || "Deleted Challenge",
-      student_name: prof?.full_name || "Active Student",
-      student_email: prof?.email || "student@placetrix.app",
+      problem_title: problemInfoMap[s.problem_id]?.title || "Problem Challenge",
+      student_name: studentName,
+      student_email: prof?.email || "",
     }
   })
+
 
   // ── 3. Student Rankings from SQL RPC ──
   const studentStats = (adminStudentRankings || []).map((st: any) => ({
@@ -131,9 +154,7 @@ export default async function AdminPage() {
     pTags.forEach((tag: string) => {
       const trimmed = tag.trim()
       if (!trimmed) return
-      if (!tagMap[trimmed]) {
-        tagMap[trimmed] = { problemCount: 0, total: 0, accepted: 0 }
-      }
+      if (!tagMap[trimmed]) tagMap[trimmed] = { problemCount: 0, total: 0, accepted: 0 }
       tagMap[trimmed].problemCount++
       tagMap[trimmed].total += p.total_submissions
       tagMap[trimmed].accepted += p.accepted_submissions
@@ -163,11 +184,110 @@ export default async function AdminPage() {
     tagStats,
   }
 
+  // ── 6. Enriched student stats for Students tab ──
+  const students = (rawUserStats || []).map((s: any) => {
+    const prof = profileMap[s.user_id]
+    const studentName = prof?.full_name?.trim() || (prof?.email ? prof.email.split("@")[0] : `Student ${s.user_id ? s.user_id.slice(0, 6) : ""}`)
+    return {
+      user_id: s.user_id,
+      student_name: studentName,
+      student_email: prof?.email || "",
+      solved_count: Number(s.solved_count) || 0,
+      easy_solved: Number(s.easy_solved) || 0,
+      medium_solved: Number(s.medium_solved) || 0,
+      hard_solved: Number(s.hard_solved) || 0,
+      total_points: Number(s.total_points) || 0,
+      current_streak: Number(s.current_streak) || 0,
+      longest_streak: Number(s.longest_streak) || 0,
+      last_solve_date: s.last_solve_date ?? null,
+      attempt_count: 0,
+      potd_streak: Number(s.potd_streak) || 0,
+    }
+  }).filter((s: any) => s.student_name)
+
+  // ── 7. NEW: Daily Challenges with stats ──
+  const { data: rawDailyChallenges } = await supabase
+    .from("logiclab_daily_challenges")
+    .select("id, date, problem_id")
+    .order("date", { ascending: false })
+    .limit(90)
+
+  const dailyProblemIds: string[] = (rawDailyChallenges || []).map((d: any) => d.problem_id).filter(Boolean)
+
+  const { data: rawDailyStats } = dailyProblemIds.length
+    ? await supabase
+        .from("logiclab_problem_stats")
+        .select("problem_id, total_submissions, accepted_submissions")
+        .in("problem_id", dailyProblemIds)
+    : { data: [] }
+
+  const dailyStatsMap: Record<string, { total: number; accepted: number }> = {}
+  ;(rawDailyStats || []).forEach((s: any) => {
+    dailyStatsMap[s.problem_id] = {
+      total: Number(s.total_submissions) || 0,
+      accepted: Number(s.accepted_submissions) || 0,
+    }
+  })
+
+  const dailyChallenges = (rawDailyChallenges || []).map((d: any) => {
+    const prob = problemInfoMap[d.problem_id]
+    const stats = dailyStatsMap[d.problem_id]
+    const total = stats?.total || 0
+    const accepted = stats?.accepted || 0
+    return {
+      id: d.id,
+      date: d.date,
+      problem_id: d.problem_id,
+      problem_title: prob?.title || "Unknown Problem",
+      problem_difficulty: prob?.difficulty || "Medium",
+      total_attempts: total,
+      total_solved: accepted,
+      acceptance_rate: total > 0 ? Math.round((accepted / total) * 100) : 0,
+    }
+  })
+
+  // ── 8. NEW: POTD Leaderboard ──
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const dailyChallengeTopSolvers = [...students]
+    .filter((s) => s.potd_streak > 0)
+    .sort((a, b) => b.potd_streak - a.potd_streak)
+    .slice(0, 20)
+    .map((s, i) => ({
+      rank: i + 1,
+      student_name: s.student_name,
+      student_email: s.student_email,
+      potd_streak: s.potd_streak,
+      solved_today: s.last_solve_date === todayStr,
+    }))
+
+  // ── 9. NEW: Full Leaderboard (top 100 by points) ──
+  const leaderboard = [...students]
+    .sort((a, b) => b.total_points - a.total_points)
+    .slice(0, 100)
+    .map((s, i) => ({
+      rank: i + 1,
+      user_id: s.user_id,
+      student_name: s.student_name,
+      student_email: s.student_email,
+      total_points: s.total_points,
+      solved_count: s.solved_count,
+      easy_solved: s.easy_solved,
+      medium_solved: s.medium_solved,
+      hard_solved: s.hard_solved,
+      current_streak: s.current_streak,
+      longest_streak: s.longest_streak,
+      potd_streak: s.potd_streak,
+    }))
+
   return (
     <AdminDashboardClient
       problems={problemsList}
       analytics={analytics}
       recentSubmissions={recentSubmissions}
+      students={students}
+      dailyChallenges={dailyChallenges}
+      dailyChallengeTopSolvers={dailyChallengeTopSolvers}
+      leaderboard={leaderboard}
     />
   )
 }

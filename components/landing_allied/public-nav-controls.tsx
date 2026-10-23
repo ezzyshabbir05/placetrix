@@ -91,7 +91,7 @@ export function UserAvatar({
   user: UserProfile
   className?: string
 }) {
-  const displayName = user.full_name?.trim() || "User"
+  const displayName = user.full_name?.trim() || user.username || "Candidate"
   const initials = user.full_name?.trim()
     ? displayName
         .split(" ")
@@ -122,7 +122,7 @@ export function UserAvatarMenu({ user }: { user: UserProfile }) {
   const router = useRouter()
   const [isLoggingOut, setIsLoggingOut] = React.useState(false)
 
-  const displayName = user.full_name?.trim() || "User"
+  const displayName = user.full_name?.trim() || user.username || "Candidate"
   const email = user.email?.trim() || "No email"
   const initials = user.full_name?.trim()
     ? displayName

@@ -60,6 +60,9 @@ export const formatErrorDiagnostic = (
       formatted = formatted.replace(/(File ".*?", line )(\d+)/g, (match, prefix, line) => {
         return `${prefix}${Math.max(1, parseInt(line, 10) - lineOffset)}`;
       });
+      formatted = formatted.replace(/(Line )(\d+)( in )/g, (match, prefix, line, suffix) => {
+        return `${prefix}${Math.max(1, parseInt(line, 10) - lineOffset)}${suffix}`;
+      });
     } else if (lowerLang.includes("c++") || lowerLang.includes("c (gcc)")) {
       formatted = formatted.replace(/(script\.cpp:|script\.c:|:\s*)(\d+)/g, (match, prefix, line) => {
         return `${prefix}${Math.max(1, parseInt(line, 10) - lineOffset)}`;
